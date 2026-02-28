@@ -37,7 +37,12 @@ mvn package
 Output will be under:
 /target
 
-
+# Run
+For running the release, extract the zip/tar.gz first (under /target folder ),
+then 
+```
+java -cp "as2.jar:lib/*" de.mendelson.comm.as2.AS2
+```
 # Configuration
 Mention any config files or environment variables needed.
 
