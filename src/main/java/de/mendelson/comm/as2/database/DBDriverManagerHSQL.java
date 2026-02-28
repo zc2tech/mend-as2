@@ -189,9 +189,10 @@ public class DBDriverManagerHSQL extends AbstractDBDriverManagerHSQL implements 
                 throw new RuntimeException("Unknown DB type requested in DBDriverManager.");
             }
             logger.info(MODULE_NAME + " " + rb.getResourceString("creating.database." + DB_TYPE));
+            // Be sure to use the correct credentials after DB created !!!
             try (Connection connection
-                    = DriverManager.getConnection("jdbc:hsqldb:" + this.getDBName(DB_TYPE),
-                            "sa", "")) {
+                    = DriverManager.getConnection("jdbc:hsqldb:file:./data/" + this.getDBName(DB_TYPE),
+                            "sa", "")) { // it's only for creating database with default credentials
                 try (Statement statement = connection.createStatement()) {
                     statement.execute("ALTER USER " + DB_USER_NAME.toUpperCase() 
                             + " SET PASSWORD '" + DB_PASSWORD + "'");
