@@ -192,7 +192,8 @@ public class BaseClient {
             SslFilter sslFilter = new SslFilter(SSL_CONTEXT_CLIENT);
             sslFilter.setEnabledProtocols(ClientServer.SERVERSIDE_ACCEPTED_TLS_PROTOCOLS[0]);
             sslFilter.setNeedClientAuth(false);
-            sslFilter.setUseNonBlockingPipeline(true);
+            // new mina version does not need this
+            // sslFilter.setUseNonBlockingPipeline(true);
             this.connector.getFilterChain().addFirst("TLS", sslFilter);
             //add CPU bound tasks first
             this.connector.getFilterChain().addLast("protocol", new ProtocolCodecFilter(

@@ -1,0 +1,8 @@
+# Specify "allow" and "deny" rules for locations that are
+# allowed to open connections to the database
+# For address specifications, individual addresses, host names, and
+# network addresses with /bit suffix are allowed
+# Blank lines are ignored.
+# Lines with # as the first non-whitespace character are ignored.
+
+allow localhost

@@ -116,7 +116,8 @@ public class ClientServer {
         SslFilter tlsFilter = new SslFilter(this.clientserverTLS.createSSLContext());
         //If client authentication is disabled the client certificate must not be in the servers keystore
         tlsFilter.setNeedClientAuth(false);
-        tlsFilter.setUseNonBlockingPipeline(true);
+        // new mina version does not need this
+        // tlsFilter.setUseNonBlockingPipeline(true);
         //allow defined TLS protocols only for the client-server connection
         tlsFilter.setEnabledProtocols(SERVERSIDE_ACCEPTED_TLS_PROTOCOLS);
         acceptor.getFilterChain().addFirst("TLS", tlsFilter);
