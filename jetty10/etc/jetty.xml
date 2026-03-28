@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- Minimal Jetty 10 Server Configuration -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <!-- HTTP Connector -->
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg name="server"><Ref refid="Server" /></Arg>
+                <Set name="host"><Property name="jetty.http.host" default="0.0.0.0"/></Set>
+                <Set name="port"><Property name="jetty.http.port" default="8080"/></Set>
+                <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
+            </New>
+        </Arg>
+    </Call>
+
+    <!-- HTTPS Connector (optional, requires TLS configuration) -->
+    <!-- Uncomment and configure if HTTPS is needed -->
+    <!--
+    <Call name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg name="server"><Ref refid="Server" /></Arg>
+                <Arg name="factories">
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                        <Item>
+                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                                <Arg name="next">http/1.1</Arg>
+                                <Arg name="sslContextFactory">
+                                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+                                        <Set name="KeyStorePath"><Property name="jetty.ssl.keyStorePath"/></Set>
+                                        <Set name="KeyStorePassword"><Property name="jetty.ssl.keyStorePassword"/></Set>
+                                        <Set name="KeyManagerPassword"><Property name="jetty.ssl.keyManagerPassword"/></Set>
+                                        <Set name="TrustStorePath"><Property name="jetty.ssl.trustStorePath"/></Set>
+                                        <Set name="TrustStorePassword"><Property name="jetty.ssl.trustStorePassword"/></Set>
+                                    </New>
+                                </Arg>
+                            </New>
+                        </Item>
+                        <Item>
+                            <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg name="config">
+                                    <New class="org.eclipse.jetty.server.HttpConfiguration">
+                                        <Call name="addCustomizer">
+                                            <Arg>
+                                                <New class="org.eclipse.jetty.server.SecureRequestCustomizer"/>
+                                            </Arg>
+                                        </Call>
+                                    </New>
+                                </Arg>
+                            </New>
+                        </Item>
+                    </Array>
+                </Arg>
+                <Set name="host"><Property name="jetty.https.host" default="0.0.0.0"/></Set>
+                <Set name="port"><Property name="jetty.https.port" default="8443"/></Set>
+                <Set name="idleTimeout"><Property name="jetty.https.idleTimeout" default="30000"/></Set>
+            </New>
+        </Arg>
+    </Call>
+    -->
+
+    <!-- Handler Structure -->
+    <Set name="handler">
+        <New class="org.eclipse.jetty.server.handler.HandlerCollection">
+            <Set name="handlers">
+                <Array type="org.eclipse.jetty.server.Handler">
+                    <Item>
+                        <New class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+                    </Item>
+                    <Item>
+                        <New class="org.eclipse.jetty.server.handler.DefaultHandler"/>
+                    </Item>
+                </Array>
+            </Set>
+        </New>
+    </Set>
+
+    <!-- Server attributes -->
+    <Set name="stopAtShutdown">true</Set>
+    <Set name="stopTimeout">5000</Set>
+    <Set name="dumpAfterStart"><Property name="jetty.dump.start" default="false"/></Set>
+    <Set name="dumpBeforeStop"><Property name="jetty.dump.stop" default="false"/></Set>
+
+</Configure>

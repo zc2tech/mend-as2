@@ -168,6 +168,12 @@ Set system properties via JVM arguments:
 -Dpostgresql.db.config=as2_db_config
 -Dpostgresql.db.runtime=as2_db_runtime
 ```
+Sample psql command
+```
+CREATE ROLE as2user WITH LOGIN PASSWORD 'as2password';
+CREATE DATABASE as2_db_config OWNER as2user;
+CREATE DATABASE as2_db_runtime OWNER as2user;
+```
 
 ### Example JVM Arguments
 
