@@ -104,12 +104,41 @@ public class SQLScriptExecutor {
     private void executeScript(Connection connection, InputStream is) throws Exception {
         ConsoleProgressBar.print(0f);
         List<String> queryList = new ArrayList<String>();
+        StringBuilder currentQuery = new StringBuilder();
         String line = "";
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             while (line != null) {
                 line = reader.readLine();
-                if (line != null && !line.trim().isEmpty() && (!line.startsWith("#"))) {
-                    queryList.add(line);
+                if (line != null) {
+                    String trimmedLine = line.trim();
+                    // Skip empty lines and comments
+                    if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("--")) {
+                        continue;
+                    }
+                    // Append line to current query
+                    if (currentQuery.length() > 0) {
+                        currentQuery.append(" ");
+                    }
+                    currentQuery.append(trimmedLine);
+                    // Check if the line ends with a semicolon (statement terminator)
+                    if (trimmedLine.endsWith(";")) {
+                        // Remove the semicolon and add the complete query to the list
+                        String completeQuery = currentQuery.toString();
+                        if (completeQuery.endsWith(";")) {
+                            completeQuery = completeQuery.substring(0, completeQuery.length() - 1).trim();
+                        }
+                        if (!completeQuery.isEmpty()) {
+                            queryList.add(completeQuery);
+                        }
+                        currentQuery.setLength(0); // Reset for next query
+                    }
+                }
+            }
+            // Handle any remaining query that doesn't end with semicolon
+            if (currentQuery.length() > 0) {
+                String remainingQuery = currentQuery.toString().trim();
+                if (!remainingQuery.isEmpty()) {
+                    queryList.add(remainingQuery);
                 }
             }
         }
@@ -137,6 +166,17 @@ public class SQLScriptExecutor {
             }
             try (PreparedStatement statement = connection.prepareStatement(modifiedQuery)) {
                 statement.executeUpdate();
+            } catch (Exception e) {
+                // Check if the error is due to an object already existing
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.toLowerCase().contains("object name already exists")) {
+                    // Log warning but continue execution
+                    System.out.println("Warning: Skipping statement as object already exists: " + errorMsg);
+                    continue;
+                } else {
+                    // Re-throw other exceptions
+                    throw e;
+                }
             }
         }
         System.out.println();

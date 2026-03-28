@@ -27,7 +27,7 @@ CREATE TABLE message (
   direction INTEGER,
   state INTEGER,
   timestamp BIGINT,
-  payload BLOB
+  payload BYTEA
 );
 
 CREATE TABLE mdn (
@@ -39,9 +39,23 @@ CREATE TABLE mdn (
 );
 
 CREATE TABLE eventlog (
-  event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id SERIAL PRIMARY KEY,
   timestamp BIGINT,
   severity INTEGER,
   source VARCHAR(255),
   message VARCHAR(1024)
+);
+
+CREATE TABLE version (
+  actualversion INTEGER,
+  updatedate TIMESTAMP,
+  updatecomment VARCHAR(255)
+);
+
+CREATE TABLE keydata (
+  purpose INTEGER PRIMARY KEY,
+  storagedata BYTEA,
+  storagetype INTEGER,
+  lastchanged BIGINT,
+  securityprovider VARCHAR(255)
 );

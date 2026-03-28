@@ -72,6 +72,27 @@
         <directory>${basedir}/target</directory>
         <!--<finalName>${project.artifactId}-${project.version}</finalName>-->
 
+        <resources>
+            <!-- Standard resources directory -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Include non-Java files (SVG, images, etc.) from java source directory -->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.svg</include>
+                    <include>**/*.png</include>
+                    <include>**/*.gif</include>
+                    <include>**/*.jpg</include>
+                    <include>**/*.jpeg</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.txt</include>
+                </includes>
+            </resource>
+        </resources>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -264,6 +285,11 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>2.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
         </dependency>
 
         <!-- Bouncy Castle JSSE provider 

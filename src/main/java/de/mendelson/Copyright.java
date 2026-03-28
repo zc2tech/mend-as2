@@ -1,5 +1,6 @@
 //$Header: /as2/de/mendelson/Copyright.java 25    11/02/25 13:39 Heller $
 package de.mendelson;
+
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -10,17 +11,28 @@ package de.mendelson;
 /**
  * Show information about the copyright message for all products of
  * mendelson-e-commerce GmbH
+ * 
  * @author S.Heller
  * @version $Revision: 25 $
  */
-public class Copyright{
+public class Copyright {
 
-    private Copyright(){        
+    private Copyright() {
     }
-    
-    /**Gets the copyright message for all products*/
-    public static String getCopyrightMessage(){
-        return( "(c) 2000-2025 mendelson-e-commerce GmbH Berlin, Germany" );
+
+    /** Original upstream copyright */
+    public static String getUpstreamCopyright() {
+        return "(c) 2000-2025 mendelson-e-commerce GmbH Berlin, Germany";
     }
-    
+
+    /** Your fork's notice (use current year dynamically if you want) */
+    public static String getForkCopyright() {
+        return "(c) 2026 Xu, Julian (julian.xu@aliyun.com)";
+    }
+
+    /** What you actually display in About/CLI banners */
+    public static String getCopyrightMessage() {
+        return getUpstreamCopyright() + " | " + getForkCopyright();
+    }
+
 }

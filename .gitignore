@@ -6,3 +6,4 @@ log/
 *.tmp
 .DS_Store
 Thumbs.db
+certificates.p12

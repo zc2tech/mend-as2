@@ -53,7 +53,8 @@ public class DBDriverManagerHSQL extends AbstractDBDriverManagerHSQL implements 
         MODULE_NAME = rb.getResourceString("module.name");
     }
     private final static String DB_USER_NAME = "sa";
-    public final static String DB_PASSWORD = "as2dbadmin";
+    // public final static String DB_PASSWORD = "as2dbadmin";
+    public final static String DB_PASSWORD = "";
     public static final boolean USE_CONNECTION_POOLING = true;
 
     private final HikariConfig configConnectionPoolConfig = new HikariConfig();
@@ -176,7 +177,7 @@ public class DBDriverManagerHSQL extends AbstractDBDriverManagerHSQL implements 
         try {
             // It will be create automatically if it does not yet exist
             // the given files in the URL is the name of the database
-            // "sa" is the user name and "" is the (empty) password            
+            // "sa" is the user name and "" is the (empty) password
             String createResource = null;
             int dbVersion = 0;
             if (DB_TYPE == DBDriverManagerHSQL.DB_CONFIG) {
@@ -188,13 +189,34 @@ public class DBDriverManagerHSQL extends AbstractDBDriverManagerHSQL implements 
             } else if (DB_TYPE != DBDriverManagerHSQL.DB_DEPRICATED) {
                 throw new RuntimeException("Unknown DB type requested in DBDriverManager.");
             }
+
+            // Check if database already exists by checking for the VERSION table
+            boolean databaseExists = false;
+            try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:file:./data/" + this.getDBName(DB_TYPE), "sa", "")) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.executeQuery("SELECT COUNT(*) FROM VERSION");
+                    databaseExists = true;
+                    logger.info(MODULE_NAME + " Database already exists for " + this.getDBName(DB_TYPE) + ", skipping creation");
+                } catch (SQLException e) {
+                    // VERSION table doesn't exist, database needs to be created
+                    databaseExists = false;
+                }
+            } catch (SQLException e) {
+                // Connection failed, database doesn't exist
+                databaseExists = false;
+            }
+
+            if (databaseExists) {
+                return true;
+            }
+
             logger.info(MODULE_NAME + " " + rb.getResourceString("creating.database." + DB_TYPE));
             // Be sure to use the correct credentials after DB created !!!
             try (Connection connection
                     = DriverManager.getConnection("jdbc:hsqldb:file:./data/" + this.getDBName(DB_TYPE),
                             "sa", "")) { // it's only for creating database with default credentials
                 try (Statement statement = connection.createStatement()) {
-                    statement.execute("ALTER USER " + DB_USER_NAME.toUpperCase() 
+                    statement.execute("ALTER USER " + DB_USER_NAME.toUpperCase()
                             + " SET PASSWORD '" + DB_PASSWORD + "'");
                 }
                 SQLScriptExecutor executor = new SQLScriptExecutor();
