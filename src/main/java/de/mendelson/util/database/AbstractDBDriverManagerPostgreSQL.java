@@ -109,22 +109,28 @@ public abstract class AbstractDBDriverManagerPostgreSQL implements IDBDriverMana
     @Override
     public Object readObjectStoredAsJavaObject(ResultSet result, String columnName) throws Exception {
         // PostgreSQL stores serialized objects as bytea
-        // For TEXT columns, we just return the string
-        Object object = result.getObject(columnName);
-        if (!result.wasNull()) {
-            return (object);
-        } else {
-            return (null);
+        byte[] bytes = result.getBytes(columnName);
+        if (!result.wasNull() && bytes != null) {
+            try (java.io.ByteArrayInputStream byteStream = new java.io.ByteArrayInputStream(bytes);
+                 java.io.ObjectInputStream objectStream = new java.io.ObjectInputStream(byteStream)) {
+                return objectStream.readObject();
+            }
         }
+        return null;
     }
 
     @Override
     public void setObjectParameterAsJavaObject(PreparedStatement statement, int index, Object obj) throws Exception {
         if (obj == null) {
-            statement.setNull(index, Types.OTHER);
+            statement.setNull(index, Types.BINARY);
         } else {
-            // For PostgreSQL, we store objects as strings (TEXT type)
-            statement.setObject(index, obj);
+            // Serialize the object to bytes for PostgreSQL BYTEA column
+            java.io.ByteArrayOutputStream byteStream = new java.io.ByteArrayOutputStream();
+            try (java.io.ObjectOutputStream objectStream = new java.io.ObjectOutputStream(byteStream)) {
+                objectStream.writeObject(obj);
+                objectStream.flush();
+            }
+            statement.setBytes(index, byteStream.toByteArray());
         }
     }
 

@@ -1,0 +1,21 @@
+Date: Mon, 30 Mar 2026 14:11:18 +0800 (CST)
+
+------=_Part_2_288129679.1774851078909
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+Thank you for exchanging AS2 messages with mendelson opensource AS2.
+Please download your free copy of mendelson opensource AS2 + today at http://opensource.mendelson-e-c.com.
+
+An error occured during the AS2 message processing: Receiver AS2 id m4-mend-prod is unknown.
+------=_Part_2_288129679.1774851078909
+Content-Type: message/disposition-notification
+Content-Transfer-Encoding: 7bit
+
+Reporting-UA: mendelson opensource AS2
+Original-Recipient: rfc822; m4-mend-prod
+Final-Recipient: rfc822; m4-mend-prod
+Original-Message-ID: <AS2_TEST_MODE-1774851077047-5@m4-mend-test__m4-mend-prod>
+Disposition: automatic-action/MDN-sent-automatically; processed/error: unknown-trading-partner
+
+------=_Part_2_288129679.1774851078909--

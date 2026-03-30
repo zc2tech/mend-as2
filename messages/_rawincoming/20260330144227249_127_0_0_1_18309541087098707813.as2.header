@@ -1,0 +1,18 @@
+date = Mon, 30 Mar 2026 14:42:27 CST
+mime-version = 1.0
+content-length = 3621
+subject = AS2 message
+as2-version = 1.2
+recipient-address = http://localhost:8080/as2/HttpReceiver
+ediint-features = multiple-attachments
+as2-from = m4-mend-test
+expect = 100-continue
+content-disposition = attachment; filename="smime.p7m"
+host = localhost:8080
+message-id = <AS2_TEST_MODE-1774852945324-9@m4-mend-test__m4-new>
+disposition-notification-to = http://localhost:11080/as2/HttpReceiver
+content-type = application/pkcs7-mime; smime-type=enveloped-data; name=smime.p7m
+from = sender@as2server.com
+as2-to = m4-new
+connection = close, TE
+user-agent = EdiSandBox TEST_MODE 1.1 build 63

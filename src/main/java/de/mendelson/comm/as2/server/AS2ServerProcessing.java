@@ -2192,7 +2192,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                             "partnerevent",
                             "httpheader",
                             "partnersystem",
-                            "oauth2"
+                            // "oauth2"
                         });
                 try {
                     //first delete all partners that are in the DB but not in the new list

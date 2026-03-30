@@ -1,0 +1,11 @@
+mime-version = 1.0
+date = Mon, 30 Mar 2026 14:42:27 CST
+server = mendelson opensource AS2 1.1 build 67 - www.mendelson-e-c.com
+content-length = 839
+as2-version = 1.2
+message-id = <mendelson_opensource_AS2-COMMUN-1774852947300-1@m4-new_m4-mend-test>
+connection = close
+as2-to = m4-mend-test
+content-type = multipart/report; report-type=disposition-notification; 	boundary="----=_Part_3_1904554671.1774852947301"
+ediint-features = multiple-attachments, CEM
+as2-from = m4-new

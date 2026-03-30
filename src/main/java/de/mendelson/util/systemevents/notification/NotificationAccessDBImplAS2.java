@@ -65,18 +65,18 @@ public class NotificationAccessDBImplAS2 implements NotificationAccessDB {
                         data.setMaxNotificationsPerMin(result.getInt("maxnotificationspermin"));
                         data.setNotifyConnectionProblem(result.getInt("notifyconnectionproblem") == 1 ? true : false);
                         data.setNotifyPostprocessingProblem(result.getInt("notifypostprocessing") == 1 ? true : false);
-                        int oAuth2Id = result.getInt("smtpoauth2id");
-                        if (!result.wasNull()) {
-                            OAuth2AccessDB oauth2Access = new OAuth2AccessDB(this.dbDriverManager, SystemEventManagerImplAS2.instance());
-                            OAuth2Config config = oauth2Access.getOAuth2Config(oAuth2Id, configConnectionAutoCommit);
-                            if (config != null) {
-                                data.setOAuth2Config(config);
-                            } else {
-                                data.setUsesSMTPAuthOAuth2(false);
-                            }
-                        } else {
+                        // int oAuth2Id = result.getInt("smtpoauth2id");
+                        // if (!result.wasNull()) {
+                        //     OAuth2AccessDB oauth2Access = new OAuth2AccessDB(this.dbDriverManager, SystemEventManagerImplAS2.instance());
+                        //     OAuth2Config config = oauth2Access.getOAuth2Config(oAuth2Id, configConnectionAutoCommit);
+                        //     if (config != null) {
+                        //         data.setOAuth2Config(config);
+                        //     } else {
+                        //         data.setUsesSMTPAuthOAuth2(false);
+                        //     }
+                        // } else {
                             data.setUsesSMTPAuthOAuth2(false);
-                        }
+                        // }
                         data.setNotifyClientServerProblem(result.getInt("notifyclientserver") == 1 ? true : false);
                         return (data);
                     }

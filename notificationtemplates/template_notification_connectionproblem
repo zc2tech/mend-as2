@@ -1,0 +1,23 @@
+$Header:$
+This file contains the template for an event as result of a connection problem
+The following variables will be substituted:
+${MESSAGE}: The error message
+${HINT}: Some generic ideas about the reason and how to fix it
+${PARTNER}: Partner that is connected
+${URL}: URL that is used
+${MESSAGE_ID}: Message id of the message that is tried to transmit
+
+
+[SUBJECT]
+Connection problem to partner ${PARTNER} [${MESSAGE_ID}]
+
+
+[BODY]
+You tried to establish an outbound connection to the partner "${PARTNER}" which failed.
+
+URL: ${URL}
+Message id: ${MESSAGE_ID}
+Message: ${MESSAGE}
+
+${HINT}
+

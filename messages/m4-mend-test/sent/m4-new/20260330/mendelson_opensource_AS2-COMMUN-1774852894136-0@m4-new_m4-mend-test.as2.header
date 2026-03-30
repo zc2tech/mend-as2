@@ -1,0 +1,16 @@
+mime-version = 1.0
+date = Mon, 30 Mar 2026 14:41:45 CST
+as2-version = 1.2
+subject = AS2 message
+recipient-address = http://localhost:11080/as2/HttpReceiver
+ediint-features = multiple-attachments
+as2-from = m4-new
+content-disposition = attachment; filename="smime.p7m"
+host = localhost:11080
+message-id = <mendelson_opensource_AS2-COMMUN-1774852894136-0@m4-new_m4-mend-test>
+as2-to = m4-mend-test
+from = sender@as2server.com
+connection = close, TE
+content-type = application/pkcs7-mime; smime-type=enveloped-data; name=smime.p7m
+disposition-notification-to = http://localhost:8080/as2/HttpReceiver
+user-agent = mendelson opensource AS2 1.1 build 67 - www.mendelson-e-c.com

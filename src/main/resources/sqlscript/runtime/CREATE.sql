@@ -163,7 +163,7 @@ CREATE TABLE sendorder (
   id SERIAL PRIMARY KEY,
   scheduletime BIGINT NOT NULL,
   nextexecutiontime BIGINT NOT NULL,
-  sendorder TEXT NOT NULL,
+  sendorder BYTEA NOT NULL,
   orderstate INTEGER NOT NULL
 );
 

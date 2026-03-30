@@ -260,7 +260,7 @@ public class JButtonPartnerConfigOk extends JButton {
         boolean error = false;
         error = error || this.checkForNonUniqueValues(checkPartner, partnerList);
         error = error || this.checkURLProtocol(checkPartner);
-        error = error || this.checkLocalhostAsURL(checkPartner);
+        // error = error || this.checkLocalhostAsURL(checkPartner);
         return (error);
     }
 

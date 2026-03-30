@@ -1,0 +1,19 @@
+Date: Mon, 30 Mar 2026 14:41:45 +0800 (CST)
+
+------=_Part_19_880772.1774852905866
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+
+Message received and processed at local time Mon Mar 30 06:41:45 UTC  2026, internal message ID is MESSAGETYPE_AS2 12345
+------=_Part_19_880772.1774852905866
+Content-Type: message/disposition-notification
+Content-Transfer-Encoding: 7bit
+
+Reporting-UA: EdiSandBox TEST_MODE
+Original-Recipient: rfc822; m4-mend-test
+Final-Recipient: rfc822; m4-mend-test
+Original-Message-ID: <mendelson_opensource_AS2-COMMUN-1774852894136-0@m4-new_m4-mend-test>
+Disposition: automatic-action/MDN-sent-automatically; processed
+Received-Content-MIC: LYafop1ZKkwlNWmv6iNM93Qr/Hw=, sha1
+
+------=_Part_19_880772.1774852905866--

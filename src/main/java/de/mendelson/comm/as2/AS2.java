@@ -12,7 +12,7 @@ import de.mendelson.util.font.FontUtil;
 import de.mendelson.util.security.BCCryptoHelper;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
-import java.awt.Color;
+import java.awt.Color; 
 import java.awt.image.RescaleOp;
 import java.util.Locale;
 import javax.swing.JOptionPane;
