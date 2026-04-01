@@ -9,6 +9,8 @@ passwd
 Thumbs.db
 certificates.p12
 messages
+*.cer
+*.key
 
 # Frontend
 src/main/webapp/admin/node_modules/
