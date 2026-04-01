@@ -1,0 +1,29 @@
+---
+applications:
+  - name: mendelson-as2
+    memory: 1G
+    disk_quota: 1G
+    instances: 1
+    buildpack: java_buildpack
+    path: target/as2-1.1b67-dist.tar.gz
+    health-check-type: http
+    health-check-http-endpoint: /as2/api/v1/system/info
+    timeout: 180
+
+    env:
+      # Java runtime configuration
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 11.+ } }'
+
+      # AS2 Server configuration
+      AS2_START_GUI: false
+      AS2_SKIP_CONFIG_CHECK: true
+
+      # Server ports (CloudFoundry will map HTTP port automatically)
+      JETTY_HTTP_PORT: 8080
+      JETTY_HTTPS_PORT: 8443
+
+      # Disable MINA client-server (port 1234 not accessible in CloudFoundry)
+      AS2_CLIENT_SERVER_ENABLED: false
+
+    services:
+      - as2-postgresql

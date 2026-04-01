@@ -599,6 +599,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerModificationRequest(IoSession session, SinglePartnerModificationRequest request) {
+        SinglePartnerModificationResponse response = processPartnerModificationRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Modify a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerModificationResponse processPartnerModificationRequest(SinglePartnerModificationRequest request) {
         SinglePartnerModificationResponse response = new SinglePartnerModificationResponse(request);
         Partner newPartner = request.getPartner();
         try {
@@ -622,8 +630,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -634,6 +641,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerDeleteRequest(IoSession session, SinglePartnerDeleteRequest request) {
+        SinglePartnerDeleteResponse response = processPartnerDeleteRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Delete a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerDeleteResponse processPartnerDeleteRequest(SinglePartnerDeleteRequest request) {
         SinglePartnerDeleteResponse response = new SinglePartnerDeleteResponse(request);
         try {
             Partner foundPartner = this.partnerAccess.getPartner(request.getAS2id());
@@ -653,8 +668,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -665,6 +679,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerAddRequest(IoSession session, SinglePartnerAddRequest request) {
+        SinglePartnerAddResponse response = processPartnerAddRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Add a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerAddResponse processPartnerAddRequest(SinglePartnerAddRequest request) {
         SinglePartnerAddResponse response = new SinglePartnerAddResponse(request);
         try {
             Partner newPartner = request.getPartner();
@@ -684,11 +706,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processCRLVerificationRequest(IoSession session, CRLVerificationRequest request) {
+        CRLVerificationResponse response = processCRLVerificationRequest(request);
+        session.write(response);
+    }
+
+    public CRLVerificationResponse processCRLVerificationRequest(CRLVerificationRequest request) {
         CRLVerificationResponse response = new CRLVerificationResponse(request);
         try {
             CertificateManager manager;
@@ -735,8 +761,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processHSQLDBMigrationRequest(IoSession session, HSQLDBMigrationRequest request) {
@@ -890,6 +915,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processCertificateExportRequest(IoSession session, CertificateExportRequest request) {
+        CertificateExportResponse response = processCertificateExportRequest(request);
+        session.write(response);
+    }
+
+    public CertificateExportResponse processCertificateExportRequest(CertificateExportRequest request) {
         CertificateExportResponse response = new CertificateExportResponse(request);
         try {
             CertificateManager manager;
@@ -924,8 +954,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processCSRAnswerImportRequest(IoSession session, CSRAnswerImportRequest request) {
@@ -999,6 +1028,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processCSRGenerationRequest(IoSession session, CSRGenerationRequest request) {
+        CSRGenerationResponse response = processCSRGenerationRequest(request);
+        session.write(response);
+    }
+
+    public CSRGenerationResponse processCSRGenerationRequest(CSRGenerationRequest request) {
         CSRGenerationResponse response = new CSRGenerationResponse(request);
         try {
             CertificateManager manager;
@@ -1035,8 +1069,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             e.printStackTrace();
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processExportRequestPrivateKey(IoSession session, ExportRequestPrivateKey request) {
@@ -1130,6 +1163,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processExportRequestKeystore(IoSession session, ExportRequestKeystore request) {
+        ExportResponseKeystore response = processExportRequestKeystore(request);
+        session.write(response);
+    }
+
+    public ExportResponseKeystore processExportRequestKeystore(ExportRequestKeystore request) {
         ExportResponseKeystore response = new ExportResponseKeystore(request);
         try {
             String extension = null;
@@ -1192,8 +1230,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -1593,6 +1630,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processStatisticExportRequest(IoSession session, StatisticExportRequest request) {
+        StatisticExportResponse response = processStatisticExportRequest(request);
+        session.write(response);
+    }
+
+    public StatisticExportResponse processStatisticExportRequest(StatisticExportRequest request) {
         StatisticExportResponse response = new StatisticExportResponse(request);
         StatisticExport exporter = new StatisticExport(this.dbDriverManager);
         try (ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
@@ -1605,8 +1647,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync respond to the request
-        session.write(response);
+        return response;
     }
 
     /**
@@ -1671,6 +1712,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processDownloadRequestKeystore(IoSession session, DownloadRequestKeystore request) {
+        DownloadResponseKeystore response = processDownloadRequestKeystore(request);
+        session.write(response);
+    }
+
+    public DownloadResponseKeystore processDownloadRequestKeystore(DownloadRequestKeystore request) {
         DownloadResponseKeystore response = new DownloadResponseKeystore(request);
         List<KeystoreCertificate> certificateList;
         CertificateManager relatedCertificateManager = null;
@@ -1698,13 +1744,18 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        session.write(response);
+        return response;
     }
 
     private void processUploadRequestKeystore(IoSession session, UploadRequestKeystore request) {
-        UploadResponseKeystore response = new UploadResponseKeystore(request);
         String processOriginHost = session.getRemoteAddress().toString();
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
+        UploadResponseKeystore response = processUploadRequestKeystore(request, userName, processOriginHost);
+        session.write(response);
+    }
+
+    public UploadResponseKeystore processUploadRequestKeystore(UploadRequestKeystore request, String userName, String processOriginHost) {
+        UploadResponseKeystore response = new UploadResponseKeystore(request);
         String storageType = null;
         List<KeystoreCertificate> existingCertificateList = new ArrayList<KeystoreCertificate>();
         CertificateManager relatedCertificateManager = null;
@@ -1756,12 +1807,12 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        session.write(response);
         if (response.getException() == null && newManager != null) {
             //everything worked fine? Now check the changes and fire system events
             this.analyzeCertificateChanges(userName, processOriginHost,
                     keystoreTypeForLog, existingCertificateList, newManager.getKeyStoreCertificateList());
         }
+        return response;
     }
 
     /**
@@ -1997,31 +2048,45 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request
      */
     private void processPreferencesRequest(IoSession session, PreferencesRequest request) {
+        String processOriginHost = session.getRemoteAddress().toString();
+        String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
         if (request.getType() == PreferencesRequest.TYPE_GET) {
-            PreferencesResponse response = new PreferencesResponse(request);
-            this.preferences.clearCache();
-            response.setValue(this.preferences.get(request.getKey()));
+            PreferencesResponse response = processPreferencesGetRequest(request);
             session.write(response);
         } else if (request.getType() == PreferencesRequest.TYPE_GET_DEFAULT) {
-            PreferencesResponse response = new PreferencesResponse(request);
-            response.setValue(PreferencesAS2.getDefaultValue(request.getKey()));
+            PreferencesResponse response = processPreferencesGetDefaultRequest(request);
             session.write(response);
         } else if (request.getType() == PreferencesRequest.TYPE_SET) {
-            this.preferences.clearCache();
-            String oldValue = this.preferences.get(request.getKey());
-            if (!oldValue.equals(request.getValue())) {
-                this.preferences.put(request.getKey(), request.getValue());
-                String processOriginHost = session.getRemoteAddress().toString();
-                String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
-                this.fireEventPreferencesModified(userName, processOriginHost, request.getKey(),
-                        oldValue, request.getValue());
-                //some specials - do something on user defined changes
-                if (request.getKey().equals(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
-                    if (this.preferences.getBoolean(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
-                        this.partnerTLSCertificateChangedController.startTLSCertificateChangedControl(true);
-                    } else {
-                        this.partnerTLSCertificateChangedController.stopTLSCertificateChangedControl();
-                    }
+            processPreferencesSetRequest(request, userName, processOriginHost);
+        }
+    }
+
+    public PreferencesResponse processPreferencesGetRequest(PreferencesRequest request) {
+        PreferencesResponse response = new PreferencesResponse(request);
+        this.preferences.clearCache();
+        response.setValue(this.preferences.get(request.getKey()));
+        return response;
+    }
+
+    public PreferencesResponse processPreferencesGetDefaultRequest(PreferencesRequest request) {
+        PreferencesResponse response = new PreferencesResponse(request);
+        response.setValue(PreferencesAS2.getDefaultValue(request.getKey()));
+        return response;
+    }
+
+    public void processPreferencesSetRequest(PreferencesRequest request, String userName, String processOriginHost) {
+        this.preferences.clearCache();
+        String oldValue = this.preferences.get(request.getKey());
+        if (!oldValue.equals(request.getValue())) {
+            this.preferences.put(request.getKey(), request.getValue());
+            this.fireEventPreferencesModified(userName, processOriginHost, request.getKey(),
+                    oldValue, request.getValue());
+            //some specials - do something on user defined changes
+            if (request.getKey().equals(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
+                if (this.preferences.getBoolean(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
+                    this.partnerTLSCertificateChangedController.startTLSCertificateChangedControl(true);
+                } else {
+                    this.partnerTLSCertificateChangedController.stopTLSCertificateChangedControl();
                 }
             }
         }
@@ -2304,6 +2369,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * A client asks for partner information
      */
     private void processPartnerListRequest(IoSession session, PartnerListRequest request) {
+        PartnerListResponse response = processPartnerListRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Get partner list without IoSession dependency (for REST API)
+     */
+    public PartnerListResponse processPartnerListRequest(PartnerListRequest request) {
         PartnerListResponse response = new PartnerListResponse(request);
         try {
             if (request.getListOption() == PartnerListRequest.LIST_ALL) {
@@ -2345,11 +2418,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageOverviewRequest(IoSession session, MessageOverviewRequest request) {
+        MessageOverviewResponse response = processMessageOverviewRequest(request);
+        session.write(response);
+    }
+
+    public MessageOverviewResponse processMessageOverviewRequest(MessageOverviewRequest request) {
         MessageOverviewResponse response = new MessageOverviewResponse(request);
         if (request.getFilter() != null) {
             response.setList(this.messageAccess.getMessageOverview(request.getFilter()));
@@ -2357,29 +2434,40 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             response.setList(this.messageAccess.getMessageOverview(request.getMessageId()));
         }
         response.setMessageSumOnServer(this.messageAccess.getMessageCount());
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageLogRequest(IoSession session, MessageLogRequest request) {
+        MessageLogResponse response = processMessageLogRequest(request);
+        session.write(response);
+    }
+
+    public MessageLogResponse processMessageLogRequest(MessageLogRequest request) {
         MessageLogResponse response = new MessageLogResponse(request);
         response.setList(this.logAccess.getLog(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageDetailRequest(IoSession session, MessageDetailRequest request) {
-        MessageDetailResponse response = new MessageDetailResponse(request);
-        response.setList(this.messageAccess.getMessageDetails(request.getMessageId()));
-        //sync answer
+        MessageDetailResponse response = processMessageDetailRequest(request);
         session.write(response);
     }
 
+    public MessageDetailResponse processMessageDetailRequest(MessageDetailRequest request) {
+        MessageDetailResponse response = new MessageDetailResponse(request);
+        response.setList(this.messageAccess.getMessageDetails(request.getMessageId()));
+        return response;
+    }
+
     private void processMessagePayloadRequest(IoSession session, MessagePayloadRequest request) {
+        MessagePayloadResponse response = processMessagePayloadRequest(request);
+        session.write(response);
+    }
+
+    public MessagePayloadResponse processMessagePayloadRequest(MessagePayloadRequest request) {
         MessagePayloadResponse response = new MessagePayloadResponse(request);
         response.setList(this.messageAccess.getPayload(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
@@ -2487,17 +2575,26 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * sync
      */
     private void processCEMListRequest(IoSession session, CEMListRequest request) {
+        CEMListResponse response = processCEMListRequest(request);
+        session.write(response);
+    }
+
+    public CEMListResponse processCEMListRequest(CEMListRequest request) {
         CEMListResponse response = new CEMListResponse(request);
         CEMAccessDB access = new CEMAccessDB(this.dbDriverManager);
         response.setList(access.getCEMEntries());
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
      * sync
      */
     private void processCEMDeleteRequest(IoSession session, CEMDeleteRequest request) {
+        ClientServerResponse response = processCEMDeleteRequest(request);
+        session.write(response);
+    }
+
+    public ClientServerResponse processCEMDeleteRequest(CEMDeleteRequest request) {
         CEMEntry entry = request.getEntry();
         CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
         cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
@@ -2516,36 +2613,48 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             this.messageAccess.deleteMessages(responseMessageList);
         }
         cemAccess.removeEntry(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId());
-        //sync answer
-        session.write(new ClientServerResponse(request));
+        return new ClientServerResponse(request);
     }
 
     /**
      * sync
      */
     private void processCEMCancelRequest(IoSession session, CEMCancelRequest request) {
+        ClientServerResponse response = processCEMCancelRequest(request);
+        session.write(response);
+    }
+
+    public ClientServerResponse processCEMCancelRequest(CEMCancelRequest request) {
         CEMEntry entry = request.getEntry();
         CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
         cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
                 CEMEntry.STATUS_CANCELED_INT);
-        //sync answer
-        session.write(new ClientServerResponse(request));
+        return new ClientServerResponse(request);
     }
 
     /**
      * sync
      */
     private void processMessageRequestLastMessage(IoSession session, MessageRequestLastMessage request) {
+        MessageResponseLastMessage response = processMessageRequestLastMessage(request);
+        session.write(response);
+    }
+
+    public MessageResponseLastMessage processMessageRequestLastMessage(MessageRequestLastMessage request) {
         MessageResponseLastMessage response = new MessageResponseLastMessage(request);
         response.setInfo(this.messageAccess.getLastMessageEntry(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
      * sync
      */
     private void processCEMSendRequest(IoSession session, CEMSendRequest request) {
+        CEMSendResponse response = processCEMSendRequest(request);
+        session.write(response);
+    }
+
+    public CEMSendResponse processCEMSendRequest(CEMSendRequest request) {
         CEMSendResponse response = new CEMSendResponse(request);
         Partner initiator = request.getInitiator();
         KeystoreCertificate certificate = request.getCertificate();
@@ -2569,8 +2678,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
@@ -3060,6 +3168,20 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         catch (Exception e) {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
         }
+    }
+
+    /**
+     * Get the certificate manager for signing/encryption certificates
+     */
+    public CertificateManager getCertificateManagerSignEncrypt() {
+        return this.certificateManagerEncSign;
+    }
+
+    /**
+     * Get the certificate manager for TLS certificates
+     */
+    public CertificateManager getCertificateManagerTLS() {
+        return this.certificateManagerTLS;
     }
 
 }

@@ -129,6 +129,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private CertificateManager certificateManagerEncSign = null;
     private boolean skipStartupConfigCheck = false;
     private CertificateManager certificateManagerTLS = null;
+    private AS2ServerProcessing serverProcessing = null;
     private final ClientServer clientserver;
     private ClientServerSessionHandlerLocalhost clientServerSessionHandler = null;
     /**
@@ -388,7 +389,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12);
             this.certificateManagerEncSign.loadKeystoreCertificates(signEncStorage);
             this.certificateManagerTLS = new CertificateManager(this.logger);
-            System.out.println("DEBUG: before KeystoreStorageImplDB, time: " + System.currentTimeMillis());
             KeystoreStorage tlsStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
@@ -441,11 +441,13 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.certificateManagerTLS,
                     this.httpServerConfigInfo, this.pollManager,
                     this.dbDriverManager);
-            this.clientServerSessionHandler.addServerProcessing(
-                    new AS2ServerProcessing(this.clientserver, this.pollManager,
-                            this.certificateManagerEncSign, this.certificateManagerTLS, this.dbDriverManager,
-                            this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
-                            this.dbClientInformation));
+            this.serverProcessing = new AS2ServerProcessing(this.clientserver, this.pollManager,
+                    this.certificateManagerEncSign, this.certificateManagerTLS, this.dbDriverManager,
+                    this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
+                    this.dbClientInformation);
+            this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
+            // Make serverProcessing available to REST API
+            de.mendelson.comm.as2.servlet.rest.RestApplication.ServerProcessingHolder.setInstance(this.serverProcessing);
             this.expireController = new CertificateExpireController(this.certificateManagerEncSign,
                     this.certificateManagerTLS);
             this.expireController.startCertExpireControl();
@@ -724,6 +726,13 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     public String getServerVersion() {
         return (AS2ServerVersion.getProductName() + " " + AS2ServerVersion.getVersion() + " "
                 + AS2ServerVersion.getBuild());
+    }
+
+    /**
+     * Returns the server processing instance for REST API access
+     */
+    public AS2ServerProcessing getServerProcessing() {
+        return this.serverProcessing;
     }
 
     /**
