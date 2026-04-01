@@ -42,6 +42,7 @@ public class AS2 {
         System.out.println("-lang <String>: Language to use for the client/server, nonpersistent. Possible values are " + PreferencesAS2.getSupportedLanguagesAsUsageList() + ".");
         System.out.println("-country <String>: Country/region to use for the client/server, nonpersistent. Possible values are \"DE\", \"US\", \"FR\", \"GB\"...");
         System.out.println("-nohttpserver: Do not start the integrated HTTP server, only useful if you are integrating the product into an other web container");
+        System.out.println("-nogui: Run in headless mode without GUI (for cloud/container deployments)");
         System.out.println("-mode <String>: Sets up the LIGHT or DARK mode for the client - default is LIGHT");
         System.out.println("-importTLS: Imports a new TLS keystore to the system and overwrites the existing. For further requirements please have a look at the documentation.");
         System.out.println("-importSignEnc: Imports a new sign/encryption keystore to the system and overwrites the existing. For further requirements please have a look at the documentation.");
@@ -51,6 +52,10 @@ public class AS2 {
      * Method to start the server on from the command line
      */
     public static void main(String args[]) {
+        // Load configuration from properties file
+        AS2Config config = new AS2Config();
+        boolean startGUI = config.isGuiEnabled();
+
         String language = null;
         String country = null;
         boolean startHTTP = true;
@@ -65,6 +70,10 @@ public class AS2 {
                 country = args[++optind];
             } else if (args[optind].toLowerCase().equals("-nohttpserver")) {
                 startHTTP = false;
+            } else if (args[optind].toLowerCase().equals("-nogui")) {
+                startGUI = false;
+            } else if (args[optind].toLowerCase().equals("-headless")) {
+                startGUI = false;
             } else if (args[optind].toLowerCase().equals("-mode")) {
                 String modeParameter = args[++optind];
                 if (modeParameter != null) {
@@ -103,6 +112,11 @@ public class AS2 {
             }
         }
         if (language != null && country != null) {
+            // Fallback for unsupported locale combinations in JCalendar
+            // JCalendar doesn't support en_CN, so use en_US as fallback
+            if (language.toLowerCase().equals("en") && country.equals("CN")) {
+                country = "US";
+            }
             if (language.toLowerCase().equals("en")) {
                 Locale.setDefault(new Locale(Locale.ENGLISH.getLanguage(), country));
             } else if (language.toLowerCase().equals("de")) {
@@ -122,6 +136,12 @@ public class AS2 {
                 Locale.setDefault(new Locale(Locale.ENGLISH.getLanguage(), country));
             }
         }
+
+        // Set headless mode if GUI is disabled
+        if (!startGUI) {
+            System.setProperty("java.awt.headless", "true");
+        }
+
         String displayMode = clientPreferences.get(PreferencesAS2.DISPLAY_MODE_CLIENT);
         if (displayMode.equalsIgnoreCase(DisplayMode.DARK)) {
             //darken all SVG generated images/icons by 10% (also the splash)
@@ -137,20 +157,26 @@ public class AS2 {
             MendelsonMultiResolutionImage.addSVGOverlay("state_allselected.svg", "/de/mendelson/util/colorblind/overlay_state_allselected.svg");
             MendelsonMultiResolutionImage.addSVGOverlay("severity_info.svg", "/de/mendelson/util/colorblind/overlay_severity_info.svg");
         }
-        Splash splash = new Splash("/de/mendelson/comm/as2/client/splash_mendelson_opensource_as2.svg", 330);
-        splash.setTextAntiAliasing(false);
-        //dark grey
-        Color textColor = FontUtil.getFontColor(FontUtil.PRODUCT_OFTP2_COMMUNITY);
-        splash.addDisplayString(FontUtil.getProductFont(FontUtil.STYLE_PRODUCT_BOLD, 10),
-                12, 285, AS2ServerVersion.getFullProductName(),
-                textColor);
-        splash.setVisible(true);
-        splash.toFront();
+
+        // Create splash screen only in GUI mode
+        Splash splash = null;
+        if (startGUI) {
+            splash = new Splash("/de/mendelson/comm/as2/client/splash_mendelson_opensource_as2.svg", 330);
+            splash.setTextAntiAliasing(false);
+            //dark grey
+            Color textColor = FontUtil.getFontColor(FontUtil.PRODUCT_OFTP2_COMMUNITY);
+            splash.addDisplayString(FontUtil.getProductFont(FontUtil.STYLE_PRODUCT_BOLD, 10),
+                    12, 285, AS2ServerVersion.getFullProductName(),
+                    textColor);
+            splash.setVisible(true);
+            splash.toFront();
+        }
+
         try {
             //initialize the security provider
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
-            new AS2Server(startHTTP, false, false, importTLS, importEncSign);
+            new AS2Server(startHTTP, false, false, importTLS, importEncSign, config.shouldSkipConfigCheck());
         } catch (ServerAlreadyRunningException e) {
             //don't delete the lockfile in this case!
             SystemEventManagerImplAS2.instance().newEvent(
@@ -167,7 +193,11 @@ public class AS2 {
             if (message == null) {
                 message = "[" + e.getClass().getName() + "]";
             }
-            JOptionPane.showMessageDialog(null, message);
+            if (startGUI) {
+                JOptionPane.showMessageDialog(null, message);
+            } else {
+                System.err.println("ERROR: " + message);
+            }
             System.exit(1);
         } catch (Throwable e) {
             SystemEventManagerImplAS2.instance().newEvent(
@@ -184,14 +214,32 @@ public class AS2 {
             if (message == null) {
                 message = "[" + e.getClass().getName() + "]";
             }
-            JOptionPane.showMessageDialog(null, message);
+            if (startGUI) {
+                JOptionPane.showMessageDialog(null, message);
+            } else {
+                System.err.println("ERROR: " + message);
+            }
             AS2Server.deleteLockFile();
             System.exit(1);
         }
-        //start client
-        AS2Gui gui = new AS2Gui(splash, "localhost", "admin", "admin", displayMode);
-        gui.setVisible(true);
-        splash.destroy();
-        splash.dispose();
+
+        // Start GUI client or run in headless mode
+        if (startGUI) {
+            //start client
+            AS2Gui gui = new AS2Gui(splash, "localhost", "admin", "admin", displayMode);
+            gui.setVisible(true);
+            splash.destroy();
+            splash.dispose();
+        } else {
+            // Headless mode - server keeps running
+            System.out.println("Running in headless mode - GUI disabled");
+            System.out.println("Server is now running. Press Ctrl+C to stop.");
+            // Keep the main thread alive - server runs in background threads
+            try {
+                Thread.currentThread().join();
+            } catch (InterruptedException e) {
+                System.out.println("Server shutdown requested");
+            }
+        }
     }
 }

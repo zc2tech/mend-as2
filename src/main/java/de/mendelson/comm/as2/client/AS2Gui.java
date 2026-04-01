@@ -392,7 +392,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         this.setTitle(title);
         //initialize the help system if available
-        this.initializeJavaHelp(displayMode);
+        // this.initializeJavaHelp(displayMode);
         this.jTableMessageOverview.setRowHeight(TableModelMessageOverview.ROW_HEIGHT);
         this.jTableMessageOverview.getSelectionModel().addListSelectionListener(this);
         this.jTableMessageOverview.getTableHeader().setReorderingAllowed(false);
@@ -806,54 +806,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 (int) this.getBounds().getWidth());
         this.clientPreferences.putInt(PreferencesAS2.FRAME_HEIGHT,
                 (int) this.getBounds().getHeight());
-    }
-
-    /**
-     * Initialized a help set by a given name
-     */
-    private void initializeJavaHelp(String displayMode) {
-        try {
-            //At the moment only english and german help systems are implemented.
-            String filename = null;
-            //If the found default is none of them, set the english help as
-            //default!
-            if (!Locale.getDefault().getLanguage().equals(Locale.GERMANY.getLanguage())
-                    && !Locale.getDefault().getLanguage().equals(Locale.UK.getLanguage())) {
-                this.getLogger().warning("Sorry, there is no specific HELPSET available for your language, ");
-                this.getLogger().warning("the english help will be displayed.");
-                filename = "as2help/as2_en.hs";
-            } else {
-                filename = "as2help/as2_" + Locale.getDefault().getLanguage() + ".hs";
-            }
-            //copy theme CSS to the right place
-            Path sourceCSS = Paths.get("doc/CSS_LIGHT.css");
-            if (displayMode.equalsIgnoreCase("DARK")) {
-                sourceCSS = Paths.get("doc/CSS_DARK.css");
-            }
-            try {
-                Files.copy(sourceCSS, Paths.get("doc/mec_HTMLdoc.css"), StandardCopyOption.REPLACE_EXISTING);
-            } catch (Exception e) {
-                this.getLogger().warning("The file " + Paths.get("doc/mec_HTMLdoc.css").toAbsolutePath().toString()
-                        + " is r/o, unable to set the help system theme.");
-            }
-            Path helpSetFile = Paths.get(filename);
-            URL helpURL = helpSetFile.toUri().toURL();
-            this.helpSet = new HelpSet(helpURL);
-            this.help = new Help(true, false, true);
-            Help.setHelpLocale(Locale.getDefault());
-            help.setIconImage(IMAGE_PRODUCT_LOGO.toMinResolution(16));
-            help.addBook(helpSet);
-            help.setDefaultTopicID("as2_main");
-            try {
-                URL url = Paths.get("./as2_help_favories.xml").toUri().toURL();
-                help.enableFavoritesNavigator(url);
-            } catch (MalformedURLException ignore) {
-            }
-        } catch (Exception e) {
-            // could not find it! Disable menu item
-            this.getLogger().warning("Helpset not found, helpsystem is disabled!");
-            this.jMenuItemHelpSystem.setEnabled(false);
-        }
     }
 
     /**

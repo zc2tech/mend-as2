@@ -127,6 +127,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private DirPollManager pollManager = null;
     private ConfigurationCheckController configCheckController = null;
     private CertificateManager certificateManagerEncSign = null;
+    private boolean skipStartupConfigCheck = false;
     private CertificateManager certificateManagerTLS = null;
     private final ClientServer clientserver;
     private ClientServerSessionHandlerLocalhost clientServerSessionHandler = null;
@@ -175,7 +176,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      *
      */
     public AS2Server(boolean startHTTPServer, boolean allowAllClients, boolean startPlugins,
-            boolean importTLS, boolean importSignEnc) throws Exception {
+            boolean importTLS, boolean importSignEnc, boolean skipStartupConfigCheck) throws Exception {
         // Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -185,6 +186,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             throw new Exception("Oops..resource bundle " + e.getClassName() + " not found.");
         }
         this.startTime = Instant.now().toEpochMilli();
+        this.skipStartupConfigCheck = skipStartupConfigCheck;
         this.initializeLogger();
         this.logger.info(rb.getResourceString("server.willstart", AS2ServerVersion.getFullProductName()));
         this.logger.info(Copyright.getCopyrightMessage());
@@ -282,13 +284,13 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      */
     public static final IDBDriverManager getActivatedDBDriverManager() {
         // if (PLUGINS.isActivated(ServerPlugins.PLUGIN_POSTGRESQL)) {
-        //     return (DBDriverManagerPostgreSQL.instance());
+        // return (DBDriverManagerPostgreSQL.instance());
         // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_MYSQL)) {
-        //     return (DBDriverManagerMySQL.instance());
+        // return (DBDriverManagerMySQL.instance());
         // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_ORACLE_DB)) {
-        //     return (DBDriverManagerOracleDB.instance());
+        // return (DBDriverManagerOracleDB.instance());
         // } else {
-        //     return (DBDriverManagerHSQL.instance());
+        // return (DBDriverManagerHSQL.instance());
         // }
         return (DBDriverManagerPostgreSQL.instance());
     }
@@ -386,6 +388,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12);
             this.certificateManagerEncSign.loadKeystoreCertificates(signEncStorage);
             this.certificateManagerTLS = new CertificateManager(this.logger);
+            System.out.println("DEBUG: before KeystoreStorageImplDB, time: " + System.currentTimeMillis());
             KeystoreStorage tlsStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
@@ -446,7 +449,12 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             this.expireController = new CertificateExpireController(this.certificateManagerEncSign,
                     this.certificateManagerTLS);
             this.expireController.startCertExpireControl();
-            this.configCheckController.start();
+            // Start configuration check controller unless skipped
+            if (!skipStartupConfigCheck) {
+                this.configCheckController.start();
+            } else {
+                this.logger.info("Configuration check controller disabled (as2.startup.skip.configcheck=true)");
+            }
             this.lockReleaseController = new ModuleLockReleaseController(
                     this.dbDriverManager, SystemEventManagerImplAS2.instance(),
                     AS2Server.SERVER_LOGGER_NAME);
@@ -460,8 +468,14 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             Runtime.getRuntime().addShutdownHook(new AS2ShutdownThread(this.dbServer));
             // listen for inbound client connects
             this.clientserver.start();
-            // run the configuration one time
-            List<ConfigurationIssue> configurationIssues = this.configCheckController.runOnce();
+            // run the configuration check unless skipped
+            List<ConfigurationIssue> configurationIssues;
+            if (skipStartupConfigCheck) {
+                this.logger.info("Skipping startup configuration check (as2.startup.skip.configcheck=true)");
+                configurationIssues = new ArrayList<>();
+            } else {
+                configurationIssues = this.configCheckController.runOnce();
+            }
             for (ConfigurationIssue issue : configurationIssues) {
                 StringBuilder issueDetails = new StringBuilder();
                 issueDetails.append("(" + issue.getDetails() + ")");
@@ -643,7 +657,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private Server startHTTPServer(KeystoreStorage tlsStorage) throws Exception {
         // start the HTTP server if this is requested
         if (System.getProperty("mendelson.as2.embeddedhttpserver", "TRUE").equalsIgnoreCase("TRUE")) {
-            JettyStarter starter = new JettyStarter(this.logger, tlsStorage, this.dbDriverManager);
+            JettyStarter starter = new JettyStarter(this.logger, tlsStorage, this.dbDriverManager, this.certificateManagerTLS);
             starter.startWebserver();
             this.httpServerConfigInfo = starter.getHttpServerConfigInfo();
         } else {

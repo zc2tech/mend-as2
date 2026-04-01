@@ -59,10 +59,12 @@ public class JettyStarter {
     private final KeystoreStorage tlsStorage;
     private final JettyCertificateRefreshController certificateRefreshController;
     private final PreferencesAS2 preferences;
+    private final CertificateManager certificateManagerTLS;
 
-    public JettyStarter(Logger logger, KeystoreStorage tlsStorage, IDBDriverManager dbDriverManager) {
+    public JettyStarter(Logger logger, KeystoreStorage tlsStorage, IDBDriverManager dbDriverManager, CertificateManager certificateManagerTLS) {
         this.logger = logger;
         this.tlsStorage = tlsStorage;
+        this.certificateManagerTLS = certificateManagerTLS;
         this.certificateRefreshController = new JettyCertificateRefreshController(logger, dbDriverManager);
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -218,10 +220,8 @@ public class JettyStarter {
             }
             this.httpServerConfigInfo = HTTPServerConfigInfo.computeHTTPServerConfigInfo(tempHTTPServer, true,
                     "/as2/HttpReceiver", "/as2/ServerState");
-            CertificateManager certificateManagerTLS = new CertificateManager(this.logger);
-            certificateManagerTLS.loadKeystoreCertificates(this.tlsStorage);
             HTTPServerConfigInfoProcessor infoProcessor = new HTTPServerConfigInfoProcessor(
-                    this.getHttpServerConfigInfo(), certificateManagerTLS);
+                    this.getHttpServerConfigInfo(), this.certificateManagerTLS);
             StringBuilder body = new StringBuilder();
             body.append(infoProcessor.getMiscConfigurationText());
             SystemEventManagerImplAS2.instance().newEvent(SystemEvent.SEVERITY_INFO,

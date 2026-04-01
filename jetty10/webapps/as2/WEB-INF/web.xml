@@ -27,5 +27,7 @@
     <servlet-mapping>
         <servlet-name>HttpReceiver</servlet-name>
         <url-pattern>/HttpReceiver</url-pattern>
-    </servlet-mapping>    
+    </servlet-mapping>
+
+   
 </web-app>
