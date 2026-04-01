@@ -5,7 +5,6 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.MecResourceBundle;
-import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.security.cert.CertificateManager;
@@ -20,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -49,11 +49,13 @@ public class DirPollManager {
     private final Map<String, DirPollThread> mapPollThread
             = Collections.synchronizedMap(new HashMap<String, DirPollThread>());
     /**
-     * Executor service for all poll threads, with n poll threads at the same
-     * time
+     * Executor service for all poll threads, using virtual threads for better scalability
      */
-    private final ScheduledThreadPoolExecutor scheduledExecutor = new ScheduledThreadPoolExecutor(5,
-            new NamedThreadFactory("dir-poll"));
+    private final ScheduledThreadPoolExecutor scheduledExecutor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            Thread.ofVirtual().name("dir-poll-", 0).factory()
+        );
     /**
      * Localize the GUI
      */

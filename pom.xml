@@ -13,17 +13,17 @@
     <properties>
         <!-- <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target> -->
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <jetty.version>10.0.24</jetty.version>
+        <jetty.version>12.0.15</jetty.version>
         <lucene.version>9.11.1</lucene.version>
         <bouncycastle.version>1.80</bouncycastle.version>
         <mina.version>2.2.4</mina.version>
         <flatlaf.version>3.5.1</flatlaf.version>
         <hikaricp.version>6.2.1</hikaricp.version>
         <jackson.version>2.17.0</jackson.version>
-        <jersey.version>2.41</jersey.version>
+        <jersey.version>3.1.9</jersey.version>
         <jjwt.version>0.11.5</jjwt.version>
 
         <assembly-directory>target/assembly</assembly-directory>
@@ -40,6 +40,7 @@
             <id>jboss-3p</id>
             <url>https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/</url>
         </repository>
+
         <repository>
             <id>local-ohj-repo</id>
             <url>file://${project.basedir}/maven-repo</url>
@@ -105,11 +106,16 @@
         </pluginManagement>
 
         <plugins>
-            <!--<plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-            </plugin>-->
+                <version>3.12.1</version>
+                <configuration>
+                    <release>21</release>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -167,9 +173,7 @@
                             <includes>
                                 <include>**/*.jar</include>
                             </includes>
-                            <!-- <excludes>
-                                <include>**/javax.servlet-api-3.1.0.jar</include>
-                            </excludes>-->
+
                         </resource>
                         <resource>
                             <directory>${project.basedir}\web</directory>
@@ -332,27 +336,32 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-deploy</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-annotations</artifactId>
+            <artifactId>jetty-xml</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>apache-jsp</artifactId>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-webapp</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>apache-jstl</artifactId>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-annotations</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-apache-jsp</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-glassfish-jstl</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
@@ -397,20 +406,26 @@
         </dependency>
 
 
-        <!-- S/MIME (org.bouncycastle.mail.smime.*) -->
+        <!-- S/MIME (org.bouncycastle.mail.smime.*) Very Import for jakarta.mail support!!!!-->
+
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk18on</artifactId>
-            <version>1.80</version>
+            <artifactId>bcjmail-jdk15on</artifactId>
+            <version>1.70</version>
         </dependency>
 
-        <!-- JavaMail (javax.mail.*) -->
+
+        <!-- Jakarta Mail (jakarta.mail.*) - Required for Java 21 -->
         <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.6.2</version>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-mail</artifactId>
+            <version>2.0.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-core</artifactId>
+            <version>2.0.3</version>
+        </dependency>
 
         <!-- UnboundID LDAP SDK (fixes com.unboundid.ldap.sdk import) -->
         <dependency>
@@ -425,16 +440,6 @@
             <version>2.16.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.6.2</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>javax.activation-api</artifactId>
-            <version>1.2.0</version>
-        </dependency>
         <dependency>
             <groupId>jaxen</groupId>
             <artifactId>jaxen</artifactId>
@@ -509,15 +514,14 @@
             <version>2.12.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>fluent-hc</artifactId>
-            <version>4.5.14</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5-fluent</artifactId>
+            <version>5.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
@@ -527,7 +531,7 @@
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
+            <version>1.10.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-collections</groupId>
@@ -540,18 +544,6 @@
             <artifactId>l2fprod-common-buttonbar</artifactId>
             <version>6.9.1</version>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>com.sun.media</groupId>
-            <artifactId>jai-codec</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.media</groupId>
-            <artifactId>jai-core</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-    -->
 
         <dependency>
             <groupId>dnsjava</groupId>

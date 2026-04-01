@@ -8,8 +8,8 @@ import de.mendelson.comm.as2.log.LogEntry;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 

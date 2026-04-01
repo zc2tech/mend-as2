@@ -163,7 +163,7 @@ mvn clean package -Dskip.npm
 ### Backend
 - **Framework**: JAX-RS (Jersey 2.41) with Jackson JSON serialization
 - **Authentication**: JWT with HttpOnly cookies
-- **Server**: Embedded Jetty 10.0.24
+- **Server**: Embedded Jetty 12
 
 ### Frontend
 - **Framework**: React 18.3 with Vite 5.1
@@ -196,7 +196,7 @@ Both use the same backend business logic (`AS2ServerProcessing`), ensuring consi
 - Check browser console for errors
 
 ### API Returns 404
-- Verify Jersey servlet is registered in `jetty10/webapps/as2/WEB-INF/web.xml`
+- Verify Jersey servlet is registered in `jetty12/webapps/as2/WEB-INF/web.xml`
 - Check JAX-RS application is loading: look for "REST API started" in logs
 
 ### Frontend Build Fails During Maven

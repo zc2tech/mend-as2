@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://eclipse.dev/jetty/javadoc/jetty-12/org/eclipse/jetty/xml/XmlConfiguration.html">
 
 <!-- =============================================================== -->
 <!-- Documentation of this file format can be found at:              -->
@@ -118,24 +118,10 @@
 
     <!-- =========================================================== -->
     <!-- Set the default handler structure for the Server            -->
-    <!-- A handler list is used to pass received requests to         -->
-    <!-- both the ContextHandlerCollection, which selects the next   -->
-    <!-- handler by context path and virtual host, and then only if  -->
-    <!-- the request is not handled is the DefaultHandler invoked    -->
+    <!-- Jetty 12 uses Handler.Collection for chaining handlers      -->
     <!-- =========================================================== -->
     <Set name="handler">
-        <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
-            <Set name="handlers">
-                <Array type="org.eclipse.jetty.server.Handler">
-                    <Item>
-                        <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-                    </Item>
-                    <Item>
-                        <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                    </Item>
-                </Array>
-            </Set>
-        </New>
+        <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
     </Set>
 
     <!-- =========================================================== -->
@@ -199,7 +185,7 @@
             <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
                 <Set name="Provider" property="jetty.sslContext.provider" />
                 <Set name="KeyStorePath">
-                    <Property name="jetty.sslContext.keyStorePath" default="jetty10/etc/keystore"/>
+                    <Property name="jetty.sslContext.keyStorePath" default="jetty12/etc/keystore"/>
                 </Set>
                 <Set name="KeyStorePassword">
                     <Property name="jetty.sslContext.keyStorePassword" default="test"/>
@@ -212,7 +198,7 @@
                     <Property name="jetty.sslContext.keyManagerPassword" default="test"/>
                 </Set>
                 <Set name="TrustStorePath">
-                    <Property name="jetty.sslContext.trustStorePath" default="jetty10/etc/keystore"/>
+                    <Property name="jetty.sslContext.trustStorePath" default="jetty12/etc/keystore"/>
                 </Set>
                 <Set name="TrustStorePassword">
                     <Property name="jetty.sslContext.trustStorePassword" default="test"/>
@@ -356,42 +342,6 @@
                 <Get name="SelectorManager">
                     <Set name="connectTimeout" property="jetty.ssl.connectTimeout"/>
                 </Get>
-            </New>
-        </Arg>
-    </Call>
-
-    <!-- =========================================================== -->
-    <!-- Deployment settings of .war files                           -->
-    <!-- =========================================================== -->
-    <Call name="addBean">
-        <Arg>
-            <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
-                <Set name="contexts">
-                    <Ref refid="Contexts" />
-                </Set>
-                <Call id="webappprovider" name="addAppProvider">
-                    <Arg>
-                        <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-                            <Set name="monitoredDirName">
-                                <Property name="jetty.deploy.monitoredDir" default="jetty10/webapps" />
-                            </Set>
-                            <!-- !!! https://docs.huihoo.com/jetty/the-definitive-reference/jetty-classloading.html
-                            Need to set ParentLoaderPriority to true for AS2Server.CLIENTSERVER_COMM_PORT,
-                            This way, this variable can be effectively modified outside of Web Application
-                            -->
-                            <Set name="ParentLoaderPriority">
-                                <Property name="ParentLoaderPriority" default="true" />
-                            </Set>
-
-                            <Set name="scanInterval">
-                                <Property name="jetty.deploy.scanInterval" default="15"/>
-                            </Set>
-                            <Set name="extractWars">
-                                <Property name="jetty.deploy.extractWars" default="true"/>
-                            </Set>
-                        </New>
-                    </Arg>
-                </Call>
             </New>
         </Arg>
     </Call>

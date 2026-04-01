@@ -4,8 +4,8 @@ import de.mendelson.util.clientserver.user.User;
 import de.mendelson.util.clientserver.user.UserAccess;
 import de.mendelson.util.security.PBKDF2;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 import java.util.logging.Logger;
 
 /**

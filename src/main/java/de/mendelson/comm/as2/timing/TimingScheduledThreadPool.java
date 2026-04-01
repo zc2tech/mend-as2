@@ -1,7 +1,6 @@
 //$Header: /as2/de/mendelson/comm/as2/timing/TimingScheduledThreadPool.java 4     11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.timing;
 
-import de.mendelson.util.NamedThreadFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class TimingScheduledThreadPool {
 
     private final static ScheduledExecutorService SCHEDULED_EXECUTOR = Executors.newScheduledThreadPool(2,
-            new NamedThreadFactory("serverside-not-timecritical"));
+            Thread.ofVirtual().name("serverside-not-timecritical-", 0).factory());
 
     private TimingScheduledThreadPool(){        
     }

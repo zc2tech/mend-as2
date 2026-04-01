@@ -8,7 +8,7 @@ import java.beans.PropertyChangeListener;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.URL;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.swing.JPanel;
 
 /*
@@ -20,12 +20,11 @@ import javax.swing.JPanel;
  */
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.HttpProtocolParams;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.Header;
 
 /**
  * Panel that allows to display simple HTML pages
@@ -94,18 +93,16 @@ public class HTMLPanel extends JPanel implements HyperlinkListener, PropertyChan
     public Header[] setURL(String urlStr, String userAgent, String fallbackOnErrorURL) {
         this.fallbackOnErrorURL = fallbackOnErrorURL;
         Header[] header = new Header[0];
-        DefaultHttpClient httpClient = null;
-        try {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             //post for header data
             HttpPost filePost = new HttpPost(new URL(urlStr).toExternalForm());
-            HttpParams params = filePost.getParams();
-            HttpProtocolParams.setUserAgent(params, userAgent);
-            httpClient = new DefaultHttpClient();
-            HttpResponse httpResponse = httpClient.execute(filePost);
-            header = httpResponse.getAllHeaders();
-            int status = httpResponse.getStatusLine().getStatusCode();
-            if (status != HttpServletResponse.SC_OK) {
-                throw new Exception("HTTP " + status);
+            filePost.addHeader("User-Agent", userAgent);
+            try (CloseableHttpResponse httpResponse = httpClient.execute(filePost)) {
+                header = httpResponse.getHeaders();
+                int status = httpResponse.getCode();
+                if (status != HttpServletResponse.SC_OK) {
+                    throw new Exception("HTTP " + status);
+                }
             }
             //now get for body data
             this.jEditorPane.setPage(new URL(urlStr));
@@ -114,10 +111,6 @@ public class HTMLPanel extends JPanel implements HyperlinkListener, PropertyChan
                 this.setPage(fallbackOnErrorURL);
             } catch (Exception ex) {
                 //nop
-            }
-        } finally {
-            if (httpClient != null) {
-                httpClient.getConnectionManager().shutdown();
             }
         }
         return (header);

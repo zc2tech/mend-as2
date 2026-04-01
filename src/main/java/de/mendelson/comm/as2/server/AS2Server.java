@@ -239,7 +239,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
                     BouncyCastleProviderSingleton.instance().getName());
         }
-        Path keystoreFileTLS = Paths.get("jetty10/etc/keystore");
+        Path keystoreFileTLS = Paths.get("jetty12/etc/keystore");
         if (importTLS) {
             byte[] keystoreData = Files.readAllBytes(keystoreFileTLS);
             keydataAccessDB.updateKeydata(keystoreData,

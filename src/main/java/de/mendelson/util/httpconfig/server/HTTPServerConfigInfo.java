@@ -22,7 +22,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -39,7 +39,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class HTTPServerConfigInfo {
 
-    public static final String FILENAME_HTTP_SERVER_CONFIG_USER = "jetty10/jetty.config";
+    public static final String FILENAME_HTTP_SERVER_CONFIG_USER = "jetty12/jetty.config";
 
     private final List<Listener> listenerList = new ArrayList<Listener>();
     private final List<String> excludedProtocols = new ArrayList<String>();
@@ -59,7 +59,7 @@ public class HTTPServerConfigInfo {
     private String tlsSecurityProviderName = "Unknown";
 
     private HTTPServerConfigInfo() {
-        this.httpServerConfigFile = Paths.get("jetty10/etc/jetty.xml");
+        this.httpServerConfigFile = Paths.get("jetty12/etc/jetty.xml");
         this.httpServerUserConfigFile = Paths.get(FILENAME_HTTP_SERVER_CONFIG_USER);
         this.javaVersion = System.getProperty("java.version");
     }
@@ -192,7 +192,7 @@ public class HTTPServerConfigInfo {
         if (jettyHTTPServerInstance != null) {
             try {
                 //find out the deployed wars
-                Handler[] childHandler = jettyHTTPServerInstance.getChildHandlersByClass(WebAppContext.class);
+                Handler[] childHandler = jettyHTTPServerInstance.getDescendants(WebAppContext.class).toArray(new Handler[0]);
                 for (Handler singleHandler : childHandler) {
                     if (singleHandler instanceof WebAppContext) {
                         WebAppContext context = (WebAppContext) singleHandler;

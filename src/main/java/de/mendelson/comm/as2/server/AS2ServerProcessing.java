@@ -256,7 +256,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.mina.core.session.IoSession;
 import org.bouncycastle.asn1.crmf.CertReqMessages;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -413,152 +413,152 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         }
         //process client requests
         try {
-            if (message instanceof PreferencesRequest) {
-                this.processPreferencesRequest(session, (PreferencesRequest) message);
+            if (message instanceof PreferencesRequest msg) {
+                this.processPreferencesRequest(session, msg);
                 return (true);
-            } else if (message instanceof DeleteMessageRequest) {
-                this.processDeleteMessageRequest(session, (DeleteMessageRequest) message);
+            } else if (message instanceof DeleteMessageRequest msg) {
+                this.processDeleteMessageRequest(session, msg);
                 return (true);
-            } else if (message instanceof ManualSendRequest) {
-                this.processManualSendRequest(session, (ManualSendRequest) message);
+            } else if (message instanceof ManualSendRequest msg) {
+                this.processManualSendRequest(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestKeystore) {
-                this.processUploadRequestKeystore(session, (UploadRequestKeystore) message);
+            } else if (message instanceof UploadRequestKeystore msg) {
+                this.processUploadRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof DownloadRequestKeystore) {
-                this.processDownloadRequestKeystore(session, (DownloadRequestKeystore) message);
+            } else if (message instanceof DownloadRequestKeystore msg) {
+                this.processDownloadRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof FileRenameRequest) {
-                this.processFileRenameRequest(session, (FileRenameRequest) message);
+            } else if (message instanceof FileRenameRequest msg) {
+                this.processFileRenameRequest(session, msg);
                 return (true);
-            } else if (message instanceof FileDeleteRequest) {
-                this.processFileDeleteRequest(session, (FileDeleteRequest) message);
+            } else if (message instanceof FileDeleteRequest msg) {
+                this.processFileDeleteRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticExportRequest) {
-                this.processStatisticExportRequest(session, (StatisticExportRequest) message);
+            } else if (message instanceof StatisticExportRequest msg) {
+                this.processStatisticExportRequest(session, msg);
                 return (true);
-            } else if (message instanceof DownloadRequestFile) {
-                this.processDownloadRequestFile(session, (DownloadRequestFile) message);
+            } else if (message instanceof DownloadRequestFile msg) {
+                this.processDownloadRequestFile(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestChunk) {
-                this.processUploadRequestChunk(session, (UploadRequestChunk) message);
+            } else if (message instanceof UploadRequestChunk msg) {
+                this.processUploadRequestChunk(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestFile) {
-                this.processUploadRequestFile(session, (UploadRequestFile) message);
+            } else if (message instanceof UploadRequestFile msg) {
+                this.processUploadRequestFile(session, msg);
                 return (true);
-            } else if (message instanceof FileSystemViewRequest) {
-                session.write(this.filesystemview.performRequest((FileSystemViewRequest) message));
+            } else if (message instanceof FileSystemViewRequest msg) {
+                session.write(this.filesystemview.performRequest(msg));
                 return (true);
-            } else if (message instanceof PartnerListRequest) {
-                this.processPartnerListRequest(session, (PartnerListRequest) message);
+            } else if (message instanceof PartnerListRequest msg) {
+                this.processPartnerListRequest(session, msg);
                 return (true);
-            } else if (message instanceof PartnerModificationRequest) {
-                this.processPartnerModificationMessage(session, (PartnerModificationRequest) message);
+            } else if (message instanceof PartnerModificationRequest msg) {
+                this.processPartnerModificationMessage(session, msg);
                 return (true);
-            } else if (message instanceof MessageOverviewRequest) {
-                this.processMessageOverviewRequest(session, (MessageOverviewRequest) message);
+            } else if (message instanceof MessageOverviewRequest msg) {
+                this.processMessageOverviewRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageDetailRequest) {
-                this.processMessageDetailRequest(session, (MessageDetailRequest) message);
+            } else if (message instanceof MessageDetailRequest msg) {
+                this.processMessageDetailRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageLogRequest) {
-                this.processMessageLogRequest(session, (MessageLogRequest) message);
+            } else if (message instanceof MessageLogRequest msg) {
+                this.processMessageLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessagePayloadRequest) {
-                this.processMessagePayloadRequest(session, (MessagePayloadRequest) message);
+            } else if (message instanceof MessagePayloadRequest msg) {
+                this.processMessagePayloadRequest(session, msg);
                 return (true);
-            } else if (message instanceof NotificationGetRequest) {
-                this.processNotificationGetRequest(session, (NotificationGetRequest) message);
+            } else if (message instanceof NotificationGetRequest msg) {
+                this.processNotificationGetRequest(session, msg);
                 return (true);
-            } else if (message instanceof NotificationSetMessage) {
-                this.processNotificationSetRequest(session, (NotificationSetMessage) message);
+            } else if (message instanceof NotificationSetMessage msg) {
+                this.processNotificationSetRequest(session, msg);
                 return (true);
-            } else if (message instanceof PerformNotificationTestRequest) {
-                this.performNotificationTest(session, (PerformNotificationTestRequest) message);
+            } else if (message instanceof PerformNotificationTestRequest msg) {
+                this.performNotificationTest(session, msg);
                 return (true);
-            } else if (message instanceof PartnerSystemRequest) {
-                this.performPartnerSystemRequest(session, (PartnerSystemRequest) message);
+            } else if (message instanceof PartnerSystemRequest msg) {
+                this.performPartnerSystemRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInteroperabilityRequest) {
-                this.performServerInteroperabilityRequest(session, (ServerInteroperabilityRequest) message);
+            } else if (message instanceof ServerInteroperabilityRequest msg) {
+                this.performServerInteroperabilityRequest(session, msg);
                 return (true);
-            } else if (message instanceof QuotaResetRequest) {
-                this.performQuotaResetRequest(session, (QuotaResetRequest) message);
+            } else if (message instanceof QuotaResetRequest msg) {
+                this.performQuotaResetRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticOverviewRequest) {
-                this.performStatisticOverviewRequest(session, (StatisticOverviewRequest) message);
+            } else if (message instanceof StatisticOverviewRequest msg) {
+                this.performStatisticOverviewRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticDetailRequest) {
-                this.performStatisticDetailRequest(session, (StatisticDetailRequest) message);
+            } else if (message instanceof StatisticDetailRequest msg) {
+                this.performStatisticDetailRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMListRequest) {
-                this.processCEMListRequest(session, (CEMListRequest) message);
+            } else if (message instanceof CEMListRequest msg) {
+                this.processCEMListRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMDeleteRequest) {
-                this.processCEMDeleteRequest(session, (CEMDeleteRequest) message);
+            } else if (message instanceof CEMDeleteRequest msg) {
+                this.processCEMDeleteRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMCancelRequest) {
-                this.processCEMCancelRequest(session, (CEMCancelRequest) message);
+            } else if (message instanceof CEMCancelRequest msg) {
+                this.processCEMCancelRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageRequestLastMessage) {
-                this.processMessageRequestLastMessage(session, (MessageRequestLastMessage) message);
+            } else if (message instanceof MessageRequestLastMessage msg) {
+                this.processMessageRequestLastMessage(session, msg);
                 return (true);
-            } else if (message instanceof CEMSendRequest) {
-                this.processCEMSendRequest(session, (CEMSendRequest) message);
+            } else if (message instanceof CEMSendRequest msg) {
+                this.processCEMSendRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerShutdown) {
-                this.performServerShutdown(session, (ServerShutdown) message);
+            } else if (message instanceof ServerShutdown msg) {
+                this.performServerShutdown(session, msg);
                 return (true);
-            } else if (message instanceof ModuleLockRequest) {
-                this.processModuleLockRequest(session, (ModuleLockRequest) message);
+            } else if (message instanceof ModuleLockRequest msg) {
+                this.processModuleLockRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInfoRequest) {
-                this.processServerInfoRequest(session, (ServerInfoRequest) message);
+            } else if (message instanceof ServerInfoRequest msg) {
+                this.processServerInfoRequest(session, msg);
                 return (true);
-            } else if (message instanceof IncomingMessageRequest) {
-                this.processIncomingMessageRequest(session, (IncomingMessageRequest) message);
+            } else if (message instanceof IncomingMessageRequest msg) {
+                this.processIncomingMessageRequest(session, msg);
                 return (true);
-            } else if (message instanceof ConnectionTestRequest) {
-                this.processConnectionTestRequest(session, (ConnectionTestRequest) message);
+            } else if (message instanceof ConnectionTestRequest msg) {
+                this.processConnectionTestRequest(session, msg);
                 return (true);
-            } else if (message instanceof DisplayHTTPServerConfigurationRequest) {
-                this.processDisplayServerConfigurationRequest(session, (DisplayHTTPServerConfigurationRequest) message);
+            } else if (message instanceof DisplayHTTPServerConfigurationRequest msg) {
+                this.processDisplayServerConfigurationRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerlogfileSearchRequest) {
-                this.processServerlogfileSearchRequest(session, (ServerlogfileSearchRequest) message);
+            } else if (message instanceof ServerlogfileSearchRequest msg) {
+                this.processServerlogfileSearchRequest(session, msg);
                 return (true);
-            } else if (message instanceof HSQLDBPartnerRequest) {
-                this.processHSQLDBPartnerRequest(session, (HSQLDBPartnerRequest) message);
+            } else if (message instanceof HSQLDBPartnerRequest msg) {
+                this.processHSQLDBPartnerRequest(session, msg);
                 return (true);
-            } else if (message instanceof CommandRequest) {
-                this.processCommandRequest(session, (CommandRequest) message);
+            } else if (message instanceof CommandRequest msg) {
+                this.processCommandRequest(session, msg);
                 return (true);
-            } else if (message instanceof ConfigurationCheckRequest) {
-                this.processConfigurationCheckRequest(session, (ConfigurationCheckRequest) message);
+            } else if (message instanceof ConfigurationCheckRequest msg) {
+                this.processConfigurationCheckRequest(session, msg);
                 return (true);
-            } else if (message instanceof SystemEventSearchRequest) {
-                this.processSystemEventSearchRequest(session, (SystemEventSearchRequest) message);
+            } else if (message instanceof SystemEventSearchRequest msg) {
+                this.processSystemEventSearchRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInstanceHAListRequest) {
-                this.processServerInstanceHAListRequest(session, (ServerInstanceHAListRequest) message);
+            } else if (message instanceof ServerInstanceHAListRequest msg) {
+                this.processServerInstanceHAListRequest(session, msg);
                 return (true);
-            } else if (message instanceof ExternalLogRequest) {
-                this.processExternalLogRequest(session, (ExternalLogRequest) message);
+            } else if (message instanceof ExternalLogRequest msg) {
+                this.processExternalLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof ClientToServerLogRequest) {
-                this.processClientToServerLogRequest(session, (ClientToServerLogRequest) message);
+            } else if (message instanceof ClientToServerLogRequest msg) {
+                this.processClientToServerLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof MailAutoConfigDetectRequest) {
-                this.processMailAutoConfigDetectRequest(session, (MailAutoConfigDetectRequest) message);
+            } else if (message instanceof MailAutoConfigDetectRequest msg) {
+                this.processMailAutoConfigDetectRequest(session, msg);
                 return (true);
-            } else if (message instanceof ExportRequestPrivateKey) {
-                this.processExportRequestPrivateKey(session, (ExportRequestPrivateKey) message);
+            } else if (message instanceof ExportRequestPrivateKey msg) {
+                this.processExportRequestPrivateKey(session, msg);
                 return (true);
-            } else if (message instanceof ExportRequestKeystore) {
-                this.processExportRequestKeystore(session, (ExportRequestKeystore) message);
+            } else if (message instanceof ExportRequestKeystore msg) {
+                this.processExportRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof CSRGenerationRequest) {
-                this.processCSRGenerationRequest(session, (CSRGenerationRequest) message);
+            } else if (message instanceof CSRGenerationRequest msg) {
+                this.processCSRGenerationRequest(session, msg);
                 return (true);
             } else if (message instanceof CSRAnswerImportRequest) {
                 this.processCSRAnswerImportRequest(session, (CSRAnswerImportRequest) message);

@@ -23,10 +23,13 @@ import java.util.TimeZone;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import java.util.concurrent.Executors;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -92,7 +95,7 @@ public class JettyStarter {
             //Read the user defined properties file to overwrite the default settings of the
             //jetty.xml file
             Properties userConfiguration = new Properties();
-            Path userConfigurationFile = Paths.get("jetty10", "jetty.config");
+            Path userConfigurationFile = Paths.get("jetty12", "jetty.config");
             this.logger.info(MODULE_NAME + " " + this.rb.getResourceString("userconfiguration.reading",
                     userConfigurationFile.toAbsolutePath().toString()));
             try (InputStream userConfigurationStream = Files.newInputStream(userConfigurationFile)) {
@@ -115,12 +118,42 @@ public class JettyStarter {
                             valueStr
                         }));
             }
-            Path jettyXMLConfigurationPath = Paths.get("jetty10", "etc", "jetty.xml");
-            Resource jettyConfigResource = Resource.newResource(jettyXMLConfigurationPath);
+            Path jettyXMLConfigurationPath = Paths.get("jetty12", "etc", "jetty.xml");
+            Resource jettyConfigResource = ResourceFactory.root().newResource(jettyXMLConfigurationPath);
             XmlConfiguration jettyXMLConfiguration = new XmlConfiguration(jettyConfigResource);
             jettyXMLConfiguration.getProperties().putAll(userConfigurationMap);
-            org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server();
+
+            // Use virtual threads for HTTP request handling
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server(threadPool);
+
             jettyXMLConfiguration.configure(tempHTTPServer);
+
+            // Programmatically deploy webapps from jetty12/webapps directory
+            Path webappsDir = Paths.get("jetty12", "webapps");
+            if (Files.exists(webappsDir) && Files.isDirectory(webappsDir)) {
+                org.eclipse.jetty.server.handler.ContextHandlerCollection contexts =
+                    tempHTTPServer.getDescendant(org.eclipse.jetty.server.handler.ContextHandlerCollection.class);
+                if (contexts != null) {
+                    try (var stream = Files.list(webappsDir)) {
+                        stream.filter(Files::isDirectory).forEach(webappPath -> {
+                            try {
+                                String contextPath = "/" + webappPath.getFileName().toString();
+                                WebAppContext webapp = new WebAppContext();
+                                webapp.setContextPath(contextPath);
+                                webapp.setBaseResourceAsPath(webappPath);
+                                webapp.setParentLoaderPriority(true);
+                                contexts.addHandler(webapp);
+                                this.logger.info(MODULE_NAME + " Deploying webapp: " + contextPath + " from " + webappPath);
+                            } catch (Exception e) {
+                                this.logger.warning(MODULE_NAME + " Failed to deploy webapp from " + webappPath + ": " + e.getMessage());
+                            }
+                        });
+                    }
+                }
+            }
+
             //add life cycle listener to jetty
             tempHTTPServer.addEventListener(new LifeCycle.Listener() {
                 @Override
@@ -188,8 +221,7 @@ public class JettyStarter {
             //finally start the embedded HTTP server
             tempHTTPServer.start();
             //ensure the wars have been deployed
-            for (Handler handler : tempHTTPServer.getChildHandlersByClass(WebAppContext.class
-            )) {
+            for (Handler handler : tempHTTPServer.getDescendants(WebAppContext.class)) {
                 WebAppContext context = (WebAppContext) handler;
                 //see if wars had any exceptions that would cause it to be unavailable
                 if (context.getUnavailableException()

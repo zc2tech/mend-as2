@@ -4,7 +4,7 @@ package de.mendelson.comm.as2.clientserver.message;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import java.io.Serializable;
 import java.util.Properties;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
