@@ -1,6 +1,7 @@
 package de.mendelson.util.clientserver.connectiontest.gui;
 
 import de.mendelson.util.ButtonUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.clientserver.connectiontest.ConnectionTestResult;
 import de.mendelson.util.MecResourceBundle;

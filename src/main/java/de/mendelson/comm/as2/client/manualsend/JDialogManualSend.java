@@ -7,6 +7,7 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
 import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;

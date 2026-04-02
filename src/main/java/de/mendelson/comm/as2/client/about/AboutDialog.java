@@ -5,6 +5,7 @@ import de.mendelson.Copyright;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.font.FontUtil;

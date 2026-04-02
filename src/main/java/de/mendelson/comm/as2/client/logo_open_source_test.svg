@@ -36,6 +36,12 @@
   <defs
      id="defs3617">
     <rect
+       x="146.15864"
+       y="39.276112"
+       width="242.73925"
+       height="100.44383"
+       id="rect4" />
+    <rect
        x="88.854154"
        y="172.55734"
        width="370.86951"
@@ -57,7 +63,7 @@
      cy="268.816"
      r="268.816"
      id="circle3623"
-     style="fill:#b1e7ce;fill-opacity:1" />
+     style="fill:#a93455;fill-opacity:1" />
   <metadata
      id="metadata3714">
     <rdf:RDF>
@@ -99,4 +105,12 @@
        x="179.94958"
        y="343.93869"
        style="stroke-width:6.29233">as2</tspan></text>
+  <text
+     xml:space="preserve"
+     id="text4"
+     style="font-size:53.3333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect4);fill:#34a935;fill-opacity:1;stroke:#f15050;stroke-width:3;stroke-linecap:square;stroke-linejoin:round;paint-order:stroke fill markers"
+     transform="matrix(1.8825915,0,0,2.1425215,-127.48546,-53.847015)"><tspan
+       x="146.1582"
+       y="87.932979"
+       id="tspan1">TEST</tspan></text>
 </svg>

@@ -5,6 +5,7 @@ import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
 import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import java.util.ArrayList;
 import java.util.List;

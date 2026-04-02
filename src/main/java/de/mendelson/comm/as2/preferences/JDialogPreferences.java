@@ -2,6 +2,7 @@
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.DisplayMode;
 import de.mendelson.util.ImageButtonBar;
 import de.mendelson.util.ImageButtonBarUI;

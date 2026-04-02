@@ -8,6 +8,7 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
 import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.clientserver.BaseClient;

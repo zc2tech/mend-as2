@@ -54,6 +54,7 @@ import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.MendelsonMultiResolutionImage.SVGScalingOption;
 import de.mendelson.util.Splash;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.clientserver.ClientsideMessageProcessor;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.SyncRequestTimeoutException;
@@ -233,10 +234,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/preferences/preferences.svg",
                     IMAGE_SIZE_MENU_ITEM);
     public static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO_WITH_TEXT
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/logo_open_source_with_text.svg",
+            = MendelsonMultiResolutionImage.fromSVG(getLogoPath("logo_open_source_with_text.svg"),
                     100);
     private static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/logo_open_source.svg",
+            = MendelsonMultiResolutionImage.fromSVG(getLogoPath("logo_open_source.svg"),
                     16, 128);
     private static final MendelsonMultiResolutionImage IMAGE_PENDING
             = MendelsonMultiResolutionImage.fromSVG(
@@ -269,7 +270,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private static final MendelsonMultiResolutionImage IMAGE_SHOP
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/shop.svg",
                     IMAGE_SIZE_MENU_ITEM);
-    
+
+    /**
+     * Helper method to determine logo path based on test mode
+     * Test mode is detected by checking if the system property is set
+     */
+    private static String getLogoPath(String defaultLogoName) {
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+        if (isTestMode) {
+            // Replace .svg with _test.svg
+            return "/de/mendelson/comm/as2/client/" + defaultLogoName.replace(".svg", "_test.svg");
+        } else {
+            return "/de/mendelson/comm/as2/client/" + defaultLogoName;
+        }
+    }
+
     /**
      * Preferences of the application
      */
@@ -393,6 +408,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (host != null && !host.equals("localhost")) {
             title = "[" + host + "] " + title;
         }
+        // For main window, just add [TEST MODE] suffix if in test mode, don't duplicate product name
+        if (WindowTitleUtil.isTestMode()) {
+            title = title + WindowTitleUtil.getTestModeSuffix();
+        }
         this.setTitle(title);
         //initialize the help system if available
         // this.initializeJavaHelp(displayMode);
@@ -426,7 +445,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         super.addMessageProcessor(this);
         //perform the connection to the server
         //warning! this works for localhost only so far
-        int clientServerCommPort = AS2Server.CLIENTSERVER_COMM_PORT;
+        // Use test mode port if system property is set
+        int clientServerCommPort = WindowTitleUtil.isTestMode() ?
+            AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
         this.configureHideableColumns();
         this.jToolBar.setLayout(new LayoutManagerJToolbar());
         this.setupDateChooser();

@@ -4,6 +4,7 @@ package de.mendelson.comm.as2.partner.gui.global;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.JTextFieldLimitDocument;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.uinotification.UINotification;

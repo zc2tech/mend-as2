@@ -16,6 +16,7 @@ import de.mendelson.comm.as2.message.clientserver.MessageResponseLastMessage;
 import de.mendelson.comm.as2.message.loggui.DialogMessageDetails;
 import de.mendelson.comm.as2.partner.gui.TableCellRendererPartner;
 import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;

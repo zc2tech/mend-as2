@@ -63,7 +63,7 @@ Environment variables take precedence over properties file settings.
    # Option B: Using environment variable
    AS2_TEST_MODE=true java -jar as2.jar
    ```
-   - Listens on ports: 18080 (HTTP), 18443 (HTTPS), 11234 (Client-Server)
+   - Listens on ports: 11080 (HTTP), 11443 (HTTPS), 41234 (Client-Server)
 
 ### Connecting the GUI Client to Test Instance
 
@@ -73,8 +73,8 @@ When connecting to a test mode server, specify the test port:
 # Connect to production (port 1234)
 java -cp as2.jar de.mendelson.comm.as2.client.AS2Gui localhost 1234
 
-# Connect to test instance (port 11234)
-java -cp as2.jar de.mendelson.comm.as2.client.AS2Gui localhost 11234
+# Connect to test instance (port 41234)
+java -cp as2.jar de.mendelson.comm.as2.client.AS2Gui localhost 41234
 ```
 
 ## Important Notes
@@ -138,6 +138,60 @@ When test mode is enabled, you'll see this message in the server logs:
 *** TEST MODE ENABLED - Using alternative port 41234 for client-server communication ***
 *** TEST MODE: Using HTTP port 11080 and HTTPS port 11443 ***
 ```
+
+Additionally, the test mode is visually indicated in the GUI:
+
+### 1. **Test Mode Logos**
+The GUI client will display test mode logos to visually distinguish from production:
+- `logo_open_source_test.svg` instead of `logo_open_source.svg`
+- `logo_open_source_with_text_test.svg` instead of `logo_open_source_with_text.svg`
+
+The test logos appear in:
+- Window icon
+- About dialog
+- Menu items
+- Taskbar/dock icon (on supported platforms)
+
+### 2. **Window Titles with "TEST MODE" Indicator**
+All windows and dialogs display **[TEST MODE]** in their title bars:
+
+**Main Window (Normal Mode):**
+```
+mendelson opensource AS2 1.1
+```
+
+**Main Window (Test Mode):**
+```
+mendelson opensource AS2 1.1 [TEST MODE]
+```
+
+**Dialog Windows (Normal Mode):**
+```
+Partner Configuration - mend-as2
+Certificates (Sign/Crypt) - mend-as2
+Certificates (TLS) - mend-as2
+Preferences - mend-as2
+```
+
+**Dialog Windows (Test Mode):**
+```
+Partner Configuration - mend-as2 [TEST MODE]
+Certificates (Sign/Crypt) - mend-as2 [TEST MODE]
+Certificates (TLS) - mend-as2 [TEST MODE]
+Preferences - mend-as2 [TEST MODE]
+```
+
+This applies to:
+- Main application window (only adds [TEST MODE] suffix, doesn't duplicate product name)
+- All dialog windows (adds " - mend-as2 [TEST MODE]")
+- Certificate manager dialogs (Sign/Crypt and TLS)
+- Partner configuration dialog
+- Preferences dialog
+- System events dialog
+- Manual send dialog
+- All utility dialogs
+
+The **[TEST MODE]** suffix provides a clear visual warning that you're working with a test instance.
 
 ## Testing AS2 Message Endpoints
 

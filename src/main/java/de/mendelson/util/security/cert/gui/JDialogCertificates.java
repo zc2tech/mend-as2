@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
@@ -168,7 +169,7 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     public JDialogCertificates(JFrame parent, Logger logger, GUIClient guiClient,
             String title, String productName, boolean moduleLockedByAnotherClient,
             String moduleName, LockClientInformation lockKeeper) {
-        super(parent, title, true);
+        super(parent, WindowTitleUtil.buildTitle(title), true);
         this.guiClient = guiClient;
         this.logger = logger;
         this.productName = productName;

@@ -57,7 +57,11 @@ public class AS2Shutdown {
             }
         }
         try (TextClient client = new TextClient(BaseClient.CLIENT_COMMANDLINE_SHUTDOWN)) {
-            client.connectAndLogin("localhost", AS2Server.CLIENTSERVER_COMM_PORT,
+            // Check if test mode is enabled to use the correct port
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+
+            client.connectAndLogin("localhost", port,
                     AS2ServerVersion.getFullProductName(),
                     user, password.toCharArray(), 15000,
                     "Shutdown-");

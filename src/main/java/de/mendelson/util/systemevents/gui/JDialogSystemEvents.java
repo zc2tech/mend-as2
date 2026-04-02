@@ -2,6 +2,7 @@
 package de.mendelson.util.systemevents.gui;
 
 import com.toedter.calendar.JDateChooser;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.DateChooserUI;
 import de.mendelson.util.IStatusBar;
 import de.mendelson.util.LockingGlassPane;

@@ -3,6 +3,7 @@ package de.mendelson.comm.as2.datasheet.gui;
 
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.util.security.signature.ListCellRendererSignature;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.comm.as2.datasheet.DatasheetBuilder;
 import de.mendelson.comm.as2.datasheet.DatasheetInformation;
 import de.mendelson.comm.as2.message.AS2Message;

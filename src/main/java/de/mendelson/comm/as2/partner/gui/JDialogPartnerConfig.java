@@ -19,6 +19,7 @@ import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.clientserver.AllowModificationCallback;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.clients.fileoperation.FileOperationClient;
@@ -545,7 +546,7 @@ public class JDialogPartnerConfig extends JDialog {
         jPanelConfigurationWarning = new javax.swing.JPanel();
         jLabelConfigurationWarning = new javax.swing.JLabel();
 
-        setTitle(this.rb.getResourceString( "title" ));
+        WindowTitleUtil.setTitle(this, this.rb.getResourceString( "title" ));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 closeDialog(evt);

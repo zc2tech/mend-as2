@@ -191,7 +191,10 @@ public class HttpReceiver extends HttpServlet {
         }
         try(AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)){
             client.setDisplayServerLogMessages(false);
-            client.connect("localhost", AS2Server.CLIENTSERVER_COMM_PORT, 30000);
+            // Use test mode port if enabled
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+            client.connect("localhost", port, 30000);
             IncomingMessageResponse messageResponse = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
             if (messageResponse.getException() != null) {
                 throw (messageResponse.getException());

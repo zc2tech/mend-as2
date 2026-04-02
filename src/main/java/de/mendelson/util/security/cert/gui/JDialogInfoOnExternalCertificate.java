@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.security.KeyStoreUtil;
 import de.mendelson.util.security.cert.CertificateManager;

@@ -5,6 +5,7 @@ import de.mendelson.comm.as2.client.ModuleStarter;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.AS2Tools;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.DisplayMode;
 import de.mendelson.util.MecResourceBundle;

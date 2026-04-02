@@ -2,6 +2,7 @@
 package de.mendelson.util.security.csr;
 
 import de.mendelson.util.MecFileChooser;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.TextOverlay;
