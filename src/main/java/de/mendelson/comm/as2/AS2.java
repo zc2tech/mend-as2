@@ -161,7 +161,7 @@ public class AS2 {
         // Create splash screen only in GUI mode
         Splash splash = null;
         if (startGUI) {
-            splash = new Splash("/de/mendelson/comm/as2/client/splash_mendelson_opensource_as2.svg", 330);
+            splash = new Splash("/de/mendelson/comm/as2/client/splash_mend_as2.svg", 330);
             splash.setTextAntiAliasing(false);
             //dark grey
             Color textColor = FontUtil.getFontColor(FontUtil.PRODUCT_OFTP2_COMMUNITY);
@@ -176,7 +176,7 @@ public class AS2 {
             //initialize the security provider
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
-            new AS2Server(startHTTP, false, false, importTLS, importEncSign, config.shouldSkipConfigCheck());
+            new AS2Server(startHTTP, false, false, importTLS, importEncSign, config.shouldSkipConfigCheck(), config);
         } catch (ServerAlreadyRunningException e) {
             //don't delete the lockfile in this case!
             SystemEventManagerImplAS2.instance().newEvent(

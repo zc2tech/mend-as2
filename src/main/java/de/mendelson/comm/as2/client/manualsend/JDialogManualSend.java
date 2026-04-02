@@ -6,6 +6,7 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;
@@ -93,6 +94,8 @@ public class JDialogManualSend extends JDialog {
         this.jLabelFilename2.setVisible(MULTIPLE_FILES);
 
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
         //fill in data
         try {
             PartnerListResponse response = (PartnerListResponse) baseClient.sendSync(
@@ -134,6 +137,14 @@ public class JDialogManualSend extends JDialog {
 
     private void setMultiresolutionIcons() {
         this.jLabelIcon.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(32)));
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

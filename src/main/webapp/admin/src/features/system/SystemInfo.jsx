@@ -42,7 +42,7 @@ export default function SystemInfo() {
           <div style={valueStyle}>{info?.productName || 'Mendelson AS2 Server'}</div>
 
           <div style={labelStyle}>Version</div>
-          <div style={valueStyle}>{info?.version || '1.1 build 67'}</div>
+          <div style={valueStyle}>{info?.version || '1.0'}</div>
 
           <div style={labelStyle}>Build Date</div>
           <div style={valueStyle}>{info?.buildDate || '-'}</div>

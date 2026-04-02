@@ -1,6 +1,7 @@
 //$Header: /as2/de/mendelson/util/security/cert/gui/keygeneration/JDialogEditSubjectAlternativeNames.java 6     11/02/25 13:40 Heller $
 package de.mendelson.util.security.cert.gui.keygeneration;
 
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.util.ArrayList;
@@ -72,9 +73,14 @@ public class JDialogEditSubjectAlternativeNames extends JDialog implements ListS
         //The following values are in the API but seem not to work during the generation process:
         columnType.setCellEditor(new TableCellEditorSubjectAlternativeNames(allValues));
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
         this.setButtonState();
     }
-    
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
+    }
+
     /**
      * Overwrite the designers icons by multi resolution icons
      */

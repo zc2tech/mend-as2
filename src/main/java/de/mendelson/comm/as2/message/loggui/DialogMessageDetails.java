@@ -18,6 +18,7 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.clientserver.BaseClient;
@@ -190,6 +191,12 @@ public class DialogMessageDetails extends JDialog implements ListSelectionListen
         this.displayProcessLog(handler);
         JTableColumnResizer.adjustColumnWidthByContent(this.jTableMessageDetails);
         this.jTableMessageDetails.getSelectionModel().setSelectionInterval(0, 0);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
     }
 
     /**

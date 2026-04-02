@@ -1,6 +1,7 @@
 //$Header: /as2/de/mendelson/comm/as2/server/AS2Server.java 201   18/02/25 14:39 Heller $
 package de.mendelson.comm.as2.server;
 
+import de.mendelson.comm.as2.AS2Config;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.Copyright;
 import de.mendelson.activation.AWSRESTAccess;
@@ -99,6 +100,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
 
     public static final String SERVER_LOGGER_NAME = "de.mendelson.as2.server";
     public static final int CLIENTSERVER_COMM_PORT = 1234;
+    public static final int CLIENTSERVER_COMM_PORT_TEST = 41234;
     public static final Path LOG_DIR;
 
     static {
@@ -174,10 +176,11 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * @param allowAllClients Allow client-server connections from other than
      *                        localhost
      * @param startPlugins    Starts the plugins if there are any in the system
+     * @param config          AS2 configuration object for test mode and other settings
      *
      */
     public AS2Server(boolean startHTTPServer, boolean allowAllClients, boolean startPlugins,
-            boolean importTLS, boolean importSignEnc, boolean skipStartupConfigCheck) throws Exception {
+            boolean importTLS, boolean importSignEnc, boolean skipStartupConfigCheck, AS2Config config) throws Exception {
         // Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -191,14 +194,23 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.initializeLogger();
         this.logger.info(rb.getResourceString("server.willstart", AS2ServerVersion.getFullProductName()));
         this.logger.info(Copyright.getCopyrightMessage());
+
+        // Log test mode status
+        int clientServerPort = config.getClientServerPort();
+        if (config.isTestMode()) {
+            this.logger.info("*** TEST MODE ENABLED - Using alternative port " + clientServerPort + " for client-server communication ***");
+        }
+
         System.setProperty("mendelson.as2.embeddedhttpserver", startHTTPServer ? "TRUE" : "FALSE");
+        // Store test mode in system property for JettyStarter to access
+        System.setProperty("mendelson.as2.testmode", String.valueOf(config.isTestMode()));
         this.fireSystemEventServerStartupBegins();
         this.allowAllClients = allowAllClients;
         PLUGINS.setStartPlugins(startPlugins);
         this.performStartupChecks();
         this.serverStartupSequence.performWork();
         dbDriverManager = getActivatedDBDriverManager();
-        this.clientserver = new ClientServer(this.logger, CLIENTSERVER_COMM_PORT,
+        this.clientserver = new ClientServer(this.logger, clientServerPort,
                 new ClientServerTLSImplDefault(AS2ServerVersion.getFullProductName()));
         this.clientserver.setProductName(AS2ServerVersion.getFullProductName());
         this.initializeServerInstanceHA();

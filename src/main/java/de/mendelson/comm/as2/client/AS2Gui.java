@@ -48,6 +48,7 @@ import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.DateChooserUI;
 import de.mendelson.util.DisplayMode;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -108,6 +109,7 @@ import java.awt.desktop.PreferencesHandler;
 import java.awt.desktop.QuitEvent;
 import java.awt.desktop.QuitHandler;
 import java.awt.desktop.QuitResponse;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
@@ -354,6 +356,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         initComponents();
         this.setMultiresolutionIcons();
+        this.setupToolbarTooltips();
         this.initializeDesktopIntegration();
         this.setButtonsMultiClickThreshhold();
         this.jButtonNewVersion.setVisible(false);
@@ -430,22 +433,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (splash != null) {
             splash.destroy();
         }
-        this.browserLinkedPanel.cyleText(
-                new String[]{
-                    "For additional EDI software to convert and process your data please contact <a href='http://www.mendelson-e-c.com'>mendelson-e-commerce GmbH</a>",
-                    "To buy a commercial license please visit the <a href='http://shop.mendelson-e-c.com/'>mendelson online shop</a>",
-                    "Most trading partners demand a trusted certificate - Order yours at the <a href='http://ca.mendelson-e-c.com'>mendelson CA</a> now!",
-                    "Looking for additional secure data transmission software? Try the <a href='http://mendelson-e-c.com/oftp2'>mendelson OFTP2</a> solution!",
-                    "You want to send EDIFACT data from your SAP system? Ask <a href='mailto:info@mendelson.de?subject=Please%20inform%20me%20about%20your%20SAP%20integration%20solutions'>mendelson-e-commerce GmbH</a> for a solution.",
-                    "You need a secure FTP solution? <a href='mailto:service@mendelson.de?subject=Please%20inform%20me%20about%20your%20SFTP%20solution'>Ask us</a> for the mendelson SFTP software.",
-                    "Convert flat files, EDIFACT, SAP IDos, VDA, inhouse formats? <a href='mailto:service@mendelson.de?subject=Please%20inform%20me%20about%20your%20converter%20solution'>Ask us</a> for the mendelson EDI converter.",
-                    "For commercial support of this software please buy a license at <a href='http://mendelson-e-c.com/as2'>the mendelson AS2</a> website.",
-                    "Have a look at the <a href='http://www.mendelson-e-c.com/mbi'>mendelson business integration</a> for a powerful EDI solution.",
-                    "The <a href='http://www.mendelson-e-c.com/converter'>mendelson converter IDE</a> is the graphical mapper for the mendelson converter.",
-                    "To process any XML data and convert it to EDIFACT, VDA, flat files, IDocs and inhouse formats use <a href='http://www.mendelson-e-c.com/converter'>the mendelson converter</a>.",
-                    "To transmit your EDI data via HTTP/S please <a href='mailto:info@mendelson.de?subject=Please%20inform%20me%20about%20your%20HTTPS%20solution'>ask us</a> for the mendelson HTTPS solution.",
-                    "If you have questions regarding this product please refer to the <a href='http://mendelson-e-c.com/forum'>mendelson community</a>.",
-                    "Looking for BDEW AS4, e-SENS AS4, ENTSOG AS4, Peppol AS4 or ebXML AS4 software? Try the <a href='http://mendelson-e-c.com/as4'>mendelson AS4</a> solution!",});
         this.initializeUINotification();
         this.connect(new InetSocketAddress(host, clientServerCommPort), 5000);
         Runnable updateCheckThread = new Runnable() {
@@ -629,7 +616,89 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jMenuItemSystemEvents.setIcon(new ImageIcon(IMAGE_SYSINFO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemCEMManager.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemCEMSend.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jButtonShop.setIcon(new ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        // this.jButtonShop.setIcon(new ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+    }
+
+    /**
+     * Setup tooltips for toolbar buttons showing keyboard shortcuts
+     */
+    private void setupToolbarTooltips() {
+        // Add tooltips to toolbar buttons with their current text
+        String partnerText = this.jButtonPartner.getText();
+        String signCryptText = this.jButtonCertificatesSignEncrypt.getText();
+        String tlsText = this.jButtonCertificatesTLS.getText();
+
+        // Add keyboard shortcuts to main toolbar buttons
+        // Partner button - Cmd/Ctrl+1
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonPartner,
+            java.awt.event.KeyEvent.VK_1,
+            "OPEN_PARTNER"
+        );
+        this.jButtonPartner.setToolTipText(partnerText + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_1) + "]");
+
+        // Sign/Crypt button - Cmd/Ctrl+2
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonCertificatesSignEncrypt,
+            java.awt.event.KeyEvent.VK_2,
+            "OPEN_SIGNCRYPT"
+        );
+        this.jButtonCertificatesSignEncrypt.setToolTipText(signCryptText + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_2) + "]");
+
+        // TLS button - Cmd/Ctrl+3
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonCertificatesTLS,
+            java.awt.event.KeyEvent.VK_3,
+            "OPEN_TLS"
+        );
+        this.jButtonCertificatesTLS.setToolTipText(tlsText + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_3) + "]");
+
+        // Message Details button - Cmd/Ctrl+D
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonMessageDetails,
+            java.awt.event.KeyEvent.VK_D,
+            "SHOW_MESSAGE_DETAILS"
+        );
+        this.jButtonMessageDetails.setToolTipText(
+            this.rb.getResourceString("details") + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_D) + "]");
+
+        // Delete Message button - DELETE key
+        this.jButtonDeleteMessage.setToolTipText(
+            this.rb.getResourceString("delete.msg") + " [DELETE]");
+
+        // Filter button - Cmd/Ctrl+F (FIXED: use correct key "filter")
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonFilter,
+            java.awt.event.KeyEvent.VK_F,
+            "TOGGLE_FILTER"
+        );
+        this.jButtonFilter.setToolTipText(
+            this.rb.getResourceString("filter") + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_F) + "]");
+
+        // Toggle Refresh button - Cmd/Ctrl+R (NEW)
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jToggleButtonStopRefresh,
+            java.awt.event.KeyEvent.VK_R,
+            "TOGGLE_REFRESH"
+        );
+        this.jToggleButtonStopRefresh.setToolTipText(
+            this.rb.getResourceString("stoprefresh.msg") + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_R) + "]");
+
+        // Configure Columns button - Cmd/Ctrl+L (NEW)
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonConfigureColumns,
+            java.awt.event.KeyEvent.VK_L,
+            "CONFIGURE_COLUMNS"
+        );
+        this.jButtonConfigureColumns.setToolTipText(
+            this.rb.getResourceString("configurecolumns") + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_L) + "]");
     }
 
     /**
@@ -1486,9 +1555,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jSeparator9 = new javax.swing.JPopupMenu.Separator();
         jMenuItemPopupDeleteMessage = new javax.swing.JMenuItem();
         jToolBar = new javax.swing.JToolBar();
-        jButtonShop = new javax.swing.JButton();
+        // jButtonShop = new javax.swing.JButton();
         jButtonPartner = new javax.swing.JButton();
         jButtonCertificatesSignEncrypt = new javax.swing.JButton();
+        jButtonCertificatesSignEncrypt.setMnemonic(KeyEvent.VK_S);
         jButtonCertificatesTLS = new javax.swing.JButton();
         jButtonMessageDetails = new javax.swing.JButton();
         jButtonFilter = new javax.swing.JButton();
@@ -1527,7 +1597,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jPanelRefreshWarning = new javax.swing.JPanel();
         jLabelRefreshStopWarning = new javax.swing.JLabel();
         as2StatusBar = new de.mendelson.comm.as2.client.AS2StatusBar();
-        browserLinkedPanel = new de.mendelson.comm.as2.client.BrowserLinkedPanel();
         jButtonNewVersion = new javax.swing.JButton();
         jMenuBar = new javax.swing.JMenuBar();
         jMenuFile = new javax.swing.JMenu();
@@ -1549,7 +1618,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JSeparator();
         jMenuItemFileExit = new javax.swing.JMenuItem();
-        jMenuHelp = new javax.swing.JMenu();
         jMenuItemHelpAbout = new javax.swing.JMenuItem();
         jMenuItemHelpSystem = new javax.swing.JMenuItem();
 
@@ -1591,17 +1659,17 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jToolBar.setFloatable(false);
         jToolBar.setRollover(true);
 
-        jButtonShop.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonShop.setText(this.rb.getResourceString( "buy.license"));
-        jButtonShop.setFocusable(false);
-        jButtonShop.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButtonShop.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jButtonShop.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonShopActionPerformed(evt);
-            }
-        });
-        jToolBar.add(jButtonShop);
+        // jButtonShop.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        // jButtonShop.setText(this.rb.getResourceString( "buy.license"));
+        // jButtonShop.setFocusable(false);
+        // jButtonShop.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        // jButtonShop.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        // jButtonShop.addActionListener(new java.awt.event.ActionListener() {
+        //     public void actionPerformed(java.awt.event.ActionEvent evt) {
+        //         jButtonShopActionPerformed(evt);
+        //     }
+        // });
+        // jToolBar.add(jButtonShop);
 
         jButtonPartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
         jButtonPartner.setText(this.rb.getResourceString( "menu.file.partner" ));
@@ -2012,15 +2080,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.weightx = 1.0;
         jPanelMain.add(as2StatusBar, gridBagConstraints);
 
-        browserLinkedPanel.setMinimumSize(new java.awt.Dimension(8, 30));
-        browserLinkedPanel.setPreferredSize(new java.awt.Dimension(110, 30));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(0, 3, 0, 3);
-        jPanelMain.add(browserLinkedPanel, gridBagConstraints);
 
         jButtonNewVersion.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jButtonNewVersion.setToolTipText(this.rb.getResourceString("new.version") );
@@ -2041,6 +2106,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemFileSend.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFileSend.setText(this.rb.getResourceString( "menu.file.send"));
+        jMenuItemFileSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_M));
         jMenuItemFileSend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFileSendActionPerformed(evt);
@@ -2051,6 +2117,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFilePreferences.setText(this.rb.getResourceString( "menu.file.preferences"));
+        jMenuItemFilePreferences.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
         jMenuItemFilePreferences.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFilePreferencesActionPerformed(evt);
@@ -2060,6 +2127,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemPartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemPartner.setText(this.rb.getResourceString( "menu.file.partner"));
+        jMenuItemPartner.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_P));
         jMenuItemPartner.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPartnerActionPerformed(evt);
@@ -2069,6 +2137,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemDatasheet.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemDatasheet.setText(this.rb.getResourceString( "menu.file.datasheet"));
+        jMenuItemDatasheet.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_D, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemDatasheet.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemDatasheetActionPerformed(evt);
@@ -2082,6 +2151,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemCertificatesSignCrypt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemCertificatesSignCrypt.setText(this.rb.getResourceString( "menu.file.certificate.signcrypt"));
+        jMenuItemCertificatesSignCrypt.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCertificatesSignCrypt.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCertificatesSignCryptActionPerformed(evt);
@@ -2091,6 +2161,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemCertificatesSSL.setText(this.rb.getResourceString( "menu.file.certificate.ssl"));
+        jMenuItemCertificatesSSL.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCertificatesSSL.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCertificatesSSLActionPerformed(evt);
@@ -2101,6 +2172,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemCEMManager.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemCEMManager.setText(this.rb.getResourceString( "menu.file.cem"));
+        jMenuItemCEMManager.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCEMManager.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCEMManagerActionPerformed(evt);
@@ -2110,6 +2182,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemCEMSend.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemCEMSend.setText(this.rb.getResourceString( "menu.file.cemsend"));
+        jMenuItemCEMSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_N, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCEMSend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCEMSendActionPerformed(evt);
@@ -2122,6 +2195,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemHTTPServerInfo.setText(this.rb.getResourceString( "menu.file.serverinfo"));
+        jMenuItemHTTPServerInfo.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_I));
         jMenuItemHTTPServerInfo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemHTTPServerInfoActionPerformed(evt);
@@ -2131,6 +2205,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemSystemEvents.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemSystemEvents.setText(this.rb.getResourceString( "menu.file.systemevents"));
+        jMenuItemSystemEvents.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Y));
         jMenuItemSystemEvents.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemSystemEventsActionPerformed(evt);
@@ -2140,6 +2215,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemSearchInServerLog.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemSearchInServerLog.setText(this.rb.getResourceString( "menu.file.searchinserverlog"));
+        jMenuItemSearchInServerLog.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_F, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemSearchInServerLog.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemSearchInServerLogActionPerformed(evt);
@@ -2150,6 +2226,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFileExit.setText(this.rb.getResourceString( "menu.file.exit" ));
+        jMenuItemFileExit.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Q));
         jMenuItemFileExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFileExitActionPerformed(evt);
@@ -2159,25 +2236,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuBar.add(jMenuFile);
 
-        jMenuHelp.setText(this.rb.getResourceString( "menu.help"));
-
-        jMenuItemHelpAbout.setText(this.rb.getResourceString( "menu.help.about"));
-        jMenuItemHelpAbout.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemHelpAboutActionPerformed(evt);
-            }
-        });
-        jMenuHelp.add(jMenuItemHelpAbout);
-
         jMenuItemHelpSystem.setText(this.rb.getResourceString( "menu.help.helpsystem" ));
         jMenuItemHelpSystem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemHelpSystemActionPerformed(evt);
             }
         });
-        jMenuHelp.add(jMenuItemHelpSystem);
-
-        jMenuBar.add(jMenuHelp);
 
         setJMenuBar(jMenuBar);
 
@@ -2380,20 +2444,19 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
         }
     }//GEN-LAST:event_jButtonNewVersionActionPerformed
 
-    private void jButtonShopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonShopActionPerformed
-        try {
-            URI uri = new URI("https://shop.mendelson-e-c.com/buyas2professional");
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(uri);
-            }
-        } catch (Exception e) {
-            this.getLogger().severe(e.getMessage());
-        }
-    }//GEN-LAST:event_jButtonShopActionPerformed
+    // private void jButtonShopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonShopActionPerformed
+    //     try {
+    //         URI uri = new URI("https://shop.mendelson-e-c.com/buyas2professional");
+    //         if (Desktop.isDesktopSupported()) {
+    //             Desktop.getDesktop().browse(uri);
+    //         }
+    //     } catch (Exception e) {
+    //         this.getLogger().severe(e.getMessage());
+    //     }
+    // }//GEN-LAST:event_jButtonShopActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private de.mendelson.comm.as2.client.AS2StatusBar as2StatusBar;
-    private de.mendelson.comm.as2.client.BrowserLinkedPanel browserLinkedPanel;
     private javax.swing.JButton jButtonCertificatesSignEncrypt;
     private javax.swing.JButton jButtonCertificatesTLS;
     private javax.swing.JButton jButtonConfigureColumns;
@@ -2425,7 +2488,6 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuFile;
     private javax.swing.JMenu jMenuFileCertificates;
-    private javax.swing.JMenu jMenuHelp;
     private javax.swing.JMenuItem jMenuItemCEMManager;
     private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;

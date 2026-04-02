@@ -7,6 +7,7 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.clientserver.BaseClient;
@@ -102,6 +103,12 @@ public class DialogSendCEM extends JDialog {
         Date thirtyDays = calendar.getTime();
         this.jDateChooser.setSelectableDateRange(new Date(), nextYear);
         this.jDateChooser.setDate(thirtyDays);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void setButtonState() {

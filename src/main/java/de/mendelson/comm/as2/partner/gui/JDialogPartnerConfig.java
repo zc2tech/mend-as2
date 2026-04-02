@@ -14,6 +14,7 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerModificationRequest;
 import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
@@ -157,9 +158,19 @@ public class JDialogPartnerConfig extends JDialog {
         this.jPanelModuleLockWarning.setBorder(new LineBorder(this.colorRed, 1));
         this.jLabelModuleLockedWarning.setForeground(this.colorRed);
         this.jPanelConfigurationWarning.setBorder(new LineBorder(this.colorRed, 1));
-        this.jLabelConfigurationWarning.setForeground(this.colorRed);        
+        this.jLabelConfigurationWarning.setForeground(this.colorRed);
         this.jPanelModuleLockWarning.setVisible(!changesAllowed);
         this.jPanelConfigurationWarning.setVisible(false);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonPartnerConfigOk, this.jButtonCancel);
     }
 
     @Override

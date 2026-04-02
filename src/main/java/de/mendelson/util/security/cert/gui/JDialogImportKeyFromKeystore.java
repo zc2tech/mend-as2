@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
@@ -79,7 +80,12 @@ public class JDialogImportKeyFromKeystore extends JDialog {
         this.manager = manager;
         this.logger = logger;
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
         this.setButtonState();
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     public String getNewAlias() {

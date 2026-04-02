@@ -85,6 +85,10 @@ public class JettyStarter {
      */
     public Server startWebserver() throws Exception {
         this.logger.info(MODULE_NAME + " " + this.rb.getResourceString("httpserver.willstart"));
+
+        // Check if test mode is enabled
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+
         SystemEventManagerImplAS2.instance().newEvent(
                 SystemEvent.SEVERITY_INFO,
                 SystemEvent.ORIGIN_SYSTEM,
@@ -107,6 +111,16 @@ public class JettyStarter {
                             "[" + e.getClass().getSimpleName() + "] " + e.getMessage()
                         }));
             }
+
+            // Override ports if in test mode
+            if (isTestMode) {
+                // Use fixed test mode ports: HTTP=11080, HTTPS=11443
+                userConfiguration.setProperty("jetty.http.port", "11080");
+                userConfiguration.setProperty("jetty.https.port", "11443");
+
+                this.logger.info(MODULE_NAME + " *** TEST MODE: Using HTTP port 11080 and HTTPS port 11443 ***");
+            }
+
             Map<String, String> userConfigurationMap = new HashMap<String, String>();
             for (Object key : userConfiguration.keySet()) {
                 String keyStr = key.toString();

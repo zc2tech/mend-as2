@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.security.cert.gui.keygeneration.JDialogGenerateKey;
@@ -220,6 +221,16 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         };
         KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
         this.getRootPane().registerKeyboardAction(actionListenerDEL, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
     }
 
     /**

@@ -5,6 +5,7 @@ import de.mendelson.util.ColorUtil;
 import de.mendelson.util.DisplayMode;
 import de.mendelson.util.ImageButtonBar;
 import de.mendelson.util.ImageButtonBarUI;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.uinotification.UINotification;
@@ -163,7 +164,17 @@ public class JDialogPreferences extends JDialog {
         this.jPanelButtonBar.add(buttonBar, BorderLayout.CENTER);
         this.preferencesStrAtLoadTime = this.captureSettingsToStr();
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
 
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
     }
 
     private void setMultiresolutionIcons() {

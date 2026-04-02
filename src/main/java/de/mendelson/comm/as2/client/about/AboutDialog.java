@@ -5,6 +5,7 @@ import de.mendelson.Copyright;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.font.FontUtil;
 import java.awt.Color;
@@ -105,6 +106,17 @@ public class AboutDialog extends JDialog {
         this.jLabelEMail.setForeground(foregroundColor);
         this.jLabelProductName.setForeground(foregroundColor);
         this.jLabelBuildDate.setForeground(foregroundColor);
+
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close - with tooltips
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
     }
     
     private void setMultiresolutionIcons() {

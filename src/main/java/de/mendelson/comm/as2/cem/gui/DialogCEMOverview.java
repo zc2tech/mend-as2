@@ -15,6 +15,7 @@ import de.mendelson.comm.as2.message.clientserver.MessageRequestLastMessage;
 import de.mendelson.comm.as2.message.clientserver.MessageResponseLastMessage;
 import de.mendelson.comm.as2.message.loggui.DialogMessageDetails;
 import de.mendelson.comm.as2.partner.gui.TableCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -110,6 +111,12 @@ public class DialogCEMOverview extends JDialog implements ListSelectionListener,
         //this gui may process server messages, register it
         this.guiClient.addMessageProcessor(this);
         this.setButtonState();
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, null, this.jButtonExit);
     }
 
     private void setMultiresolutionIcons() {

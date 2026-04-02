@@ -4,6 +4,7 @@ package de.mendelson.comm.as2.partner.gui.event;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.BaseClient;
 import de.mendelson.util.clientserver.clients.filesystemview.RemoteFileBrowser;
@@ -65,6 +66,12 @@ public class JDialogConfigureEventMoveToDir extends JDialog {
                 this.rb.getResourceString("type." + EVENT_TYPE)));
         this.displayParameter();
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void setMultiresolutionIcons() {

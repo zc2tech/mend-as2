@@ -5,6 +5,7 @@ import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 
 import java.util.ArrayList;
@@ -62,6 +63,12 @@ public class JDialogConfigureEventMoveToPartner extends JDialog {
                 this.rb.getResourceString("type." + EVENT_TYPE)));
         this.displayParameter();
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void setMultiresolutionIcons() {

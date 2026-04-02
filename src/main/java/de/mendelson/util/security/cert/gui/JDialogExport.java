@@ -1,6 +1,7 @@
 //$Header: /oftp2/de/mendelson/util/security/cert/gui/JDialogExport.java 6     3/07/24 14:07 Heller $
 package de.mendelson.util.security.cert.gui;
 
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.util.MissingResourceException;
@@ -63,6 +64,11 @@ public class JDialogExport extends JDialog {
         initComponents();
         this.setMultiresolutionIcons();
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

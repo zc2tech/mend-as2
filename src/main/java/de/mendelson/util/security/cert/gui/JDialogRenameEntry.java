@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
 import de.mendelson.util.security.cert.KeystoreCertificate;
@@ -60,7 +61,12 @@ public class JDialogRenameEntry extends JDialog {
         this.jTextFieldNewAlias.selectAll();
         this.jLabelIcon.setIcon(new ImageIcon(JDialogCertificates.IMAGE_EDIT_MULTIRESOLUTION.toMinResolution(
                 JDialogCertificates.IMAGE_SIZE_DIALOG)));
+        this.setupKeyboardShortcuts();
         this.setButtonState();
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

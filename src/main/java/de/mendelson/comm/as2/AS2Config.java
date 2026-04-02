@@ -18,10 +18,12 @@ public class AS2Config {
     private static final String PROP_GUI_ENABLED = "as2.startup.gui.enabled";
     private static final String PROP_DISPLAY_MODE = "as2.display.mode";
     private static final String PROP_SKIP_CONFIG_CHECK = "as2.startup.skip.configcheck";
+    private static final String PROP_TEST_MODE = "as2.test.mode";
 
     private static final String ENV_START_GUI = "AS2_START_GUI";
     private static final String ENV_DISPLAY_MODE = "AS2_DISPLAY_MODE";
     private static final String ENV_SKIP_CONFIG_CHECK = "AS2_SKIP_CONFIG_CHECK";
+    private static final String ENV_TEST_MODE = "AS2_TEST_MODE";
 
     private final Properties properties;
 
@@ -59,6 +61,11 @@ public class AS2Config {
         if (envSkipConfigCheck != null) {
             properties.setProperty(PROP_SKIP_CONFIG_CHECK, envSkipConfigCheck);
         }
+
+        String envTestMode = System.getenv(ENV_TEST_MODE);
+        if (envTestMode != null) {
+            properties.setProperty(PROP_TEST_MODE, envTestMode);
+        }
     }
 
     /**
@@ -83,5 +90,37 @@ public class AS2Config {
      */
     public boolean shouldSkipConfigCheck() {
         return Boolean.parseBoolean(properties.getProperty(PROP_SKIP_CONFIG_CHECK, "false"));
+    }
+
+    /**
+     * Returns whether to run in test mode (uses alternative ports)
+     * @return true for test mode, false for normal operation
+     */
+    public boolean isTestMode() {
+        return Boolean.parseBoolean(properties.getProperty(PROP_TEST_MODE, "false"));
+    }
+
+    /**
+     * Returns the Client-Server communication port based on test mode
+     * @return 41234 in test mode, 1234 in normal mode
+     */
+    public int getClientServerPort() {
+        return isTestMode() ? 41234 : 1234;
+    }
+
+    /**
+     * Returns the HTTP port based on test mode
+     * @return 11080 in test mode, 8080 in normal mode
+     */
+    public int getHttpPort() {
+        return isTestMode() ? 11080 : 8080;
+    }
+
+    /**
+     * Returns the HTTPS port based on test mode
+     * @return 11443 in test mode, 8443 in normal mode
+     */
+    public int getHttpsPort() {
+        return isTestMode() ? 11443 : 8443;
     }
 }

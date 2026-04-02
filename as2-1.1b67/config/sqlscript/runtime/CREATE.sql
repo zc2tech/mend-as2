@@ -211,5 +211,5 @@ CREATE INDEX idx_highavail_uniqueid ON highavail(uniqueid);
 CREATE INDEX idx_highavail_starttime ON highavail(starttime);
 CREATE INDEX idx_highavail_lastupdatetime ON highavail(lastupdatetime);
 
-INSERT INTO version VALUES(DEFAULT,50,'2025-05-23 09:47:07.680000','mendelson opensource AS2 1.1 build 67(mend-as2 fork): initial installation');
+INSERT INTO version VALUES(DEFAULT,56,'2025-05-23 09:47:07.680000','mend-as2 1.0');
 

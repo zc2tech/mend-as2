@@ -98,7 +98,6 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"server.answer.timeout.details", "The server does not answer in the defined timeframe on a request - high load?" },
         {"resend.failed.unknown.sender", "Resend failed: Unknown sender {0} - please check if this partner still exists in the system." },
         {"resend.failed.unknown.receiver", "Resend failed: Unknown receiver {0} - please check if this partner still exists in the system." },
-        {"buy.license", "Buy license" },
         {"no.helpset.for.language", "Sorry, there is no help system available for your language, the english help system will be used." },
     };
 }

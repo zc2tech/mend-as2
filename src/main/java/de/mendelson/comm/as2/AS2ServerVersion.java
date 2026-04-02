@@ -35,7 +35,7 @@ public class AS2ServerVersion implements IProductVersion {
      * Returns this products version number
      */
     public static String getVersion() {
-        return ("1.1");
+        return ("1.0");
     }
 
     /**
@@ -49,14 +49,14 @@ public class AS2ServerVersion implements IProductVersion {
      * Returns the internal build number
      */
     public static int getBuildNo() {
-        return (67);
+        return (0);
     }
 
     /**
      * returns the name of this product
      */
     public static String getProductName() {
-        return ("mendelson opensource AS2");
+        return ("mend-as2");
     }
 
     /**
@@ -65,7 +65,7 @@ public class AS2ServerVersion implements IProductVersion {
      * defined here, an auto update of the database is performed.
      */
     public static int getRequiredDBVersionConfig() {
-        return (56);
+        return (0);
     }
 
     /**
@@ -74,7 +74,7 @@ public class AS2ServerVersion implements IProductVersion {
      * defined here, an auto update of the database is performed.
      */
     public static int getRequiredDBVersionRuntime() {
-        return (51);
+        return (0);
     }
 
     /**
@@ -82,7 +82,7 @@ public class AS2ServerVersion implements IProductVersion {
      * short name exists!
      */
     public static String getProductNameShortcut() {
-        return ("mendelson opensource AS2");
+        return ("mend-as2");
     }
 
     /**

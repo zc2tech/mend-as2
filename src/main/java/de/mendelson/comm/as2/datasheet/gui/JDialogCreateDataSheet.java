@@ -14,6 +14,7 @@ import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.AS2Tools;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.BaseClient;
 import de.mendelson.util.clientserver.GUIClient;
@@ -103,6 +104,12 @@ public class JDialogCreateDataSheet extends JDialog {
         this.refreshLocalURLDisplay();
         this.initializeComboboxes();
         this.setButtonState();
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void setButtonState() {

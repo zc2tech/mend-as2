@@ -1,6 +1,7 @@
 //$Header: /as2/de/mendelson/util/security/cert/gui/JDialogExportCertificate.java 28    11/02/25 13:40 Heller $
 package de.mendelson.util.security.cert.gui;
 
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
@@ -81,7 +82,12 @@ public class JDialogExportCertificate extends JDialog {
         }
         this.jComboBoxCertificates.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxCertificates.setSelectedItem(selectedCert);
+        this.setupKeyboardShortcuts();
         this.setButtonState();
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

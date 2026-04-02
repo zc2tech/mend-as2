@@ -1,6 +1,7 @@
 //$Header: /oftp2/de/mendelson/util/security/cert/gui/keygeneration/JDialogGenerateKey.java 46    19/02/25 13:00 Heller $
 package de.mendelson.util.security.cert.gui.keygeneration;
 
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.balloontip.BalloonToolTip;
@@ -114,6 +115,7 @@ public class JDialogGenerateKey extends JDialog {
         }
         this.jComboBoxECCurve.setSelectedItem("Prime256v1");
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
         this.setViewMode();
         this.addWindowListener(
                 new WindowAdapter() {
@@ -123,6 +125,10 @@ public class JDialogGenerateKey extends JDialog {
                 values = null;
             }
         });
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

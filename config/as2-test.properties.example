@@ -1,0 +1,20 @@
+# AS2 Server Configuration - TEST MODE Example
+# This is an example configuration for running AS2 in test mode
+# Copy this to as2.properties and enable test mode to run alongside production
+#
+# Test Mode uses alternative ports:
+# - Jetty HTTP: 11080 (instead of 8080)
+# - Jetty HTTPS: 11443 (instead of 8443)
+# - Client-Server (Mina): 41234 (instead of 1234)
+
+# GUI mode: Controls whether to start the Swing GUI client with the server
+as2.startup.gui.enabled=true
+
+# Display mode for GUI client
+as2.display.mode=LIGHT
+
+# Configuration check at startup
+as2.startup.skip.configcheck=true
+
+# TEST MODE ENABLED - Uses alternative ports
+as2.test.mode=true

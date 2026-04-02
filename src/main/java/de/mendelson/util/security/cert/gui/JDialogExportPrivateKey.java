@@ -2,6 +2,7 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
 import de.mendelson.util.clientserver.BaseClient;
@@ -92,9 +93,14 @@ public class JDialogExportPrivateKey extends JDialog {
         }
         this.jComboBoxKeys.setRenderer(new ListCellRendererCertificates());
         this.populateKeyList(selectedAlias);
-        
+
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        this.setupKeyboardShortcuts();
         this.setButtonState();
+    }
+
+    private void setupKeyboardShortcuts() {
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void populateKeyList(String preselection) throws Exception {
