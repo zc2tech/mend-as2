@@ -157,11 +157,19 @@ public class JettyStarter {
                                 WebAppContext webapp = new WebAppContext();
                                 webapp.setContextPath(contextPath);
                                 webapp.setBaseResourceAsPath(webappPath);
+
+                                // Explicitly set web.xml descriptor path
+                                Path webXmlPath = webappPath.resolve("WEB-INF/web.xml");
+                                if (Files.exists(webXmlPath)) {
+                                    webapp.setDescriptor(webXmlPath.toString());
+                                }
+
                                 webapp.setParentLoaderPriority(true);
                                 contexts.addHandler(webapp);
                                 this.logger.info(MODULE_NAME + " Deploying webapp: " + contextPath + " from " + webappPath);
                             } catch (Exception e) {
                                 this.logger.warning(MODULE_NAME + " Failed to deploy webapp from " + webappPath + ": " + e.getMessage());
+                                e.printStackTrace();
                             }
                         });
                     }

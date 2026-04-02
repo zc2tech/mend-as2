@@ -13,11 +13,25 @@ export function useCertificates(keystoreType = 'sign') {
 
 export function useExportCertificate() {
   return useMutation({
-    mutationFn: async ({ alias, format, keystoreType }) => {
+    mutationFn: async ({ fingerprintSHA1, format, keystoreType }) => {
       const response = await api.post('/certificates/export', {
-        alias,
-        exportFormat: format,
+        fingerprintSHA1,
+        format,
         keystoreType
+      }, {
+        responseType: 'blob'
+      });
+      return response.data;
+    }
+  });
+}
+
+export function useExportKeystore() {
+  return useMutation({
+    mutationFn: async ({ keystoreType, format = 'PKCS12' }) => {
+      const response = await api.post('/certificates/export-keystore', {
+        keystoreType,
+        format
       }, {
         responseType: 'blob'
       });
@@ -28,11 +42,11 @@ export function useExportCertificate() {
 
 export function useGenerateCSR() {
   return useMutation({
-    mutationFn: async ({ alias, format, keystoreType }) => {
+    mutationFn: async ({ fingerprintSHA1, keystoreType }) => {
       const response = await api.post('/certificates/generate-csr', {
-        alias,
-        requestFormat: format,
-        keystoreType
+        fingerprintSHA1,
+        keystoreType,
+        requestType: 'PKCS10'  // Default to PKCS10 format
       });
       return response.data;
     }
@@ -43,11 +57,24 @@ export function useVerifyCRL() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ keystoreType, fingerprint }) => {
+    mutationFn: async ({ keystoreType }) => {
       const response = await api.post('/certificates/verify-crl', {
-        keystoreType,
-        certificateFingerprint: fingerprint
+        keystoreType
       });
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries(['certificates', variables.keystoreType]);
+    }
+  });
+}
+
+export function useGenerateKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (keyGenRequest) => {
+      const response = await api.post('/certificates/generate-key', keyGenRequest);
       return response.data;
     },
     onSuccess: (data, variables) => {

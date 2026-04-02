@@ -127,6 +127,56 @@ public class CertificateResource {
     }
 
     /**
+     * Export entire keystore
+     * Request body: { keystoreType (sign|tls), format (PKCS12|JKS) }
+     */
+    @POST
+    @Path("/export-keystore")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces("application/octet-stream")
+    public Response exportKeystore(ExportKeystoreRequestDTO exportRequest) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Server processing not available"))
+                        .build();
+            }
+
+            // Get the appropriate certificate manager
+            CertificateManager manager = "tls".equals(exportRequest.getKeystoreType())
+                    ? processing.getCertificateManagerTLS()
+                    : processing.getCertificateManagerSignEncrypt();
+
+            if (manager == null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse("Certificate manager not available"))
+                        .build();
+            }
+
+            // Get the keystore and serialize it to bytes
+            java.security.KeyStore keystore = manager.getKeystore();
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            char[] password = manager.getKeystorePass();
+            keystore.store(baos, password);
+            byte[] keystoreData = baos.toByteArray();
+
+            String filename = exportRequest.getKeystoreType() + "_keystore." +
+                             ("JKS".equalsIgnoreCase(exportRequest.getFormat()) ? "jks" : "p12");
+
+            return Response.ok(keystoreData)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .build();
+
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+    }
+
+    /**
      * Generate a CSR (Certificate Signing Request) for a certificate
      * Request body: { fingerprintSHA1, keystoreType (sign|tls), requestType (PKCS10|CRMF) }
      */
@@ -174,6 +224,77 @@ public class CertificateResource {
             return Response.ok(dto).build();
 
         } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * Generate a new key pair and certificate
+     * Request body: KeyGenerationRequestDTO with all certificate details
+     */
+    @POST
+    @Path("/generate-key")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response generateKey(KeyGenerationRequestDTO keyGenRequest) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Server processing not available"))
+                        .build();
+            }
+
+            // Get the appropriate certificate manager
+            CertificateManager manager = "tls".equals(keyGenRequest.getKeystoreType())
+                    ? processing.getCertificateManagerTLS()
+                    : processing.getCertificateManagerSignEncrypt();
+
+            if (manager == null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse("Certificate manager not available"))
+                        .build();
+            }
+
+            // Build KeyGenerationValues from request
+            de.mendelson.util.security.keygeneration.KeyGenerationValues values =
+                    new de.mendelson.util.security.keygeneration.KeyGenerationValues();
+            values.setKeyAlgorithm(keyGenRequest.getKeyAlgorithm());
+            values.setKeySize(keyGenRequest.getKeySize());
+            values.setCommonName(keyGenRequest.getCommonName());
+            values.setOrganisationUnit(keyGenRequest.getOrganisationUnit());
+            values.setOrganisationName(keyGenRequest.getOrganisationName());
+            values.setLocalityName(keyGenRequest.getLocalityName());
+            values.setStateName(keyGenRequest.getStateName());
+            values.setCountryCode(keyGenRequest.getCountryCode());
+            values.setEmailAddress(keyGenRequest.getEmailAddress());
+            values.setKeyValidInDays(keyGenRequest.getKeyValidInDays());
+            values.setSignatureAlgorithm(keyGenRequest.getSignatureAlgorithm());
+
+            // Generate the key
+            de.mendelson.util.security.keygeneration.KeyGenerator generator =
+                    new de.mendelson.util.security.keygeneration.KeyGenerator();
+            de.mendelson.util.security.keygeneration.KeyGenerationResult result =
+                    generator.generateKeyPair(values);
+
+            // Store in keystore
+            manager.getKeystore().setKeyEntry(
+                    keyGenRequest.getAlias(),
+                    result.getKeyPair().getPrivate(),
+                    manager.getKeystorePass(),
+                    new java.security.cert.Certificate[]{result.getCertificate()}
+            );
+            manager.saveKeystore();
+
+            KeyGenerationResponseDTO response = new KeyGenerationResponseDTO();
+            response.setAlias(keyGenRequest.getAlias());
+            response.setSubjectDN(result.getCertificate().getSubjectX500Principal().getName());
+            return Response.ok(response).build();
+
+        } catch (Throwable e) {
+            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
                     .build();
@@ -401,6 +522,30 @@ public class CertificateResource {
 
     // DTOs
 
+    public static class ExportKeystoreRequestDTO {
+        private String keystoreType;
+        private String format;
+
+        public ExportKeystoreRequestDTO() {
+        }
+
+        public String getKeystoreType() {
+            return keystoreType;
+        }
+
+        public void setKeystoreType(String keystoreType) {
+            this.keystoreType = keystoreType;
+        }
+
+        public String getFormat() {
+            return format;
+        }
+
+        public void setFormat(String format) {
+            this.format = format;
+        }
+    }
+
     public static class CertificateExportRequestDTO {
         private String fingerprintSHA1;
         private String keystoreType;
@@ -530,6 +675,153 @@ public class CertificateResource {
 
         public void setFingerprintSHA1(String fingerprintSHA1) {
             this.fingerprintSHA1 = fingerprintSHA1;
+        }
+    }
+
+    public static class KeyGenerationRequestDTO {
+        private String keystoreType;
+        private String alias;
+        private String keyAlgorithm = "RSA";
+        private int keySize = 2048;
+        private String commonName;
+        private String organisationUnit;
+        private String organisationName;
+        private String localityName;
+        private String stateName;
+        private String countryCode;
+        private String emailAddress;
+        private int keyValidInDays = 365;
+        private String signatureAlgorithm = "SHA256WithRSA";
+
+        public KeyGenerationRequestDTO() {
+        }
+
+        public String getKeystoreType() {
+            return keystoreType;
+        }
+
+        public void setKeystoreType(String keystoreType) {
+            this.keystoreType = keystoreType;
+        }
+
+        public String getAlias() {
+            return alias;
+        }
+
+        public void setAlias(String alias) {
+            this.alias = alias;
+        }
+
+        public String getKeyAlgorithm() {
+            return keyAlgorithm;
+        }
+
+        public void setKeyAlgorithm(String keyAlgorithm) {
+            this.keyAlgorithm = keyAlgorithm;
+        }
+
+        public int getKeySize() {
+            return keySize;
+        }
+
+        public void setKeySize(int keySize) {
+            this.keySize = keySize;
+        }
+
+        public String getCommonName() {
+            return commonName;
+        }
+
+        public void setCommonName(String commonName) {
+            this.commonName = commonName;
+        }
+
+        public String getOrganisationUnit() {
+            return organisationUnit;
+        }
+
+        public void setOrganisationUnit(String organisationUnit) {
+            this.organisationUnit = organisationUnit;
+        }
+
+        public String getOrganisationName() {
+            return organisationName;
+        }
+
+        public void setOrganisationName(String organisationName) {
+            this.organisationName = organisationName;
+        }
+
+        public String getLocalityName() {
+            return localityName;
+        }
+
+        public void setLocalityName(String localityName) {
+            this.localityName = localityName;
+        }
+
+        public String getStateName() {
+            return stateName;
+        }
+
+        public void setStateName(String stateName) {
+            this.stateName = stateName;
+        }
+
+        public String getCountryCode() {
+            return countryCode;
+        }
+
+        public void setCountryCode(String countryCode) {
+            this.countryCode = countryCode;
+        }
+
+        public String getEmailAddress() {
+            return emailAddress;
+        }
+
+        public void setEmailAddress(String emailAddress) {
+            this.emailAddress = emailAddress;
+        }
+
+        public int getKeyValidInDays() {
+            return keyValidInDays;
+        }
+
+        public void setKeyValidInDays(int keyValidInDays) {
+            this.keyValidInDays = keyValidInDays;
+        }
+
+        public String getSignatureAlgorithm() {
+            return signatureAlgorithm;
+        }
+
+        public void setSignatureAlgorithm(String signatureAlgorithm) {
+            this.signatureAlgorithm = signatureAlgorithm;
+        }
+    }
+
+    public static class KeyGenerationResponseDTO {
+        private String alias;
+        private String subjectDN;
+
+        public KeyGenerationResponseDTO() {
+        }
+
+        public String getAlias() {
+            return alias;
+        }
+
+        public void setAlias(String alias) {
+            this.alias = alias;
+        }
+
+        public String getSubjectDN() {
+            return subjectDN;
+        }
+
+        public void setSubjectDN(String subjectDN) {
+            this.subjectDN = subjectDN;
         }
     }
 

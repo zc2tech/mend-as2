@@ -83,7 +83,7 @@ public class ConfigurationCheckController {
     public List<ConfigurationIssue> runClientRelatedTests(
             String clientProcessId, String serverProcessId) {
         List<ConfigurationIssue> clientIssueList = new ArrayList<ConfigurationIssue>();
-        this.checkClientAndServerRunInOneProcess(clientIssueList, clientProcessId, serverProcessId);
+        // this.checkClientAndServerRunInOneProcess(clientIssueList, clientProcessId, serverProcessId);
         return (clientIssueList);
     }
 

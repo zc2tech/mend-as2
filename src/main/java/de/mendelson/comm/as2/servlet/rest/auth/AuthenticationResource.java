@@ -28,6 +28,7 @@ public class AuthenticationResource {
 
     public AuthenticationResource() {
         this.userAccess = new UserAccess(logger);
+        System.out.println("AuthenticationResource: Initialized - /auth endpoint should be available");
     }
 
     /**

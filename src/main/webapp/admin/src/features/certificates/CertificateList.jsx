@@ -1,24 +1,68 @@
-import { useState } from 'react';
-import { useCertificates, useExportCertificate, useDeleteCertificate } from './useCertificates';
+import { useState, useEffect } from 'react';
+import { useCertificates, useExportCertificate, useDeleteCertificate, useExportKeystore, useGenerateCSR, useVerifyCRL } from './useCertificates';
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
 import CertificateImport from './CertificateImport';
+import GenerateKeyDialog from './GenerateKeyDialog';
 
 export default function CertificateList() {
   const [keystoreType, setKeystoreType] = useState('sign');
   const [showImport, setShowImport] = useState(false);
+  const [showGenerateKey, setShowGenerateKey] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
   const { data: certificates, isLoading, error } = useCertificates(keystoreType);
   const exportCertificate = useExportCertificate();
+  const exportKeystore = useExportKeystore();
+  const generateCSR = useGenerateCSR();
+  const verifyCRL = useVerifyCRL();
   const deleteCertificate = useDeleteCertificate();
   const toast = useToast();
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowExportMenu(false);
+      setShowToolsMenu(false);
+    };
+
+    if (showExportMenu || showToolsMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showExportMenu, showToolsMenu]);
+
   const handleExport = async (alias, format) => {
+    // Find the certificate to get its fingerprint
+    const cert = certificates.find(c => c.alias === alias);
+    if (!cert) {
+      toast.error('Certificate not found');
+      console.error('Certificate not found for alias:', alias);
+      return;
+    }
+
+    // Check all possible fingerprint field names (case variations)
+    const fingerprint = cert.fingerprintSHA1 || cert.fingerprintsha1 ||
+                        cert.fingerPrintSHA1 || cert.fingerprintSha1;
+
+    if (!fingerprint) {
+      toast.error('Certificate fingerprint not found');
+      console.error('Certificate data:', cert);
+      console.error('Available fields:', Object.keys(cert));
+      return;
+    }
+
     try {
-      const blob = await exportCertificate.mutateAsync({ alias, format, keystoreType });
+      const blob = await exportCertificate.mutateAsync({
+        fingerprintSHA1: fingerprint,
+        format,
+        keystoreType
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${alias}.${format.toLowerCase()}`;
+      const ext = format === 'PKCS12' ? 'p12' : (format === 'DER' ? 'der' : 'pem');
+      a.download = `${alias}.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -26,6 +70,82 @@ export default function CertificateList() {
       toast.success(`Certificate "${alias}" exported successfully`);
     } catch (error) {
       toast.error('Failed to export certificate: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleExportKeystore = async (format) => {
+    try {
+      const blob = await exportKeystore.mutateAsync({ keystoreType, format });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = format === 'PKCS12' ? 'p12' : 'jks';
+      a.download = `${keystoreType}_keystore.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success(`Keystore exported successfully`);
+      setShowExportMenu(false);
+    } catch (error) {
+      toast.error('Failed to export keystore: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleGenerateCSR = async (alias) => {
+    // Find the certificate to get its fingerprint
+    const cert = certificates.find(c => c.alias === alias);
+    if (!cert) {
+      toast.error('Certificate not found');
+      console.error('Certificate not found for alias:', alias);
+      return;
+    }
+
+    // Check all possible fingerprint field names (case variations)
+    const fingerprint = cert.fingerprintSHA1 || cert.fingerprintsha1 ||
+                        cert.fingerPrintSHA1 || cert.fingerprintSha1;
+
+    if (!fingerprint) {
+      toast.error('Certificate fingerprint not found');
+      console.error('Certificate data:', cert);
+      console.error('Available fields:', Object.keys(cert));
+      return;
+    }
+
+    try {
+      const response = await generateCSR.mutateAsync({
+        fingerprintSHA1: fingerprint,
+        keystoreType
+      });
+      // The response contains csrBase64, decode and download it
+      const csrData = atob(response.csrBase64);
+      const blob = new Blob([csrData], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${alias}.csr`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success(`CSR generated for "${alias}"`);
+    } catch (error) {
+      toast.error('Failed to generate CSR: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleVerifyCertificates = async () => {
+    try {
+      const response = await verifyCRL.mutateAsync({ keystoreType });
+      const revokedCerts = response.revocationInfo?.filter(info => info.isRevoked) || [];
+      if (revokedCerts.length === 0) {
+        toast.success('All certificates are valid');
+      } else {
+        toast.warning(`${revokedCerts.length} certificate(s) are revoked`);
+      }
+      setShowToolsMenu(false);
+    } catch (error) {
+      toast.error('Failed to verify certificates: ' + (error.response?.data?.error || error.message));
     }
   };
 
@@ -114,17 +234,161 @@ export default function CertificateList() {
     <div>
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ margin: 0 }}>Certificates</h1>
-        <button
-          style={{
-            ...buttonStyle,
-            backgroundColor: '#28a745',
-            color: 'white',
-            padding: '0.5rem 1rem'
-          }}
-          onClick={() => setShowImport(true)}
-        >
-          Import Certificate
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {/* Export Menu */}
+          <div style={{ position: 'relative' }}>
+            <button
+              style={{
+                ...buttonStyle,
+                backgroundColor: '#17a2b8',
+                color: 'white',
+                padding: '0.5rem 1rem'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowExportMenu(!showExportMenu);
+                setShowToolsMenu(false);
+              }}
+            >
+              Export ▼
+            </button>
+            {showExportMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  backgroundColor: 'white',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  minWidth: '200px',
+                  zIndex: 1000,
+                  marginTop: '4px'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  onClick={() => handleExportKeystore('PKCS12')}
+                >
+                  Export Keystore (PKCS#12)
+                </button>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  onClick={() => handleExportKeystore('JKS')}
+                >
+                  Export Keystore (JKS)
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Tools Menu */}
+          <div style={{ position: 'relative' }}>
+            <button
+              style={{
+                ...buttonStyle,
+                backgroundColor: '#6c757d',
+                color: 'white',
+                padding: '0.5rem 1rem'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowToolsMenu(!showToolsMenu);
+                setShowExportMenu(false);
+              }}
+            >
+              Tools ▼
+            </button>
+            {showToolsMenu && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  backgroundColor: 'white',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  minWidth: '200px',
+                  zIndex: 1000,
+                  marginTop: '4px'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  onClick={() => {
+                    setShowGenerateKey(true);
+                    setShowToolsMenu(false);
+                  }}
+                >
+                  Generate Key...
+                </button>
+                <div style={{ borderTop: '1px solid #dee2e6', margin: '0.25rem 0' }}></div>
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  onClick={handleVerifyCertificates}
+                >
+                  Verify All Certificates
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            style={{
+              ...buttonStyle,
+              backgroundColor: '#28a745',
+              color: 'white',
+              padding: '0.5rem 1rem'
+            }}
+            onClick={() => setShowImport(true)}
+          >
+            Import Certificate
+          </button>
+        </div>
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
@@ -145,6 +409,7 @@ export default function CertificateList() {
       <table style={tableStyle}>
         <thead>
           <tr>
+            <th style={thStyle}>Type</th>
             <th style={thStyle}>Alias</th>
             <th style={thStyle}>Subject DN</th>
             <th style={thStyle}>Issuer</th>
@@ -156,13 +421,21 @@ export default function CertificateList() {
         <tbody>
           {!certificates || certificates.length === 0 ? (
             <tr>
-              <td colSpan="6" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan="7" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No certificates found in this keystore
               </td>
             </tr>
           ) : (
-            certificates.map((cert, index) => (
+            certificates.map((cert, index) => {
+              const fingerprint = cert.fingerprintSHA1 || cert.fingerprintsha1 ||
+                                  cert.fingerPrintSHA1 || cert.fingerprintSha1;
+              return (
               <tr key={cert.alias || index}>
+                <td style={{...tdStyle, textAlign: 'center', fontSize: '1.25rem'}}>
+                  <span title={cert.isKeyPair ? "Private Key (can sign/decrypt)" : cert.isRootCertificate ? "Root Certificate" : "Public Certificate"}>
+                    {cert.isKeyPair ? '🔑' : cert.isRootCertificate ? '📋' : '📜'}
+                  </span>
+                </td>
                 <td style={tdStyle}>{cert.alias || '-'}</td>
                 <td style={tdStyle}>{cert.subjectDN || '-'}</td>
                 <td style={tdStyle}>{cert.issuerDN || '-'}</td>
@@ -171,46 +444,69 @@ export default function CertificateList() {
                 </td>
                 <td style={tdStyle}>
                   <code style={{ fontSize: '0.75rem' }}>
-                    {cert.fingerprintSHA1 || '-'}
+                    {fingerprint || '-'}
                   </code>
                 </td>
                 <td style={tdStyle}>
-                  <button
-                    style={{
-                      ...buttonStyle,
-                      backgroundColor: '#17a2b8',
-                      color: 'white'
-                    }}
-                    onClick={() => handleExport(cert.alias, 'PEM')}
-                    disabled={exportCertificate.isPending}
-                  >
-                    Export
-                  </button>
-                  <button
-                    style={{
-                      ...buttonStyle,
-                      backgroundColor: '#6c757d',
-                      color: 'white'
-                    }}
-                    onClick={() => alert('Generate CSR coming soon')}
-                  >
-                    CSR
-                  </button>
-                  <button
-                    style={{
-                      ...buttonStyle,
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      marginRight: 0
-                    }}
-                    onClick={() => handleDelete(cert.alias, cert.subjectDN)}
-                    disabled={deleteCertificate.isPending}
-                  >
-                    Delete
-                  </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                    <button
+                      style={{
+                        ...buttonStyle,
+                        backgroundColor: '#17a2b8',
+                        color: 'white'
+                      }}
+                      onClick={() => handleExport(cert.alias, 'PEM')}
+                      disabled={exportCertificate.isPending}
+                      title="Export certificate in PEM format"
+                    >
+                      Export PEM
+                    </button>
+                    <button
+                      style={{
+                        ...buttonStyle,
+                        backgroundColor: cert.isKeyPair ? '#17a2b8' : '#6c757d',
+                        color: 'white',
+                        opacity: cert.isKeyPair ? 1 : 0.6,
+                        cursor: cert.isKeyPair ? 'pointer' : 'not-allowed'
+                      }}
+                      onClick={() => cert.isKeyPair && handleExport(cert.alias, 'PKCS12')}
+                      disabled={exportCertificate.isPending || !cert.isKeyPair}
+                      title={cert.isKeyPair ? "Export certificate and private key in PKCS#12 format" : "PKCS#12 export requires a private key"}
+                    >
+                      Export PKCS#12
+                    </button>
+                    <button
+                      style={{
+                        ...buttonStyle,
+                        backgroundColor: cert.isKeyPair ? '#6c757d' : '#adb5bd',
+                        color: 'white',
+                        opacity: cert.isKeyPair ? 1 : 0.6,
+                        cursor: cert.isKeyPair ? 'pointer' : 'not-allowed'
+                      }}
+                      onClick={() => cert.isKeyPair && handleGenerateCSR(cert.alias)}
+                      disabled={generateCSR.isPending || !cert.isKeyPair}
+                      title={cert.isKeyPair ? "Generate Certificate Signing Request" : "CSR generation requires a private key"}
+                    >
+                      Generate CSR
+                    </button>
+                    <button
+                      style={{
+                        ...buttonStyle,
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        marginRight: 0
+                      }}
+                      onClick={() => handleDelete(cert.alias, cert.subjectDN)}
+                      disabled={deleteCertificate.isPending}
+                      title="Delete this certificate"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>
@@ -219,6 +515,16 @@ export default function CertificateList() {
         <CertificateImport
           keystoreType={keystoreType}
           onClose={() => setShowImport(false)}
+        />
+      )}
+
+      {showGenerateKey && (
+        <GenerateKeyDialog
+          keystoreType={keystoreType}
+          onClose={() => setShowGenerateKey(false)}
+          onSuccess={() => {
+            // Refresh the certificate list
+          }}
         />
       )}
     </div>

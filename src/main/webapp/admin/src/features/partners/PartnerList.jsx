@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { usePartners, useDeletePartner } from './usePartners';
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
-import PartnerForm from './PartnerForm';
+import PartnerFormTabs from './PartnerFormTabs';
 
 export default function PartnerList() {
   const { data: partners, isLoading, error } = usePartners();
@@ -177,7 +177,7 @@ export default function PartnerList() {
       </table>
 
       {showForm && (
-        <PartnerForm
+        <PartnerFormTabs
           partner={editingPartner}
           onClose={handleCloseForm}
           onSuccess={handleCloseForm}

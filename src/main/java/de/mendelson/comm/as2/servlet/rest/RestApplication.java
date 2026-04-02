@@ -28,6 +28,8 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 public class RestApplication extends ResourceConfig {
 
     public RestApplication() {
+        System.out.println("RestApplication: Initializing Jersey REST application...");
+
         // Register Jackson for JSON
         register(JacksonFeature.class);
         register(JacksonObjectMapperProvider.class);
@@ -40,7 +42,9 @@ public class RestApplication extends ResourceConfig {
         register(ApiExceptionMapper.class);
 
         // Register resource classes
+        System.out.println("RestApplication: Registering AuthenticationResource");
         register(AuthenticationResource.class);
+        System.out.println("RestApplication: Registering SystemResource");
         register(SystemResource.class);
         register(PartnerResource.class);
         register(CertificateResource.class);
@@ -48,6 +52,8 @@ public class RestApplication extends ResourceConfig {
         register(CemResource.class);
         register(StatisticsResource.class);
         register(PreferencesResource.class);
+
+        System.out.println("RestApplication: Jersey REST application initialized");
 
         // Configure Jackson ObjectMapper
         register(new AbstractBinder() {
