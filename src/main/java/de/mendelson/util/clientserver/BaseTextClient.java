@@ -4,7 +4,6 @@ package de.mendelson.util.clientserver;
 import de.mendelson.util.clientserver.console.LoggingHandlerPrintStream;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import de.mendelson.util.clientserver.messages.LoginRequired;
 import de.mendelson.util.clientserver.messages.ServerSideNotification;
 import de.mendelson.util.log.LogFormatter;
 import java.io.PrintStream;
@@ -229,8 +228,6 @@ public abstract class BaseTextClient implements ClientSessionHandlerCallback {
         //there is no user defined processing for sync responses
         if (message._isSyncRequest()) {
             return;
-        } else if (message instanceof LoginRequired) {
-            this.loginRequestedFromServer();
         } else {
             //let the message process by all registered client side processors
             boolean processed = false;
@@ -240,7 +237,7 @@ public abstract class BaseTextClient implements ClientSessionHandlerCallback {
                 }
             }
             if (!(message instanceof ServerSideNotification) && !processed) {
-                this.log(Level.WARNING, 
+                this.log(Level.WARNING,
                         "The server notified an unprocessed message of type "
                         + message.getClass().getName());
             }

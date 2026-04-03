@@ -138,5 +138,187 @@ CREATE TABLE notification(
   notifyclientserver INTEGER
 );
 
+-- ============================================================================
+-- User Management System Schema
+-- ============================================================================
+
+-- Users table - stores WebUI user accounts
+CREATE TABLE webui_users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(64) NOT NULL UNIQUE,
+    password_hash VARCHAR(256) NOT NULL,
+    email VARCHAR(128),
+    full_name VARCHAR(128),
+    enabled BOOLEAN DEFAULT TRUE,
+    must_change_password BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL
+);
+CREATE INDEX idx_webui_users_username ON webui_users(username);
+CREATE INDEX idx_webui_users_enabled ON webui_users(enabled);
+
+-- Roles table - defines user roles (ADMIN, USER, VIEWER, etc.)
+CREATE TABLE webui_roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL UNIQUE,
+    description VARCHAR(256),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_webui_roles_name ON webui_roles(name);
+
+-- User-Role mapping - many-to-many relationship
+CREATE TABLE webui_user_roles (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES webui_users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_webui_user_roles_user_id ON webui_user_roles(user_id);
+CREATE INDEX idx_webui_user_roles_role_id ON webui_user_roles(role_id);
+
+-- Permissions table - granular permissions (PARTNER_READ, CERT_WRITE, etc.)
+CREATE TABLE webui_permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL UNIQUE,
+    description VARCHAR(256),
+    category VARCHAR(64),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_webui_permissions_name ON webui_permissions(name);
+CREATE INDEX idx_webui_permissions_category ON webui_permissions(category);
+
+-- Role-Permission mapping - many-to-many relationship
+CREATE TABLE webui_role_permissions (
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES webui_permissions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_webui_role_permissions_role_id ON webui_role_permissions(role_id);
+CREATE INDEX idx_webui_role_permissions_permission_id ON webui_role_permissions(permission_id);
+
+-- Trigger function to auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_webui_users_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to call the function before update
+CREATE TRIGGER trigger_update_webui_users_updated_at
+    BEFORE UPDATE ON webui_users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_webui_users_updated_at();
 
 
+INSERT INTO notification (mailhost, mailhostport, notificationemailaddress, notifycertexpire, notifytransactionerror,
+  notifycem, notifysystemfailure, notifypostprocessing, replyto,
+  usesmtpauth, smtpauthuser, smtpauthpass, notifyresend, security,
+  maxnotificationspermin, notifyconnectionproblem, notifyclientserver, usesmtpoauth2, smtpoauth2id)
+VALUES ('smtp.office365.com', 587, 'julian.xu@aliyun.com', 1, 1, 0, 1, 1, 'julian.xu@aliyun.com', 1, 'julian.xu@aliyun.com', 'password!', 1, 1, 2, 1, 0, 0, 0);
+
+-- INSERT INTO BLOCKS VALUES(0, 2147483647, 0)
+INSERT INTO VERSION
+VALUES(
+    0,
+    0,
+    '2025-05-23 09:47:07.544000',
+    'mend-as2'
+);
+
+-- ============================================================================
+-- User Management System - Default Data
+-- ============================================================================
+
+-- Default Roles
+INSERT INTO webui_roles (name, description) VALUES
+('ADMIN', 'Full system access - can manage all resources and users'),
+('PARTNER_MANAGER', 'Can manage trading partners and their configurations'),
+('CERTIFICATE_MANAGER', 'Can manage certificates, keystores, and key generation'),
+('MESSAGE_OPERATOR', 'Can view and send AS2 messages'),
+('SYSTEM_MONITOR', 'Can view system information, events, and logs'),
+('VIEWER', 'Read-only access - can only view data');
+
+-- Default Permissions
+INSERT INTO webui_permissions (name, description, category) VALUES
+-- Partner permissions
+('PARTNER_READ', 'View partners', 'Partners'),
+('PARTNER_WRITE', 'Create/modify/delete partners', 'Partners'),
+
+-- Certificate permissions
+('CERT_READ', 'View certificates', 'Certificates'),
+('CERT_WRITE', 'Import/export/generate/delete certificates', 'Certificates'),
+
+-- Message permissions
+('MESSAGE_READ', 'View messages', 'Messages'),
+('MESSAGE_WRITE', 'Send/delete messages', 'Messages'),
+
+-- System permissions
+('SYSTEM_READ', 'View system info and logs', 'System'),
+('SYSTEM_WRITE', 'Modify system settings', 'System'),
+
+-- User management permissions
+('USER_MANAGE', 'Manage users and roles', 'Administration');
+
+-- Default admin user (password: "admin" - should be changed after first login)
+INSERT INTO webui_users (username, password_hash, full_name, enabled) VALUES
+('admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE);
+
+-- Grant ALL permissions to ADMIN role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'ADMIN';
+
+-- Grant partner management permissions to PARTNER_MANAGER role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'PARTNER_MANAGER'
+  AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE');
+
+-- Grant certificate management permissions to CERTIFICATE_MANAGER role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'CERTIFICATE_MANAGER'
+  AND p.name IN ('CERT_READ', 'CERT_WRITE');
+
+-- Grant message operations permissions to MESSAGE_OPERATOR role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'MESSAGE_OPERATOR'
+  AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE', 'PARTNER_READ');
+
+-- Grant system monitoring permissions to SYSTEM_MONITOR role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'SYSTEM_MONITOR'
+  AND p.name IN ('SYSTEM_READ', 'MESSAGE_READ', 'PARTNER_READ', 'CERT_READ');
+
+-- Grant READ-ONLY permissions to VIEWER role
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'VIEWER'
+  AND p.name IN ('PARTNER_READ', 'CERT_READ', 'MESSAGE_READ', 'SYSTEM_READ');
+
+-- Assign ADMIN role to default admin user
+INSERT INTO webui_user_roles (user_id, role_id)
+SELECT u.id, r.id
+FROM webui_users u
+CROSS JOIN webui_roles r
+WHERE u.username = 'admin' AND r.name = 'ADMIN';

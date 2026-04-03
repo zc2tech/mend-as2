@@ -3,8 +3,6 @@ package de.mendelson.util.systemevents;
 
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.BaseClient;
-import de.mendelson.util.clientserver.messages.LoginRequest;
-import de.mendelson.util.clientserver.messages.LoginState;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
@@ -87,15 +85,12 @@ public abstract class SystemEventManager {
 
     /**
      * Throws a new system event that a login was successful
-     *
-     * @param tlsProtocol The used TLS protocol or null if this could not be
-     * determined or the connection is unsecured
-     * @param tlsProtocol The used TLS cipher suite or null if this could not be
-     * determined or the connection is unsecured
-     *
+     * These methods are kept for WebUI JWT authentication events
+     * @deprecated SwingUI no longer uses these methods
      */
-    public void newEventClientLoginSuccess(LoginState loginState, SocketAddress remoteAddress, String sessionId,
-            LoginRequest loginRequest, String tlsProtocol, String tlsCipherSuite) {
+    @Deprecated
+    public void newEventClientLoginSuccess(String username, SocketAddress remoteAddress, String sessionId,
+            String clientInfo, String tlsProtocol, String tlsCipherSuite) {
         SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_INFO, SystemEvent.ORIGIN_USER,
                 SystemEvent.TYPE_CLIENT_LOGIN_SUCCESS);
         StringBuilder builder = new StringBuilder();
@@ -105,20 +100,10 @@ public abstract class SystemEventManager {
                         (tlsCipherSuite == null ? "--" : tlsCipherSuite))).append("\n")
                 .append(rb.getResourceString("label.body.clientip",
                         remoteAddress.toString())).append("\n")
-                .append(rb.getResourceString("label.body.processid",
-                        loginRequest.getPID())).append("\n")
-                .append(rb.getResourceString("label.body.clientos",
-                        loginRequest.getClientOSName())).append("\n")
                 .append(rb.getResourceString("label.body.details",
-                        loginState.getStateDetails())).append("\n");
+                        clientInfo)).append("\n");
         event.setBody(builder.toString());
-        String subject = rb.getResourceString("label.subject.login.success",
-                loginState.getUser().getName());
-        if (loginRequest.getClientType() != BaseClient.CLIENT_UNSPECIFIED) {
-            subject = subject + " ("
-                    + BaseClient.clientTypeToStr(loginRequest.getClientType())
-                    + ")";
-        }
+        String subject = rb.getResourceString("label.subject.login.success", username);
         event.setSubject(subject);
         try {
             this.storeEventToFile(event);
@@ -129,30 +114,20 @@ public abstract class SystemEventManager {
 
     /**
      * Throws a new system event that a login has failed
+     * @deprecated SwingUI no longer uses these methods
      */
-    public void newEventClientLoginFailure(LoginState loginState, SocketAddress remoteAddress, String sessionId,
-            LoginRequest loginRequest) {
+    @Deprecated
+    public void newEventClientLoginFailure(String username, SocketAddress remoteAddress, String sessionId,
+            String clientInfo, String failureReason) {
         SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_WARNING, SystemEvent.ORIGIN_USER,
                 SystemEvent.TYPE_CLIENT_LOGIN_FAILURE);
         StringBuilder builder = new StringBuilder();
         builder.append(rb.getResourceString("label.body.clientip",
                 remoteAddress.toString())).append("\n")
-                .append(rb.getResourceString("label.body.processid",
-                        loginRequest.getPID())).append("\n")
-                .append(rb.getResourceString("label.body.clientos",
-                        loginRequest.getClientOSName())).append("\n")
-                .append(rb.getResourceString("label.body.clientversion",
-                        loginRequest.getClientId())).append("\n")
                 .append(rb.getResourceString("label.body.details",
-                        loginState.getStateDetails())).append("\n");
+                        failureReason)).append("\n");
         event.setBody(builder.toString());
-        String subject = rb.getResourceString("label.subject.login.failed",
-                loginState.getUser().getName());
-        if (loginRequest.getClientType() != BaseClient.CLIENT_UNSPECIFIED) {
-            subject = subject + " ("
-                    + BaseClient.clientTypeToStr(loginRequest.getClientType())
-                    + ")";
-        }
+        String subject = rb.getResourceString("label.subject.login.failed", username);
         event.setSubject(subject);
         try {
             this.storeEventToFile(event);

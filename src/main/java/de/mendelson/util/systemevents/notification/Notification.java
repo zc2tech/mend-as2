@@ -1,4 +1,14 @@
 //$Header: /as2/de/mendelson/util/systemevents/notification/Notification.java 35    20/02/25 13:42 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.MecResourceBundle;

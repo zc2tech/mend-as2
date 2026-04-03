@@ -4,11 +4,8 @@ package de.mendelson.util.clientserver;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.connectionprogress.JDialogConnectionProgress;
-import de.mendelson.util.clientserver.gui.JDialogLogin;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import de.mendelson.util.clientserver.messages.LoginRequired;
-import de.mendelson.util.clientserver.messages.LoginState;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.messages.ServerSideNotification;
 import de.mendelson.util.clientserver.user.User;
@@ -128,37 +125,20 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
     @Override
     public abstract Logger getLogger();
 
+    /**
+     * Login method simplified - SwingUI no longer requires authentication
+     * This method is kept for backward compatibility
+     */
     public void performLogin(String user, char[] passwd, String clientId) {
-        LoginState loginStateMessage = this.getBaseClient().login(user, passwd, clientId);
         if (this.getLogger() == null) {
             throw new RuntimeException("GUIClient.loggedIn: No logger set.");
         }
-        if (loginStateMessage.getServerHelloMessages() != null) {
-            for (ServerHelloMessage helloMessage : loginStateMessage.getServerHelloMessages()) {
-                Level logLevel = Level.CONFIG;
-                if (helloMessage.getLevel() == ServerHelloMessage.LEVEL_SEVERE) {
-                    logLevel = Level.SEVERE;
-                } else if (helloMessage.getLevel() == ServerHelloMessage.LEVEL_WARNING) {
-                    logLevel = Level.WARNING;
-                }
-                this.log(logLevel, helloMessage.getMessage());
-            }
-        }
-        while (loginStateMessage.getState() != LoginState.STATE_AUTHENTICATION_SUCCESS
-                && loginStateMessage.getState() != LoginState.STATE_INCOMPATIBLE_CLIENT
-                && loginStateMessage.getState() != LoginState.STATE_REJECTED) {
-            loginStateMessage = this.performLogin(user);
-        }
-        if (loginStateMessage.getState() == LoginState.STATE_INCOMPATIBLE_CLIENT) {
-            this.log(Level.SEVERE, loginStateMessage.getStateDetails());
-        } else if (loginStateMessage.getState() == LoginState.STATE_REJECTED) {
-            this.log(Level.SEVERE, loginStateMessage.getStateDetails());
-        } else {
-            User returnedLoginUser = loginStateMessage.getUser();
-            //login successful: pass a user to the base client
-            this.getBaseClient().setUser(returnedLoginUser);
-            this.log(Level.CONFIG, rb.getResourceString("login.success", returnedLoginUser.getName()));
-        }
+        // No authentication needed for SwingUI
+        // Create a dummy user object for compatibility
+        User dummyUser = new User();
+        dummyUser.setName(user != null ? user : "swing_client");
+        this.getBaseClient().setUser(dummyUser);
+        this.log(Level.CONFIG, rb.getResourceString("login.success", dummyUser.getName()));
     }
 
     /**
@@ -175,43 +155,14 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
         return (Color.WHITE);
     }
 
-    private LoginState performLogin(String user) {
-        JDialogLogin dialog = new JDialogLogin(null, this.serverProductName);
-        dialog.setColor(this.getLoginDialogColorBackground(), this.getLoginDialogColorForeground());
-        dialog.setDefaultUser(user);
-        dialog.setVisible(true);
-        if (!dialog.isCanceled()) {
-            char[] passwd = dialog.getPass();
-            String loginUser = dialog.getUser();
-            LoginState state = this.getBaseClient().login(loginUser, passwd, this.serverProductName);
-            if (state.getState() == LoginState.STATE_AUTHENTICATION_FAILURE_PASSWORD_REQUIRED) {
-                if (this.getLogger() == null) {
-                    throw new RuntimeException("GUIClient.loginFailureServerRequestsPassword: No logger set.");
-                }
-                this.log(Level.INFO, rb.getResourceString("password.required", user));
-                return (this.performLogin(loginUser));
-            } else if (state.getState() == LoginState.STATE_AUTHENTICATION_SUCCESS) {
-                //everything is fine: just return the state for further login processing
-                return (state);
-            } else if (state.getState() == LoginState.STATE_AUTHENTICATION_FAILURE) {
-                if (this.getLogger() == null) {
-                    throw new RuntimeException("GUIClient.loginFailure: No logger set.");
-                }
-                User returnedLoginUser = state.getUser();
-                this.log(Level.WARNING, rb.getResourceString("login.failure", returnedLoginUser.getName()));
-                return (this.performLogin(returnedLoginUser.getName()));
-            } else if (state.getState() == LoginState.STATE_INCOMPATIBLE_CLIENT) {
-                JOptionPane.showMessageDialog(GUIClient.this,
-                        rb.getResourceString("login.failed.client.incompatible.message"),
-                        rb.getResourceString("login.failed.client.incompatible.title"), JOptionPane.ERROR_MESSAGE);
-                System.exit(1);
-            }
-        } else {
-            //kill VM
-            System.exit(1);
-        }
-        //will NEVER happen
-        return (null);
+    /**
+     * Login dialog removed - no longer needed
+     * @deprecated Authentication removed for SwingUI
+     */
+    @Deprecated
+    private Object performLogin(String user) {
+        // No login dialog needed
+        return null;
     }
 
     /**
@@ -293,12 +244,10 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
         //catch the server information if its available
         if (message instanceof ServerInfo) {
             this.serverProductName = ((ServerInfo) message).getProductname();
-        } else if (message instanceof LoginRequired) {
-            this.loginRequestedFromServer();
         } else {
             boolean processed = false;
             synchronized (this.messageProcessorList) {
-                //let the message process by all registered client side processors            
+                //let the message process by all registered client side processors
                 for (ClientsideMessageProcessor processor : this.messageProcessorList) {
                     processed |= processor.processMessageFromServer(message);
                 }

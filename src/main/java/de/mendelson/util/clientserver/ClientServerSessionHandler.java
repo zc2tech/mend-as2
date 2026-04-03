@@ -2,9 +2,6 @@
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import de.mendelson.util.clientserver.messages.LoginRequest;
-import de.mendelson.util.clientserver.messages.LoginRequired;
-import de.mendelson.util.clientserver.messages.LoginState;
 import de.mendelson.util.clientserver.messages.QuitRequest;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.messages.ServerLogMessage;
@@ -65,7 +62,6 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
      * Stores all sessions
      */
     private final List<IoSession> sessions = Collections.synchronizedList(new ArrayList<IoSession>());
-    private final PasswordValidationHandler loginHandler;
     /**
      * Allows to access the server for special messages without a required login
      */
@@ -87,7 +83,6 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
         this.eventManager = eventManager;
         this.maxClients = maxClients;
         this.validClientIds = validClientIds;
-        this.loginHandler = new PasswordValidationHandler(validClientIds);
     }
 
     public void setCallback(ClientServerSessionHandlerCallback callback) {
@@ -126,34 +121,6 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
      */
     public void log(Level logLevel, String message) {
         this.logger.log(logLevel, message);
-    }
-
-    private void throwEventLoginFailed(IoSession session, LoginState loginState, LoginRequest loginRequest) {
-        this.eventManager.newEventClientLoginFailure(loginState, session.getRemoteAddress(), String.valueOf(session.getId()),
-                loginRequest);
-    }
-
-    /**
-     * Informs the event manager that a successful login has been performed.
-     * Finds out the TLS protocol and the cipher suite
-     *
-     */
-    private void throwEventLoginSuccess(IoSession session, LoginState loginState, LoginRequest loginRequest) {
-        String tlsProtocol = null;
-        String tlsCipherSuite = null;
-        if (session.isSecured()) {
-            Set<Object> keys = session.getAttributeKeys();
-            for (Object key : keys) {
-                if (session.getAttribute(key) instanceof SSLSession) {
-                    SSLSession sslSession = (SSLSession) session.getAttribute(key);
-                    tlsProtocol = sslSession.getProtocol();
-                    tlsCipherSuite = sslSession.getCipherSuite();
-                    break;
-                }
-            }
-        }
-        this.eventManager.newEventClientLoginSuccess(loginState, session.getRemoteAddress(), String.valueOf(session.getId()),
-                loginRequest, tlsProtocol, tlsCipherSuite);
     }
 
     private void throwEventLogoff(IoSession session, String message) {
@@ -221,119 +188,26 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
         if (this.anonymousProcessing != null && this.anonymousProcessing.processMessageWithoutLogin(session, message)) {
             this.performUserDefinedProcessing(session, message);
         } else {
-            //it is a login request
-            if (message instanceof LoginRequest) {
-                LoginRequest loginRequest = (LoginRequest) message;
-                //validate passwd first, close session if it fails
-                User definedUser = userAccess.readUser(loginRequest.getUserName());
-                if (definedUser != null && this.permissionDescription != null) {
-                    definedUser.setPermissionDescription(this.permissionDescription);
-                }
-                User transmittedUser = new User();
-                transmittedUser.setName(loginRequest.getUserName());
-                int validationState = this.loginHandler.validate(definedUser, loginRequest.getPasswd(),
-                        loginRequest.getClientId());
-                if (validationState == PasswordValidationHandler.STATE_FAILURE) {
-                    LoginState loginStateMessage = new LoginState(loginRequest);
-                    if (this.serverHelloMessageGenerator != null) {
-                        loginStateMessage.setServerHelloMessages(this.serverHelloMessageGenerator.generateServerHelloMessages());
-                    }
-                    loginStateMessage.setUser(transmittedUser);
-                    loginStateMessage.setState(LoginState.STATE_AUTHENTICATION_FAILURE);
-                    loginStateMessage.setStateDetails("Authentication failed: Wrong user/password combination or user does not exist");
-                    this.throwEventLoginFailed(session, loginStateMessage, loginRequest);
-                    session.write(loginStateMessage);
-                    return;
-                } else if (validationState == PasswordValidationHandler.STATE_INCOMPATIBLE_CLIENT) {
-                    LoginState loginStateMessage = new LoginState(loginRequest);
-                    if (this.serverHelloMessageGenerator != null) {
-                        loginStateMessage.setServerHelloMessages(
-                                this.serverHelloMessageGenerator.generateServerHelloMessages());
-                    }
-                    loginStateMessage.setUser(transmittedUser);
-                    loginStateMessage.setState(LoginState.STATE_INCOMPATIBLE_CLIENT);
-                    StringBuilder validClientIdStr = new StringBuilder();
-                    for (String clientId : this.validClientIds) {
-                        if (validClientIdStr.length() > 0) {
-                            validClientIdStr.append(", ");
-                        }
-                        validClientIdStr.append(clientId);
-                    }
-                    loginStateMessage.setStateDetails("The login process to the server has failed because the client is incompatible. Please ensure that client and server have the same version. Client version: ["
-                            + loginRequest.getClientId() + "], Server version: [" + validClientIdStr + "]");
-                    this.throwEventLoginFailed(session, loginStateMessage, loginRequest);
-                    session.write(loginStateMessage);
-                    session.closeOnFlush();
-                    return;
-                } else if (validationState == PasswordValidationHandler.STATE_PASSWORD_REQUIRED) {
-                    LoginState loginStateMessage = new LoginState(loginRequest);
-                    if (this.serverHelloMessageGenerator != null) {
-                        loginStateMessage.setServerHelloMessages(
-                                this.serverHelloMessageGenerator.generateServerHelloMessages());
-                    }
-                    loginStateMessage.setUser(transmittedUser);
-                    loginStateMessage.setState(LoginState.STATE_AUTHENTICATION_FAILURE_PASSWORD_REQUIRED);
-                    loginStateMessage.setStateDetails("Authentication failed, password required for user [" + loginRequest.getUserName() + "]");
-                    this.throwEventLoginFailed(session, loginStateMessage, loginRequest);
-                    session.write(loginStateMessage);
-                    return;
-                }
+            // SwingUI clients no longer require authentication
+            // Add session tracking for monitoring purposes
+            boolean sessionTracked = session.containsAttribute(SESSION_ATTRIB_USER);
+            if (!sessionTracked) {
+                // Track session with a generic identifier
+                session.setAttribute(SESSION_ATTRIB_USER, "swing_client");
+                session.setAttribute(SESSION_ATTRIB_CLIENT_TYPE, Integer.valueOf(1)); // RICH_CLIENT type
+
+                // Add session to the list
                 synchronized (this.sessions) {
-                    if (this.maxClients > 0 && this.sessions.size() + 1 > this.maxClients) {
-                        LoginState loginStateMessage = new LoginState(loginRequest);
-                        if (this.serverHelloMessageGenerator != null) {
-                            loginStateMessage.setServerHelloMessages(
-                                    this.serverHelloMessageGenerator.generateServerHelloMessages());
-                        }
-                        loginStateMessage.setUser(transmittedUser);
-                        loginStateMessage.setState(LoginState.STATE_REJECTED);
-                        loginStateMessage.setStateDetails("Login request rejected.");
-                        this.throwEventLoginFailed(session, loginStateMessage, loginRequest);
-                        session.write(loginStateMessage);
+                    // Check max clients limit
+                    if (this.maxClients > 0 && this.sessions.size() >= this.maxClients) {
+                        this.log(Level.WARNING, "Maximum number of clients reached, rejecting connection");
+                        session.closeOnFlush();
                         return;
                     }
-                }
-                //user is logged in: add the user name to the session
-                session.setAttribute(SESSION_ATTRIB_USER, loginRequest.getUserName());
-                session.setAttribute(SESSION_ATTRIB_CLIENT_PID, loginRequest.getPID());
-                session.setAttribute(SESSION_ATTRIB_CLIENT_TYPE, Integer.valueOf(loginRequest.getClientType()));
-                //add the session to the list of available sessions
-                synchronized (this.sessions) {
                     this.sessions.add(session);
                 }
-                //success!
-                LoginState loginSuccessState = new LoginState(loginRequest);
-                if (this.serverHelloMessageGenerator != null) {
-                    loginSuccessState.setServerHelloMessages(
-                            this.serverHelloMessageGenerator.generateServerHelloMessages());
-                }
-                loginSuccessState.setState(LoginState.STATE_AUTHENTICATION_SUCCESS);
-                String userName = "undefined_user";
-                if( definedUser != null ){
-                    userName = definedUser.getName();
-                }
-                loginSuccessState.setStateDetails("Authentication successful, user [" + userName + "] logged in");
-                loginSuccessState.setUser(definedUser);
-                this.throwEventLoginSuccess(session, loginSuccessState, loginRequest);
-                session.write(loginSuccessState);
-                if (this.callback != null) {
-                    this.callback.clientLoggedIn(session);
-                }
-                return;
             }
-            boolean loggedIn = session.containsAttribute(SESSION_ATTRIB_USER);
-            //user not logged in so far
-            if (!loggedIn) {
-                LoginRequired loginRequired = new LoginRequired();
-                User userObj = new User();
-                if (this.permissionDescription != null) {
-                    userObj.setPermissionDescription(this.permissionDescription);
-                }
-                loginRequired.setUser(userObj);
-                session.write(loginRequired);
-                session.closeOnFlush();
-                return;
-            }
+
             //here starts the user defined processing to extend the server functionality
             this.performUserDefinedProcessing(session, message);
         }
@@ -453,10 +327,11 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
     }
 
     /**
-     * Wait for the TLS handshake to be complete - then send the serverinfo and the login request to the client
+     * Wait for the TLS handshake to be complete - then send the serverinfo
+     * Login is no longer required for client-server protocol
      * @param session
      * @param event
-     * @throws Exception 
+     * @throws Exception
      */
     @Override
     public void event(IoSession session, FilterEvent event) throws Exception {
@@ -464,9 +339,7 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
             ServerInfo info = new ServerInfo();
             info.setProductname(this.productName);
             session.write(info);
-            //request a login
-            LoginRequired loginRequired = new LoginRequired();
-            session.write(loginRequired);
+            // No longer sending LoginRequired - clients connect without authentication
         }
     }
 

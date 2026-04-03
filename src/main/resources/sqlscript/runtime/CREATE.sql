@@ -211,5 +211,5 @@ CREATE INDEX idx_highavail_uniqueid ON highavail(uniqueid);
 CREATE INDEX idx_highavail_starttime ON highavail(starttime);
 CREATE INDEX idx_highavail_lastupdatetime ON highavail(lastupdatetime);
 
-INSERT INTO version VALUES(DEFAULT,56,'2025-05-23 09:47:07.680000','mend-as2 1.0');
+INSERT INTO version VALUES(DEFAULT,0,'2025-05-23 09:47:07.680000','mend-as2 1.0');
 

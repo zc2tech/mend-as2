@@ -1,7 +1,30 @@
+/*
+ * Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package de.mendelson.comm.as2.servlet.rest.auth;
 
-import de.mendelson.util.clientserver.user.User;
-import de.mendelson.util.clientserver.user.UserAccess;
+import de.mendelson.comm.as2.server.AS2ServerProcessing;
+import de.mendelson.comm.as2.servlet.rest.RestApplication;
+import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.security.PBKDF2;
 
 import jakarta.ws.rs.*;
@@ -12,7 +35,6 @@ import java.util.logging.Logger;
  * REST resource for authentication operations
  * Handles login, logout, and token refresh
  *
- * @author S.Heller
  */
 @Path("/auth")
 public class AuthenticationResource {
@@ -23,12 +45,21 @@ public class AuthenticationResource {
     private static final int REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
-    private final UserAccess userAccess;
     private final Logger logger = Logger.getLogger("de.mendelson.as2.server");
 
     public AuthenticationResource() {
-        this.userAccess = new UserAccess(logger);
         System.out.println("AuthenticationResource: Initialized - /auth endpoint should be available");
+    }
+
+    /**
+     * Get UserManagementAccessDB instance
+     */
+    private UserManagementAccessDB getUserManagementAccess() {
+        AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+        if (processing == null) {
+            return null;
+        }
+        return new UserManagementAccessDB(processing.getDBDriverManager(), logger);
     }
 
     /**
@@ -41,24 +72,46 @@ public class AuthenticationResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response login(LoginRequest loginRequest) {
         try {
-            // Validate credentials
-            User user = userAccess.readUser(loginRequest.getUsername());
+            UserManagementAccessDB userMgmt = getUserManagementAccess();
+            if (userMgmt == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Authentication service not available"))
+                        .build();
+            }
+
+            // Validate credentials - get user from new user management system
+            WebUIUser user = userMgmt.getUserByUsername(loginRequest.getUsername());
             if (user == null) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(new ErrorResponse("Invalid username or password"))
                         .build();
             }
 
+            // Check if user is enabled
+            if (!user.isEnabled()) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(new ErrorResponse("User account is disabled"))
+                        .build();
+            }
+
             // Check password
             boolean passwordValid = PBKDF2.validatePassword(
                     loginRequest.getPassword(),
-                    user.getPasswdCrypted()
+                    user.getPasswordHash()
             );
 
             if (!passwordValid) {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(new ErrorResponse("Invalid username or password"))
                         .build();
+            }
+
+            // Update last login timestamp
+            try {
+                userMgmt.updateLastLogin(loginRequest.getUsername());
+            } catch (Exception e) {
+                logger.warning("Failed to update last login time: " + e.getMessage());
+                // Don't fail login if timestamp update fails
             }
 
             // Generate tokens

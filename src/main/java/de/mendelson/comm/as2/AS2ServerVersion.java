@@ -12,6 +12,15 @@ import de.mendelson.IProductVersion;
  * Other product and brand names are trademarks of their respective owners.
  */
 
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 /**
  * Class to check the version and the build of the AS2 server
  *

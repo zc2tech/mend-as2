@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package de.mendelson.comm.as2.database;
 
 import java.io.FileInputStream;
@@ -6,13 +27,6 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-/*
- * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
- *
- * This software is subject to the license agreement set forth in the license.
- * Please read and agree to all terms before using this software.
- * Other product and brand names are trademarks of their respective owners.
- */
 /**
  * Configuration loader for PostgreSQL database settings.
  * Loads settings from:
@@ -21,7 +35,6 @@ import java.util.logging.Logger;
  * 3. System properties
  * 4. Default values (lowest priority)
  *
- * @author S.Heller
  */
 public class PostgreSQLConfig {
 

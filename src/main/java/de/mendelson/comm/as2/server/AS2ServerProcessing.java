@@ -1,4 +1,14 @@
 //$Header: /mec_as2/de/mendelson/comm/as2/server/AS2ServerProcessing.java 285   21/03/25 9:12 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Exception;
@@ -92,6 +102,10 @@ import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferences;
 import de.mendelson.comm.as2.send.DirPollManager;
 import de.mendelson.comm.as2.sendorder.SendOrder;
+import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.clientserver.*;
+import de.mendelson.util.clientserver.user.User;
 import de.mendelson.comm.as2.sendorder.SendOrderSender;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
 import de.mendelson.comm.as2.statistic.ServerInteroperabilityAccessDB;
@@ -583,6 +597,33 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof SinglePartnerModificationRequest) {
                 this.processPartnerModificationRequest(session, (SinglePartnerModificationRequest) message);
+                return (true);
+            } else if (message instanceof UserListRequest msg) {
+                session.write(this.processUserListRequest(msg));
+                return (true);
+            } else if (message instanceof UserCreateRequest msg) {
+                session.write(this.processUserCreateRequest(msg));
+                return (true);
+            } else if (message instanceof UserModifyRequest msg) {
+                session.write(this.processUserModifyRequest(msg));
+                return (true);
+            } else if (message instanceof UserDeleteRequest msg) {
+                session.write(this.processUserDeleteRequest(msg));
+                return (true);
+            } else if (message instanceof UserPasswordChangeRequest msg) {
+                session.write(this.processUserPasswordChangeRequest(msg));
+                return (true);
+            } else if (message instanceof RoleListRequest msg) {
+                session.write(this.processRoleListRequest(msg));
+                return (true);
+            } else if (message instanceof UserRolesRequest msg) {
+                session.write(this.processUserRolesRequest(msg));
+                return (true);
+            } else if (message instanceof UserRoleAssignRequest msg) {
+                session.write(this.processUserRoleAssignRequest(msg));
+                return (true);
+            } else if (message instanceof UserRoleRemoveRequest msg) {
+                session.write(this.processUserRoleRemoveRequest(msg));
                 return (true);
             }
         } catch (Throwable e) {
@@ -3168,6 +3209,189 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         catch (Exception e) {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
         }
+    }
+
+    /**
+     * Process user list request
+     */
+    public UserListResponse processUserListRequest(UserListRequest request) {
+        UserListResponse response = new UserListResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            List<WebUIUser> users = userMgmt.getAllUsers();
+            // Remove password hashes for security
+            for (WebUIUser user : users) {
+                user.setPasswordHash(null);
+            }
+            response.setUsers(users);
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user list request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user create request
+     */
+    public UserCreateResponse processUserCreateRequest(UserCreateRequest request) {
+        UserCreateResponse response = new UserCreateResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            WebUIUser user = request.getUser();
+
+            String password;
+            if (request.isGenerateAndEmailPassword()) {
+                // Generate random password
+                password = de.mendelson.comm.as2.usermanagement.PasswordGenerator.generatePassword();
+                // Set must change password flag for non-admin users
+                if (!"admin".equals(user.getUsername())) {
+                    user.setMustChangePassword(true);
+                }
+            } else {
+                password = request.getPlainPassword();
+            }
+
+            // Hash the password
+            String passwordHash = User.cryptPassword(password.toCharArray());
+            user.setPasswordHash(passwordHash);
+
+            // Create user
+            int userId = userMgmt.createUser(user);
+            response.setUserId(userId);
+
+            // Send email if requested
+            if (request.isGenerateAndEmailPassword()) {
+                try {
+                    de.mendelson.util.systemevents.notification.NotificationAccessDB notificationAccess
+                        = new de.mendelson.util.systemevents.notification.NotificationAccessDBImplAS2(this.dbDriverManager);
+                    de.mendelson.util.systemevents.notification.NotificationData notificationData
+                        = notificationAccess.getNotificationData();
+
+                    // Get server URL from preferences (construct from HTTP port)
+                    String httpPort = this.preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
+                    String serverUrl = "http://localhost:" + httpPort + "/as2";
+
+                    de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
+                        user, password, notificationData, serverUrl);
+                } catch (Exception emailEx) {
+                    this.logger.warning("User created but email failed: " + emailEx.getMessage());
+                    response.setException(new Exception("User created but email notification failed: " + emailEx.getMessage()));
+                }
+            }
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user create request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user modify request
+     */
+    public UserModifyResponse processUserModifyRequest(UserModifyRequest request) {
+        UserModifyResponse response = new UserModifyResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.updateUser(request.getUser());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user modify request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user delete request
+     */
+    public UserDeleteResponse processUserDeleteRequest(UserDeleteRequest request) {
+        UserDeleteResponse response = new UserDeleteResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.deleteUser(request.getUserId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user delete request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process password change request
+     */
+    public UserPasswordChangeResponse processUserPasswordChangeRequest(UserPasswordChangeRequest request) {
+        UserPasswordChangeResponse response = new UserPasswordChangeResponse(request);
+        try {
+            // Hash the password server-side
+            String passwordHash = User.cryptPassword(request.getPlainPassword().toCharArray());
+
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.changePassword(request.getUserId(), passwordHash);
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing password change request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process role list request
+     */
+    public RoleListResponse processRoleListRequest(RoleListRequest request) {
+        RoleListResponse response = new RoleListResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            response.setRoles(userMgmt.getAllRoles());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing role list request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user roles request
+     */
+    public UserRolesResponse processUserRolesRequest(UserRolesRequest request) {
+        UserRolesResponse response = new UserRolesResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            response.setRoles(userMgmt.getUserRoles(request.getUserId()));
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user roles request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user role assign request
+     */
+    public UserRoleAssignResponse processUserRoleAssignRequest(UserRoleAssignRequest request) {
+        UserRoleAssignResponse response = new UserRoleAssignResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.assignRoleToUser(request.getUserId(), request.getRoleId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user role assign request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user role remove request
+     */
+    public UserRoleRemoveResponse processUserRoleRemoveRequest(UserRoleRemoveRequest request) {
+        UserRoleRemoveResponse response = new UserRoleRemoveResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.removeRoleFromUser(request.getUserId(), request.getRoleId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user role remove request", e);
+        }
+        return response;
     }
 
     /**

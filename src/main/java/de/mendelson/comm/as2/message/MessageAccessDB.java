@@ -1,4 +1,14 @@
 //$Header: /as2/de/mendelson/comm/as2/message/MessageAccessDB.java 157   12/03/25 16:07 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.partner.Partner;

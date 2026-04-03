@@ -1,4 +1,14 @@
 //$Header: /as2/de/mendelson/comm/as2/server/AS2Server.java 201   18/02/25 14:39 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Config;

@@ -174,6 +174,14 @@ import javax.swing.plaf.InsetsUIResource;
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
  */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
 /**
  * Main GUI for the control of the mendelson AS2 server
  *
@@ -212,6 +220,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/send.svg",
                     IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_TOOLBAR * 2);
     private static final MendelsonMultiResolutionImage IMAGE_PARTNER
+            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/singlepartner.svg",
+                    IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_USER_MANAGEMENT
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/singlepartner.svg",
                     IMAGE_SIZE_MENU_ITEM);
     private static final MendelsonMultiResolutionImage IMAGE_STOP
@@ -620,6 +631,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jMenuItemPopupSendAgain.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_POPUP)));
         this.jButtonPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jMenuItemPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
+        this.jButtonUserManagement.setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        this.jMenuItemUserManagement.setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemDatasheet.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemSearchInServerLog.setIcon(new ImageIcon(IMAGE_LOG_SEARCH.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jToggleButtonStopRefresh.setIcon(new ImageIcon(IMAGE_STOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
@@ -645,6 +658,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void setupToolbarTooltips() {
         // Add tooltips to toolbar buttons with their current text
         String partnerText = this.jButtonPartner.getText();
+        String userMgmtText = this.jButtonUserManagement.getText();
         String signCryptText = this.jButtonCertificatesSignEncrypt.getText();
         String tlsText = this.jButtonCertificatesTLS.getText();
 
@@ -657,6 +671,15 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         );
         this.jButtonPartner.setToolTipText(partnerText + " [" +
             KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_1) + "]");
+
+        // User Management button - Cmd/Ctrl+U
+        KeyboardShortcutUtil.addButtonShortcut(
+            this.jButtonUserManagement,
+            java.awt.event.KeyEvent.VK_U,
+            "OPEN_USER_MANAGEMENT"
+        );
+        this.jButtonUserManagement.setToolTipText(userMgmtText + " [" +
+            KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_U) + "]");
 
         // Sign/Crypt button - Cmd/Ctrl+2
         KeyboardShortcutUtil.addButtonShortcut(
@@ -1570,6 +1593,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jToolBar = new javax.swing.JToolBar();
         // jButtonShop = new javax.swing.JButton();
         jButtonPartner = new javax.swing.JButton();
+        jButtonUserManagement = new javax.swing.JButton();
         jButtonCertificatesSignEncrypt = new javax.swing.JButton();
         jButtonCertificatesSignEncrypt.setMnemonic(KeyEvent.VK_S);
         jButtonCertificatesTLS = new javax.swing.JButton();
@@ -1694,6 +1718,17 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jToolBar.add(jButtonPartner);
+
+        jButtonUserManagement.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonUserManagement.setText("User Management");
+        jButtonUserManagement.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jButtonUserManagement.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButtonUserManagement.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonUserManagementActionPerformed(evt);
+            }
+        });
+        jToolBar.add(jButtonUserManagement);
 
         jButtonCertificatesSignEncrypt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
         jButtonCertificatesSignEncrypt.setText(this.rb.getResourceString( "menu.file.certificate.signcrypt" ));
@@ -2159,6 +2194,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuItemDatasheet);
         jMenuFile.add(jSeparator6);
 
+        jMenuItemUserManagement = new javax.swing.JMenuItem();
+        jMenuItemUserManagement.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
+        jMenuItemUserManagement.setText("User Management");
+        jMenuItemUserManagement.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_U));
+        jMenuItemUserManagement.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemUserManagementActionPerformed(evt);
+            }
+        });
+        jMenuFile.add(jMenuItemUserManagement);
+        jMenuFile.add(new javax.swing.JSeparator());
+
         jMenuFileCertificates.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuFileCertificates.setText(this.rb.getResourceString( "menu.file.certificates" ));
 
@@ -2304,6 +2351,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.displayPartnerManager(null);
     }//GEN-LAST:event_jButtonPartnerActionPerformed
 
+    private void jButtonUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog
+            = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(this, this);
+        dialog.setVisible(true);
+    }
+
     private void jButtonMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonMessageDetailsActionPerformed
         this.showSelectedRowDetails();
     }//GEN-LAST:event_jButtonMessageDetailsActionPerformed
@@ -2326,6 +2379,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void jMenuItemPartnerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPartnerActionPerformed
         this.displayPartnerManager(null);
     }//GEN-LAST:event_jMenuItemPartnerActionPerformed
+
+    private void jMenuItemUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog
+            = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(this, this);
+        dialog.setVisible(true);
+    }
 
     private void jMenuItemHelpSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHelpSystemActionPerformed
         this.displayHelpSystem();
@@ -2474,6 +2533,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JButton jButtonMessageDetails;
     private javax.swing.JButton jButtonNewVersion;
     private javax.swing.JButton jButtonPartner;
+    private javax.swing.JButton jButtonUserManagement;
     private javax.swing.JButton jButtonShop;
     private javax.swing.JCheckBox jCheckBoxFilterShowOk;
     private javax.swing.JCheckBox jCheckBoxFilterShowPending;
@@ -2513,6 +2573,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JMenuItem jMenuItemPopupSendAgain;
     private javax.swing.JMenuItem jMenuItemSearchInServerLog;
     private javax.swing.JMenuItem jMenuItemSystemEvents;
+    private javax.swing.JMenuItem jMenuItemUserManagement;
     private javax.swing.JPanel jPaneSpace;
     private javax.swing.JPanel jPanelFilterOverview;
     private javax.swing.JPanel jPanelFilterOverviewContainer;

@@ -3,8 +3,6 @@ package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import de.mendelson.util.clientserver.messages.LoginRequest;
-import de.mendelson.util.clientserver.messages.LoginState;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.user.User;
 import java.net.InetSocketAddress;
@@ -72,9 +70,7 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
      */
     @Override
     public boolean processMessageFromServer(ClientServerMessage message) {
-        if (message instanceof LoginRequest) {
-            this.loginRequestedFromServer();
-        } else if (message instanceof ServerInfo) {
+        if (message instanceof ServerInfo) {
             if (this.getBaseClient().getDisplayServerLogMessages()) {
                 ServerInfo serverInfo = (ServerInfo) message;
                 this.getLogger().log(Level.CONFIG, "Remote server identified as " + serverInfo.getProductname());
@@ -83,60 +79,32 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
         return (true);
     }
 
-    private LoginState performLogin(String user, char[] passwd, String clientId) {
-        this.clientId = clientId;
-        this.password = passwd;
-        LoginState state = this.getBaseClient().login(user, passwd, clientId);
-        if (state.getState() == LoginState.STATE_INCOMPATIBLE_CLIENT) {
-            if (this.getLogger() == null) {
-                throw new RuntimeException("TextClient: No logger set.");
-            }
-            LoginFailedException e = new LoginFailedException(state.getStateDetails(), state.getState());
-            this.connectionThread.signalFailure(e);
-        } else if (state.getState() == LoginState.STATE_AUTHENTICATION_FAILURE_PASSWORD_REQUIRED) {
-            if (this.getLogger() == null) {
-                throw new RuntimeException("TextClient: No logger set.");
-            }
-            LoginFailedException e = new LoginFailedException(state.getStateDetails(), state.getState());
-            this.connectionThread.signalFailure(e);
-        } else if (state.getState() == LoginState.STATE_AUTHENTICATION_FAILURE) {
-            if (this.getLogger() == null) {
-                throw new RuntimeException("TextClient: No logger set.");
-            }
-            LoginFailedException e = new LoginFailedException(state.getStateDetails(), state.getState());
-            this.connectionThread.signalFailure(e);
-        } else if (state.getState() == LoginState.STATE_REJECTED) {
-            if (this.getLogger() == null) {
-                throw new RuntimeException("TextClient: No logger set.");
-            }
-            LoginFailedException e = new LoginFailedException(state.getStateDetails(), state.getState());
-            this.connectionThread.signalFailure(e);
-        }
-        return (state);
+    /**
+     * Login method simplified - TextClient no longer requires authentication
+     * @deprecated Authentication removed for client-server protocol
+     */
+    @Deprecated
+    private void performLogin(String user, char[] passwd, String clientId) {
+        // No authentication needed for client-server protocol
+        // Create a dummy user object for compatibility
+        User dummyUser = new User();
+        dummyUser.setName(user != null ? user : "text_client");
+        this.getBaseClient().setUser(dummyUser);
+        this.connectionThread.signalSuccess();
     }
 
     @Override
     public void loginRequestedFromServer() {
-        if (this.password == null) {
-            this.connectionThread.signalFailure(new Exception("Server requested login but the client has no password defined!"));
-            if (this.getBaseClient().getDisplayServerLogMessages()) {
-                this.log(Level.INFO, "Login failed");
-            }
-        } else {
-            //client id has been set in method performLogin
-            LoginState state = this.performLogin(this.user, this.password, this.clientId);
-            if (state.getState() == LoginState.STATE_AUTHENTICATION_SUCCESS) {
-                User returnedUser = state.getUser();
-                //login successful: pass a user to the base client
-                this.getBaseClient().setUser(returnedUser);
-                if (this.getBaseClient().getDisplayServerLogMessages()) {
-                    this.log(Level.INFO, "Login successful");
-                }
-                this.connectionThread.signalSuccess();
-            } else {
-                this.log(Level.INFO, "Login failed");
-            }
+        // Simplified - no authentication needed
+        // Create a dummy user for compatibility
+        User dummyUser = new User();
+        dummyUser.setName(this.user != null ? this.user : "text_client");
+        this.getBaseClient().setUser(dummyUser);
+
+        if (this.getBaseClient().getDisplayServerLogMessages()) {
+            this.log(Level.INFO, "Connected to server");
         }
+        this.connectionThread.signalSuccess();
         this.connectionThread.signalLoginProcessFinished();
     }
 
