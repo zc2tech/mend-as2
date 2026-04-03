@@ -587,7 +587,22 @@ public class AS2MessageCreation {
                 if (as2Payload.getContentId() != null) {
                     bodyPart.addHeader("Content-ID", as2Payload.getContentId());
                 }
-                if (receiver.getContentTransferEncoding() == AS2Message.CONTENT_TRANSFER_ENCODING_BASE64) {
+
+                // For multipart messages with binary content types (PDF, images, etc.),
+                // always use base64 encoding to prevent boundary conflicts in binary data
+                boolean isBinaryContentType = contentType != null && (
+                    contentType.startsWith("application/pdf") ||
+                    contentType.startsWith("image/") ||
+                    contentType.startsWith("application/octet-stream") ||
+                    contentType.startsWith("application/zip") ||
+                    contentType.startsWith("application/msword") ||
+                    contentType.startsWith("application/vnd.ms-") ||
+                    contentType.startsWith("application/vnd.openxmlformats-")
+                );
+
+                if (receiver.getContentTransferEncoding() == AS2Message.CONTENT_TRANSFER_ENCODING_BASE64 ||
+                    (payloads.length > 1 && isBinaryContentType)) {
+                    // Use base64 for: 1) configured base64, or 2) binary types in multipart messages
                     bodyPart.addHeader("Content-Transfer-Encoding", "base64");
                 } else {
                     bodyPart.addHeader("Content-Transfer-Encoding", "binary");

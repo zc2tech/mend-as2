@@ -204,7 +204,8 @@ export default function CertificateList() {
     borderCollapse: 'collapse',
     backgroundColor: 'white',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    tableLayout: 'fixed'
   };
 
   const thStyle = {
@@ -218,7 +219,9 @@ export default function CertificateList() {
   const tdStyle = {
     padding: '0.75rem 1rem',
     borderBottom: '1px solid #dee2e6',
-    fontSize: '0.875rem'
+    fontSize: '0.875rem',
+    wordWrap: 'break-word',
+    overflowWrap: 'break-word'
   };
 
   const buttonStyle = {
@@ -407,6 +410,15 @@ export default function CertificateList() {
       </div>
 
       <table style={tableStyle}>
+        <colgroup>
+          <col style={{ width: '5%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '22%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '16%' }} />
+        </colgroup>
         <thead>
           <tr>
             <th style={thStyle}>Type</th>
@@ -429,6 +441,7 @@ export default function CertificateList() {
             certificates.map((cert, index) => {
               const fingerprint = cert.fingerprintSHA1 || cert.fingerprintsha1 ||
                                   cert.fingerPrintSHA1 || cert.fingerprintSha1;
+              const isExpired = cert.notAfter && new Date(cert.notAfter) < new Date();
               return (
               <tr key={cert.alias || index}>
                 <td style={{...tdStyle, textAlign: 'center', fontSize: '1.25rem'}}>
@@ -439,8 +452,13 @@ export default function CertificateList() {
                 <td style={tdStyle}>{cert.alias || '-'}</td>
                 <td style={tdStyle}>{cert.subjectDN || '-'}</td>
                 <td style={tdStyle}>{cert.issuerDN || '-'}</td>
-                <td style={tdStyle}>
+                <td style={{
+                  ...tdStyle,
+                  color: isExpired ? '#dc3545' : 'inherit',
+                  fontWeight: isExpired ? '600' : 'normal'
+                }}>
                   {cert.notAfter ? new Date(cert.notAfter).toLocaleDateString() : '-'}
+                  {isExpired && ' ⚠️'}
                 </td>
                 <td style={tdStyle}>
                   <code style={{ fontSize: '0.75rem' }}>
@@ -448,60 +466,77 @@ export default function CertificateList() {
                   </code>
                 </td>
                 <td style={tdStyle}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-                    <button
-                      style={{
-                        ...buttonStyle,
-                        backgroundColor: '#17a2b8',
-                        color: 'white'
-                      }}
-                      onClick={() => handleExport(cert.alias, 'PEM')}
-                      disabled={exportCertificate.isPending}
-                      title="Export certificate in PEM format"
-                    >
-                      Export PEM
-                    </button>
-                    <button
-                      style={{
-                        ...buttonStyle,
-                        backgroundColor: cert.isKeyPair ? '#17a2b8' : '#6c757d',
-                        color: 'white',
-                        opacity: cert.isKeyPair ? 1 : 0.6,
-                        cursor: cert.isKeyPair ? 'pointer' : 'not-allowed'
-                      }}
-                      onClick={() => cert.isKeyPair && handleExport(cert.alias, 'PKCS12')}
-                      disabled={exportCertificate.isPending || !cert.isKeyPair}
-                      title={cert.isKeyPair ? "Export certificate and private key in PKCS#12 format" : "PKCS#12 export requires a private key"}
-                    >
-                      Export PKCS#12
-                    </button>
-                    <button
-                      style={{
-                        ...buttonStyle,
-                        backgroundColor: cert.isKeyPair ? '#6c757d' : '#adb5bd',
-                        color: 'white',
-                        opacity: cert.isKeyPair ? 1 : 0.6,
-                        cursor: cert.isKeyPair ? 'pointer' : 'not-allowed'
-                      }}
-                      onClick={() => cert.isKeyPair && handleGenerateCSR(cert.alias)}
-                      disabled={generateCSR.isPending || !cert.isKeyPair}
-                      title={cert.isKeyPair ? "Generate Certificate Signing Request" : "CSR generation requires a private key"}
-                    >
-                      Generate CSR
-                    </button>
-                    <button
-                      style={{
-                        ...buttonStyle,
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        marginRight: 0
-                      }}
-                      onClick={() => handleDelete(cert.alias, cert.subjectDN)}
-                      disabled={deleteCertificate.isPending}
-                      title="Delete this certificate"
-                    >
-                      Delete
-                    </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          backgroundColor: '#17a2b8',
+                          color: 'white'
+                        }}
+                        onClick={() => handleExport(cert.alias, 'PEM')}
+                        disabled={exportCertificate.isPending}
+                        title="Export certificate in PEM format"
+                      >
+                        PEM
+                      </button>
+                      <button
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: cert.isKeyPair ? 'pointer' : 'not-allowed',
+                          fontSize: '0.75rem',
+                          backgroundColor: cert.isKeyPair ? '#17a2b8' : '#6c757d',
+                          color: 'white',
+                          opacity: cert.isKeyPair ? 1 : 0.6
+                        }}
+                        onClick={() => cert.isKeyPair && handleExport(cert.alias, 'PKCS12')}
+                        disabled={exportCertificate.isPending || !cert.isKeyPair}
+                        title={cert.isKeyPair ? "Export certificate and private key in PKCS#12 format" : "PKCS#12 export requires a private key"}
+                      >
+                        PKCS#12
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: cert.isKeyPair ? 'pointer' : 'not-allowed',
+                          fontSize: '0.75rem',
+                          backgroundColor: cert.isKeyPair ? '#6c757d' : '#adb5bd',
+                          color: 'white',
+                          opacity: cert.isKeyPair ? 1 : 0.6
+                        }}
+                        onClick={() => cert.isKeyPair && handleGenerateCSR(cert.alias)}
+                        disabled={generateCSR.isPending || !cert.isKeyPair}
+                        title={cert.isKeyPair ? "Generate Certificate Signing Request" : "CSR generation requires a private key"}
+                      >
+                        CSR
+                      </button>
+                      <button
+                        style={{
+                          padding: '0.25rem 0.5rem',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          backgroundColor: '#dc3545',
+                          color: 'white'
+                        }}
+                        onClick={() => handleDelete(cert.alias, cert.subjectDN)}
+                        disabled={deleteCertificate.isPending}
+                        title="Delete this certificate"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>

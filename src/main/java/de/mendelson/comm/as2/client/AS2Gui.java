@@ -5,7 +5,6 @@ import de.mendelson.util.httpconfig.gui.JDialogDisplayHTTPConfiguration;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.cem.gui.DialogCEMOverview;
 import de.mendelson.comm.as2.cem.gui.DialogSendCEM;
-import de.mendelson.comm.as2.client.about.AboutDialog;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
 import de.mendelson.comm.as2.client.manualsend.ManualSendResponse;
 import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
@@ -335,7 +334,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private Date filterStartDate = new Date();
     private Date filterEndDate = new Date();
     private Color COLOR_RED = Color.RED.darker();
-    private String downloadURLNewVersion = "http://mendelson-e-c.com/as2";
+    private String downloadURLNewVersion = "http://github.com/zc2tech/mend-as2";
 
     /**
      * Creates new form NewJFrame
@@ -798,14 +797,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
             if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
-                desktop.setAboutHandler(new AboutHandler() {
-                    @Override
-                    public void handleAbout(AboutEvent e) {
-                        AboutDialog dialog = new AboutDialog(AS2Gui.this);
-                        dialog.setVisible(true);
-                    }
-
-                });
+              // do nothing 
             }
             if (desktop.isSupported(Desktop.Action.APP_PREFERENCES)) {
                 desktop.setPreferencesHandler(new PreferencesHandler() {
@@ -2338,11 +2330,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void jMenuItemHelpSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHelpSystemActionPerformed
         this.displayHelpSystem();
     }//GEN-LAST:event_jMenuItemHelpSystemActionPerformed
-
-    private void jMenuItemHelpAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHelpAboutActionPerformed
-        AboutDialog dialog = new AboutDialog(this);
-        dialog.setVisible(true);
-    }//GEN-LAST:event_jMenuItemHelpAboutActionPerformed
 
     private void jMenuItemFileExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFileExitActionPerformed
         this.exitApplication();

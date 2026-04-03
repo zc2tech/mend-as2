@@ -450,8 +450,11 @@ public class MessageAccessDB {
                 queryCondition.append(" userdefinedid=?");
                 parameterList.add(filter.getUserdefinedId());
             }
-            boolean useTimeFilter = filter.getStartTime() != 0L && filter.getEndTime() != 0L;
-            if (useTimeFilter) {
+            boolean hasStartTime = filter.getStartTime() != 0L;
+            boolean hasEndTime = filter.getEndTime() != 0L;
+
+            if (hasStartTime && hasEndTime) {
+                // Both start and end time provided
                 if (queryCondition.length() == 0) {
                     queryCondition.append(" WHERE");
                 } else {
@@ -472,6 +475,37 @@ public class MessageAccessDB {
                 calendar.set(Calendar.SECOND, 59);
                 calendar.set(Calendar.MILLISECOND, 999);
                 parameterList.add(new Timestamp(calendar.getTimeInMillis()));
+            } else if (hasStartTime) {
+                // Only start time provided - filter from start time onwards
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
+                }
+                queryCondition.append(" CAST(initdateutc AS DATE)>=?");
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(filter.getStartTime());
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                parameterList.add(new Timestamp(calendar.getTimeInMillis()));
+            } else if (hasEndTime) {
+                // Only end time provided - filter up to end time
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
+                }
+                queryCondition.append(" CAST(initdateutc AS DATE)<=?");
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(filter.getEndTime());
+                calendar.add(Calendar.DAY_OF_YEAR, 0);
+                calendar.set(Calendar.HOUR_OF_DAY, 23);
+                calendar.set(Calendar.MINUTE, 59);
+                calendar.set(Calendar.SECOND, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
+                parameterList.add(new Timestamp(calendar.getTimeInMillis()));
             }
             //Hint: This is the wrong order! It should be ordered using "ASC". But the HSQLDB LIMIT clause
             //just takes the n first rows of the result set and returns them. Means the first n results are taken now 
@@ -480,6 +514,7 @@ public class MessageAccessDB {
             //- then the result is as if the LIMIT has been taken from the other side of the result set
             String query = "SELECT * FROM messages" + queryCondition.toString()
                     + " ORDER BY initdateutc DESC";
+            boolean useTimeFilter = hasStartTime || hasEndTime;
             if (!useTimeFilter) {
                 //do NOT use the limit if a time filter is set as the user want to see all transactions in range
                 query = this.dbDriverManager.addLimitToQuery(query, filter.getLimit());

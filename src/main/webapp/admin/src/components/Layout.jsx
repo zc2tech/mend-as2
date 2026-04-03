@@ -37,9 +37,6 @@ export default function Layout() {
           <Link to="/partners" style={linkStyle}>Partners</Link>
           <Link to="/certificates" style={linkStyle}>Certificates</Link>
           <Link to="/messages" style={linkStyle}>Messages</Link>
-          <Link to="/cem" style={linkStyle}>CEM</Link>
-          <Link to="/statistics" style={linkStyle}>Statistics</Link>
-          <Link to="/preferences" style={linkStyle}>Preferences</Link>
           <Link to="/system" style={linkStyle}>System</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>

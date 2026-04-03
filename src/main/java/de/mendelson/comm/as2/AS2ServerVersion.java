@@ -27,7 +27,7 @@ public class AS2ServerVersion implements IProductVersion {
         StringBuilder agent = new StringBuilder();
         agent.append(AS2ServerVersion.getProductName()).append(" ");
         agent.append(AS2ServerVersion.getVersion()).append(" ");
-        agent.append(AS2ServerVersion.getBuild()).append(" - www.mendelson-e-c.com");
+        agent.append(AS2ServerVersion.getBuild());
         return (agent.toString());
     }
 

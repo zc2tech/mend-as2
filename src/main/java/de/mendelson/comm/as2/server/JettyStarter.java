@@ -137,9 +137,10 @@ public class JettyStarter {
             XmlConfiguration jettyXMLConfiguration = new XmlConfiguration(jettyConfigResource);
             jettyXMLConfiguration.getProperties().putAll(userConfigurationMap);
 
-            // Use virtual threads for HTTP request handling
+            // Use regular thread pool for HTTP request handling (Java 17 compatible)
             QueuedThreadPool threadPool = new QueuedThreadPool();
-            threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            // Virtual threads require Java 21+, using regular threads for Java 17 compatibility
+            // threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
             org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server(threadPool);
 
             jettyXMLConfiguration.configure(tempHTTPServer);

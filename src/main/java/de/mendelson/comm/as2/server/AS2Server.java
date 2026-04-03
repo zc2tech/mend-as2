@@ -167,6 +167,9 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     public final static CryptoProvider CRYPTO_PROVIDER = new CryptoProvider();
     private ServerCertificateRefreshControllerHA serverCertificateRefreshController = null;
 
+    // Static reference for REST API access
+    private static AS2Server staticServerReference = null;
+
     /**
      * Creates a new AS2 server and starts it
      *
@@ -191,6 +194,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         }
         this.startTime = Instant.now().toEpochMilli();
         this.skipStartupConfigCheck = skipStartupConfigCheck;
+        staticServerReference = this;  // Set static reference for REST API access
         this.initializeLogger();
         this.logger.info(rb.getResourceString("server.willstart", AS2ServerVersion.getFullProductName()));
         this.logger.info(Copyright.getCopyrightMessage());
@@ -713,6 +717,20 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     @Override
     public int getPort() {
         return (CLIENTSERVER_COMM_PORT);
+    }
+
+    /**
+     * Get static server reference for REST API access
+     */
+    public static AS2Server getStaticServerReference() {
+        return staticServerReference;
+    }
+
+    /**
+     * Get HTTP server configuration info for REST API access
+     */
+    public HTTPServerConfigInfo getHTTPServerConfigInfo() {
+        return this.httpServerConfigInfo;
     }
 
     /**

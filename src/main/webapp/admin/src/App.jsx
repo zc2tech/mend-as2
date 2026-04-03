@@ -9,9 +9,6 @@ import Dashboard from './components/Dashboard';
 import PartnerList from './features/partners/PartnerList';
 import CertificateList from './features/certificates/CertificateList';
 import MessageList from './features/messages/MessageList';
-import CemList from './features/cem/CemList';
-import StatisticsDashboard from './features/statistics/StatisticsDashboard';
-import PreferencesForm from './features/preferences/PreferencesForm';
 import SystemInfo from './features/system/SystemInfo';
 
 const queryClient = new QueryClient({
@@ -44,9 +41,6 @@ function App() {
               <Route path="partners" element={<PartnerList />} />
               <Route path="certificates" element={<CertificateList />} />
               <Route path="messages" element={<MessageList />} />
-              <Route path="cem" element={<CemList />} />
-              <Route path="statistics" element={<StatisticsDashboard />} />
-              <Route path="preferences" element={<PreferencesForm />} />
               <Route path="system" element={<SystemInfo />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

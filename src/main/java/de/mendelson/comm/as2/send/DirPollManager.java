@@ -49,12 +49,13 @@ public class DirPollManager {
     private final Map<String, DirPollThread> mapPollThread
             = Collections.synchronizedMap(new HashMap<String, DirPollThread>());
     /**
-     * Executor service for all poll threads, using virtual threads for better scalability
+     * Executor service for all poll threads (Java 17 compatible)
      */
     private final ScheduledThreadPoolExecutor scheduledExecutor =
         (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
-            Runtime.getRuntime().availableProcessors(),
-            Thread.ofVirtual().name("dir-poll-", 0).factory()
+            Runtime.getRuntime().availableProcessors()
+            // Virtual threads require Java 21+
+            // Thread.ofVirtual().name("dir-poll-", 0).factory()
         );
     /**
      * Localize the GUI

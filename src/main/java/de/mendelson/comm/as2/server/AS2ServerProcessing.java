@@ -3184,4 +3184,18 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         return this.certificateManagerTLS;
     }
 
+    /**
+     * Get the database driver manager
+     */
+    public IDBDriverManager getDBDriverManager() {
+        return this.dbDriverManager;
+    }
+
+    /**
+     * Get the client server instance
+     */
+    public ClientServer getClientserver() {
+        return this.clientserver;
+    }
+
 }

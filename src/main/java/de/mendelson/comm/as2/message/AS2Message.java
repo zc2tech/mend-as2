@@ -73,7 +73,7 @@ public class AS2Message implements Serializable {
     /**
      * @deprecated by CBC
      */
-    @Deprecated(since = "09/2024")
+    // @Deprecated(since = "09/2024")
     public static final int ENCRYPTION_AES_256_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_CBC_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_GCM_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_GCM_RSAES_AOEP;

@@ -21,10 +21,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimingScheduledThreadPool {
 
-    private final static ScheduledExecutorService SCHEDULED_EXECUTOR = Executors.newScheduledThreadPool(2,
-            Thread.ofVirtual().name("serverside-not-timecritical-", 0).factory());
+    // Java 17 compatible thread pool (virtual threads require Java 21+)
+    private final static ScheduledExecutorService SCHEDULED_EXECUTOR = Executors.newScheduledThreadPool(2);
+    // Thread.ofVirtual().name("serverside-not-timecritical-", 0).factory()
 
-    private TimingScheduledThreadPool(){        
+    private TimingScheduledThreadPool(){
     }
     
     public static void scheduleWithFixedDelay(Runnable task, int startDelay, int executionDelay, TimeUnit timeunit){
