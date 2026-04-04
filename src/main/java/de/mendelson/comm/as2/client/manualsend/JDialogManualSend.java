@@ -55,7 +55,7 @@ import javax.swing.SwingUtilities;
  */
 public class JDialogManualSend extends JDialog {
 
-    private final static boolean MULTIPLE_FILES = false;
+    private final static boolean MULTIPLE_FILES = true;
 
     /**
      * ResourceBundle to localize the GUI
