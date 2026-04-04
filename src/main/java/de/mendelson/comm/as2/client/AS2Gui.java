@@ -592,13 +592,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         String tlsText = this.jButtonCertificatesTLS.getText();
 
         // Add keyboard shortcuts to main toolbar buttons
-        // Partner button - Cmd/Ctrl+1
+        // Partner button - Cmd/Ctrl+A (A for pArtner, avoiding R which is used for Toggle Refresh)
         KeyboardShortcutUtil.addButtonShortcut(
                 this.jButtonPartner,
-                java.awt.event.KeyEvent.VK_1,
+                java.awt.event.KeyEvent.VK_A,
                 "OPEN_PARTNER");
         this.jButtonPartner.setToolTipText(partnerText + " [" +
-                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_1) + "]");
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_A) + "]");
 
         // User Management button - Cmd/Ctrl+U
         KeyboardShortcutUtil.addButtonShortcut(
@@ -608,21 +608,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jButtonUserManagement.setToolTipText(userMgmtText + " [" +
                 KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_U) + "]");
 
-        // Sign/Crypt button - Cmd/Ctrl+2
+        // Sign/Crypt button - Cmd/Ctrl+C (C for Crypt/Certificates)
         KeyboardShortcutUtil.addButtonShortcut(
                 this.jButtonCertificatesSignEncrypt,
-                java.awt.event.KeyEvent.VK_2,
+                java.awt.event.KeyEvent.VK_C,
                 "OPEN_SIGNCRYPT");
         this.jButtonCertificatesSignEncrypt.setToolTipText(signCryptText + " [" +
-                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_2) + "]");
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_C) + "]");
 
-        // TLS button - Cmd/Ctrl+3
+        // TLS button - Cmd/Ctrl+T (T for TLS)
         KeyboardShortcutUtil.addButtonShortcut(
                 this.jButtonCertificatesTLS,
-                java.awt.event.KeyEvent.VK_3,
+                java.awt.event.KeyEvent.VK_T,
                 "OPEN_TLS");
         this.jButtonCertificatesTLS.setToolTipText(tlsText + " [" +
-                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_3) + "]");
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_T) + "]");
 
         // Message Details button - Cmd/Ctrl+D
         KeyboardShortcutUtil.addButtonShortcut(
