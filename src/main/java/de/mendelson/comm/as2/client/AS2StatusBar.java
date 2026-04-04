@@ -402,7 +402,7 @@ public class AS2StatusBar extends JPanel implements IStatusBar {
 
         jLabelConfigurationIssue.setFont(new java.awt.Font("Dialog", 0, 13)); // NOI18N
         jLabelConfigurationIssue.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
-        jLabelConfigurationIssue.setText("Not connected");
+        // jLabelConfigurationIssue.setText("Not connected");
         jLabelConfigurationIssue.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -439,7 +439,7 @@ public class AS2StatusBar extends JPanel implements IStatusBar {
         jPanelEmpty.add(jPanelConfigurationIssues, gridBagConstraints);
 
         jLabelHost.setFont(new java.awt.Font("Dialog", 0, 13)); // NOI18N
-        jLabelHost.setText("Not connected");
+        // jLabelHost.setText("Not connected");
         jLabelHost.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
         jLabelHost.setMaximumSize(new java.awt.Dimension(1000, 16));
         jLabelHost.setMinimumSize(new java.awt.Dimension(100, 16));

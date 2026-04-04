@@ -39,10 +39,7 @@
             <url>https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/</url>
         </repository>
 
-        <repository>
-            <id>local-ohj-repo</id>
-            <url>file://${project.basedir}/maven-repo</url>
-        </repository>
+        <!-- local-ohj-repo removed - no longer needed -->
 
         <repository>
             <id>osgeo</id>
@@ -579,33 +576,10 @@
 
         <!-- local filesystem -->
 
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>help</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>help-share</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>jewt4</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>icebrowser</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+        <!-- Oracle JavaHelp dependencies removed - incompatible with JDK 17+ -->
+        <!-- Help system replaced with simple GitHub link dialog in AS2Gui.java -->
 
-        <!-- Intarsys core runtime -->
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>isrt</artifactId>
-            <version>4.8</version>
-        </dependency>
+        <!-- Intarsys iscwt and isrt removed - provided as transitive dependencies via jPod and isfreetype -->
 
         <!-- Intarsys FreeType wrapper (required by renderer) -->
         <dependency>
@@ -614,7 +588,8 @@
             <version>5.6</version>
         </dependency>
 
-        <!-- Intarsys CWT + SWT bridge (exclude SWT placeholders; add a concrete SWT below) -->
+        <!-- Intarsys CWT + SWT bridge - Testing removal -->
+        <!--
         <dependency>
             <groupId>de.intarsys.opensource</groupId>
             <artifactId>iscwt</artifactId>
@@ -630,6 +605,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
 
         <!-- Intarsys jPod (PDF model, PDAcroForm, PDPage in de.intarsys.pdf.pd.*) -->
         <dependency>

@@ -154,9 +154,7 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-import oracle.help.Help;
-import oracle.help.library.helpset.HelpSet;
-import oracle.help.navigator.Navigator;
+// Oracle JavaHelp imports removed - incompatible with JDK 17+
 import java.net.http.HttpRequest;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -303,22 +301,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private final MecResourceBundle rb;
     private final MecResourceBundle rbCertGui;
     private final MecResourceBundle rbPreferences;
-    /**
-     * actual loaded helpset
-     */
-    private HelpSet helpSet = null;
-    /**
-     * Actual help component
-     */
-    private Help help = null;
+    // Oracle JavaHelp fields removed - incompatible with JDK 17+
     /**
      * Flag to show/hide the filter panel
      */
     private boolean showFilterPanel = false;
-    /**
-     * Store if the help has been displayed already
-     */
-    private boolean helpHasBeenDisplayed = false;
+    // helpHasBeenDisplayed flag removed - no longer needed
     /**
      * Host to connect to
      */
@@ -1370,35 +1358,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void displayHelpSystem() {
-        if (this.helpHasBeenDisplayed) {
-            this.help.setVisible(true);
-        } else {
-            final String uniqueId = this.getClass().getName() + ".displayHelpSystem." + System.currentTimeMillis();
-            Runnable test = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // display wait indicator
-                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(
-                                AS2Gui.this.rb.getResourceString("menu.help.helpsystem"), uniqueId);
-                        AS2Gui.this.help.showTopic(AS2Gui.this.helpSet, "as2_main");
-                        Navigator[] navigators = AS2Gui.this.help.getAllNavigators();
-                        if (navigators != null && navigators.length > 0) {
-                            JFrame helpFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, navigators[0]);
-                            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                            helpFrame.setBounds(new Rectangle(
-                                    new Dimension((int) (screenSize.width * 0.7f), (int) (screenSize.height * 0.9f))));
-                            // center on screen
-                            helpFrame.setLocationRelativeTo(null);
-                        }
-                    } finally {
-                        AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
-                        AS2Gui.this.helpHasBeenDisplayed = true;
-                    }
-                }
-            };
-            Executors.newSingleThreadExecutor().submit(test);
-        }
+        // Oracle JavaHelp removed - incompatible with JDK 17+
+        // Show simple message dialog with GitHub link instead
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Online documentation available at:\nhttps://github.com/zc2tech/mend-as2",
+            "Help",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     @Override
