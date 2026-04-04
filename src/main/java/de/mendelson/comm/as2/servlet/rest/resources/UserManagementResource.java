@@ -126,11 +126,21 @@ public class UserManagementResource {
 
             // Validate required fields
             String username = (String) userData.get("username");
+            Boolean generatePassword = (Boolean) userData.get("generatePassword");
             String password = (String) userData.get("password");
+
             if (username == null || username.trim().isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity("{\"error\":\"Username is required\"}").build();
             }
+
+            // If generatePassword is true, generate a random password
+            String generatedPassword = null;
+            if (generatePassword != null && generatePassword) {
+                generatedPassword = de.mendelson.comm.as2.usermanagement.PasswordGenerator.generatePassword();
+                password = generatedPassword;
+            }
+
             if (password == null || password.trim().isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity("{\"error\":\"Password is required\"}").build();
@@ -157,6 +167,9 @@ public class UserManagementResource {
             Boolean enabled = (Boolean) userData.get("enabled");
             user.setEnabled(enabled != null ? enabled : true);
 
+            // All new users must change password on first login
+            user.setMustChangePassword(true);
+
             // Create user in database
             int userId = userMgmt.createUser(user);
             user.setId(userId);
@@ -170,6 +183,40 @@ public class UserManagementResource {
                 }
             }
 
+            // If password was generated and user has email, send it
+            if (generatedPassword != null && user.getEmail() != null && !user.getEmail().trim().isEmpty()) {
+                try {
+                    AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+                    if (processing != null) {
+                        // Get notification configuration
+                        de.mendelson.util.systemevents.notification.NotificationAccessDB notificationAccess =
+                            new de.mendelson.util.systemevents.notification.NotificationAccessDBImplAS2(
+                                processing.getDBDriverManager());
+                        de.mendelson.util.systemevents.notification.NotificationData notificationData =
+                            notificationAccess.getNotificationData();
+
+                        // Only try to send email if notification is properly configured
+                        // Check if mail server is configured (not null and not empty)
+                        if (notificationData != null
+                            && notificationData.getMailServer() != null
+                            && !notificationData.getMailServer().trim().isEmpty()) {
+                            // Construct server URL - this should match the actual server deployment
+                            String serverUrl = "http://localhost:8080/as2";
+
+                            // Send the email
+                            de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
+                                user, generatedPassword, notificationData, serverUrl);
+                            LOGGER.log(Level.INFO, "Password email sent successfully to user {0}", username);
+                        } else {
+                            LOGGER.log(Level.WARNING, "Email notification not configured, password not sent to user {0}", username);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Failed to send password email to user " + username + ": " + e.getMessage(), e);
+                    // Don't fail user creation if email fails - password is returned in response
+                }
+            }
+
             // Remove password hash from response
             user.setPasswordHash(null);
 
@@ -177,6 +224,11 @@ public class UserManagementResource {
             response.put("id", userId);
             response.put("message", "User created successfully");
             response.put("user", user);
+
+            // Include generated password in response for display (user should save it)
+            if (generatedPassword != null) {
+                response.put("generatedPassword", generatedPassword);
+            }
 
             return Response.status(Response.Status.CREATED).entity(response).build();
         } catch (Exception e) {
@@ -454,6 +506,41 @@ public class UserManagementResource {
             return Response.ok(permissions).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error getting permissions", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    /**
+     * GET /api/v1/users/current/permissions - Get current user's permissions
+     */
+    @GET
+    @Path("/current/permissions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getCurrentUserPermissions(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.SecurityContext securityContext) {
+        try {
+            UserManagementAccessDB userMgmt = getUserManagementAccess();
+            if (userMgmt == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            // Get username from security context (set by JwtAuthenticationFilter)
+            String username = securityContext.getUserPrincipal().getName();
+
+            // Get user by username
+            WebUIUser user = userMgmt.getUserByUsername(username);
+            if (user == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"User not found\"}").build();
+            }
+
+            // Get all permissions for this user (aggregated from all their roles)
+            List<Permission> permissions = userMgmt.getUserPermissionObjects(username);
+
+            return Response.ok(permissions).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error getting current user permissions", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
         }

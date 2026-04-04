@@ -92,6 +92,11 @@ export default function UserManagement() {
   });
 
   const handleDeleteUser = (user) => {
+    // Prevent deleting admin user
+    if (user.username.toLowerCase() === 'admin') {
+      alert('Cannot delete the admin user');
+      return;
+    }
     if (window.confirm(`Are you sure you want to delete user "${user.username}"?`)) {
       deleteUserMutation.mutate(user.id);
     }
@@ -328,12 +333,14 @@ function UserList({ users, onEdit, onDelete, onChangePassword }) {
               >
                 Change Password
               </button>
-              <button
-                onClick={() => onDelete(user)}
-                style={{...actionButtonStyle, backgroundColor: '#dc3545', color: 'white'}}
-              >
-                Delete
-              </button>
+              {user.username.toLowerCase() !== 'admin' && (
+                <button
+                  onClick={() => onDelete(user)}
+                  style={{...actionButtonStyle, backgroundColor: '#dc3545', color: 'white'}}
+                >
+                  Delete
+                </button>
+              )}
             </td>
           </tr>
         ))}
@@ -489,10 +496,12 @@ function UserFormModal({ user, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     username: user?.username || '',
     password: '',
+    confirmPassword: '',
     email: user?.email || '',
     fullName: user?.fullName || '',
     enabled: user?.enabled !== undefined ? user.enabled : true,
-    roleIds: user?.roleIds || []
+    roleIds: user?.roleIds || [],
+    generatePassword: false
   });
 
   const { data: roles = [] } = useQuery({
@@ -505,10 +514,16 @@ function UserFormModal({ user, onClose, onSuccess }) {
 
   const createUserMutation = useMutation({
     mutationFn: async (data) => {
-      await api.post('/users', data);
+      const response = await api.post('/users', data);
+      return response.data;
     },
-    onSuccess: () => {
-      alert('User created successfully');
+    onSuccess: (data) => {
+      // If password was generated, show it to the user
+      if (data.generatedPassword) {
+        alert(`User created successfully!\n\nGenerated password: ${data.generatedPassword}\n\nPlease save this password securely. It will not be shown again.${data.user?.email ? '\n\nPassword has been sent to user\'s email address.' : ''}`);
+      } else {
+        alert('User created successfully');
+      }
       onSuccess();
     },
     onError: (error) => {
@@ -535,8 +550,16 @@ function UserFormModal({ user, onClose, onSuccess }) {
       alert('Username is required');
       return;
     }
-    if (!user && !formData.password.trim()) {
-      alert('Password is required for new users');
+    if (!user && formData.generatePassword && (!formData.email || !formData.email.trim())) {
+      alert('Email is required when generating password');
+      return;
+    }
+    if (!user && !formData.generatePassword && !formData.password.trim()) {
+      alert('Password is required for new users (or check "Generate and email password")');
+      return;
+    }
+    if (!user && !formData.generatePassword && formData.password !== formData.confirmPassword) {
+      alert('Passwords do not match');
       return;
     }
 
@@ -638,26 +661,60 @@ function UserFormModal({ user, onClose, onSuccess }) {
 
           {!user && (
             <>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
-                Password <span style={{ color: 'red' }}>*</span>
+              <label style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', fontSize: '0.875rem' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.generatePassword}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setFormData({
+                      ...formData,
+                      generatePassword: checked,
+                      password: checked ? '' : formData.password,
+                      confirmPassword: checked ? '' : formData.confirmPassword
+                    });
+                  }}
+                  style={{ marginRight: '0.5rem' }}
+                />
+                Generate and email password to user
               </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                style={inputStyle}
-              />
+
+              {!formData.generatePassword && (
+                <>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                    Password <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    style={inputStyle}
+                  />
+
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
+                    Confirm Password <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                    style={inputStyle}
+                  />
+                </>
+              )}
             </>
           )}
 
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
             Email
+            {!user && formData.generatePassword && <span style={{ color: 'red' }}> *</span>}
           </label>
           <input
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
             style={inputStyle}
+            placeholder={!user && formData.generatePassword ? 'Required for password generation' : ''}
           />
 
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
@@ -683,6 +740,11 @@ function UserFormModal({ user, onClose, onSuccess }) {
           {/* Roles Section */}
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.875rem' }}>
             Assigned Roles
+            {user?.username.toLowerCase() === 'admin' && (
+              <span style={{ color: '#6c757d', fontWeight: 'normal', marginLeft: '0.5rem' }}>
+                (Cannot modify admin roles)
+              </span>
+            )}
           </label>
           <div style={{
             maxHeight: '200px',
@@ -690,7 +752,8 @@ function UserFormModal({ user, onClose, onSuccess }) {
             border: '1px solid #ced4da',
             borderRadius: '4px',
             padding: '10px',
-            marginBottom: '1rem'
+            marginBottom: '1rem',
+            backgroundColor: user?.username.toLowerCase() === 'admin' ? '#f8f9fa' : 'white'
           }}>
             {roles.length > 0 ? (
               roles.map(role => (
@@ -712,6 +775,7 @@ function UserFormModal({ user, onClose, onSuccess }) {
                         });
                       }
                     }}
+                    disabled={user?.username.toLowerCase() === 'admin'}
                     style={{ marginRight: '0.5rem', marginTop: '2px' }}
                   />
                   <span>

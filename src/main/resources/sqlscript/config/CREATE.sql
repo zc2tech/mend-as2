@@ -241,7 +241,7 @@ INSERT INTO webui_roles (name, description) VALUES
 ('PARTNER_MANAGER', 'Can manage trading partners and their configurations'),
 ('CERTIFICATE_MANAGER', 'Can manage certificates, keystores, and key generation'),
 ('MESSAGE_OPERATOR', 'Can view and send AS2 messages'),
-('SYSTEM_MONITOR', 'Can view system information, events, and logs'),
+('SYSTEM_MANAGER', 'Can manage/view system settings/logs/events'),
 ('VIEWER', 'Read-only access - can only view data');
 
 -- Default Permissions
@@ -298,15 +298,15 @@ SELECT r.id, p.id
 FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'MESSAGE_OPERATOR'
-  AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE', 'PARTNER_READ');
+  AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE');
 
--- Grant system monitoring permissions to SYSTEM_MONITOR role
+-- Grant system monitoring permissions to SYSTEM_MANAGER role
 INSERT INTO webui_role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM webui_roles r
 CROSS JOIN webui_permissions p
-WHERE r.name = 'SYSTEM_MONITOR'
-  AND p.name IN ('SYSTEM_READ', 'MESSAGE_READ', 'PARTNER_READ', 'CERT_READ');
+WHERE r.name = 'SYSTEM_MANAGER'
+  AND p.name IN ('SYSTEM_READ', 'SYSTEM_WRITE');
 
 -- Grant READ-ONLY permissions to VIEWER role
 INSERT INTO webui_role_permissions (role_id, permission_id)

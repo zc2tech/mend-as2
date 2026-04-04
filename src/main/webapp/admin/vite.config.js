@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/as2/admin/',
+  base: '/as2/webui/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,

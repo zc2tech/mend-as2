@@ -41,31 +41,31 @@ echo ""
 
 # Initialize as2_db_config schema
 echo "Initializing as2_db_config schema..."
-if [ -f "target/as2-1.1b67/config/sqlscript/config/CREATE.sql" ]; then
-    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_config -f target/as2-1.1b67/config/sqlscript/config/CREATE.sql
+if [ -f "target/mend-as2-1.0b0/config/sqlscript/config/CREATE.sql" ]; then
+    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_config -f target/mend-as2-1.0b0/config/sqlscript/config/CREATE.sql
     echo "Config schema created"
 else
-    echo "ERROR: Cannot find target/as2-1.1b67/config/sqlscript/config/CREATE.sql"
+    echo "ERROR: Cannot find target/mend-as2-1.0b0/config/sqlscript/config/CREATE.sql"
     echo "Run 'mvn package' first to extract SQL scripts"
     exit 1
 fi
 
 echo "Loading initial configuration data..."
-if [ -f "target/as2-1.1b67/config/sqlscript/config/data.sql" ]; then
-    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_config -f target/as2-1.1b67/config/sqlscript/config/data.sql
+if [ -f "target/mend-as2-1.0b0/config/sqlscript/config/data.sql" ]; then
+    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_config -f target/mend-as2-1.0b0/config/sqlscript/config/data.sql
     echo "Config data loaded"
 else
-    echo "ERROR: Cannot find target/as2-1.1b67/config/sqlscript/config/data.sql"
+    echo "ERROR: Cannot find target/mend-as2-1.0b0/config/sqlscript/config/data.sql"
     exit 1
 fi
 
 echo ""
 echo "Initializing as2_db_runtime schema..."
-if [ -f "target/as2-1.1b67/config/sqlscript/runtime/CREATE.sql" ]; then
-    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_runtime -f target/as2-1.1b67/config/sqlscript/runtime/CREATE.sql
+if [ -f "target/mend-as2-1.0b0/config/sqlscript/runtime/CREATE.sql" ]; then
+    psql -h $PGHOST -p $PGPORT -U $PGUSER -d as2_db_runtime -f target/mend-as2-1.0b0/config/sqlscript/runtime/CREATE.sql
     echo "Runtime schema created"
 else
-    echo "ERROR: Cannot find target/as2-1.1b67/config/sqlscript/runtime/CREATE.sql"
+    echo "ERROR: Cannot find target/mend-as2-1.0b0/config/sqlscript/runtime/CREATE.sql"
     exit 1
 fi
 

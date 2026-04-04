@@ -2134,6 +2134,40 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     /**
+     * Public wrapper for REST API - get notification data
+     */
+    public NotificationGetResponse processNotificationGetRequest(NotificationGetRequest request) {
+        NotificationGetResponse response = new NotificationGetResponse(request);
+        NotificationAccessDB access = new NotificationAccessDBImplAS2(this.dbDriverManager);
+        response.setData(access.getNotificationData());
+        return response;
+    }
+
+    /**
+     * Public wrapper for REST API - set notification data
+     */
+    public void processNotificationSetMessage(NotificationSetMessage request, String userName, String processOriginHost) {
+        NotificationAccessDB access = new NotificationAccessDBImplAS2(this.dbDriverManager);
+        NotificationDataImplAS2 oldNotificationData = (NotificationDataImplAS2) access.getNotificationData();
+        NotificationDataImplAS2 newNotificationData = (NotificationDataImplAS2) request.getData();
+        access.updateNotification(newNotificationData);
+        if (!oldNotificationData.toXML(0).equals(newNotificationData.toXML(0))) {
+            SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_INFO,
+                    SystemEvent.ORIGIN_USER, SystemEvent.TYPE_SERVER_CONFIGURATION_CHANGED);
+            event.setSubject(this.rbPreferences.getResourceString("event.notificationdata.modified.subject"));
+            event.setBody(this.rbPreferences.getResourceString("event.notificationdata.modified.body",
+                    new Object[]{
+                        oldNotificationData.toXML(0),
+                        newNotificationData.toXML(0)
+                    }));
+            event.setProcessOriginHost(processOriginHost);
+            event.setUser(userName);
+            SystemEventManagerImplAS2.instance().newEvent(event);
+            this.clientserver.broadcastToClients(new ConfigurationChangedOnServerNotification());
+        }
+    }
+
+    /**
      * Fires a system event if a user changed the server settings
      */
     private void fireEventPreferencesModified(String userName, String processOriginHost, String key, String oldValue, String newValue) {
@@ -3244,12 +3278,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             if (request.isGenerateAndEmailPassword()) {
                 // Generate random password
                 password = de.mendelson.comm.as2.usermanagement.PasswordGenerator.generatePassword();
-                // Set must change password flag for non-admin users
-                if (!"admin".equals(user.getUsername())) {
-                    user.setMustChangePassword(true);
-                }
             } else {
                 password = request.getPlainPassword();
+            }
+
+            // All new users must change password on first login (except admin)
+            if (!"admin".equals(user.getUsername())) {
+                user.setMustChangePassword(true);
             }
 
             // Hash the password

@@ -23,6 +23,8 @@ import { useState } from 'react';
 import HTTPServerConfig from './HTTPServerConfig';
 import SystemEvents from './SystemEvents';
 import ServerLogSearch from './ServerLogSearch';
+import MaintenanceSettings from './MaintenanceSettings';
+import NotificationSettings from './NotificationSettings';
 
 export default function SystemInfo() {
   const [activeTab, setActiveTab] = useState('httpConfig');
@@ -70,11 +72,25 @@ export default function SystemInfo() {
         >
           Search in Server Log
         </button>
+        <button
+          style={tabButtonStyle(activeTab === 'maintenance')}
+          onClick={() => setActiveTab('maintenance')}
+        >
+          Maintenance
+        </button>
+        <button
+          style={tabButtonStyle(activeTab === 'notification')}
+          onClick={() => setActiveTab('notification')}
+        >
+          Notification
+        </button>
       </div>
 
       {activeTab === 'httpConfig' && <HTTPServerConfig />}
       {activeTab === 'events' && <SystemEvents />}
       {activeTab === 'serverlog' && <ServerLogSearch />}
+      {activeTab === 'maintenance' && <MaintenanceSettings />}
+      {activeTab === 'notification' && <NotificationSettings />}
     </div>
   );
 }

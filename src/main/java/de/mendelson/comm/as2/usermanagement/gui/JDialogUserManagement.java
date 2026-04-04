@@ -108,9 +108,22 @@ public class JDialogUserManagement extends JDialog {
             }
         });
 
-        // DELETE key - Delete selected user
+        // Cmd+E / Ctrl+E - Edit selected user
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, modifierKey), "edit");
+        actionMap.put("edit", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (buttonEdit.isEnabled()) {
+                    editUser();
+                }
+            }
+        });
+
+        // Cmd+D / Ctrl+D - Delete selected user
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, modifierKey), "delete");
+        // Also support DELETE key and Cmd+Backspace (Mac alternative)
         inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "delete");
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, modifierKey), "delete"); // Mac alternative
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, modifierKey), "delete");
         actionMap.put("delete", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -120,9 +133,20 @@ public class JDialogUserManagement extends JDialog {
             }
         });
 
-        // ENTER key - Edit selected user
-        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "edit");
-        actionMap.put("edit", new AbstractAction() {
+        // Cmd+P / Ctrl+P - Change password
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, modifierKey), "changePassword");
+        actionMap.put("changePassword", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (buttonChangePassword.isEnabled()) {
+                    changePassword();
+                }
+            }
+        });
+
+        // ENTER key - Edit selected user (alternative)
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "editEnter");
+        actionMap.put("editEnter", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (buttonEdit.isEnabled() && userTable.getSelectedRow() != -1) {
@@ -141,6 +165,9 @@ public class JDialogUserManagement extends JDialog {
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userTable.getTableHeader().setReorderingAllowed(false);
 
+        // Enable table sorting
+        userTable.setAutoCreateRowSorter(true);
+
         // Adjust column widths
         userTable.getColumnModel().getColumn(0).setPreferredWidth(120); // Username
         userTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Full Name
@@ -157,24 +184,30 @@ public class JDialogUserManagement extends JDialog {
 
         buttonCreate = new JButton("Create User");
         buttonCreate.addActionListener(e -> createUser());
+        buttonCreate.setToolTipText("Create User [" + getShortcutText(KeyEvent.VK_N) + "]");
 
         buttonEdit = new JButton("Edit User");
         buttonEdit.addActionListener(e -> editUser());
         buttonEdit.setEnabled(false);
+        buttonEdit.setToolTipText("Edit User [" + getShortcutText(KeyEvent.VK_E) + "]");
 
         buttonDelete = new JButton("Delete User");
         buttonDelete.addActionListener(e -> deleteUser());
         buttonDelete.setEnabled(false);
+        buttonDelete.setToolTipText("Delete User [" + getShortcutText(KeyEvent.VK_D) + "]");
 
         buttonChangePassword = new JButton("Change Password");
         buttonChangePassword.addActionListener(e -> changePassword());
         buttonChangePassword.setEnabled(false);
+        buttonChangePassword.setToolTipText("Change Password [" + getShortcutText(KeyEvent.VK_P) + "]");
 
         buttonRefresh = new JButton("Refresh");
         buttonRefresh.addActionListener(e -> loadUsers());
+        buttonRefresh.setToolTipText("Refresh [" + getShortcutText(KeyEvent.VK_R) + "]");
 
         buttonClose = new JButton("Close");
         buttonClose.addActionListener(e -> dispose());
+        buttonClose.setToolTipText("Close [ESC or " + getShortcutText(KeyEvent.VK_W) + "]");
 
         buttonPanel.add(buttonCreate);
         buttonPanel.add(buttonEdit);
@@ -201,6 +234,14 @@ public class JDialogUserManagement extends JDialog {
                 }
             }
         });
+    }
+
+    /**
+     * Get shortcut text for display (Cmd on Mac, Ctrl on other platforms)
+     */
+    private String getShortcutText(int keyCode) {
+        String modifierText = System.getProperty("os.name").toLowerCase().contains("mac") ? "⌘" : "Ctrl+";
+        return modifierText + KeyEvent.getKeyText(keyCode);
     }
 
     private void loadUsers() {
@@ -295,7 +336,9 @@ public class JDialogUserManagement extends JDialog {
             return;
         }
 
-        WebUIUser user = userTableModel.getUser(selectedRow);
+        // Convert view row index to model row index (for sorting)
+        int modelRow = userTable.convertRowIndexToModel(selectedRow);
+        WebUIUser user = userTableModel.getUser(modelRow);
         JDialogEditUser dialog = new JDialogEditUser(this, guiClient, user);
         dialog.setVisible(true);
         if (dialog.wasSuccessful()) {
@@ -309,7 +352,19 @@ public class JDialogUserManagement extends JDialog {
             return;
         }
 
-        WebUIUser user = userTableModel.getUser(selectedRow);
+        // Convert view row index to model row index (for sorting)
+        int modelRow = userTable.convertRowIndexToModel(selectedRow);
+        WebUIUser user = userTableModel.getUser(modelRow);
+
+        // Prevent deleting admin user
+        if (user.getUsername().equalsIgnoreCase("admin")) {
+            JOptionPane.showMessageDialog(this,
+                    "Cannot delete the admin user.",
+                    "Delete Not Allowed",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to delete user \"" + user.getUsername() + "\"?",
                 "Confirm Delete",
@@ -365,10 +420,22 @@ public class JDialogUserManagement extends JDialog {
     }
 
     private void updateButtonStates() {
-        boolean hasSelection = userTable.getSelectedRow() != -1;
+        int selectedRow = userTable.getSelectedRow();
+        boolean hasSelection = selectedRow != -1;
+
+        // Enable edit and change password for any selected user
         buttonEdit.setEnabled(hasSelection);
-        buttonDelete.setEnabled(hasSelection);
         buttonChangePassword.setEnabled(hasSelection);
+
+        // Disable delete button for admin user
+        if (hasSelection) {
+            // Convert view row index to model row index (for sorting)
+            int modelRow = userTable.convertRowIndexToModel(selectedRow);
+            WebUIUser user = userTableModel.getUser(modelRow);
+            buttonDelete.setEnabled(!user.getUsername().equalsIgnoreCase("admin"));
+        } else {
+            buttonDelete.setEnabled(false);
+        }
     }
 
     private void changePassword() {
@@ -377,7 +444,9 @@ public class JDialogUserManagement extends JDialog {
             return;
         }
 
-        WebUIUser user = userTableModel.getUser(selectedRow);
+        // Convert view row index to model row index (for sorting)
+        int modelRow = userTable.convertRowIndexToModel(selectedRow);
+        WebUIUser user = userTableModel.getUser(modelRow);
         JDialogChangePassword dialog = new JDialogChangePassword(this, guiClient, user);
         dialog.setVisible(true);
     }

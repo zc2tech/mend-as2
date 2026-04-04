@@ -6,7 +6,7 @@ echo "Starting mendelson AS2 server..."
 echo ""
 
 # Build if needed
-if [ ! -f "target/as2-1.1b67-dist.tar.gz" ]; then
+if [ ! -f "target/mend-as2-1.0b0-dist.tar.gz" ]; then
     echo "Building project..."
     mvn clean package -DskipTests
     echo ""
@@ -14,13 +14,13 @@ fi
 
 # Extract distribution
 echo "Extracting distribution..."
-rm -rf target/as2-1.1b67
-tar -xzf target/as2-1.1b67-dist.tar.gz -C target/
+rm -rf target/mend-as2-1.0b0
+tar -xzf target/mend-as2-1.0b0-dist.tar.gz -C target/
 
 # Start server
 echo "Starting server..."
 echo ""
-java -cp "target/as2-1.1b67/as2-1.1b67.jar:target/as2-1.1b67/lib/*" de.mendelson.comm.as2.AS2
+java -cp "target/mend-as2-1.0b0/mend-as2-1.0b0.jar:target/mend-as2-1.0b0/lib/*" de.mendelson.comm.as2.AS2
 
 echo ""
 echo "Server stopped."

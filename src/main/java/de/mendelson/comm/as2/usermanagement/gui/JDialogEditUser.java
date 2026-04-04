@@ -242,11 +242,17 @@ public class JDialogEditUser extends JDialog {
 
         // Roles section (if roles are available)
         if (availableRoles != null && !availableRoles.isEmpty()) {
+            boolean isAdmin = editingUser != null && editingUser.getUsername().equalsIgnoreCase("admin");
+
             gbc.gridx = 0;
             gbc.gridy = row;
             gbc.gridwidth = 2;
             gbc.weightx = 1.0;
-            formPanel.add(new JLabel("Assigned Roles:"), gbc);
+            JLabel rolesLabel = new JLabel(isAdmin ? "Assigned Roles: (Cannot modify admin roles)" : "Assigned Roles:");
+            if (isAdmin) {
+                rolesLabel.setForeground(new Color(108, 117, 125)); // Gray color
+            }
+            formPanel.add(rolesLabel, gbc);
 
             row++;
 
@@ -255,6 +261,9 @@ public class JDialogEditUser extends JDialog {
             gbc.gridwidth = 2;
             rolePanel = new JPanel(new GridLayout(0, 1, 5, 5));
             rolePanel.setBorder(BorderFactory.createEtchedBorder());
+            if (isAdmin) {
+                rolePanel.setBackground(new Color(248, 249, 250)); // Light gray background
+            }
 
             roleCheckboxes = new HashMap<>();
 
@@ -271,6 +280,7 @@ public class JDialogEditUser extends JDialog {
             for (Role role : availableRoles) {
                 JCheckBox checkbox = new JCheckBox(role.getName() + " - " + role.getDescription());
                 checkbox.setSelected(currentRoleIds.contains(role.getId()));
+                checkbox.setEnabled(!isAdmin); // Disable checkboxes for admin user
                 roleCheckboxes.put(role.getId(), checkbox);
                 rolePanel.add(checkbox);
             }
@@ -522,6 +532,12 @@ public class JDialogEditUser extends JDialog {
 
     private void saveRoleAssignments(int userId) {
         if (roleCheckboxes == null) {
+            return;
+        }
+
+        // Don't save role changes for admin user
+        if (editingUser != null && editingUser.getUsername().equalsIgnoreCase("admin")) {
+            logger.info("Skipping role assignment for admin user - roles cannot be modified");
             return;
         }
 

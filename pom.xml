@@ -3,12 +3,12 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.mendelson</groupId>
-    <artifactId>as2</artifactId>
-    <version>1.1b67</version>
-    <name>Mendelson AS2 Community Server</name>
+    <groupId>com.zc2tech</groupId>
+    <artifactId>mend-as2</artifactId>
+    <version>1.1.0</version>
+    <name>Mend-AS2 Server</name>
     <packaging>jar</packaging>
-    <url>https://github.com/sarog/mendelson-as2</url>
+    <url>https://github.com/zc2tech/mend-as2</url>
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>

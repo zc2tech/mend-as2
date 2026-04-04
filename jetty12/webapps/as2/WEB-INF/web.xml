@@ -44,15 +44,15 @@
         <url-pattern>/api/v1/*</url-pattern>
     </servlet-mapping>
 
-    <!-- Admin UI Static Resources -->
+    <!-- WebUI Static Resources -->
     <servlet>
-        <servlet-name>AdminUI</servlet-name>
+        <servlet-name>WebUI</servlet-name>
         <servlet-class>de.mendelson.comm.as2.servlet.AdminUIServlet</servlet-class>
         <load-on-startup>2</load-on-startup>
     </servlet>
     <servlet-mapping>
-        <servlet-name>AdminUI</servlet-name>
-        <url-pattern>/admin/*</url-pattern>
+        <servlet-name>WebUI</servlet-name>
+        <url-pattern>/webui/*</url-pattern>
     </servlet-mapping>
 
 

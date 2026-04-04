@@ -5,14 +5,14 @@ applications:
     disk_quota: 1G
     instances: 1
     buildpack: java_buildpack
-    path: target/as2-1.1b67-dist.tar.gz
+    path: target/mend-as2-1.0b0-dist.tar.gz
     health-check-type: http
     health-check-http-endpoint: /as2/api/v1/system/info
     timeout: 180
 
     env:
       # Java runtime configuration
-      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 11.+ } }'
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 17.+ } }'
 
       # AS2 Server configuration
       AS2_START_GUI: false

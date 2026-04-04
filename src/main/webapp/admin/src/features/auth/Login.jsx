@@ -39,7 +39,11 @@ export default function Login() {
     const result = await login(username, password);
 
     if (result.success) {
-      navigate('/');
+      if (result.mustChangePassword) {
+        navigate('/change-password-forced');
+      } else {
+        navigate('/');
+      }
     } else {
       setError(result.error);
     }

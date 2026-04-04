@@ -396,4 +396,34 @@ public class UserManagementAccessDB {
         }
         return permissions;
     }
+
+    /**
+     * Get all permissions for a user (aggregated from all their roles) as Permission objects
+     */
+    public List<Permission> getUserPermissionObjects(String username) throws Exception {
+        List<Permission> permissions = new ArrayList<>();
+        String query = "SELECT DISTINCT p.id, p.name, p.description, p.category " +
+                      "FROM webui_users u " +
+                      "JOIN webui_user_roles ur ON u.id = ur.user_id " +
+                      "JOIN webui_role_permissions rp ON ur.role_id = rp.role_id " +
+                      "JOIN webui_permissions p ON rp.permission_id = p.id " +
+                      "WHERE u.username = ? AND u.enabled = TRUE " +
+                      "ORDER BY p.category, p.name";
+
+        try (Connection conn = this.dbDriverManager.getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG);
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Permission permission = new Permission();
+                    permission.setId(rs.getInt("id"));
+                    permission.setName(rs.getString("name"));
+                    permission.setDescription(rs.getString("description"));
+                    permission.setCategory(rs.getString("category"));
+                    permissions.add(permission);
+                }
+            }
+        }
+        return permissions;
+    }
 }

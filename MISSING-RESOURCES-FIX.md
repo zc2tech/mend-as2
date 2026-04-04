@@ -101,7 +101,7 @@ ls -la target/classes/de/mendelson/comm/as2/client/*.svg
 ```bash
 mvn exec:java
 # Or
-java -jar target/as2-1.1b67.jar
+java -jar target/mend-as2-1.0b0.jar
 ```
 
 ## Related Issues Fixed

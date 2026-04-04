@@ -111,15 +111,32 @@ public abstract class Notification {
         properties.setProperty("mail.smtp.timeout", String.valueOf(this.smtpTimeout));
         if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_START_TLS) {
             properties.setProperty("mail.smtp.starttls.enable", "true");
+            properties.setProperty("mail.smtp.starttls.required", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
         } else if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS) {
             properties.setProperty("mail.smtp.ssl.enable", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
+            // For SSL/TLS on port 465, use smtps protocol instead of smtp
+            if (notificationData.getMailServerPort() == 465) {
+                properties.setProperty("mail.transport.protocol", "smtps");
+                properties.setProperty("mail.smtps.host", notificationData.getMailServer());
+                properties.setProperty("mail.smtps.port", String.valueOf(notificationData.getMailServerPort()));
+                properties.setProperty("mail.smtps.ssl.enable", "true");
+                properties.setProperty("mail.smtps.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
+                properties.setProperty("mail.smtps.connectiontimeout", String.valueOf(this.smtpConnectionTimeout));
+                properties.setProperty("mail.smtps.timeout", String.valueOf(this.smtpTimeout));
+            }
         }
         Session session = null;
         if (notificationData.usesSMTPAuthCredentials()) {
             properties.setProperty("mail.smtp.auth", "true");
             properties.setProperty("mail.debug.auth", "true");
+            // For SMTPS (port 465 with TLS), also set smtps auth
+            if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS
+                && notificationData.getMailServerPort() == 465) {
+                properties.setProperty("mail.smtps.auth", "true");
+                properties.setProperty("mail.debug.auth", "true");
+            }
             session = Session.getInstance(properties,
                     new SendMailAuthenticator(notificationData.getSMTPUser(),
                             String.valueOf(notificationData.getSMTPPass())));

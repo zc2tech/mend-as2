@@ -79,7 +79,7 @@ public class UserNotificationMailer {
         body.append("==============\n");
         body.append("Username: ").append(user.getUsername()).append("\n");
         body.append("Password: ").append(plainPassword).append("\n");
-        body.append("WebUI URL: ").append(serverUrl).append("/admin/login\n\n");
+        body.append("WebUI URL: ").append(serverUrl).append("/webui/login\n\n");
         body.append("IMPORTANT SECURITY NOTICE:\n");
         body.append("For your security, you will be required to change your password upon first login.\n");
         body.append("Please keep this email secure and delete it after changing your password.\n\n");
@@ -100,17 +100,37 @@ public class UserNotificationMailer {
 
         if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_START_TLS) {
             properties.setProperty("mail.smtp.starttls.enable", "true");
+            properties.setProperty("mail.smtp.starttls.required", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
         } else if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS) {
             properties.setProperty("mail.smtp.ssl.enable", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+            // For SSL/TLS on port 465, we need to use smtps protocol
+            if (notificationData.getMailServerPort() == 465) {
+                properties.setProperty("mail.transport.protocol", "smtps");
+                properties.setProperty("mail.smtps.host", notificationData.getMailServer());
+                properties.setProperty("mail.smtps.port", String.valueOf(notificationData.getMailServerPort()));
+                properties.setProperty("mail.smtps.ssl.enable", "true");
+                properties.setProperty("mail.smtps.ssl.protocols", "TLSv1.2 TLSv1.3");
+                properties.setProperty("mail.smtps.connectiontimeout", String.valueOf(SMTP_CONNECTION_TIMEOUT));
+                properties.setProperty("mail.smtps.timeout", String.valueOf(SMTP_TIMEOUT));
+            }
         }
 
         Session session;
         if (notificationData.usesSMTPAuthCredentials()) {
-            properties.setProperty("mail.smtp.auth", "true");
             final String username = notificationData.getSMTPUser();
             final String password = String.valueOf(notificationData.getSMTPPass());
+
+            // Set authentication for both smtp and smtps protocols
+            properties.setProperty("mail.smtp.auth", "true");
+            properties.setProperty("mail.debug.auth", "true");
+
+            if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS
+                && notificationData.getMailServerPort() == 465) {
+                // For SMTPS (port 465), also set smtps-specific auth properties
+                properties.setProperty("mail.smtps.auth", "true");
+            }
 
             session = Session.getInstance(properties, new Authenticator() {
                 @Override
@@ -121,6 +141,9 @@ public class UserNotificationMailer {
         } else {
             session = Session.getInstance(properties);
         }
+
+        // Enable debug output to help diagnose issues
+        session.setDebug(true);
 
         return session;
     }

@@ -35,7 +35,7 @@ cd /Users/I572958/SAPDevelop/github/mend-as2
 mvn package -DskipTests
 ```
 
-This extracts the SQL scripts to `target/as2-1.1b67/config/sqlscript/`.
+This extracts the SQL scripts to `target/mend-as2-1.0b0/config/sqlscript/`.
 
 ### Step 2 - Start SSH tunnel
 
@@ -201,7 +201,7 @@ If you see "database already exists" errors, it's safe to ignore them. Continue 
 
 ### SQL Scripts Not Found
 
-If the SQL scripts are missing from `target/as2-1.1b67/`:
+If the SQL scripts are missing from `target/mend-as2-1.0b0/`:
 ```bash
 # Rebuild the project
 mvn clean package -DskipTests

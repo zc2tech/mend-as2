@@ -31,6 +31,7 @@ import de.mendelson.comm.as2.servlet.rest.exceptions.ApiExceptionMapper;
 import de.mendelson.comm.as2.servlet.rest.resources.CemResource;
 import de.mendelson.comm.as2.servlet.rest.resources.CertificateResource;
 import de.mendelson.comm.as2.servlet.rest.resources.MessageResource;
+import de.mendelson.comm.as2.servlet.rest.resources.NotificationResource;
 import de.mendelson.comm.as2.servlet.rest.resources.PartnerResource;
 import de.mendelson.comm.as2.servlet.rest.resources.PreferencesResource;
 import de.mendelson.comm.as2.servlet.rest.resources.StatisticsResource;
@@ -73,6 +74,7 @@ public class RestApplication extends ResourceConfig {
         register(CemResource.class);
         register(StatisticsResource.class);
         register(PreferencesResource.class);
+        register(NotificationResource.class);
         System.out.println("RestApplication: Registering UserManagementResource");
         register(UserManagementResource.class);
 

@@ -141,7 +141,7 @@ public class AuthenticationResource {
                     true   // httpOnly
             );
 
-            return Response.ok(new LoginResponse(loginRequest.getUsername()))
+            return Response.ok(new LoginResponse(loginRequest.getUsername(), user.isMustChangePassword()))
                     .cookie(accessCookie, refreshCookie)
                     .build();
 
@@ -266,9 +266,11 @@ public class AuthenticationResource {
 
     public static class LoginResponse {
         private String username;
+        private boolean mustChangePassword;
 
-        public LoginResponse(String username) {
+        public LoginResponse(String username, boolean mustChangePassword) {
             this.username = username;
+            this.mustChangePassword = mustChangePassword;
         }
 
         public String getUsername() {
@@ -277,6 +279,14 @@ public class AuthenticationResource {
 
         public void setUsername(String username) {
             this.username = username;
+        }
+
+        public boolean isMustChangePassword() {
+            return mustChangePassword;
+        }
+
+        public void setMustChangePassword(boolean mustChangePassword) {
+            this.mustChangePassword = mustChangePassword;
         }
     }
 

@@ -26,7 +26,9 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
     // Only check auth if not on login page
@@ -41,9 +43,16 @@ export function AuthProvider({ children }) {
     try {
       // Try to get system info - if it works, we're authenticated
       await api.get('/system/info');
+
+      // Fetch user permissions
+      const permissionsResponse = await api.get('/users/current/permissions');
+      const userPermissions = permissionsResponse.data;
+
+      setPermissions(userPermissions);
       setUser({ username: 'admin' }); // JWT doesn't expose username easily
     } catch (error) {
       setUser(null);
+      setPermissions([]);
     } finally {
       setLoading(false);
     }
@@ -52,8 +61,25 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await api.post('/auth/login', { username, password });
+
+      console.log('Login response:', response.data);
+      console.log('mustChangePassword:', response.data.mustChangePassword);
+
+      // Check if user must change password
+      if (response.data.mustChangePassword) {
+        setMustChangePassword(true);
+        setUser({ username: response.data.username });
+        return { success: true, mustChangePassword: true };
+      }
+
+      // Fetch user permissions after login
+      const permissionsResponse = await api.get('/users/current/permissions');
+      const userPermissions = permissionsResponse.data;
+
+      setPermissions(userPermissions);
       setUser({ username: response.data.username });
-      return { success: true };
+      setMustChangePassword(false);
+      return { success: true, mustChangePassword: false };
     } catch (error) {
       return {
         success: false,
@@ -69,12 +95,36 @@ export function AuthProvider({ children }) {
       // Ignore errors during logout
     } finally {
       setUser(null);
-      window.location.href = '/as2/admin/login';
+      setPermissions([]);
+      setMustChangePassword(false);
+      window.location.href = '/as2/webui/login';
     }
   };
 
+  const clearMustChangePassword = () => {
+    setMustChangePassword(false);
+  };
+
+  const hasPermission = (permissionName) => {
+    return permissions.some(p => p.name === permissionName);
+  };
+
+  const hasAnyPermission = (...permissionNames) => {
+    return permissionNames.some(name => hasPermission(name));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{
+      user,
+      permissions,
+      loading,
+      mustChangePassword,
+      login,
+      logout,
+      clearMustChangePassword,
+      hasPermission,
+      hasAnyPermission
+    }}>
       {children}
     </AuthContext.Provider>
   );

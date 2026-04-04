@@ -78,7 +78,7 @@ export POSTGRES_PASSWORD=as2password
 mvn exec:java
 
 # Or directly
-java -jar target/as2-1.1b67.jar
+java -jar target/mend-as2-1.0b0.jar
 ```
 
 ## Verification Checklist
@@ -188,7 +188,7 @@ mend-as2/
 │   ├── database-postgresql.env.example (Template)
 │   └── setup-postgresql.sh            (Setup script)
 ├── target/
-│   ├── as2-1.1b67.jar                 (Built application)
+│   ├── mend-as2-1.0b0.jar                 (Built application)
 │   └── classes/
 │       └── de/mendelson/.../*.svg     (Resources)
 └── ~/.m2/repository/
@@ -232,7 +232,7 @@ source config/database-postgresql.env
 # 5. Run application
 mvn exec:java
 # OR
-java -jar target/as2-1.1b67.jar
+java -jar target/mend-as2-1.0b0.jar
 ```
 
 ## Success Indicators

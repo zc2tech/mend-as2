@@ -23,7 +23,7 @@ import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../features/auth/useAuth';
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasAnyPermission, permissions } = useAuth();
 
   const navStyle = {
     backgroundColor: '#2c3e50',
@@ -49,20 +49,44 @@ export default function Layout() {
     margin: '0 auto'
   };
 
+  // Menu visibility based on permissions
+  console.log('User permissions:', permissions);
+  const showPartners = hasAnyPermission('PARTNER_READ', 'PARTNER_WRITE');
+  const showCertificates = hasAnyPermission('CERT_READ', 'CERT_WRITE');
+  const showMessages = hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE');
+  const showSystem = hasAnyPermission('SYSTEM_READ', 'SYSTEM_WRITE');
+  console.log('showSystem:', showSystem);
+  const showUsers = hasAnyPermission('USER_MANAGE');
+
   return (
     <div>
       <nav style={navStyle}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <h2 style={{ margin: 0, marginRight: '2rem' }}>AS2 Server</h2>
           <Link to="/" style={linkStyle}>Dashboard</Link>
-          <Link to="/partners" style={linkStyle}>Partners</Link>
-          <Link to="/certificates" style={linkStyle}>Certificates</Link>
-          <Link to="/messages" style={linkStyle}>Messages</Link>
-          <Link to="/system" style={linkStyle}>System</Link>
-          <Link to="/users" style={linkStyle}>Users</Link>
+          {showPartners && <Link to="/partners" style={linkStyle}>Partners</Link>}
+          {showCertificates && <Link to="/certificates" style={linkStyle}>Certificates</Link>}
+          {showMessages && <Link to="/messages" style={linkStyle}>Messages</Link>}
+          {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
+          {showUsers && <Link to="/users" style={linkStyle}>Users</Link>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ marginRight: '1rem' }}>User: {user?.username}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span>User: {user?.username}</span>
+          <Link
+            to="/change-password"
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block'
+            }}
+          >
+            Change Password
+          </Link>
           <button
             onClick={logout}
             style={{

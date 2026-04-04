@@ -24,7 +24,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './features/auth/useAuth';
 import { ToastProvider } from './components/Toast';
 import Login from './features/auth/Login';
+import ChangePassword from './features/auth/ChangePassword';
 import ProtectedRoute from './features/auth/ProtectedRoute';
+import PermissionRoute from './features/auth/PermissionRoute';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import PartnerList from './features/partners/PartnerList';
@@ -46,11 +48,13 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename="/as2/admin">
+      <BrowserRouter basename="/as2/webui">
         <ToastProvider>
           <AuthProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
+              {/* Standalone change password for forced password change */}
+              <Route path="/change-password-forced" element={<ChangePassword />} />
             <Route
               path="/"
               element={
@@ -60,18 +64,55 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="partners" element={<PartnerList />} />
-              <Route path="certificates" element={<CertificateList />} />
-              <Route path="messages" element={<MessageList />} />
-              <Route path="system" element={<SystemInfo />} />
-              <Route path="users" element={<UserManagement />} />
+              {/* Change password within the app layout */}
+              <Route path="change-password" element={<ChangePassword />} />
+              <Route
+                path="partners"
+                element={
+                  <PermissionRoute requiredPermissions={['PARTNER_READ', 'PARTNER_WRITE']}>
+                    <PartnerList />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="certificates"
+                element={
+                  <PermissionRoute requiredPermissions={['CERT_READ', 'CERT_WRITE']}>
+                    <CertificateList />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="messages"
+                element={
+                  <PermissionRoute requiredPermissions={['MESSAGE_READ', 'MESSAGE_WRITE']}>
+                    <MessageList />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="system"
+                element={
+                  <PermissionRoute requiredPermissions={['SYSTEM_READ', 'SYSTEM_WRITE']}>
+                    <SystemInfo />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="users"
+                element={
+                  <PermissionRoute requiredPermissions={['USER_MANAGE']}>
+                    <UserManagement />
+                  </PermissionRoute>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
-  </QueryClientProvider>
+    </QueryClientProvider>
   );
 }
 

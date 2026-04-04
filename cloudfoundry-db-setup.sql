@@ -20,10 +20,10 @@ GRANT ALL PRIVILEGES ON DATABASE as2_db_runtime TO as2user;
 -- 6. Connect to as2_db_config and run the config schema
 \c as2_db_config
 
--- Run all SQL from: target/as2-1.1b67/config/sqlscript/config/CREATE.sql
--- Then run: target/as2-1.1b67/config/sqlscript/config/data.sql
+-- Run all SQL from: target/mend-as2-1.0b0/config/sqlscript/config/CREATE.sql
+-- Then run: target/mend-as2-1.0b0/config/sqlscript/config/data.sql
 
 -- 7. Connect to as2_db_runtime and run the runtime schema
 \c as2_db_runtime
 
--- Run all SQL from: target/as2-1.1b67/config/sqlscript/runtime/CREATE.sql
+-- Run all SQL from: target/mend-as2-1.0b0/config/sqlscript/runtime/CREATE.sql

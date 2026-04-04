@@ -151,6 +151,16 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
      * Returns null if no permission check is needed (allows access)
      */
     private String getRequiredPermission(String method, String path) {
+        // Allow all authenticated users to get their own permissions
+        if (path.equals("users/current/permissions")) {
+            return null; // No special permission required - just authentication
+        }
+
+        // Allow authenticated users to change their own password
+        if (path.matches("users/\\d+/password") && "POST".equals(method)) {
+            return null; // No special permission required - just authentication
+        }
+
         // User management always requires USER_MANAGE permission
         if (path.startsWith("users/")) {
             return "USER_MANAGE";
@@ -192,8 +202,9 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
             }
         }
 
-        // Preferences, statistics, CEM - require system read permission
-        if (path.startsWith("preferences") || path.startsWith("statistics") || path.startsWith("cem")) {
+        // Preferences, statistics, CEM, notifications - require system permissions
+        if (path.startsWith("preferences") || path.startsWith("statistics") ||
+            path.startsWith("cem") || path.startsWith("notifications")) {
             if ("GET".equals(method)) {
                 return "SYSTEM_READ";
             } else if ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) {

@@ -58,7 +58,7 @@ If running the JAR directly, ensure the PostgreSQL driver is in the classpath:
 
 ```bash
 # Option 1: Add to classpath
-java -cp "target/as2-1.1b67.jar:~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar" de.mendelson.comm.as2.AS2
+java -cp "target/mend-as2-1.0b0.jar:~/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar" de.mendelson.comm.as2.AS2
 
 # Option 2: Use Maven to run
 mvn exec:java -Dexec.mainClass="de.mendelson.comm.as2.AS2"
@@ -104,7 +104,7 @@ When creating a distribution package, ensure the PostgreSQL driver is included:
 ```bash
 mvn package
 ```
-This creates `target/as2-1.1b67-distribution.zip` with all dependencies.
+This creates `target/mend-as2-1.0b0-distribution.zip` with all dependencies.
 
 **Option 2: Fat JAR with Dependencies**
 Add to `pom.xml`:
@@ -145,7 +145,7 @@ After building, verify the PostgreSQL driver is loaded:
 
 ```bash
 # Extract and check JAR manifest
-unzip -l target/as2-1.1b67.jar | grep postgresql
+unzip -l target/mend-as2-1.0b0.jar | grep postgresql
 
 # Or check dependency tree
 mvn dependency:tree | grep postgresql

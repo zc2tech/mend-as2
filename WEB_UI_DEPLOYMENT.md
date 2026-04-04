@@ -35,7 +35,7 @@ This will:
 After building, start the server:
 
 ```bash
-java -jar target/as2-1.1b67.jar
+java -jar target/mend-as2-1.0b0.jar
 ```
 
 Access the web UI at:
@@ -62,7 +62,7 @@ applications:
     disk_quota: 512M
     instances: 1
     buildpack: java_buildpack
-    path: target/as2-1.1b67.jar
+    path: target/mend-as2-1.0b0.jar
     env:
       JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 11.+ } }'
       AS2_START_GUI: false
@@ -140,7 +140,7 @@ Configure TLS certificates in `config/certificates.p12` (TLS keystore).
 ### Backend Only
 ```bash
 mvn clean package -DskipTests
-java -jar target/as2-1.1b67.jar
+java -jar target/mend-as2-1.0b0.jar
 ```
 
 ### Frontend Development (Hot Reload)
@@ -188,7 +188,7 @@ Both use the same backend business logic (`AS2ServerProcessing`), ensuring consi
 
 ### Web UI Not Loading
 - Check that Jetty is running: `curl http://localhost:8080/admin/`
-- Verify React build was included: `jar tf target/as2-1.1b67.jar | grep webapp/admin`
+- Verify React build was included: `jar tf target/mend-as2-1.0b0.jar | grep webapp/admin`
 
 ### Authentication Fails
 - Check `config/passwd` file exists and has valid user entries
