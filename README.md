@@ -33,12 +33,27 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password complexity enforcement
   - Account enable/disable functionality
 
+- **HTTP Authentication**
+  - Flexible HTTP Basic Auth for partner connections
+  - Three modes: None, Always Use, Use User Preference
+  - User-specific credential management (WebUI & SwingUI)
+  - Separate credentials for Message and MDN requests
+  - Runtime credential resolution based on partner configuration
+
+- **Partner Visibility Control**
+  - User-based partner access restrictions
+  - "Visible to all" or "Specific users only" modes
+  - Message list filtering based on partner visibility
+  - Admin users bypass all visibility restrictions
+  - Only applies to remote partners (local stations always visible)
+
 - **Enhanced Security**
   - JWT-based authentication for WebUI
   - HttpOnly cookies for session management
   - PBKDF2 password hashing
   - Permission-based API endpoint protection
   - Read-only UI for viewer roles
+  - Partner-level visibility controls
 
 - **Modern Tech Stack**
   - **Backend**: Java 21, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -78,23 +93,76 @@ Default credentials: `admin` / `admin`
 
 ## 🎯 Usage
 
+### Partner Visibility Control
+
+Control which users can see and interact with specific partners:
+
+1. **Configure Partner Visibility** (Admin/Partner Manager):
+   - Edit Partner → Navigate to **Visibility** tab
+   - Choose "Visible to all users" (default) or "Visible to specific users only"
+   - Select specific users if using restricted mode
+   - Local stations are always visible to all users
+
+2. **Effects**:
+   - Users only see their visible partners in:
+     - Message sending interface
+     - Partner filter dropdowns
+     - Message list (filtered automatically)
+   - Admin users bypass all restrictions
+
+### HTTP Authentication Preferences
+
+Configure HTTP Basic Auth credentials for partner connections:
+
+**WebUI:**
+1. Login to WebUI
+2. Click username dropdown → **Preferences**
+3. View **HTTP Authentication** tab
+4. For each partner:
+   - Enable/disable Message Authentication
+   - Enter username and password
+   - Enable/disable MDN Authentication
+   - Enter username and password
+5. Click **Save** for each partner
+
+**SwingUI:**
+1. Open AS2Gui
+2. Menu → **User Preference → HTTP Authentication**
+3. Table shows all remote partners
+4. Check auth checkboxes and enter credentials
+5. Click **OK** to save all changes
+
+**Partner Configuration:**
+- Edit Partner → **HTTP Authentication** tab
+- Select mode:
+  - **None** - No HTTP auth
+  - **Always Use** - Use credentials from partner config
+  - **Use User Preference** - Use credentials from user preferences (above)
+
 ### WebUI Access
 
 Navigate to `http://localhost:8080/as2/webui/` and login.
 
 **Available Sections (permission-based):**
 - **Dashboard** - Quick access to all sections
-- **Partners** - Manage trading partners
+- **Partners** - Manage trading partners with visibility controls
 - **Certificates** - Import/export certificates
-- **Messages** - View and send AS2 messages
+- **Messages** - View and send AS2 messages (filtered by partner visibility)
 - **System** - Server configuration
 - **Users** - User and role management (Admin only)
+- **Preferences** - HTTP authentication credentials (user-specific)
 
 ### SwingUI (Desktop)
 
 ```bash
 java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 ```
+
+**Menu Navigation:**
+- **File → Partner** - Manage trading partners
+- **File → Certificates** - Certificate management
+- **File → Preferences** - System-wide preferences
+- **User Preference → HTTP Authentication** - Configure HTTP auth credentials
 
 **Keyboard Shortcuts:**
 - `Cmd/Ctrl + U` - Open User Management
@@ -121,9 +189,12 @@ curl http://localhost:8080/as2/api/v1/users -b cookies.txt
 - `POST /auth/login` - Authenticate
 - `GET /users` - List users (USER_MANAGE)
 - `GET /partners` - List partners (PARTNER_READ)
+- `GET /partners?visibleToUser={id}` - List partners visible to user
 - `GET /certificates` - List certificates (CERT_READ)
-- `GET /messages` - List messages (MESSAGE_READ)
+- `GET /messages` - List messages (MESSAGE_READ, filtered by partner visibility)
 - `GET /system/info` - System info (SYSTEM_READ)
+- `GET /user-preferences/http-auth` - Get user's HTTP auth preferences
+- `POST /user-preferences/http-auth` - Save HTTP auth credentials
 
 ### User Roles & Permissions
 
@@ -145,10 +216,18 @@ mend-as2/
 │   │   └── de/mendelson/comm/as2/
 │   │       ├── server/          # AS2 server core
 │   │       ├── servlet/rest/    # REST API
-│   │       └── usermanagement/  # User & RBAC
+│   │       ├── partner/         # Partner management
+│   │       └── usermanagement/  # User, RBAC & HTTP Auth
 │   ├── resources/
 │   │   └── sqlscript/           # Database schemas
 │   └── webapp/admin/            # React WebUI
+│       └── src/
+│           ├── features/
+│           │   ├── partners/    # Partner UI
+│           │   ├── messages/    # Message UI
+│           │   ├── users/       # User management
+│           │   └── preferences/ # HTTP Auth preferences
+│           └── api/             # REST client
 ├── config/                      # Configuration
 └── jetty12/                     # Jetty server
 ```
@@ -161,6 +240,8 @@ mend-as2/
 - ✅ API permission enforcement
 - ✅ Forced password change on first login
 - ✅ Session timeout and refresh tokens
+- ✅ Partner visibility controls
+- ✅ User-specific HTTP authentication credentials
 
 **Best Practices:**
 1. Change default admin password immediately
@@ -168,6 +249,8 @@ mend-as2/
 3. Enable HTTPS in production
 4. Assign minimum required permissions
 5. Regular database backups
+6. Configure partner visibility for sensitive partners
+7. Use "User Preference" mode for HTTP auth when multiple users share partners
 
 ## 🔄 Backup & Restore
 
@@ -202,6 +285,9 @@ mvn test
 - Auth: JWT-based (was session-based)
 - New: Full RBAC system
 - New: Modern responsive UI
+- New: HTTP Authentication preferences
+- New: Partner visibility controls
+- New: User-specific preferences
 
 See migration guide in docs/ for details.
 
@@ -230,14 +316,19 @@ GNU General Public License v2.0 - see [LICENSE](LICENSE)
 
 ## 🗺️ Roadmap
 
+- [x] Role-Based Access Control (RBAC)
+- [x] HTTP Authentication preferences
+- [x] Partner visibility controls
+- [x] Message filtering by partner visibility
 - [ ] Read-only UI for all components
-- [ ] Enhanced message filtering
+- [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
 - [ ] Multi-language support
 - [ ] Docker containerization
 - [ ] Kubernetes templates
 - [ ] Performance metrics
 - [ ] LDAP/AD integration
+- [ ] OAuth2 support for HTTP authentication
 
 ## 🔍 Troubleshooting
 
@@ -257,6 +348,16 @@ GNU General Public License v2.0 - see [LICENSE](LICENSE)
 - Test SMTP with "Send Test Mail"
 - For Gmail: use App Password
 - For Aliyun/163: use Authorization Code
+
+**Partner Not Visible in Message Send**
+- Check partner visibility settings (Partners → Edit → Visibility tab)
+- Verify user is in the "visible to" list (or visibility is "all users")
+- Admin users can see all partners
+
+**HTTP Authentication Not Working**
+- Verify partner is configured with "Use User Preference" mode
+- Check user has set credentials in User Preference → HTTP Authentication
+- For SwingUI: Check credentials are set for admin user (ID=1)
 
 ---
 
