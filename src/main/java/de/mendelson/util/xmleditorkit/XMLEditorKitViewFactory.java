@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/xmleditorkit/XMLEditorKitViewFactory.java 1     4/05/18 10:58a Heller $
 package de.mendelson.util.xmleditorkit;
 
 import javax.swing.text.AbstractDocument;

@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/clientserver/ExportResponsePrivateKey.java 1     13/09/24 12:24 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

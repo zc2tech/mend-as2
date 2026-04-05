@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2Info.java 3     1/09/22 14:11 Heller $
 package de.mendelson.comm.as2.message;
 
 import java.io.Serializable;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/FileEncodingDetection.java 16    4/02/25 14:26 Heller $
 package de.mendelson.util;
 
 import java.io.BufferedReader;

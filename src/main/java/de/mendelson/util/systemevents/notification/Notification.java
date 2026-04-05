@@ -1,4 +1,13 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/Notification.java 35    20/02/25 13:42 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.MecResourceBundle;
@@ -12,15 +21,15 @@ import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.TimeUnit;
-import javax.mail.Address;
-import javax.mail.Authenticator;
-import javax.mail.Message;
-import javax.mail.PasswordAuthentication;
-import javax.mail.SendFailedException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Address;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.SendFailedException;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 
 /*
@@ -101,15 +110,32 @@ public abstract class Notification {
         properties.setProperty("mail.smtp.timeout", String.valueOf(this.smtpTimeout));
         if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_START_TLS) {
             properties.setProperty("mail.smtp.starttls.enable", "true");
+            properties.setProperty("mail.smtp.starttls.required", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
         } else if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS) {
             properties.setProperty("mail.smtp.ssl.enable", "true");
             properties.setProperty("mail.smtp.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
+            // For SSL/TLS on port 465, use smtps protocol instead of smtp
+            if (notificationData.getMailServerPort() == 465) {
+                properties.setProperty("mail.transport.protocol", "smtps");
+                properties.setProperty("mail.smtps.host", notificationData.getMailServer());
+                properties.setProperty("mail.smtps.port", String.valueOf(notificationData.getMailServerPort()));
+                properties.setProperty("mail.smtps.ssl.enable", "true");
+                properties.setProperty("mail.smtps.ssl.protocols", "SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3");
+                properties.setProperty("mail.smtps.connectiontimeout", String.valueOf(this.smtpConnectionTimeout));
+                properties.setProperty("mail.smtps.timeout", String.valueOf(this.smtpTimeout));
+            }
         }
         Session session = null;
         if (notificationData.usesSMTPAuthCredentials()) {
             properties.setProperty("mail.smtp.auth", "true");
             properties.setProperty("mail.debug.auth", "true");
+            // For SMTPS (port 465 with TLS), also set smtps auth
+            if (notificationData.getConnectionSecurity() == NotificationData.SECURITY_TLS
+                && notificationData.getMailServerPort() == 465) {
+                properties.setProperty("mail.smtps.auth", "true");
+                properties.setProperty("mail.debug.auth", "true");
+            }
             session = Session.getInstance(properties,
                     new SendMailAuthenticator(notificationData.getSMTPUser(),
                             String.valueOf(notificationData.getSMTPPass())));

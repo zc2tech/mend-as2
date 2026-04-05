@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/clients/preferences/PreferencesRequest.java 6     15/07/24 16:08 Heller $
 package de.mendelson.util.clientserver.clients.preferences;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

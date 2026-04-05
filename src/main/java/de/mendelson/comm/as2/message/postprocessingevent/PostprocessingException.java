@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/postprocessingevent/PostprocessingException.java 2     10.09.20 12:57 Heller $
 package de.mendelson.comm.as2.message.postprocessingevent;
 
 import de.mendelson.comm.as2.partner.Partner;

@@ -3,26 +3,26 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.mendelson</groupId>
-    <artifactId>as2</artifactId>
-    <version>1.1b67</version>
-    <name>Mendelson AS2 Community Server</name>
+    <groupId>com.zc2tech</groupId>
+    <artifactId>mend-as2</artifactId>
+    <version>1.1.0</version>
+    <name>Mend-AS2 Server</name>
     <packaging>jar</packaging>
-    <url>https://github.com/sarog/mendelson-as2</url>
+    <url>https://github.com/zc2tech/mend-as2</url>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <jetty.version>10.0.24</jetty.version>
+        <jetty.version>12.0.15</jetty.version>
         <lucene.version>9.11.1</lucene.version>
-        <vaadin.version>8.26.0</vaadin.version>
         <bouncycastle.version>1.80</bouncycastle.version>
-        <mina.version>2.2.3</mina.version>
+        <mina.version>2.2.4</mina.version>
         <flatlaf.version>3.5.1</flatlaf.version>
-        <hikaricp.version>5.1.0</hikaricp.version>
+        <hikaricp.version>6.2.1</hikaricp.version>
         <jackson.version>2.17.0</jackson.version>
+        <jersey.version>3.1.9</jersey.version>
+        <jjwt.version>0.11.5</jjwt.version>
 
         <assembly-directory>target/assembly</assembly-directory>
         <root-dist-directory>target/jetty-distribution</root-dist-directory>
@@ -38,10 +38,8 @@
             <id>jboss-3p</id>
             <url>https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/</url>
         </repository>
-        <repository>
-            <id>local-ohj-repo</id>
-            <url>file://${project.basedir}/maven-repo</url>
-        </repository>
+
+        <!-- local-ohj-repo removed - no longer needed -->
 
         <repository>
             <id>osgeo</id>
@@ -71,6 +69,27 @@
         <directory>${basedir}/target</directory>
         <!--<finalName>${project.artifactId}-${project.version}</finalName>-->
 
+        <resources>
+            <!-- Standard resources directory -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Include non-Java files (SVG, images, etc.) from java source directory -->
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.svg</include>
+                    <include>**/*.png</include>
+                    <include>**/*.gif</include>
+                    <include>**/*.jpg</include>
+                    <include>**/*.jpeg</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.txt</include>
+                </includes>
+            </resource>
+        </resources>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -82,16 +101,22 @@
         </pluginManagement>
 
         <plugins>
-            <!--<plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-            </plugin>-->
+                <version>3.12.1</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.11.0</version>
                 <configuration>
+                    <release>${maven.compiler.release}</release>
                     <mainClass>de.mendelson.comm.as2.AS2</mainClass>
                 </configuration>
             </plugin>
@@ -143,9 +168,7 @@
                             <includes>
                                 <include>**/*.jar</include>
                             </includes>
-                            <!-- <excludes>
-                                <include>**/javax.servlet-api-3.1.0.jar</include>
-                            </excludes>-->
+
                         </resource>
                         <resource>
                             <directory>${project.basedir}\web</directory>
@@ -232,6 +255,22 @@
                             <goal>resources</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>copy-react-build</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes/webapp/admin</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/webapp/admin/dist</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -239,10 +278,47 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>3.7.1</version>
             </plugin>
+
+            <!-- Frontend Maven Plugin for building React app -->
             <plugin>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                <configuration>
+                    <nodeVersion>v20.11.0</nodeVersion>
+                    <npmVersion>10.2.4</npmVersion>
+                    <workingDirectory>src/main/webapp/admin</workingDirectory>
+                    <installDirectory>target</installDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -255,13 +331,43 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
+            <artifactId>jetty-deploy</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-xml</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-webapp</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-annotations</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-apache-jsp</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty.ee10</groupId>
+            <artifactId>jetty-ee10-glassfish-jstl</artifactId>
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.7.2</version>
+            <version>2.7.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.4</version>
         </dependency>
 
         <!-- Bouncy Castle JSSE provider 
@@ -295,20 +401,26 @@
         </dependency>
 
 
-        <!-- S/MIME (org.bouncycastle.mail.smime.*) -->
+        <!-- S/MIME (org.bouncycastle.mail.smime.*) Very Import for jakarta.mail support!!!!-->
+
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcmail-jdk18on</artifactId>
-            <version>1.80</version>
+            <artifactId>bcjmail-jdk15on</artifactId>
+            <version>1.70</version>
         </dependency>
 
-        <!-- JavaMail (javax.mail.*) -->
+
+        <!-- Jakarta Mail (jakarta.mail.*) - Required for Java 21 -->
         <dependency>
-            <groupId>com.sun.mail</groupId>
-            <artifactId>javax.mail</artifactId>
-            <version>1.6.2</version>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-mail</artifactId>
+            <version>2.0.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-core</artifactId>
+            <version>2.0.3</version>
+        </dependency>
 
         <!-- UnboundID LDAP SDK (fixes com.unboundid.ldap.sdk import) -->
         <dependency>
@@ -323,16 +435,6 @@
             <version>2.16.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>javax.mail-api</artifactId>
-            <version>1.6.2</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>javax.activation-api</artifactId>
-            <version>1.2.0</version>
-        </dependency>
         <dependency>
             <groupId>jaxen</groupId>
             <artifactId>jaxen</artifactId>
@@ -369,15 +471,19 @@
             <version>${mina.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-server</artifactId>
-            <version>${vaadin.version}</version>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.4.6</version>
         </dependency>
         <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-client</artifactId>
-            <version>${vaadin.version}</version>
-            <scope>provided</scope>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.14.0</version>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
@@ -403,25 +509,24 @@
             <version>2.12.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>fluent-hc</artifactId>
-            <version>4.5.14</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5-fluent</artifactId>
+            <version>5.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-all</artifactId>
-            <version>1.17</version>
+            <version>1.18</version>
         </dependency>
         <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
-            <version>1.9.4</version>
+            <version>1.10.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-collections</groupId>
@@ -434,18 +539,6 @@
             <artifactId>l2fprod-common-buttonbar</artifactId>
             <version>6.9.1</version>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>com.sun.media</groupId>
-            <artifactId>jai-codec</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.media</groupId>
-            <artifactId>jai-core</artifactId>
-            <version>1.1.3</version>
-        </dependency>
-    -->
 
         <dependency>
             <groupId>dnsjava</groupId>
@@ -455,6 +548,11 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
@@ -478,33 +576,10 @@
 
         <!-- local filesystem -->
 
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>help</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>help-share</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>jewt4</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>icebrowser</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+        <!-- Oracle JavaHelp dependencies removed - incompatible with JDK 17+ -->
+        <!-- Help system replaced with simple GitHub link dialog in AS2Gui.java -->
 
-        <!-- Intarsys core runtime -->
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>isrt</artifactId>
-            <version>4.8</version>
-        </dependency>
+        <!-- Intarsys iscwt and isrt removed - provided as transitive dependencies via jPod and isfreetype -->
 
         <!-- Intarsys FreeType wrapper (required by renderer) -->
         <dependency>
@@ -513,7 +588,8 @@
             <version>5.6</version>
         </dependency>
 
-        <!-- Intarsys CWT + SWT bridge (exclude SWT placeholders; add a concrete SWT below) -->
+        <!-- Intarsys CWT + SWT bridge - Testing removal -->
+        <!--
         <dependency>
             <groupId>de.intarsys.opensource</groupId>
             <artifactId>iscwt</artifactId>
@@ -529,6 +605,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
 
         <!-- Intarsys jPod (PDF model, PDAcroForm, PDPage in de.intarsys.pdf.pd.*) -->
         <dependency>
@@ -563,45 +640,50 @@
             <version>4.1.108.Final</version>
         </dependency>
 
+        <!-- JAX-RS (Jersey) for REST API -->
+        <dependency>
+            <groupId>org.glassfish.jersey.containers</groupId>
+            <artifactId>jersey-container-servlet</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-json-jackson</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.media</groupId>
+            <artifactId>jersey-media-multipart</artifactId>
+            <version>${jersey.version}</version>
+        </dependency>
+
+        <!-- JWT for authentication -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
     </dependencies>
 
     <profiles>
-        <profile>
-            <!-- Production mode is activated using -Pproduction -->
-            <id>production</id>
-
-            <dependencies>
-                <!-- Exclude development dependencies from production -->
-                <dependency>
-                    <groupId>com.vaadin</groupId>
-                    <artifactId>vaadin-core</artifactId>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>com.vaadin</groupId>
-                            <artifactId>vaadin-dev</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-            </dependencies>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.vaadin</groupId>
-                        <artifactId>vaadin-maven-plugin</artifactId>
-                        <version>${vaadin.version}</version>
-                        <!--<executions>
-                            <execution>
-                                <goals>
-                                    <goal>build-frontend</goal>
-                                </goals>
-                                <phase>compile</phase>
-                            </execution>
-                        </executions>-->
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
         <profile>
             <id>it</id>
             <build>

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/ResourceBundleTableModelCertificates.java 8     11/03/25 8:54 Heller $
 package de.mendelson.util.security.cert;
 import de.mendelson.util.MecResourceBundle;
 /*

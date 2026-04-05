@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/clientserver/ClientsideMessageProcessor.java 4     11.06.14 17:47 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

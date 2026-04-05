@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/server/ServerStartupSequence.java 1     13.09.10 17:20 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.preferences.PreferencesAS2;

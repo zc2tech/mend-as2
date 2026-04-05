@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/KeyCopyHandler.java 3     7/07/23 11:09 Heller $
 package de.mendelson.util.security.cert;
 
 /*

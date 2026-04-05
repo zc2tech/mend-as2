@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/ResourceBundleListCellRendererCertificates.java 5     13/09/24 12:23 Heller $
 package de.mendelson.util.security.cert;
 import de.mendelson.util.MecResourceBundle;
 /*

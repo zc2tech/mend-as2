@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/gui/DialogCEMOverview.java 46    18/06/24 11:51 Heller $
 package de.mendelson.comm.as2.cem.gui;
 
 import de.mendelson.comm.as2.cem.CEMEntry;
@@ -15,6 +14,8 @@ import de.mendelson.comm.as2.message.clientserver.MessageRequestLastMessage;
 import de.mendelson.comm.as2.message.clientserver.MessageResponseLastMessage;
 import de.mendelson.comm.as2.message.loggui.DialogMessageDetails;
 import de.mendelson.comm.as2.partner.gui.TableCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -45,6 +46,14 @@ import javax.swing.event.ListSelectionListener;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Gives an overview on all CEM messages
@@ -110,6 +119,12 @@ public class DialogCEMOverview extends JDialog implements ListSelectionListener,
         //this gui may process server messages, register it
         this.guiClient.addMessageProcessor(this);
         this.setButtonState();
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, null, this.jButtonExit);
     }
 
     private void setMultiresolutionIcons() {

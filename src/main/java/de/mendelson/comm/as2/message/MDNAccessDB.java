@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/MDNAccessDB.java 42    12/03/25 17:28 Heller $
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.server.AS2Server;

@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/signature/ListCellRendererSignature.java 5     31/05/24 11:56 Heller $
 package de.mendelson.util.security.signature;
 
 import de.mendelson.util.ImageUtil;

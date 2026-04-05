@@ -1,11 +1,9 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/client/AS2Gui.java 48    20/03/25 14:45 Heller $
 package de.mendelson.comm.as2.client;
 
 import de.mendelson.util.httpconfig.gui.JDialogDisplayHTTPConfiguration;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.cem.gui.DialogCEMOverview;
 import de.mendelson.comm.as2.cem.gui.DialogSendCEM;
-import de.mendelson.comm.as2.client.about.AboutDialog;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
 import de.mendelson.comm.as2.client.manualsend.ManualSendResponse;
 import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
@@ -36,6 +34,7 @@ import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.PreferencesPanel;
 import de.mendelson.comm.as2.preferences.PreferencesPanelConnectivity;
 import de.mendelson.comm.as2.preferences.PreferencesPanelDirectories;
+import de.mendelson.comm.as2.preferences.PreferencesPanelHttpAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelInterface;
 import de.mendelson.comm.as2.preferences.PreferencesPanelLog;
 import de.mendelson.comm.as2.preferences.PreferencesPanelMDN;
@@ -48,11 +47,13 @@ import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.DateChooserUI;
 import de.mendelson.util.DisplayMode;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.MendelsonMultiResolutionImage.SVGScalingOption;
 import de.mendelson.util.Splash;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.clientserver.ClientsideMessageProcessor;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.SyncRequestTimeoutException;
@@ -108,6 +109,7 @@ import java.awt.desktop.PreferencesHandler;
 import java.awt.desktop.QuitEvent;
 import java.awt.desktop.QuitHandler;
 import java.awt.desktop.QuitResponse;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
@@ -152,9 +154,7 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-import oracle.help.Help;
-import oracle.help.library.helpset.HelpSet;
-import oracle.help.navigator.Navigator;
+// Oracle JavaHelp imports removed - incompatible with JDK 17+
 import java.net.http.HttpRequest;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -171,6 +171,14 @@ import javax.swing.plaf.InsetsUIResource;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Main GUI for the control of the mendelson AS2 server
@@ -193,118 +201,122 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     /**
      * Icons, multi resolution
      */
-    private static final MendelsonMultiResolutionImage IMAGE_DELETE
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/delete.svg", IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FILTER
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/filter.svg", IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FILTER_ACTIVE
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/filter_active.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_MESSAGE_DETAILS
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/messagedetails.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_CERTIFICATE
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/util/security/cert/certificate.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_MANUAL_SEND
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/send.svg",
-                    IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_TOOLBAR * 2);
-    private static final MendelsonMultiResolutionImage IMAGE_PARTNER
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/singlepartner.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_STOP
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/stop.svg",
-                    IMAGE_SIZE_TOOLBAR);
-    private static final MendelsonMultiResolutionImage IMAGE_COLUMN
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/util/tables/hideablecolumns/column.svg",
-                    IMAGE_SIZE_TOOLBAR);
-    private static final MendelsonMultiResolutionImage IMAGE_LOG_SEARCH
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/util/clientserver/log/search/gui/magnifying_glass.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_PORTS
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/util/httpconfig/gui/ports.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_EXIT
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/exit.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_PREFERENCES
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/preferences/preferences.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    public static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO_WITH_TEXT
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/logo_open_source_with_text.svg",
+    private static final MendelsonMultiResolutionImage IMAGE_DELETE = MendelsonMultiResolutionImage
+            .fromSVG("/de/mendelson/comm/as2/client/delete.svg", IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_FILTER = MendelsonMultiResolutionImage
+            .fromSVG("/de/mendelson/comm/as2/client/filter.svg", IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_FILTER_ACTIVE = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/filter_active.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_MESSAGE_DETAILS = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/messagedetails.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_CERTIFICATE = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/util/security/cert/certificate.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_MANUAL_SEND = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/send.svg",
+            IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_TOOLBAR * 2);
+    private static final MendelsonMultiResolutionImage IMAGE_PARTNER = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/partner/gui/singlepartner.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_USER_MANAGEMENT = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/usermanagement/gui/usermanagement.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_STOP = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/stop.svg",
+            IMAGE_SIZE_TOOLBAR);
+    private static final MendelsonMultiResolutionImage IMAGE_COLUMN = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/util/tables/hideablecolumns/column.svg",
+            IMAGE_SIZE_TOOLBAR);
+    private static final MendelsonMultiResolutionImage IMAGE_LOG_SEARCH = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/util/clientserver/log/search/gui/magnifying_glass.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_PORTS = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/util/httpconfig/gui/ports.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_EXIT = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/exit.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_PREFERENCES = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/preferences/preferences.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    public static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO_WITH_TEXT = MendelsonMultiResolutionImage
+            .fromSVG(getLogoPath("logo_open_source_with_text.svg"),
                     100);
-    private static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/logo_open_source.svg",
-                    16, 128);
-    private static final MendelsonMultiResolutionImage IMAGE_PENDING
-            = MendelsonMultiResolutionImage.fromSVG(
-                    "/de/mendelson/comm/as2/message/loggui/state_pending.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_STOPPED
-            = MendelsonMultiResolutionImage.fromSVG(
-                    "/de/mendelson/comm/as2/message/loggui/state_stopped.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FINISHED
-            = MendelsonMultiResolutionImage.fromSVG(
-                    "/de/mendelson/comm/as2/message/loggui/state_finished.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_HIDE
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/hide.svg",
-                    IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_MENU_ITEM * 2,
-                    SVGScalingOption.KEEP_HEIGHT);
-    private static final MendelsonMultiResolutionImage IMAGE_SYSINFO
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/util/systemevents/gui/sysinfo.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_CEM
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/cem/gui/cem.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_NEW_VERSION
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/import_red.svg", 16);
-    private static final MendelsonMultiResolutionImage IMAGE_HOURGLASS
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/hourglass.svg",
-                    IMAGE_SIZE_MENU_ITEM,
-                    IMAGE_SIZE_TOOLBAR * 2);    
-    private static final MendelsonMultiResolutionImage IMAGE_SHOP
-            = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/shop.svg",
-                    IMAGE_SIZE_MENU_ITEM);
-    
+    private static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO = MendelsonMultiResolutionImage.fromSVG(
+            getLogoPath("logo_open_source.svg"),
+            16, 128);
+    private static final MendelsonMultiResolutionImage IMAGE_PENDING = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/message/loggui/state_pending.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_STOPPED = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/message/loggui/state_stopped.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_FINISHED = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/message/loggui/state_finished.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_HIDE = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/hide.svg",
+            IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_MENU_ITEM * 2,
+            SVGScalingOption.KEEP_HEIGHT);
+    private static final MendelsonMultiResolutionImage IMAGE_SYSINFO = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/util/systemevents/gui/sysinfo.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_CEM = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/cem/gui/cem.svg",
+            IMAGE_SIZE_MENU_ITEM);
+    private static final MendelsonMultiResolutionImage IMAGE_NEW_VERSION = MendelsonMultiResolutionImage
+            .fromSVG("/de/mendelson/comm/as2/client/import_red.svg", 16);
+    private static final MendelsonMultiResolutionImage IMAGE_HOURGLASS = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/hourglass.svg",
+            IMAGE_SIZE_MENU_ITEM,
+            IMAGE_SIZE_TOOLBAR * 2);
+    private static final MendelsonMultiResolutionImage IMAGE_SHOP = MendelsonMultiResolutionImage.fromSVG(
+            "/de/mendelson/comm/as2/client/shop.svg",
+            IMAGE_SIZE_MENU_ITEM);
+
+    /**
+     * Helper method to determine logo path based on test mode
+     * Test mode is detected by checking if the system property is set
+     */
+    private static String getLogoPath(String defaultLogoName) {
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+        if (isTestMode) {
+            // Replace .svg with _test.svg
+            return "/de/mendelson/comm/as2/client/" + defaultLogoName.replace(".svg", "_test.svg");
+        } else {
+            return "/de/mendelson/comm/as2/client/" + defaultLogoName;
+        }
+    }
+
     /**
      * Preferences of the application
      */
     private final PreferencesAS2 clientPreferences = new PreferencesAS2();
-    private static final  Logger logger = Logger.getLogger("de.mendelson.as2.client");
+    private static final Logger logger = Logger.getLogger("de.mendelson.as2.client");
     /**
      * Resourcebundle to localize the GUI
      */
     private final MecResourceBundle rb;
     private final MecResourceBundle rbCertGui;
     private final MecResourceBundle rbPreferences;
-    /**
-     * actual loaded helpset
-     */
-    private HelpSet helpSet = null;
-    /**
-     * Actual help component
-     */
-    private Help help = null;
+    // Oracle JavaHelp fields removed - incompatible with JDK 17+
     /**
      * Flag to show/hide the filter panel
      */
     private boolean showFilterPanel = false;
-    /**
-     * Store if the help has been displayed already
-     */
-    private boolean helpHasBeenDisplayed = false;
+    // helpHasBeenDisplayed flag removed - no longer needed
     /**
      * Host to connect to
      */
     private final String host;
     private final String username;
     private final String password;
-    
+
     public static final String DARK_MODE_CLASSNAME = "com.formdev.flatlaf.FlatDarculaLaf";
     public static final String HIGH_CONSTRAST_MODE_CLASSNAME = "com.formdev.flatlaf.intellijthemes.FlatHighContrastIJTheme";
-    
+
     /**
      * Refresh thread for the transaction overview - schedules the refresh
      * requests
@@ -318,7 +330,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private Date filterStartDate = new Date();
     private Date filterEndDate = new Date();
     private Color COLOR_RED = Color.RED.darker();
-    private String downloadURLNewVersion = "http://mendelson-e-c.com/as2";
+    private String downloadURLNewVersion = "http://github.com/zc2tech/mend-as2";
 
     /**
      * Creates new form NewJFrame
@@ -330,22 +342,22 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (displayMode == null) {
             displayMode = "LIGHT";
         }
-        this.setLookAndFeel(displayMode);        
-        //load resource bundle
+        this.setLookAndFeel(displayMode);
+        // load resource bundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
                     ResourceBundleAS2Gui.class.getName());
         } catch (MissingResourceException e) {
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
-        //load resource bundle
+        // load resource bundle
         try {
             this.rbCertGui = (MecResourceBundle) ResourceBundle.getBundle(
                     ResourceBundleCertificates.class.getName());
         } catch (MissingResourceException e) {
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
-        //load resource bundle
+        // load resource bundle
         try {
             this.rbPreferences = (MecResourceBundle) ResourceBundle.getBundle(
                     ResourceBundlePreferencesAS2.class.getName());
@@ -354,30 +366,29 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         initComponents();
         this.setMultiresolutionIcons();
+        this.setupToolbarTooltips();
         this.initializeDesktopIntegration();
         this.setButtonsMultiClickThreshhold();
-        this.jButtonNewVersion.setVisible(false);
-        //color contrast setup for red
+        // color contrast setup for red
         this.COLOR_RED = ColorUtil.getBestContrastColorAroundForeground(
                 this.jLabelRefreshStopWarning.getBackground(),
                 COLOR_RED);
         this.jLabelRefreshStopWarning.setForeground(COLOR_RED);
         this.jPanelRefreshWarning.setBorder(javax.swing.BorderFactory.createLineBorder(COLOR_RED));
         this.jPanelRefreshWarning.setVisible(false);
-        //set preference values to the GUI
+        // set preference values to the GUI
         this.setBounds(
                 this.clientPreferences.getInt(PreferencesAS2.FRAME_X),
                 this.clientPreferences.getInt(PreferencesAS2.FRAME_Y),
                 this.clientPreferences.getInt(PreferencesAS2.FRAME_WIDTH),
                 this.clientPreferences.getInt(PreferencesAS2.FRAME_HEIGHT));
-        //ensure to display all messages
+        // ensure to display all messages
         this.getLogger().setLevel(Level.ALL);
         this.consolePanel = new LogConsolePanel(this.getLogger(),
                 new LogFormatterAS2(LogFormatter.FORMAT_CONSOLE_COLORED),
                 new Font(Font.MONOSPACED, Font.PLAIN, 12),
-                displayMode
-        );
-        //define the colors for the log levels
+                displayMode);
+        // define the colors for the log levels
         consolePanel.setColor(Level.SEVERE, LogConsolePanel.COLOR_DARK_RED);
         consolePanel.setColor(Level.WARNING, LogConsolePanel.COLOR_DARK_BLUE);
         consolePanel.setColor(Level.INFO, LogConsolePanel.COLOR_BLACK);
@@ -390,23 +401,28 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (host != null && !host.equals("localhost")) {
             title = "[" + host + "] " + title;
         }
+        // For main window, just add [TEST MODE] suffix if in test mode, don't duplicate
+        // product name
+        if (WindowTitleUtil.isTestMode()) {
+            title = title + WindowTitleUtil.getTestModeSuffix();
+        }
         this.setTitle(title);
-        //initialize the help system if available
-        this.initializeJavaHelp(displayMode);
+        // initialize the help system if available
+        // this.initializeJavaHelp(displayMode);
         this.jTableMessageOverview.setRowHeight(TableModelMessageOverview.ROW_HEIGHT);
         this.jTableMessageOverview.getSelectionModel().addListSelectionListener(this);
         this.jTableMessageOverview.getTableHeader().setReorderingAllowed(false);
-        //icon columns
+        // icon columns
         TableColumn column = this.jTableMessageOverview.getColumnModel().getColumn(0);
         column.setMaxWidth(TableModelMessageOverview.ROW_HEIGHT + this.jTableMessageOverview.getRowMargin() * 2);
         column.setResizable(false);
         column = this.jTableMessageOverview.getColumnModel().getColumn(1);
         column.setMaxWidth(TableModelMessageOverview.ROW_HEIGHT + this.jTableMessageOverview.getRowMargin() * 2);
         column.setResizable(false);
-        this.jTableMessageOverview.setDefaultRenderer(Date.class, new TableCellRendererDate(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)));
-        //add row sorter
-        RowSorter<TableModel> sorter
-                = new TableRowSorter<TableModel>(this.jTableMessageOverview.getModel());
+        this.jTableMessageOverview.setDefaultRenderer(Date.class,
+                new TableCellRendererDate(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)));
+        // add row sorter
+        RowSorter<TableModel> sorter = new TableRowSorter<TableModel>(this.jTableMessageOverview.getModel());
         this.jTableMessageOverview.setRowSorter(sorter);
         sorter.addRowSorterListener(this);
         this.jPanelFilterOverviewContainer.setVisible(this.showFilterPanel);
@@ -416,100 +432,24 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jComboBoxFilterPartner.setRenderer(new ListCellRendererPartner());
         this.setDirectionFilter();
         this.setButtonState();
-        //popup menu issues
+        // popup menu issues
         this.jPopupMenu.setInvoker(this.jScrollPaneMessageOverview);
         this.jPopupMenu.addPopupMenuListener(this);
         this.jTableMessageOverview.addMouseListener(this);
         super.addMessageProcessor(this);
-        //perform the connection to the server
-        //warning! this works for localhost only so far
-        int clientServerCommPort = AS2Server.CLIENTSERVER_COMM_PORT;
+        // perform the connection to the server
+        // warning! this works for localhost only so far
+        // Use test mode port if system property is set
+        int clientServerCommPort = WindowTitleUtil.isTestMode() ? AS2Server.CLIENTSERVER_COMM_PORT_TEST
+                : AS2Server.CLIENTSERVER_COMM_PORT;
         this.configureHideableColumns();
         this.jToolBar.setLayout(new LayoutManagerJToolbar());
         this.setupDateChooser();
         if (splash != null) {
             splash.destroy();
         }
-        this.browserLinkedPanel.cyleText(
-                new String[]{
-                    "For additional EDI software to convert and process your data please contact <a href='http://www.mendelson-e-c.com'>mendelson-e-commerce GmbH</a>",
-                    "To buy a commercial license please visit the <a href='http://shop.mendelson-e-c.com/'>mendelson online shop</a>",
-                    "Most trading partners demand a trusted certificate - Order yours at the <a href='http://ca.mendelson-e-c.com'>mendelson CA</a> now!",
-                    "Looking for additional secure data transmission software? Try the <a href='http://mendelson-e-c.com/oftp2'>mendelson OFTP2</a> solution!",
-                    "You want to send EDIFACT data from your SAP system? Ask <a href='mailto:info@mendelson.de?subject=Please%20inform%20me%20about%20your%20SAP%20integration%20solutions'>mendelson-e-commerce GmbH</a> for a solution.",
-                    "You need a secure FTP solution? <a href='mailto:service@mendelson.de?subject=Please%20inform%20me%20about%20your%20SFTP%20solution'>Ask us</a> for the mendelson SFTP software.",
-                    "Convert flat files, EDIFACT, SAP IDos, VDA, inhouse formats? <a href='mailto:service@mendelson.de?subject=Please%20inform%20me%20about%20your%20converter%20solution'>Ask us</a> for the mendelson EDI converter.",
-                    "For commercial support of this software please buy a license at <a href='http://mendelson-e-c.com/as2'>the mendelson AS2</a> website.",
-                    "Have a look at the <a href='http://www.mendelson-e-c.com/mbi'>mendelson business integration</a> for a powerful EDI solution.",
-                    "The <a href='http://www.mendelson-e-c.com/converter'>mendelson converter IDE</a> is the graphical mapper for the mendelson converter.",
-                    "To process any XML data and convert it to EDIFACT, VDA, flat files, IDocs and inhouse formats use <a href='http://www.mendelson-e-c.com/converter'>the mendelson converter</a>.",
-                    "To transmit your EDI data via HTTP/S please <a href='mailto:info@mendelson.de?subject=Please%20inform%20me%20about%20your%20HTTPS%20solution'>ask us</a> for the mendelson HTTPS solution.",
-                    "If you have questions regarding this product please refer to the <a href='http://mendelson-e-c.com/forum'>mendelson community</a>.",
-                    "Looking for BDEW AS4, e-SENS AS4, ENTSOG AS4, Peppol AS4 or ebXML AS4 software? Try the <a href='http://mendelson-e-c.com/as4'>mendelson AS4</a> solution!",});
         this.initializeUINotification();
         this.connect(new InetSocketAddress(host, clientServerCommPort), 5000);
-        Runnable updateCheckThread = new Runnable() {
-            @Override
-            public void run() {
-                long lastUpdateCheck = Long.valueOf(clientPreferences.get(PreferencesAS2.LAST_UPDATE_CHECK));
-                //check only once a day even if the system is started n times a day
-                if (lastUpdateCheck < (System.currentTimeMillis() - TimeUnit.HOURS.toMillis(23))) {
-                    clientPreferences.put(PreferencesAS2.LAST_UPDATE_CHECK, String.valueOf(System.currentTimeMillis()));
-                    String version = (AS2ServerVersion.getVersion() + " " + AS2ServerVersion.getBuild()).replace(' ', '+');
-                    String url = "http://www.mendelson.de/en/mecas2/client_welcome.php?version=" + version;
-                    String userAgent = AS2ServerVersion.getProductName() + " " + AS2ServerVersion.getVersion();
-                    HttpClient httpClient = HttpClient.newBuilder()
-                            .version(Version.HTTP_1_1)
-                            .followRedirects(Redirect.ALWAYS)
-                            .build();
-                    try {
-                        HttpRequest httpRequest = HttpRequest.newBuilder()
-                                .uri(new URI(url))
-                                .POST(HttpRequest.BodyPublishers.noBody())
-                                .setHeader("user-agent", userAgent)
-                                .build();
-                        HttpResponse response
-                                = httpClient.send(httpRequest, HttpResponse.BodyHandlers.discarding());
-                        HttpHeaders responseHeaders = response.headers();
-                        Map<String, List<String>> responseHeaderMap = responseHeaders.map();
-                        String downloadURL = null;
-                        String actualBuild = null;
-                        if (responseHeaderMap.containsKey("x-actual-build")) {
-                            List<String> values = responseHeaderMap.get("x-actual-build");
-                            if (values != null && !values.isEmpty()) {
-                                actualBuild = values.get(0).trim();
-                            }
-                        }
-                        if (responseHeaderMap.containsKey("x-download-url")) {
-                            List<String> values = responseHeaderMap.get("x-download-url");
-                            if (values != null && !values.isEmpty()) {
-                                downloadURL = values.get(0).trim();
-                            }
-                        }
-                        if (downloadURL != null && actualBuild != null) {
-                            try {
-                                int thisBuild = AS2ServerVersion.getBuildNo();
-                                int availableBuild = Integer.valueOf(actualBuild).intValue();
-                                if (thisBuild < availableBuild) {
-                                    jButtonNewVersion.setVisible(true);
-                                    getLogger().config(rb.getResourceString("new.version.available",
-                                            new Object[]{
-                                                downloadURL
-                                            }));
-                                }
-                                downloadURLNewVersion = downloadURL;
-                            } catch (Exception e) {
-                                //e.printStackTrace();
-                            }
-                        }
-                    } catch (Throwable e) {
-                        //nop
-                    }
-                }
-            }
-        };
-        //check once a day for an update
-        GUIClient.scheduleWithFixedDelay(updateCheckThread, 1, 60 * 24, TimeUnit.MINUTES);
     }
 
     /**
@@ -517,23 +457,25 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      */
     private void setLookAndFeel(String displayMode) {
         try {
-            //support the command line option -Dswing.defaultlaf=...
+            // support the command line option -Dswing.defaultlaf=...
             if (System.getProperty("swing.defaultlaf") == null) {
                 try {
                     if (displayMode.equalsIgnoreCase(DisplayMode.DARK)) {
                         try {
                             UIManager.setLookAndFeel(DARK_MODE_CLASSNAME);
-                            //Button.arc is the corner arc diameter for buttons and toggle buttons (default is 6)
+                            // Button.arc is the corner arc diameter for buttons and toggle buttons (default
+                            // is 6)
                             UIManager.put("Button.arc", 4);
-                            //Component.arc is used for other components like combo boxes and spinners (default is 5)
+                            // Component.arc is used for other components like combo boxes and spinners
+                            // (default is 5)
                             UIManager.put("Component.arc", 2);
-                            //CheckBox.arc is used for check box icon (default is 4)
+                            // CheckBox.arc is used for check box icon (default is 4)
                             UIManager.put("CheckBox.arc", 2);
-                            //ProgressBar.arc is used for progress bars (default is 4).
+                            // ProgressBar.arc is used for progress bars (default is 4).
                             UIManager.put("ProgressBar.arc", 2);
-                            //TextComponent.arc is used for text fields (default is 0)
+                            // TextComponent.arc is used for text fields (default is 0)
                             UIManager.put("TextComponent.arc", 0);
-                            //Colors
+                            // Colors
                             UIManager.put("Objects.Green", new ColorUIResource(98, 181, 67));
                             UIManager.put("Objects.Red", new ColorUIResource(242, 101, 34));
                             UIManager.put("Objects.RedStatus", new ColorUIResource(224, 85, 85));
@@ -545,17 +487,19 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     } else if (displayMode.equalsIgnoreCase(DisplayMode.HICONTRAST)) {
                         try {
                             UIManager.setLookAndFeel(HIGH_CONSTRAST_MODE_CLASSNAME);
-                            //Button.arc is the corner arc diameter for buttons and toggle buttons (default is 6)
+                            // Button.arc is the corner arc diameter for buttons and toggle buttons (default
+                            // is 6)
                             UIManager.put("Button.arc", 4);
-                            //Component.arc is used for other components like combo boxes and spinners (default is 5)
+                            // Component.arc is used for other components like combo boxes and spinners
+                            // (default is 5)
                             UIManager.put("Component.arc", 2);
-                            //CheckBox.arc is used for check box icon (default is 4)
+                            // CheckBox.arc is used for check box icon (default is 4)
                             UIManager.put("CheckBox.arc", 2);
-                            //ProgressBar.arc is used for progress bars (default is 4).
+                            // ProgressBar.arc is used for progress bars (default is 4).
                             UIManager.put("ProgressBar.arc", 2);
-                            //TextComponent.arc is used for text fields (default is 0)
+                            // TextComponent.arc is used for text fields (default is 0)
                             UIManager.put("TextComponent.arc", 0);
-                            //Colors
+                            // Colors
                             UIManager.put("Objects.Green", new ColorUIResource(0, 230, 31));
                             UIManager.put("Objects.Red", new ColorUIResource(255, 67, 64));
                             UIManager.put("Objects.RedStatus", new ColorUIResource(255, 67, 64));
@@ -565,19 +509,19 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                         }
                     } else {
-                        //light mode
+                        // light mode
                         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                     }
                 } catch (Throwable e) {
                     e.printStackTrace();
-                    //fall back to metal l&f if an error occured with any l&f
+                    // fall back to metal l&f if an error occured with any l&f
                     UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
                 }
             }
         } catch (Exception e) {
             logger.warning("[" + e.getClass().getSimpleName() + "]:" + e.getMessage());
         }
-        //L&F changes for the mendelson products
+        // L&F changes for the mendelson products
         UIManager.put("TableHeader.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 12));
         UIManager.put("Label.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 12));
         UIManager.put("CheckBox.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 12));
@@ -595,24 +539,28 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         UIManager.put("TextArea.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 12));
         UIManager.put("EditorPane.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 12));
     }
-    
-    
+
     private void setMultiresolutionIcons() {
-        this.jButtonNewVersion.setIcon(new ImageIcon(IMAGE_NEW_VERSION.toMinResolution(18)));
         this.jButtonFilter.setIcon(new ImageIcon(IMAGE_FILTER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jButtonDeleteMessage.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jMenuItemPopupDeleteMessage.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IMAGE_SIZE_POPUP)));
         this.jButtonMessageDetails.setIcon(new ImageIcon(IMAGE_MESSAGE_DETAILS.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemPopupMessageDetails.setIcon(new ImageIcon(IMAGE_MESSAGE_DETAILS.toMinResolution(IMAGE_SIZE_POPUP)));
-        this.jButtonCertificatesSignEncrypt.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        this.jMenuItemPopupMessageDetails
+                .setIcon(new ImageIcon(IMAGE_MESSAGE_DETAILS.toMinResolution(IMAGE_SIZE_POPUP)));
+        this.jButtonCertificatesSignEncrypt
+                .setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jButtonCertificatesTLS.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jMenuItemCertificatesSSL.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemCertificatesSignCrypt.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
+        this.jMenuItemCertificatesSignCrypt
+                .setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuFileCertificates.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemFileSend.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemPopupSendAgain.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_POPUP)));
         this.jButtonPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jMenuItemPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
+        this.jButtonUserManagement.setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        this.jMenuItemUserManagement
+                .setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemDatasheet.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemSearchInServerLog.setIcon(new ImageIcon(IMAGE_LOG_SEARCH.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jToggleButtonStopRefresh.setIcon(new ImageIcon(IMAGE_STOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
@@ -629,7 +577,92 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jMenuItemSystemEvents.setIcon(new ImageIcon(IMAGE_SYSINFO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemCEMManager.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemCEMSend.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jButtonShop.setIcon(new ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        // this.jButtonShop.setIcon(new
+        // ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+    }
+
+    /**
+     * Setup tooltips for toolbar buttons showing keyboard shortcuts
+     */
+    private void setupToolbarTooltips() {
+        // Add tooltips to toolbar buttons with their current text
+        String partnerText = this.jButtonPartner.getText();
+        String userMgmtText = this.jButtonUserManagement.getText();
+        String signCryptText = this.jButtonCertificatesSignEncrypt.getText();
+        String tlsText = this.jButtonCertificatesTLS.getText();
+
+        // Add keyboard shortcuts to main toolbar buttons
+        // Partner button - Cmd/Ctrl+A (A for pArtner, avoiding R which is used for Toggle Refresh)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonPartner,
+                java.awt.event.KeyEvent.VK_A,
+                "OPEN_PARTNER");
+        this.jButtonPartner.setToolTipText(partnerText + " [" +
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_A) + "]");
+
+        // User Management button - Cmd/Ctrl+U
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonUserManagement,
+                java.awt.event.KeyEvent.VK_U,
+                "OPEN_USER_MANAGEMENT");
+        this.jButtonUserManagement.setToolTipText(userMgmtText + " [" +
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_U) + "]");
+
+        // Sign/Crypt button - Cmd/Ctrl+C (C for Crypt/Certificates)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonCertificatesSignEncrypt,
+                java.awt.event.KeyEvent.VK_C,
+                "OPEN_SIGNCRYPT");
+        this.jButtonCertificatesSignEncrypt.setToolTipText(signCryptText + " [" +
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_C) + "]");
+
+        // TLS button - Cmd/Ctrl+T (T for TLS)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonCertificatesTLS,
+                java.awt.event.KeyEvent.VK_T,
+                "OPEN_TLS");
+        this.jButtonCertificatesTLS.setToolTipText(tlsText + " [" +
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_T) + "]");
+
+        // Message Details button - Cmd/Ctrl+D
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonMessageDetails,
+                java.awt.event.KeyEvent.VK_D,
+                "SHOW_MESSAGE_DETAILS");
+        this.jButtonMessageDetails.setToolTipText(
+                this.rb.getResourceString("details") + " [" +
+                        KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_D) + "]");
+
+        // Delete Message button - DELETE key
+        this.jButtonDeleteMessage.setToolTipText(
+                this.rb.getResourceString("delete.msg") + " [DELETE]");
+
+        // Filter button - Cmd/Ctrl+F (FIXED: use correct key "filter")
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonFilter,
+                java.awt.event.KeyEvent.VK_F,
+                "TOGGLE_FILTER");
+        this.jButtonFilter.setToolTipText(
+                this.rb.getResourceString("filter") + " [" +
+                        KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_F) + "]");
+
+        // Toggle Refresh button - Cmd/Ctrl+R (NEW)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jToggleButtonStopRefresh,
+                java.awt.event.KeyEvent.VK_R,
+                "TOGGLE_REFRESH");
+        this.jToggleButtonStopRefresh.setToolTipText(
+                this.rb.getResourceString("stoprefresh.msg") + " [" +
+                        KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_R) + "]");
+
+        // Configure Columns button - Cmd/Ctrl+L (NEW)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonConfigureColumns,
+                java.awt.event.KeyEvent.VK_L,
+                "CONFIGURE_COLUMNS");
+        this.jButtonConfigureColumns.setToolTipText(
+                this.rb.getResourceString("configurecolumns") + " [" +
+                        KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_L) + "]");
     }
 
     /**
@@ -647,7 +680,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jButtonPartner.setMultiClickThreshhold(threshhold);
     }
 
-   /**
+    /**
      * Initializes the User Interface notification - also for the dark mode
      */
     private void initializeUINotification() {
@@ -663,9 +696,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void configureHideableColumns() {
-        TableColumnModelHideable tableColumnModel = new TableColumnModelHideable(this.jTableMessageOverview.getColumnModel());
+        TableColumnModelHideable tableColumnModel = new TableColumnModelHideable(
+                this.jTableMessageOverview.getColumnModel());
         this.jTableMessageOverview.setColumnModel(tableColumnModel);
-        //configure columns
+        // configure columns
         HideableColumn[] hideableColumns = tableColumnModel.getColumnsSorted();
         String hiddenColsStr = this.clientPreferences.get(PreferencesAS2.HIDDENCOLS);
         String hideableColsStr = this.clientPreferences.get(PreferencesAS2.HIDEABLECOLS);
@@ -680,7 +714,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void storeColumSettings() {
-        TableColumnModelHideable tableColumnModel = (TableColumnModelHideable) this.jTableMessageOverview.getColumnModel();
+        TableColumnModelHideable tableColumnModel = (TableColumnModelHideable) this.jTableMessageOverview
+                .getColumnModel();
         HideableColumn[] hideableColumns = tableColumnModel.getColumnsSorted();
         StringBuilder builder = new StringBuilder();
         for (HideableColumn col : hideableColumns) {
@@ -700,22 +735,16 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      *
      */
     private void initializeDesktopIntegration() {
-        //sets the application icons in multiple resolutions
+        // sets the application icons in multiple resolutions
         this.setIconImages(IMAGE_PRODUCT_LOGO.getResolutionVariants());
-        // Moves the main Menu Bar to where the Mac OS users expect it - this property is ignored on
-        //other platforms
+        // Moves the main Menu Bar to where the Mac OS users expect it - this property
+        // is ignored on
+        // other platforms
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
             if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
-                desktop.setAboutHandler(new AboutHandler() {
-                    @Override
-                    public void handleAbout(AboutEvent e) {
-                        AboutDialog dialog = new AboutDialog(AS2Gui.this);
-                        dialog.setVisible(true);
-                    }
-
-                });
+                // do nothing
             }
             if (desktop.isSupported(Desktop.Action.APP_PREFERENCES)) {
                 desktop.setPreferencesHandler(new PreferencesHandler() {
@@ -735,14 +764,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 });
             }
         }
-        //Set taskbar icon
+        // Set taskbar icon
         if (Taskbar.isTaskbarSupported()) {
             Taskbar taskbar = Taskbar.getTaskbar();
             if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
                 try {
                     taskbar.setIconImage(IMAGE_PRODUCT_LOGO);
                 } catch (SecurityException e) {
-                    //nop
+                    // nop
                 }
             }
         }
@@ -757,35 +786,55 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jDateChooserStartDate.setDate(this.filterStartDate);
         this.jDateChooserStartDate.getDateEditor().addPropertyChangeListener(
                 new PropertyChangeListener() {
-            @Override
-            public void propertyChange(PropertyChangeEvent e) {
-                if (e.getPropertyName() != null && e.getPropertyName().startsWith("date")) {
-                    filterStartDate = jDateChooserStartDate.getDate();
-                }
-            }
-        });
+                    @Override
+                    public void propertyChange(PropertyChangeEvent e) {
+                        if (e.getPropertyName() != null && e.getPropertyName().startsWith("date")) {
+                            filterStartDate = jDateChooserStartDate.getDate();
+                        }
+                    }
+                });
         this.jDateChooserEndDate.setUI(new DateChooserUI());
         this.jDateChooserEndDate.setLocale(Locale.getDefault());
         this.jDateChooserEndDate.setDate(this.filterEndDate);
         this.jDateChooserEndDate.getDateEditor().addPropertyChangeListener(
                 new PropertyChangeListener() {
-            @Override
-            public void propertyChange(PropertyChangeEvent e) {
-                if (e.getPropertyName() != null && e.getPropertyName().startsWith("date")) {
-                    filterEndDate = jDateChooserEndDate.getDate();
-                }
-            }
-        });
+                    @Override
+                    public void propertyChange(PropertyChangeEvent e) {
+                        if (e.getPropertyName() != null && e.getPropertyName().startsWith("date")) {
+                            filterEndDate = jDateChooserEndDate.getDate();
+                        }
+                    }
+                });
     }
 
     @Override
     public void loginRequestedFromServer() {
         super.performLogin(this.username, this.password.toCharArray(), AS2ServerVersion.getFullProductName());
         this.as2StatusBar.setConnectedHost(this.host);
-        //start the table update thread
+        // start the table update thread
         GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
         this.as2StatusBar.initialize(this.getBaseClient(), this);
         this.as2StatusBar.startConfigurationChecker();
+    }
+
+    /**
+     * Override messageReceivedFromServer to detect ServerInfo and initialize the UI
+     * Since LoginRequired is no longer sent, we use ServerInfo as the trigger
+     */
+    @Override
+    public void messageReceivedFromServer(de.mendelson.util.clientserver.messages.ClientServerMessage message) {
+        // Detect ServerInfo message (sent when client connects)
+        if (message instanceof de.mendelson.util.clientserver.messages.ServerInfo) {
+            // Call parent to process ServerInfo
+            super.messageReceivedFromServer(message);
+            // Trigger the same initialization that loginRequestedFromServer would have done
+            SwingUtilities.invokeLater(() -> {
+                loginRequestedFromServer();
+            });
+        } else {
+            // Let parent handle other messages
+            super.messageReceivedFromServer(message);
+        }
     }
 
     @Override
@@ -806,54 +855,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 (int) this.getBounds().getWidth());
         this.clientPreferences.putInt(PreferencesAS2.FRAME_HEIGHT,
                 (int) this.getBounds().getHeight());
-    }
-
-    /**
-     * Initialized a help set by a given name
-     */
-    private void initializeJavaHelp(String displayMode) {
-        try {
-            //At the moment only english and german help systems are implemented.
-            String filename = null;
-            //If the found default is none of them, set the english help as
-            //default!
-            if (!Locale.getDefault().getLanguage().equals(Locale.GERMANY.getLanguage())
-                    && !Locale.getDefault().getLanguage().equals(Locale.UK.getLanguage())) {
-                this.getLogger().warning("Sorry, there is no specific HELPSET available for your language, ");
-                this.getLogger().warning("the english help will be displayed.");
-                filename = "as2help/as2_en.hs";
-            } else {
-                filename = "as2help/as2_" + Locale.getDefault().getLanguage() + ".hs";
-            }
-            //copy theme CSS to the right place
-            Path sourceCSS = Paths.get("doc/CSS_LIGHT.css");
-            if (displayMode.equalsIgnoreCase("DARK")) {
-                sourceCSS = Paths.get("doc/CSS_DARK.css");
-            }
-            try {
-                Files.copy(sourceCSS, Paths.get("doc/mec_HTMLdoc.css"), StandardCopyOption.REPLACE_EXISTING);
-            } catch (Exception e) {
-                this.getLogger().warning("The file " + Paths.get("doc/mec_HTMLdoc.css").toAbsolutePath().toString()
-                        + " is r/o, unable to set the help system theme.");
-            }
-            Path helpSetFile = Paths.get(filename);
-            URL helpURL = helpSetFile.toUri().toURL();
-            this.helpSet = new HelpSet(helpURL);
-            this.help = new Help(true, false, true);
-            Help.setHelpLocale(Locale.getDefault());
-            help.setIconImage(IMAGE_PRODUCT_LOGO.toMinResolution(16));
-            help.addBook(helpSet);
-            help.setDefaultTopicID("as2_main");
-            try {
-                URL url = Paths.get("./as2_help_favories.xml").toUri().toURL();
-                help.enableFavoritesNavigator(url);
-            } catch (MalformedURLException ignore) {
-            }
-        } catch (Exception e) {
-            // could not find it! Disable menu item
-            this.getLogger().warning("Helpset not found, helpsystem is disabled!");
-            this.jMenuItemHelpSystem.setEnabled(false);
-        }
     }
 
     /**
@@ -916,13 +917,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             KeystoreStorage storageEncSign = new KeystoreStorageImplClientServer(
                     this.getBaseClient(),
                     KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12
-            );
+                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
             KeystoreStorage storageSSL = new KeystoreStorageImplClientServer(
                     this.getBaseClient(),
                     KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS
-            );
+                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
             CertificateManager certificateManagerEncSign = new CertificateManager(this.getLogger());
             certificateManagerEncSign.loadKeystoreCertificates(storageEncSign);
             CertificateManager certificateManagerSSL = new CertificateManager(this.getLogger());
@@ -950,10 +949,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             AS2Gui.this.rb.getResourceString("details"), uniqueId);
                     int selectedRow = AS2Gui.this.jTableMessageOverview.getSelectedRow();
                     if (selectedRow >= 0) {
-                        AS2Message message = ((TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel()).getRow(selectedRow);
+                        AS2Message message = ((TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel())
+                                .getRow(selectedRow);
                         AS2MessageInfo info = (AS2MessageInfo) message.getAS2Info();
-                        //download the full payload from the server
-                        List<AS2Payload> payloads = ((MessagePayloadResponse) AS2Gui.this.sendSync(new MessagePayloadRequest(info.getMessageId()))).getList();
+                        // download the full payload from the server
+                        List<AS2Payload> payloads = ((MessagePayloadResponse) AS2Gui.this
+                                .sendSync(new MessagePayloadRequest(info.getMessageId()))).getList();
                         message.setPayloads(payloads);
                         DialogMessageDetails dialog = new DialogMessageDetails(AS2Gui.this,
                                 AS2Gui.this.getBaseClient(),
@@ -964,7 +965,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         dialog.setVisible(true);
                     }
                 } catch (Exception e) {
-                    //nop
+                    // nop
                 } finally {
                     AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
                     AS2Gui.this.setButtonState();
@@ -981,12 +982,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jButtonMessageDetails.setEnabled(this.jTableMessageOverview.getSelectedRow() >= 0
                 && this.jTableMessageOverview.getSelectedRowCount() == 1);
         this.jButtonDeleteMessage.setEnabled(this.jTableMessageOverview.getSelectedRow() >= 0);
-        //check if min one of the selected rows has the state "stopped" or "finished"
+        // check if min one of the selected rows has the state "stopped" or "finished"
         int[] selectedRows = this.jTableMessageOverview.getSelectedRows();
-        AS2Message[] overviewRows = ((TableModelMessageOverview) this.jTableMessageOverview.getModel()).getRows(selectedRows);
+        AS2Message[] overviewRows = ((TableModelMessageOverview) this.jTableMessageOverview.getModel())
+                .getRows(selectedRows);
         boolean deletableRowSelected = false;
         for (int i = 0; i < overviewRows.length; i++) {
-            if (overviewRows[i].getAS2Info().getState() == AS2Message.STATE_FINISHED || overviewRows[i].getAS2Info().getState() == AS2Message.STATE_STOPPED) {
+            if (overviewRows[i].getAS2Info().getState() == AS2Message.STATE_FINISHED
+                    || overviewRows[i].getAS2Info().getState() == AS2Message.STATE_STOPPED) {
                 deletableRowSelected = true;
                 break;
             }
@@ -1036,7 +1039,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             return;
         }
         int[] selectedRows = this.jTableMessageOverview.getSelectedRows();
-        AS2Message[] overviewRows = ((TableModelMessageOverview) this.jTableMessageOverview.getModel()).getRows(selectedRows);
+        AS2Message[] overviewRows = ((TableModelMessageOverview) this.jTableMessageOverview.getModel())
+                .getRows(selectedRows);
         List<AS2MessageInfo> deleteList = new ArrayList<AS2MessageInfo>();
         for (AS2Message message : overviewRows) {
             deleteList.add((AS2MessageInfo) message.getAS2Info());
@@ -1068,7 +1072,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         int requestValue;
         if (selectedRows.length > 1) {
             requestValue = JOptionPane.showConfirmDialog(
-                    this, this.rb.getResourceString("dialog.resend.message.multiple", String.valueOf(selectedRows.length)),
+                    this,
+                    this.rb.getResourceString("dialog.resend.message.multiple", String.valueOf(selectedRows.length)),
                     this.rb.getResourceString("dialog.resend.title"),
                     JOptionPane.YES_NO_OPTION);
         } else {
@@ -1080,53 +1085,63 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         if (requestValue != JOptionPane.YES_OPTION) {
             return;
         }
-        final String uniqueId = this.getClass().getName() + ".sendFileManualFromSelectedTransaction." + System.currentTimeMillis();
+        final String uniqueId = this.getClass().getName() + ".sendFileManualFromSelectedTransaction."
+                + System.currentTimeMillis();
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 Path tempFile = null;
                 try {
                     if (selectedRows.length > 1) {
-                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(AS2Gui.this.rb.getResourceString("menu.file.resend.multiple"), uniqueId);
+                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                                AS2Gui.this.rb.getResourceString("menu.file.resend.multiple"), uniqueId);
                     } else {
-                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(AS2Gui.this.rb.getResourceString("menu.file.resend"), uniqueId);
+                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                                AS2Gui.this.rb.getResourceString("menu.file.resend"), uniqueId);
                     }
                     for (int selectedRow : selectedRows) {
                         if (selectedRow >= 0) {
-                            //download the payload for the selected message
+                            // download the payload for the selected message
                             JDialogManualSend dialog = new JDialogManualSend(AS2Gui.this,
                                     AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar,
                                     AS2Gui.this.rb.getResourceString("uploading.to.server"));
-                            AS2Message message = ((TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel()).getRow(selectedRow);
+                            AS2Message message = ((TableModelMessageOverview) AS2Gui.this.jTableMessageOverview
+                                    .getModel()).getRow(selectedRow);
                             if (message != null) {
                                 AS2MessageInfo info = (AS2MessageInfo) message.getAS2Info();
-                                PartnerListRequest listRequest = new PartnerListRequest(PartnerListRequest.LIST_BY_AS2_ID);
+                                PartnerListRequest listRequest = new PartnerListRequest(
+                                        PartnerListRequest.LIST_BY_AS2_ID);
                                 listRequest.setAdditionalListOptionStr(info.getSenderId());
-                                Partner sender = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList().get(0);
+                                Partner sender = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList()
+                                        .get(0);
                                 listRequest = new PartnerListRequest(PartnerListRequest.LIST_BY_AS2_ID);
                                 listRequest.setAdditionalListOptionStr(info.getReceiverId());
-                                Partner receiver = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList().get(0);
-                                List<AS2Payload> payloads = ((MessagePayloadResponse) AS2Gui.this.sendSync(new MessagePayloadRequest(info.getMessageId()))).getList();
+                                Partner receiver = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList()
+                                        .get(0);
+                                List<AS2Payload> payloads = ((MessagePayloadResponse) AS2Gui.this
+                                        .sendSync(new MessagePayloadRequest(info.getMessageId()))).getList();
                                 for (AS2Payload payload : payloads) {
                                     message.addPayload(payload);
                                 }
                                 String originalFilename = "as2.bin";
                                 if (message.getPayloadCount() > 0) {
                                     AS2Payload payload = message.getPayload(0);
-                                    //request the payload file from the server
-                                    TransferClientWithProgress transferClient = new TransferClientWithProgress(AS2Gui.this.getBaseClient(),
+                                    // request the payload file from the server
+                                    TransferClientWithProgress transferClient = new TransferClientWithProgress(
+                                            AS2Gui.this.getBaseClient(),
                                             AS2Gui.this.as2StatusBar.getProgressPanel());
                                     DownloadRequestFile downloadRequest = new DownloadRequestFile();
                                     downloadRequest.setFilename(payload.getPayloadFilename());
                                     InputStream inStream = null;
                                     OutputStream outStream = null;
                                     try {
-                                        DownloadResponseFile response = (DownloadResponseFile) transferClient.download(downloadRequest);
+                                        DownloadResponseFile response = (DownloadResponseFile) transferClient
+                                                .download(downloadRequest);
                                         if (response.getException() != null) {
                                             throw response.getException();
                                         }
                                         if (payload.getOriginalFilename() != null) {
-                                            //set the original filename to use
+                                            // set the original filename to use
                                             originalFilename = payload.getOriginalFilename();
                                         }
                                         tempFile = AS2Tools.createTempFile(originalFilename, "");
@@ -1152,15 +1167,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                                         }
                                     }
                                 } else {
-                                    //weird - no payload found for the selected message?
+                                    // weird - no payload found for the selected message?
                                     throw new Exception(
                                             AS2Gui.this.rb.getResourceString(
                                                     "resend.failed.nopayload",
                                                     message.getAS2Info().getMessageId()));
                                 }
-                                ManualSendResponse response
-                                        = dialog.performResend(info.getMessageId(),
-                                                sender, receiver, tempFile, originalFilename, info.getSubject());
+                                ManualSendResponse response = dialog.performResend(info.getMessageId(),
+                                        sender, receiver, tempFile, originalFilename, info.getSubject());
                                 String newMessageId = "--";
                                 if (response != null) {
                                     newMessageId = response.getAS2Info().getMessageId();
@@ -1180,7 +1194,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         try {
                             Files.delete(tempFile);
                         } catch (Exception e) {
-                            //nop
+                            // nop
                         }
                     }
                 }
@@ -1200,7 +1214,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             if (refreshRequest.getOperation() == RefreshClientMessageOverviewList.OPERATION_PROCESSING_UPDATE) {
                 this.refreshThread.serverRequestsOverviewRefresh();
             } else {
-                //always perform update of a delete operation - even if the refresh has been disabled
+                // always perform update of a delete operation - even if the refresh has been
+                // disabled
                 this.refreshThread.userRequestsOverviewRefresh();
             }
             return (true);
@@ -1212,14 +1227,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             this.getLogger().log(Level.CONFIG, serverInfo.getProductname());
             return (true);
         } else if (message instanceof RefreshClientCEMDisplay) {
-            //return true for this message even if it is not processed here to prevent a
-            //warning that the message was not processed
+            // return true for this message even if it is not processed here to prevent a
+            // warning that the message was not processed
             return (true);
         } else if (message instanceof ConfigurationChangedOnServer) {
             this.preferencesChangedOnServer((ConfigurationChangedOnServer) message);
             return (true);
         }
-        //not processed here
+        // not processed here
         return (false);
     }
 
@@ -1237,7 +1252,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             if ((messagePreferences.getOldValue().toUpperCase().equals("TRUE")
                     || messagePreferences.getOldValue().toUpperCase().equals("FALSE"))
                     && (messagePreferences.getNewValue().toUpperCase().equals("TRUE")
-                    || messagePreferences.getNewValue().toUpperCase().equals("FALSE"))) {
+                            || messagePreferences.getNewValue().toUpperCase().equals("FALSE"))) {
                 text.append("[")
                         .append(this.rbPreferences.getResourceString(messagePreferences.getNewValue().toUpperCase()))
                         .append("]");
@@ -1267,8 +1282,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             @Override
             public void run() {
                 JDialogCertificates dialog = null;
-                //display wait indicator
-                AS2Gui.this.as2StatusBar.startProgressIndeterminate(AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
+                // display wait indicator
+                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                        AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
                 try {
                     AS2Gui.this.jMenuFileCertificates.setEnabled(false);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
@@ -1282,8 +1298,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS
-                    );
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
                     dialog.initialize(storage);
                     KeyCopyHandler keycopyHandler = new DefaultKeyCopyHandler(
                             AS2Gui.this.getBaseClient(),
@@ -1308,20 +1323,22 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         GUIClient.submit(runnable);
     }
 
-     @Override
+    @Override
     public void displayCertificateManagerEncSign(String selectedAlias) {
-        final String uniqueId = this.getClass().getName() + ".displayKeystoreManagerSignEncrypt." + System.currentTimeMillis();
+        final String uniqueId = this.getClass().getName() + ".displayKeystoreManagerSignEncrypt."
+                + System.currentTimeMillis();
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 JDialogCertificates dialog = null;
-                //display wait indicator
-                AS2Gui.this.as2StatusBar.startProgressIndeterminate(AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
+                // display wait indicator
+                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                        AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
                 AS2Gui.this.jMenuFileCertificates.setEnabled(false);
                 AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
                 AS2Gui.this.jButtonCertificatesTLS.setEnabled(false);
-                try {                    
-                    dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this, 
+                try {
+                    dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this,
                             AS2Gui.this.rbCertGui.getResourceString("title.signencrypt"),
                             AS2ServerVersion.getFullProductName(), false,
                             ModuleLock.MODULE_ENCSIGN_KEYSTORE, null);
@@ -1329,16 +1346,16 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12
-                    );
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
                     dialog.initialize(storage);
-                    CertificateUsedByPartnerChecker checker = new CertificateUsedByPartnerChecker(AS2Gui.this.getBaseClient());
+                    CertificateUsedByPartnerChecker checker = new CertificateUsedByPartnerChecker(
+                            AS2Gui.this.getBaseClient());
                     dialog.addCertificateInUseChecker(checker);
                     dialog.addAllowModificationCallback(new AllowConfigurationModificationCallback((JFrame) AS2Gui.this,
                             AS2Gui.this.getBaseClient(),
                             ModuleLock.MODULE_ENCSIGN_KEYSTORE, true));
                     KeyCopyHandler keycopyHandler = new DefaultKeyCopyHandler(
-                            AS2Gui.this.getBaseClient(),                             
+                            AS2Gui.this.getBaseClient(),
                             KeyCopyRequest.KEYSTORE_USAGE_ENC_SIGN,
                             KeyCopyRequest.KEYSTORE_USAGE_TLS,
                             ModuleLock.MODULE_SSL_KEYSTORE);
@@ -1354,40 +1371,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     AS2Gui.this.jMenuFileCertificates.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesTLS.setEnabled(true);
-                }                
+                }
             }
         };
         GUIClient.submit(runnable);
     }
 
     private void displayHelpSystem() {
-        if (this.helpHasBeenDisplayed) {
-            this.help.setVisible(true);
-        } else {
-            final String uniqueId = this.getClass().getName() + ".displayHelpSystem." + System.currentTimeMillis();
-            Runnable test = new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        //display wait indicator
-                        AS2Gui.this.as2StatusBar.startProgressIndeterminate(AS2Gui.this.rb.getResourceString("menu.help.helpsystem"), uniqueId);
-                        AS2Gui.this.help.showTopic(AS2Gui.this.helpSet, "as2_main");
-                        Navigator[] navigators = AS2Gui.this.help.getAllNavigators();
-                        if (navigators != null && navigators.length > 0) {
-                            JFrame helpFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, navigators[0]);
-                            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                            helpFrame.setBounds(new Rectangle(new Dimension((int) (screenSize.width * 0.7f), (int) (screenSize.height * 0.9f))));
-                            //center on screen
-                            helpFrame.setLocationRelativeTo(null);
-                        }
-                    } finally {
-                        AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
-                        AS2Gui.this.helpHasBeenDisplayed = true;
-                    }
-                }
-            };
-            Executors.newSingleThreadExecutor().submit(test);
-        }
+        // Oracle JavaHelp removed - incompatible with JDK 17+
+        // Show simple message dialog with GitHub link instead
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Online documentation available at:\nhttps://github.com/zc2tech/mend-as2",
+            "Help",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
     @Override
@@ -1397,7 +1395,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             @Override
             public void run() {
                 JDialogPreferences dialog = null;
-                //display wait indicator
+                // display wait indicator
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("menu.file.preferences"), uniqueId);
                 try {
@@ -1406,13 +1404,16 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     panelList.add(new PreferencesPanelMDN(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelConnectivity(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelProxy(AS2Gui.this.getBaseClient()));
-                    //modifying the underlaying keystore settings makes only sense if HA is enabled
-                    ServerInfoResponse infoResponse = (ServerInfoResponse) AS2Gui.this.getBaseClient().sendSync(new ServerInfoRequest());
+                    // modifying the underlaying keystore settings makes only sense if HA is enabled
+                    ServerInfoResponse infoResponse = (ServerInfoResponse) AS2Gui.this.getBaseClient()
+                            .sendSync(new ServerInfoRequest());
                     panelList.add(new PreferencesPanelDirectories(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelSystemMaintenance(AS2Gui.this.getBaseClient()));
-                    panelList.add(new PreferencesPanelNotification(AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar));
+                    panelList.add(
+                            new PreferencesPanelNotification(AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar));
                     panelList.add(new PreferencesPanelInterface(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelLog(AS2Gui.this.getBaseClient()));
+                    // HTTP Auth panel moved to separate User Preference menu
                     dialog = new JDialogPreferences(AS2Gui.this, panelList, selectedTab, "");
                 } catch (Exception e) {
                     UINotification.instance().addNotification(e);
@@ -1429,6 +1430,39 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         GUIClient.submit(prefRunner);
     }
 
+    /**
+     * Display HTTP Authentication preferences dialog
+     */
+    public void displayHttpAuthPreferences() {
+        final String uniqueId = this.getClass().getName() + ".displayHttpAuthPreferences." + System.currentTimeMillis();
+        Runnable prefRunner = new Runnable() {
+            @Override
+            public void run() {
+                JDialogPreferences dialog = null;
+                // display wait indicator
+                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                        AS2Gui.this.rb.getResourceString("menu.userpreference.httpauth"), uniqueId);
+                try {
+                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(false);
+                    List<PreferencesPanel> panelList = new ArrayList<PreferencesPanel>();
+                    // Add only HTTP Auth panel
+                    panelList.add(new PreferencesPanelHttpAuth(AS2Gui.this.getBaseClient()));
+                    dialog = new JDialogPreferences(AS2Gui.this, panelList, "httpauth", "");
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                    e.printStackTrace();
+                } finally {
+                    AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
+                    if (dialog != null) {
+                        dialog.setVisible(true);
+                    }
+                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(true);
+                }
+            }
+        };
+        GUIClient.submit(prefRunner);
+    }
+
     @Override
     public void displayPartnerManager(final String partnername) {
         final String uniqueId = this.getClass().getName() + ".displayPartnerManager." + System.currentTimeMillis();
@@ -1437,11 +1471,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             @Override
             public void run() {
                 JDialogPartnerConfig dialog = null;
-                //display wait indicator
+                // display wait indicator
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("menu.file.partner"), uniqueId);
-                //try to set an exclusive lock on this module
-                ModuleLockRequest request = new ModuleLockRequest(ModuleLock.MODULE_PARTNER, ModuleLockRequest.TYPE_SET);
+                // try to set an exclusive lock on this module
+                ModuleLockRequest request = new ModuleLockRequest(ModuleLock.MODULE_PARTNER,
+                        ModuleLockRequest.TYPE_SET);
                 ModuleLockResponse response = (ModuleLockResponse) AS2Gui.this.getBaseClient().sendSync(request);
                 boolean hasLock = response.wasSuccessful();
                 LockClientInformation lockKeeper = response.getLockKeeper();
@@ -1456,21 +1491,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     PreferencesClient client = new PreferencesClient(AS2Gui.this.getBaseClient());
                     CertificateManager certificateManagerEncSign = new CertificateManager(logger);
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
-                            AS2Gui.this.getBaseClient(), 
+                            AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12
-                    );
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
                     certificateManagerEncSign.loadKeystoreCertificates(storage);
-                    CertificateManager certificateManagerSLL = new CertificateManager(AS2Gui.logger);                    
+                    CertificateManager certificateManagerSLL = new CertificateManager(AS2Gui.logger);
                     storage = new KeystoreStorageImplClientServer(
-                            AS2Gui.this.getBaseClient(), 
+                            AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS
-                    );
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
                     certificateManagerSLL.loadKeystoreCertificates(storage);
-                    PartnerSystemResponse systemresponse
-                            = (PartnerSystemResponse) AS2Gui.this.getBaseClient().sendSync(
-                                    new PartnerSystemRequest(PartnerSystemRequest.TYPE_LIST_ALL));
+                    PartnerSystemResponse systemresponse = (PartnerSystemResponse) AS2Gui.this.getBaseClient().sendSync(
+                            new PartnerSystemRequest(PartnerSystemRequest.TYPE_LIST_ALL));
                     dialog = new JDialogPartnerConfig(AS2Gui.this,
                             AS2Gui.this,
                             AS2Gui.this.as2StatusBar, hasLock, lockKeeper,
@@ -1482,7 +1514,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     }
                     boolean showQuota = client.getBoolean(PreferencesAS2.SHOW_QUOTA_NOTIFICATION_IN_PARTNER_CONFIG);
                     boolean displayHeader = client.getBoolean(PreferencesAS2.SHOW_HTTPHEADER_IN_PARTNER_CONFIG);
-                    boolean displayOverwriteLocalStationSecuritySettings = client.getBoolean(PreferencesAS2.SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG);
+                    boolean displayOverwriteLocalStationSecuritySettings = client
+                            .getBoolean(PreferencesAS2.SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG);
                     dialog.setDisplayOverwriteLocalstationSecurity(displayOverwriteLocalStationSecuritySettings);
                     dialog.setDisplayNotificationPanel(showQuota);
                     dialog.setDisplayHttpHeaderPanel(displayHeader);
@@ -1502,8 +1535,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             e.printStackTrace();
                         }
                     }
-                    //we had the lock: stop the refresher thread and release the lock. If this doesnt work somehow because the connection is lost
-                    //there is a watchdog in the server that will kill locks that are not refreshed for some time
+                    // we had the lock: stop the refresher thread and release the lock. If this
+                    // doesnt work somehow because the connection is lost
+                    // there is a watchdog in the server that will kill locks that are not refreshed
+                    // for some time
                     if (hasLock) {
                         if (lockRefresher != null) {
                             lockRefresher.pleaseStop();
@@ -1524,7 +1559,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * WARNING: Do NOT modify this code. The content of this method is always
      * regenerated by the Form Editor.
      */
-    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    // <editor-fold defaultstate="collapsed" desc="Generated
+    // Code">//GEN-BEGIN:initComponents
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
@@ -1534,9 +1570,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jSeparator9 = new javax.swing.JPopupMenu.Separator();
         jMenuItemPopupDeleteMessage = new javax.swing.JMenuItem();
         jToolBar = new javax.swing.JToolBar();
-        jButtonShop = new javax.swing.JButton();
+        // jButtonShop = new javax.swing.JButton();
         jButtonPartner = new javax.swing.JButton();
+        jButtonUserManagement = new javax.swing.JButton();
         jButtonCertificatesSignEncrypt = new javax.swing.JButton();
+        jButtonCertificatesSignEncrypt.setMnemonic(KeyEvent.VK_S);
         jButtonCertificatesTLS = new javax.swing.JButton();
         jButtonMessageDetails = new javax.swing.JButton();
         jButtonFilter = new javax.swing.JButton();
@@ -1575,8 +1613,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jPanelRefreshWarning = new javax.swing.JPanel();
         jLabelRefreshStopWarning = new javax.swing.JLabel();
         as2StatusBar = new de.mendelson.comm.as2.client.AS2StatusBar();
-        browserLinkedPanel = new de.mendelson.comm.as2.client.BrowserLinkedPanel();
-        jButtonNewVersion = new javax.swing.JButton();
         jMenuBar = new javax.swing.JMenuBar();
         jMenuFile = new javax.swing.JMenu();
         jMenuItemFileSend = new javax.swing.JMenuItem();
@@ -1594,15 +1630,17 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jSeparator3 = new javax.swing.JSeparator();
         jMenuItemHTTPServerInfo = new javax.swing.JMenuItem();
         jMenuItemSystemEvents = new javax.swing.JMenuItem();
+        jMenuUserPreference = new javax.swing.JMenu();
+        jMenuItemUserPrefHttpAuth = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JSeparator();
         jMenuItemFileExit = new javax.swing.JMenuItem();
-        jMenuHelp = new javax.swing.JMenu();
         jMenuItemHelpAbout = new javax.swing.JMenuItem();
         jMenuItemHelpSystem = new javax.swing.JMenuItem();
 
-        jMenuItemPopupMessageDetails.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupMessageDetails.setText(this.rb.getResourceString( "details" ));
+        jMenuItemPopupMessageDetails.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemPopupMessageDetails.setText(this.rb.getResourceString("details"));
         jMenuItemPopupMessageDetails.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupMessageDetailsActionPerformed(evt);
@@ -1610,7 +1648,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jPopupMenu.add(jMenuItemPopupMessageDetails);
 
-        jMenuItemPopupSendAgain.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemPopupSendAgain.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemPopupSendAgain.setText(this.rb.getResourceString("menu.file.resend"));
         jMenuItemPopupSendAgain.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1620,8 +1659,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jPopupMenu.add(jMenuItemPopupSendAgain);
         jPopupMenu.add(jSeparator9);
 
-        jMenuItemPopupDeleteMessage.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupDeleteMessage.setText(this.rb.getResourceString( "delete.msg"));
+        jMenuItemPopupDeleteMessage.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemPopupDeleteMessage.setText(this.rb.getResourceString("delete.msg"));
         jMenuItemPopupDeleteMessage.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupDeleteMessageActionPerformed(evt);
@@ -1639,20 +1679,23 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jToolBar.setFloatable(false);
         jToolBar.setRollover(true);
 
-        jButtonShop.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonShop.setText(this.rb.getResourceString( "buy.license"));
-        jButtonShop.setFocusable(false);
-        jButtonShop.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButtonShop.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jButtonShop.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonShopActionPerformed(evt);
-            }
-        });
-        jToolBar.add(jButtonShop);
+        // jButtonShop.setIcon(new
+        // javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif")));
+        // // NOI18N
+        // jButtonShop.setText(this.rb.getResourceString( "buy.license"));
+        // jButtonShop.setFocusable(false);
+        // jButtonShop.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        // jButtonShop.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        // jButtonShop.addActionListener(new java.awt.event.ActionListener() {
+        // public void actionPerformed(java.awt.event.ActionEvent evt) {
+        // jButtonShopActionPerformed(evt);
+        // }
+        // });
+        // jToolBar.add(jButtonShop);
 
-        jButtonPartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonPartner.setText(this.rb.getResourceString( "menu.file.partner" ));
+        jButtonPartner.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonPartner.setText(this.rb.getResourceString("menu.file.partner"));
         jButtonPartner.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonPartner.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonPartner.addActionListener(new java.awt.event.ActionListener() {
@@ -1662,8 +1705,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonPartner);
 
-        jButtonCertificatesSignEncrypt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonCertificatesSignEncrypt.setText(this.rb.getResourceString( "menu.file.certificate.signcrypt" ));
+        jButtonUserManagement.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonUserManagement.setText("User Management");
+        jButtonUserManagement.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jButtonUserManagement.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButtonUserManagement.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonUserManagementActionPerformed(evt);
+            }
+        });
+        jToolBar.add(jButtonUserManagement);
+
+        jButtonCertificatesSignEncrypt.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonCertificatesSignEncrypt.setText(this.rb.getResourceString("menu.file.certificate.signcrypt"));
         jButtonCertificatesSignEncrypt.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonCertificatesSignEncrypt.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonCertificatesSignEncrypt.addActionListener(new java.awt.event.ActionListener() {
@@ -1673,8 +1729,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonCertificatesSignEncrypt);
 
-        jButtonCertificatesTLS.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonCertificatesTLS.setText(this.rb.getResourceString( "menu.file.certificate.ssl" ));
+        jButtonCertificatesTLS.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonCertificatesTLS.setText(this.rb.getResourceString("menu.file.certificate.ssl"));
         jButtonCertificatesTLS.setFocusable(false);
         jButtonCertificatesTLS.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonCertificatesTLS.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1685,8 +1742,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonCertificatesTLS);
 
-        jButtonMessageDetails.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonMessageDetails.setText(this.rb.getResourceString( "details" ));
+        jButtonMessageDetails.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonMessageDetails.setText(this.rb.getResourceString("details"));
         jButtonMessageDetails.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonMessageDetails.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonMessageDetails.addActionListener(new java.awt.event.ActionListener() {
@@ -1696,8 +1754,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonMessageDetails);
 
-        jButtonFilter.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonFilter.setText(this.rb.getResourceString( "filter"));
+        jButtonFilter.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonFilter.setText(this.rb.getResourceString("filter"));
         jButtonFilter.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonFilter.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonFilter.addActionListener(new java.awt.event.ActionListener() {
@@ -1707,8 +1766,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonFilter);
 
-        jToggleButtonStopRefresh.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jToggleButtonStopRefresh.setText(this.rb.getResourceString( "stoprefresh.msg"));
+        jToggleButtonStopRefresh.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jToggleButtonStopRefresh.setText(this.rb.getResourceString("stoprefresh.msg"));
         jToggleButtonStopRefresh.setFocusable(false);
         jToggleButtonStopRefresh.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jToggleButtonStopRefresh.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1719,8 +1779,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jToggleButtonStopRefresh);
 
-        jButtonConfigureColumns.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonConfigureColumns.setText(this.rb.getResourceString( "configurecolumns" ));
+        jButtonConfigureColumns.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonConfigureColumns.setText(this.rb.getResourceString("configurecolumns"));
         jButtonConfigureColumns.setFocusable(false);
         jButtonConfigureColumns.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonConfigureColumns.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1731,8 +1792,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jToolBar.add(jButtonConfigureColumns);
 
-        jButtonDeleteMessage.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonDeleteMessage.setText(this.rb.getResourceString( "delete.msg"));
+        jButtonDeleteMessage.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonDeleteMessage.setText(this.rb.getResourceString("delete.msg"));
         jButtonDeleteMessage.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonDeleteMessage.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonDeleteMessage.addActionListener(new java.awt.event.ActionListener() {
@@ -1752,7 +1814,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jPanelMessageLog.setLayout(new java.awt.GridBagLayout());
 
-        jPanelFilterOverviewContainer.setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.SystemColor.activeCaptionBorder));
+        jPanelFilterOverviewContainer
+                .setBorder(javax.swing.BorderFactory.createLineBorder(java.awt.SystemColor.activeCaptionBorder));
         jPanelFilterOverviewContainer.setLayout(new java.awt.GridBagLayout());
 
         jPanelFilterOverview.setLayout(new java.awt.GridBagLayout());
@@ -1796,8 +1859,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 0);
         jPanelFilterOverview.add(jCheckBoxFilterShowStopped, gridBagConstraints);
 
-        jLabelFilterShowOk.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jLabelFilterShowOk.setText(this.rb.getResourceString( "filter.showfinished"));
+        jLabelFilterShowOk.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jLabelFilterShowOk.setText(this.rb.getResourceString("filter.showfinished"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
@@ -1805,8 +1869,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jLabelFilterShowOk, gridBagConstraints);
 
-        jLabelFilterShowPending.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jLabelFilterShowPending.setText(this.rb.getResourceString( "filter.showpending"));
+        jLabelFilterShowPending.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jLabelFilterShowPending.setText(this.rb.getResourceString("filter.showpending"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
@@ -1814,8 +1879,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jLabelFilterShowPending, gridBagConstraints);
 
-        jLabelFilterShowError.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jLabelFilterShowError.setText(this.rb.getResourceString( "filter.showstopped"));
+        jLabelFilterShowError.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jLabelFilterShowError.setText(this.rb.getResourceString("filter.showstopped"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
@@ -1823,7 +1889,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jLabelFilterShowError, gridBagConstraints);
 
-        jButtonHideFilter.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jButtonHideFilter.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jButtonHideFilter.setMargin(new java.awt.Insets(0, 0, 0, 0));
         jButtonHideFilter.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1858,7 +1925,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.weightx = 1.0;
         jPanelFilterOverview.add(jPaneSpace, gridBagConstraints);
 
-        jLabelPartnerFilter.setText(this.rb.getResourceString( "filter.partner"));
+        jLabelPartnerFilter.setText(this.rb.getResourceString("filter.partner"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 1;
@@ -1890,7 +1957,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jComboBoxFilterLocalStation, gridBagConstraints);
 
-        jLabelLocalStationFilter.setText(this.rb.getResourceString( "filter.localstation"));
+        jLabelLocalStationFilter.setText(this.rb.getResourceString("filter.localstation"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
@@ -1898,7 +1965,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jLabelLocalStationFilter, gridBagConstraints);
 
-        jLabelDirectionFilter.setText(this.rb.getResourceString( "filter.direction"));
+        jLabelDirectionFilter.setText(this.rb.getResourceString("filter.direction"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 2;
@@ -1962,7 +2029,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelFilterOverview.add(jDateChooserEndDate, gridBagConstraints);
 
-        jLabelTimefilterFrom.setText(this.rb.getResourceString( "filter.from"));
+        jLabelTimefilterFrom.setText(this.rb.getResourceString("filter.from"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 1;
@@ -1970,7 +2037,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
         jPanelFilterOverview.add(jLabelTimefilterFrom, gridBagConstraints);
 
-        jLabelTimefilterTo.setText(this.rb.getResourceString( "filter.to"));
+        jLabelTimefilterTo.setText(this.rb.getResourceString("filter.to"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 2;
@@ -2032,7 +2099,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jLabelRefreshStopWarning.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabelRefreshStopWarning.setForeground(new java.awt.Color(204, 51, 0));
-        jLabelRefreshStopWarning.setText(this.rb.getResourceString( "warning.refreshstopped"));
+        jLabelRefreshStopWarning.setText(this.rb.getResourceString("warning.refreshstopped"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -2060,35 +2127,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         gridBagConstraints.weightx = 1.0;
         jPanelMain.add(as2StatusBar, gridBagConstraints);
 
-        browserLinkedPanel.setMinimumSize(new java.awt.Dimension(8, 30));
-        browserLinkedPanel.setPreferredSize(new java.awt.Dimension(110, 30));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(0, 3, 0, 3);
-        jPanelMain.add(browserLinkedPanel, gridBagConstraints);
-
-        jButtonNewVersion.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jButtonNewVersion.setToolTipText(this.rb.getResourceString("new.version") );
-        jButtonNewVersion.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonNewVersionActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 3);
-        jPanelMain.add(jButtonNewVersion, gridBagConstraints);
 
         getContentPane().add(jPanelMain, java.awt.BorderLayout.CENTER);
 
-        jMenuFile.setText(this.rb.getResourceString( "menu.file" ));
+        jMenuFile.setText(this.rb.getResourceString("menu.file"));
 
-        jMenuItemFileSend.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemFileSend.setText(this.rb.getResourceString( "menu.file.send"));
+        jMenuItemFileSend.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemFileSend.setText(this.rb.getResourceString("menu.file.send"));
+        jMenuItemFileSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_M));
         jMenuItemFileSend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFileSendActionPerformed(evt);
@@ -2097,8 +2150,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuItemFileSend);
         jMenuFile.add(jSeparator2);
 
-        jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemFilePreferences.setText(this.rb.getResourceString( "menu.file.preferences"));
+        jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemFilePreferences.setText(this.rb.getResourceString("menu.file.preferences"));
+        jMenuItemFilePreferences
+                .setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
         jMenuItemFilePreferences.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFilePreferencesActionPerformed(evt);
@@ -2106,8 +2162,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFile.add(jMenuItemFilePreferences);
 
-        jMenuItemPartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPartner.setText(this.rb.getResourceString( "menu.file.partner"));
+        jMenuItemPartner.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemPartner.setText(this.rb.getResourceString("menu.file.partner"));
+        jMenuItemPartner.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_P));
         jMenuItemPartner.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPartnerActionPerformed(evt);
@@ -2115,8 +2173,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFile.add(jMenuItemPartner);
 
-        jMenuItemDatasheet.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemDatasheet.setText(this.rb.getResourceString( "menu.file.datasheet"));
+        jMenuItemDatasheet.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemDatasheet.setText(this.rb.getResourceString("menu.file.datasheet"));
+        jMenuItemDatasheet.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_D,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemDatasheet.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemDatasheetActionPerformed(evt);
@@ -2125,11 +2186,28 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuItemDatasheet);
         jMenuFile.add(jSeparator6);
 
-        jMenuFileCertificates.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuFileCertificates.setText(this.rb.getResourceString( "menu.file.certificates" ));
+        jMenuItemUserManagement = new javax.swing.JMenuItem();
+        jMenuItemUserManagement.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
+        jMenuItemUserManagement.setText("User Management");
+        jMenuItemUserManagement.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_U));
+        jMenuItemUserManagement.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemUserManagementActionPerformed(evt);
+            }
+        });
+        jMenuFile.add(jMenuItemUserManagement);
+        jMenuFile.add(new javax.swing.JSeparator());
 
-        jMenuItemCertificatesSignCrypt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCertificatesSignCrypt.setText(this.rb.getResourceString( "menu.file.certificate.signcrypt"));
+        jMenuFileCertificates.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuFileCertificates.setText(this.rb.getResourceString("menu.file.certificates"));
+
+        jMenuItemCertificatesSignCrypt.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemCertificatesSignCrypt.setText(this.rb.getResourceString("menu.file.certificate.signcrypt"));
+        jMenuItemCertificatesSignCrypt.setAccelerator(KeyboardShortcutUtil
+                .createMenuShortcut(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCertificatesSignCrypt.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCertificatesSignCryptActionPerformed(evt);
@@ -2137,8 +2215,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFileCertificates.add(jMenuItemCertificatesSignCrypt);
 
-        jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCertificatesSSL.setText(this.rb.getResourceString( "menu.file.certificate.ssl"));
+        jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemCertificatesSSL.setText(this.rb.getResourceString("menu.file.certificate.ssl"));
+        jMenuItemCertificatesSSL.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_2,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCertificatesSSL.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCertificatesSSLActionPerformed(evt);
@@ -2147,8 +2228,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFileCertificates.add(jMenuItemCertificatesSSL);
         jMenuFileCertificates.add(jSeparator10);
 
-        jMenuItemCEMManager.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCEMManager.setText(this.rb.getResourceString( "menu.file.cem"));
+        jMenuItemCEMManager.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemCEMManager.setText(this.rb.getResourceString("menu.file.cem"));
+        jMenuItemCEMManager.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_E,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCEMManager.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCEMManagerActionPerformed(evt);
@@ -2156,8 +2240,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFileCertificates.add(jMenuItemCEMManager);
 
-        jMenuItemCEMSend.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCEMSend.setText(this.rb.getResourceString( "menu.file.cemsend"));
+        jMenuItemCEMSend.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemCEMSend.setText(this.rb.getResourceString("menu.file.cemsend"));
+        jMenuItemCEMSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_N,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemCEMSend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCEMSendActionPerformed(evt);
@@ -2168,8 +2255,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuFileCertificates);
         jMenuFile.add(jSeparator3);
 
-        jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemHTTPServerInfo.setText(this.rb.getResourceString( "menu.file.serverinfo"));
+        jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemHTTPServerInfo.setText(this.rb.getResourceString("menu.file.serverinfo"));
+        jMenuItemHTTPServerInfo.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_I));
         jMenuItemHTTPServerInfo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemHTTPServerInfoActionPerformed(evt);
@@ -2177,8 +2266,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFile.add(jMenuItemHTTPServerInfo);
 
-        jMenuItemSystemEvents.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemSystemEvents.setText(this.rb.getResourceString( "menu.file.systemevents"));
+        jMenuItemSystemEvents.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemSystemEvents.setText(this.rb.getResourceString("menu.file.systemevents"));
+        jMenuItemSystemEvents.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Y));
         jMenuItemSystemEvents.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemSystemEventsActionPerformed(evt);
@@ -2186,8 +2277,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuFile.add(jMenuItemSystemEvents);
 
-        jMenuItemSearchInServerLog.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemSearchInServerLog.setText(this.rb.getResourceString( "menu.file.searchinserverlog"));
+        jMenuItemSearchInServerLog.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemSearchInServerLog.setText(this.rb.getResourceString("menu.file.searchinserverlog"));
+        jMenuItemSearchInServerLog.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_F,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemSearchInServerLog.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemSearchInServerLogActionPerformed(evt);
@@ -2196,8 +2290,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuItemSearchInServerLog);
         jMenuFile.add(jSeparator8);
 
-        jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemFileExit.setText(this.rb.getResourceString( "menu.file.exit" ));
+        jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemFileExit.setText(this.rb.getResourceString("menu.file.exit"));
+        jMenuItemFileExit.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Q));
         jMenuItemFileExit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFileExitActionPerformed(evt);
@@ -2207,25 +2303,25 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuBar.add(jMenuFile);
 
-        jMenuHelp.setText(this.rb.getResourceString( "menu.help"));
+        // User Preference menu
+        jMenuUserPreference.setText(this.rb.getResourceString("menu.userpreference"));
 
-        jMenuItemHelpAbout.setText(this.rb.getResourceString( "menu.help.about"));
-        jMenuItemHelpAbout.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemUserPrefHttpAuth.setText(this.rb.getResourceString("menu.userpreference.httpauth"));
+        jMenuItemUserPrefHttpAuth.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemHelpAboutActionPerformed(evt);
+                jMenuItemUserPrefHttpAuthActionPerformed(evt);
             }
         });
-        jMenuHelp.add(jMenuItemHelpAbout);
+        jMenuUserPreference.add(jMenuItemUserPrefHttpAuth);
 
-        jMenuItemHelpSystem.setText(this.rb.getResourceString( "menu.help.helpsystem" ));
+        jMenuBar.add(jMenuUserPreference);
+
+        jMenuItemHelpSystem.setText(this.rb.getResourceString("menu.help.helpsystem"));
         jMenuItemHelpSystem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemHelpSystemActionPerformed(evt);
             }
         });
-        jMenuHelp.add(jMenuItemHelpSystem);
-
-        jMenuBar.add(jMenuHelp);
 
         setJMenuBar(jMenuBar);
 
@@ -2233,215 +2329,216 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jMenuItemFileSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFileSendActionPerformed
+    private void jMenuItemFileSendActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemFileSendActionPerformed
         this.sendFileManual();
-    }//GEN-LAST:event_jMenuItemFileSendActionPerformed
+    }// GEN-LAST:event_jMenuItemFileSendActionPerformed
 
-    private void jButtonDeleteMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDeleteMessageActionPerformed
+    private void jButtonDeleteMessageActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonDeleteMessageActionPerformed
         this.deleteSelectedMessages();
-    }//GEN-LAST:event_jButtonDeleteMessageActionPerformed
+    }// GEN-LAST:event_jButtonDeleteMessageActionPerformed
 
-    private void jButtonHideFilterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonHideFilterActionPerformed
+    private void jButtonHideFilterActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonHideFilterActionPerformed
         this.showFilterPanel = !this.showFilterPanel;
         this.jPanelFilterOverviewContainer.setVisible(this.showFilterPanel);
-    }//GEN-LAST:event_jButtonHideFilterActionPerformed
+    }// GEN-LAST:event_jButtonHideFilterActionPerformed
 
-    private void jCheckBoxFilterShowOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxFilterShowOkActionPerformed
+    private void jCheckBoxFilterShowOkActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jCheckBoxFilterShowOkActionPerformed
         this.refreshThread.userRequestsOverviewRefresh();
-    }//GEN-LAST:event_jCheckBoxFilterShowOkActionPerformed
+    }// GEN-LAST:event_jCheckBoxFilterShowOkActionPerformed
 
-    private void jCheckBoxFilterShowPendingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxFilterShowPendingActionPerformed
+    private void jCheckBoxFilterShowPendingActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jCheckBoxFilterShowPendingActionPerformed
         this.refreshThread.userRequestsOverviewRefresh();
-    }//GEN-LAST:event_jCheckBoxFilterShowPendingActionPerformed
+    }// GEN-LAST:event_jCheckBoxFilterShowPendingActionPerformed
 
-    private void jCheckBoxFilterShowStoppedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxFilterShowStoppedActionPerformed
+    private void jCheckBoxFilterShowStoppedActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jCheckBoxFilterShowStoppedActionPerformed
         this.refreshThread.userRequestsOverviewRefresh();
-    }//GEN-LAST:event_jCheckBoxFilterShowStoppedActionPerformed
+    }// GEN-LAST:event_jCheckBoxFilterShowStoppedActionPerformed
 
-    private void jButtonFilterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonFilterActionPerformed
+    private void jButtonFilterActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonFilterActionPerformed
         this.showFilterPanel = !this.showFilterPanel;
         this.jPanelFilterOverviewContainer.setVisible(this.showFilterPanel);
-    }//GEN-LAST:event_jButtonFilterActionPerformed
+    }// GEN-LAST:event_jButtonFilterActionPerformed
 
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {// GEN-FIRST:event_formWindowClosing
         this.savePreferences();
-    }//GEN-LAST:event_formWindowClosing
+    }// GEN-LAST:event_formWindowClosing
 
-    private void jButtonCertificatesSignEncryptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCertificatesSignEncryptActionPerformed
+    private void jButtonCertificatesSignEncryptActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonCertificatesSignEncryptActionPerformed
         this.displayCertificateManagerEncSign(null);
-}//GEN-LAST:event_jButtonCertificatesSignEncryptActionPerformed
+    }// GEN-LAST:event_jButtonCertificatesSignEncryptActionPerformed
 
-    private void jButtonPartnerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonPartnerActionPerformed
+    private void jButtonPartnerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonPartnerActionPerformed
         this.displayPartnerManager(null);
-    }//GEN-LAST:event_jButtonPartnerActionPerformed
+    }// GEN-LAST:event_jButtonPartnerActionPerformed
 
-    private void jButtonMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonMessageDetailsActionPerformed
+    private void jButtonUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(
+                this, this);
+        dialog.setVisible(true);
+    }
+
+    private void jButtonMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonMessageDetailsActionPerformed
         this.showSelectedRowDetails();
-    }//GEN-LAST:event_jButtonMessageDetailsActionPerformed
+    }// GEN-LAST:event_jButtonMessageDetailsActionPerformed
 
-    private void jMenuItemCertificatesSignCryptActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCertificatesSignCryptActionPerformed
+    private void jMenuItemCertificatesSignCryptActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCertificatesSignCryptActionPerformed
         this.displayCertificateManagerEncSign(null);
-}//GEN-LAST:event_jMenuItemCertificatesSignCryptActionPerformed
+    }// GEN-LAST:event_jMenuItemCertificatesSignCryptActionPerformed
 
-    private void jTableMessageOverviewMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTableMessageOverviewMouseClicked
-        //double click on a row
+    private void jTableMessageOverviewMouseClicked(java.awt.event.MouseEvent evt) {// GEN-FIRST:event_jTableMessageOverviewMouseClicked
+        // double click on a row
         if (evt.getClickCount() == 2) {
             this.showSelectedRowDetails();
         }
-    }//GEN-LAST:event_jTableMessageOverviewMouseClicked
+    }// GEN-LAST:event_jTableMessageOverviewMouseClicked
 
-    private void jMenuItemFilePreferencesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFilePreferencesActionPerformed
+    private void jMenuItemFilePreferencesActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemFilePreferencesActionPerformed
         this.displayPreferences(null);
-    }//GEN-LAST:event_jMenuItemFilePreferencesActionPerformed
+    }// GEN-LAST:event_jMenuItemFilePreferencesActionPerformed
 
-    private void jMenuItemPartnerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPartnerActionPerformed
+    private void jMenuItemPartnerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPartnerActionPerformed
         this.displayPartnerManager(null);
-    }//GEN-LAST:event_jMenuItemPartnerActionPerformed
+    }// GEN-LAST:event_jMenuItemPartnerActionPerformed
 
-    private void jMenuItemHelpSystemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHelpSystemActionPerformed
-        this.displayHelpSystem();
-    }//GEN-LAST:event_jMenuItemHelpSystemActionPerformed
+    private void jMenuItemUserPrefHttpAuthActionPerformed(java.awt.event.ActionEvent evt) {
+        this.displayHttpAuthPreferences();
+    }
 
-    private void jMenuItemHelpAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHelpAboutActionPerformed
-        AboutDialog dialog = new AboutDialog(this);
+    private void jMenuItemUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(
+                this, this);
         dialog.setVisible(true);
-    }//GEN-LAST:event_jMenuItemHelpAboutActionPerformed
+    }
 
-    private void jMenuItemFileExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemFileExitActionPerformed
+    private void jMenuItemHelpSystemActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemHelpSystemActionPerformed
+        this.displayHelpSystem();
+    }// GEN-LAST:event_jMenuItemHelpSystemActionPerformed
+
+    private void jMenuItemFileExitActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemFileExitActionPerformed
         this.exitApplication();
-    }//GEN-LAST:event_jMenuItemFileExitActionPerformed
+    }// GEN-LAST:event_jMenuItemFileExitActionPerformed
 
-    private void jToggleButtonStopRefreshActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButtonStopRefreshActionPerformed
+    private void jToggleButtonStopRefreshActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jToggleButtonStopRefreshActionPerformed
         this.jPanelRefreshWarning.setVisible(this.jToggleButtonStopRefresh.isSelected());
         if (this.jToggleButtonStopRefresh.isSelected()) {
             this.consolePanel.setDisplayLog(false, this.rb.getResourceString("logputput.disabled"));
         } else {
             this.consolePanel.setDisplayLog(true, this.rb.getResourceString("logputput.enabled"));
         }
-    }//GEN-LAST:event_jToggleButtonStopRefreshActionPerformed
+    }// GEN-LAST:event_jToggleButtonStopRefreshActionPerformed
 
-    private void jComboBoxFilterPartnerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFilterPartnerActionPerformed
+    private void jComboBoxFilterPartnerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxFilterPartnerActionPerformed
         this.refreshThread.userRequestsOverviewRefresh();
-    }//GEN-LAST:event_jComboBoxFilterPartnerActionPerformed
+    }// GEN-LAST:event_jComboBoxFilterPartnerActionPerformed
 
-private void jMenuItemCertificatesSSLActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCertificatesTLSActionPerformed
-    this.displayCertificateManagerTLS(null);
-}//GEN-LAST:event_jMenuItemCertificatesTLSActionPerformed
-
-private void jComboBoxFilterLocalStationActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFilterLocalStationActionPerformed
-    this.refreshThread.userRequestsOverviewRefresh();
-}//GEN-LAST:event_jComboBoxFilterLocalStationActionPerformed
-
-private void jMenuItemHTTPServerInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemHTTPServerInfoActionPerformed
-    JDialogDisplayHTTPConfiguration dialog = new JDialogDisplayHTTPConfiguration(this, this.getBaseClient(), this.as2StatusBar);
-    dialog.initialize();
-    dialog.setVisible(true);
-}//GEN-LAST:event_jMenuItemHTTPServerInfoActionPerformed
-
-private void jComboBoxFilterDirectionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxFilterDirectionActionPerformed
-    this.refreshThread.userRequestsOverviewRefresh();
-}//GEN-LAST:event_jComboBoxFilterDirectionActionPerformed
-
-private void jMenuItemCEMManagerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCEMManagerActionPerformed
-    try {
-        CertificateManager certificateManagerEncSign = new CertificateManager(logger);
-        KeystoreStorage storage = new KeystoreStorageImplClientServer(
-                AS2Gui.this.getBaseClient(), 
-                KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12
-        );
-        certificateManagerEncSign.loadKeystoreCertificates(storage);
-        DialogCEMOverview cemOverview = new DialogCEMOverview(this, (GUIClient) this,
-                certificateManagerEncSign, this.consolePanel.getHandler());
-        cemOverview.setVisible(true);
-    } catch (Throwable e) {
-        UINotification.instance().addNotification(e);
-    }
-}//GEN-LAST:event_jMenuItemCEMManagerActionPerformed
-
-private void jMenuItemCEMSendActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCEMSendActionPerformed
-    try {
-        PreferencesClient client = new PreferencesClient(AS2Gui.this.getBaseClient());
-        CertificateManager certificateManagerEncSign = new CertificateManager(logger);
-        KeystoreStorage storage = new KeystoreStorageImplClientServer(
-                AS2Gui.this.getBaseClient(), 
-                KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12
-        );
-        certificateManagerEncSign.loadKeystoreCertificates(storage);
-        DialogSendCEM dialog = new DialogSendCEM(this, certificateManagerEncSign, this.getBaseClient());
-        dialog.setVisible(true);
-    } catch (Throwable e) {
-        UINotification.instance().addNotification(e);
-    }
-}//GEN-LAST:event_jMenuItemCEMSendActionPerformed
-
-private void jMenuItemPopupMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPopupMessageDetailsActionPerformed
-    this.showSelectedRowDetails();
-}//GEN-LAST:event_jMenuItemPopupMessageDetailsActionPerformed
-
-private void jMenuItemPopupDeleteMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPopupDeleteMessageActionPerformed
-    this.deleteSelectedMessages();
-}//GEN-LAST:event_jMenuItemPopupDeleteMessageActionPerformed
-
-private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPopupSendAgainActionPerformed
-    this.resendTransactions();
-}//GEN-LAST:event_jMenuItemPopupSendAgainActionPerformed
-
-    private void jMenuItemDatasheetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemDatasheetActionPerformed
-        this.createDatasheet();
-    }//GEN-LAST:event_jMenuItemDatasheetActionPerformed
-
-    private void jButtonConfigureColumnsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonConfigureColumnsActionPerformed
-        JDialogColumnConfig dialog = new JDialogColumnConfig(this, (TableColumnModelHideable) this.jTableMessageOverview.getColumnModel(), this);
-        dialog.setVisible(true);
-    }//GEN-LAST:event_jButtonConfigureColumnsActionPerformed
-
-    private void jButtonCertificatesTLSActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCertificatesTLSActionPerformed
+    private void jMenuItemCertificatesSSLActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCertificatesTLSActionPerformed
         this.displayCertificateManagerTLS(null);
-    }//GEN-LAST:event_jButtonCertificatesTLSActionPerformed
+    }// GEN-LAST:event_jMenuItemCertificatesTLSActionPerformed
 
-    private void jMenuItemSystemEventsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemSystemEventsActionPerformed
+    private void jComboBoxFilterLocalStationActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxFilterLocalStationActionPerformed
+        this.refreshThread.userRequestsOverviewRefresh();
+    }// GEN-LAST:event_jComboBoxFilterLocalStationActionPerformed
+
+    private void jMenuItemHTTPServerInfoActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemHTTPServerInfoActionPerformed
+        JDialogDisplayHTTPConfiguration dialog = new JDialogDisplayHTTPConfiguration(this, this.getBaseClient(),
+                this.as2StatusBar);
+        dialog.initialize();
+        dialog.setVisible(true);
+    }// GEN-LAST:event_jMenuItemHTTPServerInfoActionPerformed
+
+    private void jComboBoxFilterDirectionActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxFilterDirectionActionPerformed
+        this.refreshThread.userRequestsOverviewRefresh();
+    }// GEN-LAST:event_jComboBoxFilterDirectionActionPerformed
+
+    private void jMenuItemCEMManagerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCEMManagerActionPerformed
+        try {
+            CertificateManager certificateManagerEncSign = new CertificateManager(logger);
+            KeystoreStorage storage = new KeystoreStorageImplClientServer(
+                    AS2Gui.this.getBaseClient(),
+                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+            certificateManagerEncSign.loadKeystoreCertificates(storage);
+            DialogCEMOverview cemOverview = new DialogCEMOverview(this, (GUIClient) this,
+                    certificateManagerEncSign, this.consolePanel.getHandler());
+            cemOverview.setVisible(true);
+        } catch (Throwable e) {
+            UINotification.instance().addNotification(e);
+        }
+    }// GEN-LAST:event_jMenuItemCEMManagerActionPerformed
+
+    private void jMenuItemCEMSendActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCEMSendActionPerformed
+        try {
+            PreferencesClient client = new PreferencesClient(AS2Gui.this.getBaseClient());
+            CertificateManager certificateManagerEncSign = new CertificateManager(logger);
+            KeystoreStorage storage = new KeystoreStorageImplClientServer(
+                    AS2Gui.this.getBaseClient(),
+                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+            certificateManagerEncSign.loadKeystoreCertificates(storage);
+            DialogSendCEM dialog = new DialogSendCEM(this, certificateManagerEncSign, this.getBaseClient());
+            dialog.setVisible(true);
+        } catch (Throwable e) {
+            UINotification.instance().addNotification(e);
+        }
+    }// GEN-LAST:event_jMenuItemCEMSendActionPerformed
+
+    private void jMenuItemPopupMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPopupMessageDetailsActionPerformed
+        this.showSelectedRowDetails();
+    }// GEN-LAST:event_jMenuItemPopupMessageDetailsActionPerformed
+
+    private void jMenuItemPopupDeleteMessageActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPopupDeleteMessageActionPerformed
+        this.deleteSelectedMessages();
+    }// GEN-LAST:event_jMenuItemPopupDeleteMessageActionPerformed
+
+    private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPopupSendAgainActionPerformed
+        this.resendTransactions();
+    }// GEN-LAST:event_jMenuItemPopupSendAgainActionPerformed
+
+    private void jMenuItemDatasheetActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemDatasheetActionPerformed
+        this.createDatasheet();
+    }// GEN-LAST:event_jMenuItemDatasheetActionPerformed
+
+    private void jButtonConfigureColumnsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonConfigureColumnsActionPerformed
+        JDialogColumnConfig dialog = new JDialogColumnConfig(this,
+                (TableColumnModelHideable) this.jTableMessageOverview.getColumnModel(), this);
+        dialog.setVisible(true);
+    }// GEN-LAST:event_jButtonConfigureColumnsActionPerformed
+
+    private void jButtonCertificatesTLSActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonCertificatesTLSActionPerformed
+        this.displayCertificateManagerTLS(null);
+    }// GEN-LAST:event_jButtonCertificatesTLSActionPerformed
+
+    private void jMenuItemSystemEventsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemSystemEventsActionPerformed
         if (this.dialogSystemEvents == null) {
             this.dialogSystemEvents = new JDialogSystemEvents(this, this.getBaseClient(), this.as2StatusBar);
         }
         this.dialogSystemEvents.setVisible(true);
-    }//GEN-LAST:event_jMenuItemSystemEventsActionPerformed
+    }// GEN-LAST:event_jMenuItemSystemEventsActionPerformed
 
-    private void jMenuItemSearchInServerLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemSearchInServerLogActionPerformed
+    private void jMenuItemSearchInServerLogActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemSearchInServerLogActionPerformed
         JDialogSearchLogfile dialog = new JDialogSearchLogfile(this, this.getBaseClient(), this.as2StatusBar);
         dialog.setVisible(true);
-    }//GEN-LAST:event_jMenuItemSearchInServerLogActionPerformed
+    }// GEN-LAST:event_jMenuItemSearchInServerLogActionPerformed
 
-    private void jCheckBoxUseTimeFilterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxUseTimeFilterActionPerformed
+    private void jCheckBoxUseTimeFilterActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jCheckBoxUseTimeFilterActionPerformed
         this.refreshThread.userRequestsOverviewRefresh();
-    }//GEN-LAST:event_jCheckBoxUseTimeFilterActionPerformed
+    }// GEN-LAST:event_jCheckBoxUseTimeFilterActionPerformed
 
-    private void jButtonNewVersionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewVersionActionPerformed
-        try {
-            URI uri = new URI(new URL(this.downloadURLNewVersion).toExternalForm());
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(uri);
-            }
-        } catch (Exception e) {
-            this.getLogger().severe(e.getMessage());
-        }
-    }//GEN-LAST:event_jButtonNewVersionActionPerformed
 
-    private void jButtonShopActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonShopActionPerformed
-        try {
-            URI uri = new URI("https://shop.mendelson-e-c.com/buyas2professional");
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(uri);
-            }
-        } catch (Exception e) {
-            this.getLogger().severe(e.getMessage());
-        }
-    }//GEN-LAST:event_jButtonShopActionPerformed
+    // private void jButtonShopActionPerformed(java.awt.event.ActionEvent evt)
+    // {//GEN-FIRST:event_jButtonShopActionPerformed
+    // try {
+    // URI uri = new URI("https://shop.mendelson-e-c.com/buyas2professional");
+    // if (Desktop.isDesktopSupported()) {
+    // Desktop.getDesktop().browse(uri);
+    // }
+    // } catch (Exception e) {
+    // this.getLogger().severe(e.getMessage());
+    // }
+    // }//GEN-LAST:event_jButtonShopActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private de.mendelson.comm.as2.client.AS2StatusBar as2StatusBar;
-    private de.mendelson.comm.as2.client.BrowserLinkedPanel browserLinkedPanel;
     private javax.swing.JButton jButtonCertificatesSignEncrypt;
     private javax.swing.JButton jButtonCertificatesTLS;
     private javax.swing.JButton jButtonConfigureColumns;
@@ -2449,8 +2546,8 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JButton jButtonFilter;
     private javax.swing.JButton jButtonHideFilter;
     private javax.swing.JButton jButtonMessageDetails;
-    private javax.swing.JButton jButtonNewVersion;
     private javax.swing.JButton jButtonPartner;
+    private javax.swing.JButton jButtonUserManagement;
     private javax.swing.JButton jButtonShop;
     private javax.swing.JCheckBox jCheckBoxFilterShowOk;
     private javax.swing.JCheckBox jCheckBoxFilterShowPending;
@@ -2473,7 +2570,8 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuFile;
     private javax.swing.JMenu jMenuFileCertificates;
-    private javax.swing.JMenu jMenuHelp;
+    private javax.swing.JMenu jMenuUserPreference;
+    private javax.swing.JMenuItem jMenuItemUserPrefHttpAuth;
     private javax.swing.JMenuItem jMenuItemCEMManager;
     private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;
@@ -2491,6 +2589,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
     private javax.swing.JMenuItem jMenuItemPopupSendAgain;
     private javax.swing.JMenuItem jMenuItemSearchInServerLog;
     private javax.swing.JMenuItem jMenuItemSystemEvents;
+    private javax.swing.JMenuItem jMenuItemUserManagement;
     private javax.swing.JPanel jPaneSpace;
     private javax.swing.JPanel jPanelFilterOverview;
     private javax.swing.JPanel jPanelFilterOverviewContainer;
@@ -2601,9 +2700,12 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
      */
     @Override
     public void syncRequestFailed(ClientServerMessage request, ClientServerMessage response, Throwable throwable) {
-        //the client has a timeout problem either sending data to the server or receiving a sync answer 
-        //in the defined time . Ignore the payload requests. If there are huge changes on the server these could be
-        //really a huge amount of requests (up to 1000) - and so a timeout might happen.
+        // the client has a timeout problem either sending data to the server or
+        // receiving a sync answer
+        // in the defined time . Ignore the payload requests. If there are huge changes
+        // on the server these could be
+        // really a huge amount of requests (up to 1000) - and so a timeout might
+        // happen.
         if (throwable instanceof SyncRequestTimeoutException) {
             if (request != null && !(request instanceof MessagePayloadRequest)) {
                 UINotification.instance().addNotification(AS2Gui.IMAGE_HOURGLASS,
@@ -2622,7 +2724,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
 
     @Override
     public void tableColumnHiddenStateChanged(ColumnHiddenStateEvent e) {
-        //refresh the new settings
+        // refresh the new settings
         ((TableColumnModelHideable) this.jTableMessageOverview.getColumnModel()).updateState();
         this.storeColumSettings();
     }
@@ -2657,13 +2759,13 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                     this.partnerRefreshRequested = false;
                     this.refreshTablePartnerData();
                 }
-                //resize the columns on the first start
+                // resize the columns on the first start
                 if (this.firstStart) {
                     this.firstStart = false;
                     JTableColumnResizer.adjustColumnWidthByContent(AS2Gui.this.jTableMessageOverview);
                 }
             } catch (Throwable e) {
-                //nop
+                // Exception in refresh thread - log it but don't crash
             }
         }
 
@@ -2691,7 +2793,8 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                 List<Partner> partnerList = ((PartnerListResponse) AS2Gui.this.sendSync(
                         new PartnerListRequest(
                                 PartnerListRequest.LIST_ALL,
-                                PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE))).getList();
+                                PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE)))
+                        .getList();
                 Map<String, Partner> partnerMap = new HashMap<String, Partner>();
                 for (Partner partner : partnerList) {
                     partnerMap.put(partner.getAS2Identification(), partner);
@@ -2700,7 +2803,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                 AS2Gui.this.updatePartnerFilter(partnerList);
                 AS2Gui.this.updateLocalStationFilter(partnerList);
             } catch (Exception e) {
-                //nop
+                // Failed to refresh partner data - will retry on next cycle
             }
         }
 
@@ -2716,11 +2819,12 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
          * Refreshes the message overview list from the database.
          */
         private void refreshMessageOverviewList() {
-            //the lazy load process from the last refresh is no longer needed
+            // the lazy load process from the last refresh is no longer needed
             if (this.lazyLoader != null) {
                 this.lazyLoader.stopLazyLoad();
             }
-            final String uniqueId = this.getClass().getName() + ".refreshMessageOverviewList." + System.currentTimeMillis();
+            final String uniqueId = this.getClass().getName() + ".refreshMessageOverviewList."
+                    + System.currentTimeMillis();
             try {
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("refresh.overview"), uniqueId);
@@ -2754,7 +2858,8 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                 int countPending = 0;
                 int countFailure = 0;
                 int countSelected = 0;
-                //The response will be null if the server could not answer in the set timeout - bad connection or system under heavy load?
+                // The response will be null if the server could not answer in the set timeout -
+                // bad connection or system under heavy load?
                 MessageOverviewResponse response = ((MessageOverviewResponse) AS2Gui.this.sendSync(
                         new MessageOverviewRequest(filter)));
                 if (response != null) {
@@ -2775,25 +2880,27 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                                 countFailure++;
                                 break;
                         }
-                        //add the payloads related to this message
+                        // add the payloads related to this message
                         messageList.add(message);
                     }
-                    TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel();
+                    TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview
+                            .getModel();
                     tableModel.passNewData(messageList);
-                    //try to jump to latest entry
+                    // try to jump to latest entry
                     try {
                         int rowCount = AS2Gui.this.jTableMessageOverview.getRowCount();
-                        AS2Gui.this.jTableMessageOverview.getSelectionModel().
-                                setSelectionInterval(rowCount - 1, rowCount - 1);
+                        AS2Gui.this.jTableMessageOverview.getSelectionModel().setSelectionInterval(rowCount - 1,
+                                rowCount - 1);
                         RefreshThread.this.makeRowVisible(AS2Gui.this.jTableMessageOverview, rowCount - 1);
                     } catch (Throwable ignore) {
-                        //nop
+                        // nop
                     }
                     countSelected = AS2Gui.this.jTableMessageOverview.getSelectedRowCount();
                     AS2Gui.this.as2StatusBar.setTransactionCount(
                             countAll, countServed, countOk, countPending,
                             countFailure, countSelected);
-                    //lazy load the payloads of the underlaying table that have not been loaded so far
+                    // lazy load the payloads of the underlaying table that have not been loaded so
+                    // far
                     this.lazyloadPayloads();
                 }
             } catch (Exception e) {
@@ -2808,7 +2915,7 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
          * Scrolls to an entry of the passed table
          *
          * @param table Table to to scroll in
-         * @param row Row to ensure visibility
+         * @param row   Row to ensure visibility
          */
         private void makeRowVisible(final JTable table, final int row) {
 
@@ -2836,12 +2943,12 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
                                 table.scrollRectToVisible(visible);
                             }
                         } catch (Throwable e) {
-                            //nop
+                            // nop
                         }
                     }
                 });
             } catch (Exception e) {
-                //nop
+                // nop
             }
         }
     }
@@ -2854,12 +2961,14 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
         /**
          *
          * @param existingMessageList List of messages that have been already
-         * updated
+         *                            updated
          * @param newMessageList
          */
         public LazyPayloadLoaderThread() {
-            TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel();
-            //most time the list of transactions to upload should be empty - only if there is activity this will change
+            TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview
+                    .getModel();
+            // most time the list of transactions to upload should be empty - only if there
+            // is activity this will change
             this.messageListToUpdate = tableModel.getMessagesWithoutPassedPayloads();
         }
 
@@ -2869,9 +2978,11 @@ private void jMenuItemPopupSendAgainActionPerformed(java.awt.event.ActionEvent e
 
         @Override
         public void run() {
-            TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview.getModel();
+            TableModelMessageOverview tableModel = (TableModelMessageOverview) AS2Gui.this.jTableMessageOverview
+                    .getModel();
             for (AS2Message message : this.messageListToUpdate) {
-                //bail out, lazy load is no longer required because a new overview refresh occured
+                // bail out, lazy load is no longer required because a new overview refresh
+                // occured
                 if (this.stopLazyLoad) {
                     break;
                 } else {

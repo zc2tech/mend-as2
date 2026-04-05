@@ -1,7 +1,5 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/TimingScheduledThreadPool.java 4     11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.timing;
 
-import de.mendelson.util.NamedThreadFactory;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +11,14 @@ import java.util.concurrent.TimeUnit;
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
  */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
 /**
  * Thread pool for all timing schedules that are not time critical, e.g. check for
  * certificate expire, delete old log files, etc
@@ -22,10 +28,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimingScheduledThreadPool {
 
-    private final static ScheduledExecutorService SCHEDULED_EXECUTOR = Executors.newScheduledThreadPool(2,
-            new NamedThreadFactory("serverside-not-timecritical"));
+    // Java 17 compatible thread pool (virtual threads require Java 21+)
+    private final static ScheduledExecutorService SCHEDULED_EXECUTOR = Executors.newScheduledThreadPool(2);
+    // Thread.ofVirtual().name("serverside-not-timecritical-", 0).factory()
 
-    private TimingScheduledThreadPool(){        
+    private TimingScheduledThreadPool(){
     }
     
     public static void scheduleWithFixedDelay(Runnable task, int startDelay, int executionDelay, TimeUnit timeunit){

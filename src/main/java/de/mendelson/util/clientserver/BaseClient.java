@@ -1,12 +1,19 @@
-//$Header: /as2/de/mendelson/util/clientserver/BaseClient.java 73    11/02/25 13:39 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.codec.ClientServerCodecFactory;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import de.mendelson.util.clientserver.messages.LoginRequest;
-import de.mendelson.util.clientserver.messages.LoginState;
 import de.mendelson.util.clientserver.messages.QuitRequest;
 import de.mendelson.util.clientserver.user.User;
 import java.net.InetAddress;
@@ -150,20 +157,16 @@ public class BaseClient {
         return (serviceAddress.getHostAddress().equals(localAddress.getHostAddress()));
     }
 
-    public LoginState login(String user, char[] passwd, String clientId) {
-        if (!this.isConnected()) {
-            throw new IllegalStateException("[Client-Server communication] BaseClient.login: "
-                    + "Not connected to a server. Please connect first.");
-        }
-        LoginRequest login = new LoginRequest(this.clientType);
-        login.setPasswd(passwd);
-        login.setUserName(user);
-        login.setClientId(clientId);
-        LoginState state = (LoginState) this.sendSync(login);
-        if (state.getState() == LoginState.STATE_INCOMPATIBLE_CLIENT) {
-            this.clientSessionHandler.getCallback().clientIsIncompatible(state.getStateDetails());
-        }
-        return (state);
+    /**
+     * Login method removed - SwingUI clients no longer require authentication
+     * WebUI uses JWT tokens via REST API instead
+     * @deprecated No longer used - authentication removed for client-server protocol
+     */
+    @Deprecated
+    public Object login(String user, char[] passwd, String clientId) {
+        // SwingUI clients connect without authentication
+        // This method is kept for backward compatibility but does nothing
+        return null;
     }
 
     /**
@@ -174,10 +177,13 @@ public class BaseClient {
     }
 
     /**
-     * checks if the client is connected and the user logged in
+     * Checks if the client is connected
+     * Login is no longer required, so this is equivalent to isConnected()
+     * @deprecated Use isConnected() instead
      */
+    @Deprecated
     public boolean isConnectedAndLoggedIn() {
-        return (this.session != null && this.session.isConnected() && this.user != null);
+        return isConnected();
     }
 
     public synchronized boolean connect(InetSocketAddress hostAddress, long timeout) {

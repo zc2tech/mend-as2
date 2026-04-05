@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/gui/ResourceBundleDialogSystemEvent.java 11    30/05/24 13:42 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import de.mendelson.util.MecResourceBundle;

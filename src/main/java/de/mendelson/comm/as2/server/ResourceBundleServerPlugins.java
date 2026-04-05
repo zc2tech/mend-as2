@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/ResourceBundleServerPlugins.java 3     2/11/23 15:53 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.util.MecResourceBundle;

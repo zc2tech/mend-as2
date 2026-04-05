@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/encryption/EncryptionDisplay.java 3     20/02/25 13:42 Heller $
 package de.mendelson.util.security.encryption;
 
 import java.util.Objects;

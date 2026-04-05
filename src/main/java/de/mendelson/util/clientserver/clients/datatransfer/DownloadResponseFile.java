@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/datatransfer/DownloadResponseFile.java 3     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import java.io.Serializable;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/clientserver/UploadResponseKeystore.java 4     2/11/23 15:53 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

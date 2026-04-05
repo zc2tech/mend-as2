@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/ModuleLockReleaseController.java 7     11/02/25 13:40 Heller $
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.NamedThreadFactory;

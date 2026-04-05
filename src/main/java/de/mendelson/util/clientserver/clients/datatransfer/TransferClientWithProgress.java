@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/datatransfer/TransferClientWithProgress.java 5     2/11/23 14:02 Heller $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import de.mendelson.util.ProgressPanel;

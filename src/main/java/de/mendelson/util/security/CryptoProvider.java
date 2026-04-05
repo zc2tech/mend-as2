@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/CryptoProvider.java 7     6/07/23 16:17 Heller $
 package de.mendelson.util.security;
 
 import java.security.Provider;

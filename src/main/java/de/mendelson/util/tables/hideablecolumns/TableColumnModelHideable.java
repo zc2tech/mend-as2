@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/hideablecolumns/TableColumnModelHideable.java 4     2/11/23 14:03 Heller $
 package de.mendelson.util.tables.hideablecolumns;
 import java.util.Enumeration;
 import java.util.HashMap;

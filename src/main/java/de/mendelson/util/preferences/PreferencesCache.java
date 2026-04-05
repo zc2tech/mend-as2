@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/preferences/PreferencesCache.java 7     31/07/23 12:19 Heller $
 package de.mendelson.util.preferences;
 
 import java.util.Collections;

@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/about/ServerInfoRequest.java 15    4/07/24 9:27 Heller $
 package de.mendelson.util.clientserver.about;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

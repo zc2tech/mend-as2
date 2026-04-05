@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/mailautoconfig/MailAutoConfigurationDetection.java 5     19/02/25 9:39 Heller $
 package de.mendelson.util.mailautoconfig;
 
 import de.mendelson.util.XPathHelper;

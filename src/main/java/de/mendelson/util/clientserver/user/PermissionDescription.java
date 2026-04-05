@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/user/PermissionDescription.java 3     4/06/18 12:27p Heller $
 package de.mendelson.util.clientserver.user;
 
 import java.io.Serializable;

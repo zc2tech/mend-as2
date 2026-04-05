@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/fileoperation/FileOperationClient.java 3     13.11.18 11:58 Heller $
 package de.mendelson.util.clientserver.clients.fileoperation;
 
 import de.mendelson.util.clientserver.BaseClient;

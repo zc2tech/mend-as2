@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/signature/SignatureDisplay.java 5     20/02/25 13:42 Heller $
 package de.mendelson.util.security.signature;
 
 import java.util.Objects;

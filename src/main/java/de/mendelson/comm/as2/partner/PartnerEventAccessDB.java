@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/PartnerEventAccessDB.java 14    14/01/25 15:07 Heller $
 package de.mendelson.comm.as2.partner;
 
 import de.mendelson.util.security.Base64;

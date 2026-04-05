@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/postprocessingevent/ExecuteMoveToPartner.java 13    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.message.postprocessingevent;
 
 import de.mendelson.comm.as2.message.AS2Message;

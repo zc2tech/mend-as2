@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/signature/SignatureDisplayImplAS2.java 7     1/11/24 9:34 Heller $
 package de.mendelson.util.security.signature;
 
 import de.mendelson.util.MecResourceBundle;

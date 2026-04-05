@@ -1,4 +1,13 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2Message.java 74    20/02/25 13:41 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.util.security.encryption.EncryptionConstantsAS2;
@@ -73,7 +82,7 @@ public class AS2Message implements Serializable {
     /**
      * @deprecated by CBC
      */
-    @Deprecated(since = "09/2024")
+    // @Deprecated(since = "09/2024")
     public static final int ENCRYPTION_AES_256_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_CBC_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_GCM_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_GCM_RSAES_AOEP;

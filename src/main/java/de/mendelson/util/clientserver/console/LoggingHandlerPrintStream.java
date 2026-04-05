@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/console/LoggingHandlerPrintStream.java 4     20/02/25 13:41 Heller $
 package de.mendelson.util.clientserver.console;
 
 import java.io.PrintStream;

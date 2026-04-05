@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/SortableTreeNode.java 1     11.07.08 14:23 Heller $
 package de.mendelson.comm.as2.client;
 
 import javax.swing.tree.*;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/NotificationDataImplAS2.java 14    19/02/25 10:09 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.oauth2.OAuth2Config;

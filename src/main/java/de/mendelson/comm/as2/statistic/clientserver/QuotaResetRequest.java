@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/statistic/clientserver/QuotaResetRequest.java 5     2/11/23 15:53 Heller $
 package de.mendelson.comm.as2.statistic.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

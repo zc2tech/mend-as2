@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/ButtonUtil.java 3     13/12/24 17:20 Heller $
 package de.mendelson.util;
 
 import javax.swing.JButton;

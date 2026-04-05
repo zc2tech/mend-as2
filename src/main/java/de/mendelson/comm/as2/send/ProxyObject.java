@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/ProxyObject.java 1     31.08.09 13:52 Heller $
 package de.mendelson.comm.as2.send;
 
 /*

@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/tables/ColumnFitAdapter.java 5     26.07.12 13:46 Heller $
 package de.mendelson.util.tables;
 
 import java.awt.Point;

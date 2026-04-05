@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/ResourceBundlePreferences.java 94    31/05/24 13:40 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.MecResourceBundle;
@@ -255,5 +254,15 @@ public class ResourceBundlePreferences extends MecResourceBundle {
             + "Please restart the software for changes to this setting to take effect."
             + "</HTML>"
         },
+        //HTTP Authentication preferences
+        {"tab.httpauth", "HTTP Authentication"},
+        {"httpauth.info", "Configure HTTP authentication credentials for partner connections"},
+        {"httpauth.col.partner", "Partner"},
+        {"httpauth.col.message.auth", "Message Auth"},
+        {"httpauth.col.message.user", "Message User"},
+        {"httpauth.col.message.pass", "Message Password"},
+        {"httpauth.col.mdn.auth", "MDN Auth"},
+        {"httpauth.col.mdn.user", "MDN User"},
+        {"httpauth.col.mdn.pass", "MDN Password"},
     };
 }

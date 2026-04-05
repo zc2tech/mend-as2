@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/clientserver/LoginFailedException.java 1     23/01/24 11:09 Heller $
 package de.mendelson.util.clientserver;
 
 /*

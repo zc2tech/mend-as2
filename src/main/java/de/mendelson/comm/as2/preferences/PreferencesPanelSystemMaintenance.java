@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/preferences/PreferencesPanelSystemMaintenance.java 35    20/03/25 16:04 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.JTextFieldLimitDocument;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/httpconfig/gui/ResourceBundleDisplayHTTPConfiguration.java 13    2/11/23 15:53 Heller $ 
 package de.mendelson.util.httpconfig.gui;
 
 import de.mendelson.util.MecResourceBundle;

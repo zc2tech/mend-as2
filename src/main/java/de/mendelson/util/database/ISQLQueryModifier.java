@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/database/ISQLQueryModifier.java 1     8/11/24 8:38 Heller $
 package de.mendelson.util.database;
 
 /*

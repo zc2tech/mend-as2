@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/PreferencesPanelConnectivity.java 9     19/02/25 10:08 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.comm.as2.client.AS2Gui;

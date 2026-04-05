@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/systemevents/SystemEvent.java 71    19/02/25 9:39 Heller $
 package de.mendelson.util.systemevents;
 
 import de.mendelson.util.MecResourceBundle;

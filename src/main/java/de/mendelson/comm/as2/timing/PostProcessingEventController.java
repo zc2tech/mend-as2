@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/PostProcessingEventController.java 21    11/03/25 17:00 Heller $
 package de.mendelson.comm.as2.timing;
 
 import de.mendelson.comm.as2.message.AS2MessageInfo;

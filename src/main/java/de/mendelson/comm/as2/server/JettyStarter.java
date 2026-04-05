@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/JettyStarter.java 14    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
@@ -23,10 +22,13 @@ import java.util.TimeZone;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import java.util.concurrent.Executors;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -44,6 +46,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
  */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
 /**
  * Helper class that starts up the internal jetty web server
  *
@@ -59,10 +69,12 @@ public class JettyStarter {
     private final KeystoreStorage tlsStorage;
     private final JettyCertificateRefreshController certificateRefreshController;
     private final PreferencesAS2 preferences;
+    private final CertificateManager certificateManagerTLS;
 
-    public JettyStarter(Logger logger, KeystoreStorage tlsStorage, IDBDriverManager dbDriverManager) {
+    public JettyStarter(Logger logger, KeystoreStorage tlsStorage, IDBDriverManager dbDriverManager, CertificateManager certificateManagerTLS) {
         this.logger = logger;
         this.tlsStorage = tlsStorage;
+        this.certificateManagerTLS = certificateManagerTLS;
         this.certificateRefreshController = new JettyCertificateRefreshController(logger, dbDriverManager);
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -80,6 +92,10 @@ public class JettyStarter {
      */
     public Server startWebserver() throws Exception {
         this.logger.info(MODULE_NAME + " " + this.rb.getResourceString("httpserver.willstart"));
+
+        // Check if test mode is enabled
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+
         SystemEventManagerImplAS2.instance().newEvent(
                 SystemEvent.SEVERITY_INFO,
                 SystemEvent.ORIGIN_SYSTEM,
@@ -90,7 +106,7 @@ public class JettyStarter {
             //Read the user defined properties file to overwrite the default settings of the
             //jetty.xml file
             Properties userConfiguration = new Properties();
-            Path userConfigurationFile = Paths.get("jetty10", "jetty.config");
+            Path userConfigurationFile = Paths.get("jetty12", "jetty.config");
             this.logger.info(MODULE_NAME + " " + this.rb.getResourceString("userconfiguration.reading",
                     userConfigurationFile.toAbsolutePath().toString()));
             try (InputStream userConfigurationStream = Files.newInputStream(userConfigurationFile)) {
@@ -102,6 +118,16 @@ public class JettyStarter {
                             "[" + e.getClass().getSimpleName() + "] " + e.getMessage()
                         }));
             }
+
+            // Override ports if in test mode
+            if (isTestMode) {
+                // Use fixed test mode ports: HTTP=11080, HTTPS=11443
+                userConfiguration.setProperty("jetty.http.port", "11080");
+                userConfiguration.setProperty("jetty.https.port", "11443");
+
+                this.logger.info(MODULE_NAME + " *** TEST MODE: Using HTTP port 11080 and HTTPS port 11443 ***");
+            }
+
             Map<String, String> userConfigurationMap = new HashMap<String, String>();
             for (Object key : userConfiguration.keySet()) {
                 String keyStr = key.toString();
@@ -113,12 +139,51 @@ public class JettyStarter {
                             valueStr
                         }));
             }
-            Path jettyXMLConfigurationPath = Paths.get("jetty10", "etc", "jetty.xml");
-            Resource jettyConfigResource = Resource.newResource(jettyXMLConfigurationPath);
+            Path jettyXMLConfigurationPath = Paths.get("jetty12", "etc", "jetty.xml");
+            Resource jettyConfigResource = ResourceFactory.root().newResource(jettyXMLConfigurationPath);
             XmlConfiguration jettyXMLConfiguration = new XmlConfiguration(jettyConfigResource);
             jettyXMLConfiguration.getProperties().putAll(userConfigurationMap);
-            org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server();
+
+            // Use regular thread pool for HTTP request handling (Java 17 compatible)
+            QueuedThreadPool threadPool = new QueuedThreadPool();
+            // Virtual threads require Java 21+, using regular threads for Java 17 compatibility
+            // threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+            org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server(threadPool);
+
             jettyXMLConfiguration.configure(tempHTTPServer);
+
+            // Programmatically deploy webapps from jetty12/webapps directory
+            Path webappsDir = Paths.get("jetty12", "webapps");
+            if (Files.exists(webappsDir) && Files.isDirectory(webappsDir)) {
+                org.eclipse.jetty.server.handler.ContextHandlerCollection contexts =
+                    tempHTTPServer.getDescendant(org.eclipse.jetty.server.handler.ContextHandlerCollection.class);
+                if (contexts != null) {
+                    try (var stream = Files.list(webappsDir)) {
+                        stream.filter(Files::isDirectory).forEach(webappPath -> {
+                            try {
+                                String contextPath = "/" + webappPath.getFileName().toString();
+                                WebAppContext webapp = new WebAppContext();
+                                webapp.setContextPath(contextPath);
+                                webapp.setBaseResourceAsPath(webappPath);
+
+                                // Explicitly set web.xml descriptor path
+                                Path webXmlPath = webappPath.resolve("WEB-INF/web.xml");
+                                if (Files.exists(webXmlPath)) {
+                                    webapp.setDescriptor(webXmlPath.toString());
+                                }
+
+                                webapp.setParentLoaderPriority(true);
+                                contexts.addHandler(webapp);
+                                this.logger.info(MODULE_NAME + " Deploying webapp: " + contextPath + " from " + webappPath);
+                            } catch (Exception e) {
+                                this.logger.warning(MODULE_NAME + " Failed to deploy webapp from " + webappPath + ": " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+                }
+            }
+
             //add life cycle listener to jetty
             tempHTTPServer.addEventListener(new LifeCycle.Listener() {
                 @Override
@@ -186,8 +251,7 @@ public class JettyStarter {
             //finally start the embedded HTTP server
             tempHTTPServer.start();
             //ensure the wars have been deployed
-            for (Handler handler : tempHTTPServer.getChildHandlersByClass(WebAppContext.class
-            )) {
+            for (Handler handler : tempHTTPServer.getDescendants(WebAppContext.class)) {
                 WebAppContext context = (WebAppContext) handler;
                 //see if wars had any exceptions that would cause it to be unavailable
                 if (context.getUnavailableException()
@@ -218,10 +282,8 @@ public class JettyStarter {
             }
             this.httpServerConfigInfo = HTTPServerConfigInfo.computeHTTPServerConfigInfo(tempHTTPServer, true,
                     "/as2/HttpReceiver", "/as2/ServerState");
-            CertificateManager certificateManagerTLS = new CertificateManager(this.logger);
-            certificateManagerTLS.loadKeystoreCertificates(this.tlsStorage);
             HTTPServerConfigInfoProcessor infoProcessor = new HTTPServerConfigInfoProcessor(
-                    this.getHttpServerConfigInfo(), certificateManagerTLS);
+                    this.getHttpServerConfigInfo(), this.certificateManagerTLS);
             StringBuilder body = new StringBuilder();
             body.append(infoProcessor.getMiscConfigurationText());
             SystemEventManagerImplAS2.instance().newEvent(SystemEvent.SEVERITY_INFO,

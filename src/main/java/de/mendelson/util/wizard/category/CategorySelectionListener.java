@@ -1,4 +1,3 @@
-//$Header: /converteride/de/mendelson/util/wizard/category/CategorySelectionListener.java 2     30.03.05 12:24 Heller $
 package de.mendelson.util.wizard.category;
 
 import java.util.EventListener;

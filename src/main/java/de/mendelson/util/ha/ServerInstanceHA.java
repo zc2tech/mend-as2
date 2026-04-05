@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/ha/ServerInstanceHA.java 2     13/03/25 12:49 Heller $
 package de.mendelson.util.ha;
 
 import java.io.Serializable;

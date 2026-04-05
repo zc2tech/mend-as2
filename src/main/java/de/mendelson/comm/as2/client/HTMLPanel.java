@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/client/HTMLPanel.java 9     2/28/17 12:29p Heller $
 package de.mendelson.comm.as2.client;
 
 import java.awt.Cursor;
@@ -8,7 +7,7 @@ import java.beans.PropertyChangeListener;
 import java.io.FileWriter;
 import java.net.URI;
 import java.net.URL;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.swing.JPanel;
 
 /*
@@ -18,14 +17,21 @@ import javax.swing.JPanel;
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
  */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.HttpProtocolParams;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.Header;
 
 /**
  * Panel that allows to display simple HTML pages
@@ -94,18 +100,16 @@ public class HTMLPanel extends JPanel implements HyperlinkListener, PropertyChan
     public Header[] setURL(String urlStr, String userAgent, String fallbackOnErrorURL) {
         this.fallbackOnErrorURL = fallbackOnErrorURL;
         Header[] header = new Header[0];
-        DefaultHttpClient httpClient = null;
-        try {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             //post for header data
             HttpPost filePost = new HttpPost(new URL(urlStr).toExternalForm());
-            HttpParams params = filePost.getParams();
-            HttpProtocolParams.setUserAgent(params, userAgent);
-            httpClient = new DefaultHttpClient();
-            HttpResponse httpResponse = httpClient.execute(filePost);
-            header = httpResponse.getAllHeaders();
-            int status = httpResponse.getStatusLine().getStatusCode();
-            if (status != HttpServletResponse.SC_OK) {
-                throw new Exception("HTTP " + status);
+            filePost.addHeader("User-Agent", userAgent);
+            try (CloseableHttpResponse httpResponse = httpClient.execute(filePost)) {
+                header = httpResponse.getHeaders();
+                int status = httpResponse.getCode();
+                if (status != HttpServletResponse.SC_OK) {
+                    throw new Exception("HTTP " + status);
+                }
             }
             //now get for body data
             this.jEditorPane.setPage(new URL(urlStr));
@@ -114,10 +118,6 @@ public class HTMLPanel extends JPanel implements HyperlinkListener, PropertyChan
                 this.setPage(fallbackOnErrorURL);
             } catch (Exception ex) {
                 //nop
-            }
-        } finally {
-            if (httpClient != null) {
-                httpClient.getConnectionManager().shutdown();
             }
         }
         return (header);

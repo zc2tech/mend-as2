@@ -4,5 +4,16 @@ log/
 *.class
 *.log
 *.tmp
+passwd
 .DS_Store
 Thumbs.db
+certificates.p12
+messages/
+*.cer
+*.key
+temp/
+
+# Frontend
+src/main/webapp/admin/node_modules/
+src/main/webapp/admin/dist/
+src/main/webapp/admin/.vite/

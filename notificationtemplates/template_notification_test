@@ -1,0 +1,24 @@
+$Header:$
+This file contains the mail template for the test email
+The following variables will be substituted:
+${PRODUCTNAME}: Product name
+${HOST}: Host name the server has been set up on
+${USER}: User who set up the server
+${MAILHOST}: Host name of the SMTP server
+${MAILPORT}: Port of the SMTP server
+${CONNECTIONSECURITY}: Connection security (NONE/STARTSSL/SSL)
+${AUTHORIZATION}: User/Password, OAUTH2 or NONE
+
+[SUBJECT]
+Configuration check email
+
+
+[BODY]
+This email has been sent by the user ${USER} from host ${HOST}.
+By receiving this email it is ensured that the email notification settings in the ${PRODUCTNAME} are set up properly.
+
+Mail server settings for this successful attempt:
+
+SMTP Mail host: ${MAILHOST}:${MAILPORT}
+Connection security: ${CONNECTIONSECURITY}
+Authorization: ${AUTHORIZATION}

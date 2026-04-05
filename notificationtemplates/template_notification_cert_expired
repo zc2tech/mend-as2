@@ -1,0 +1,25 @@
+$Header:$
+This file contains the mail template for the certification expired notification email
+The following variables will be substituted:
+${PRODUCTNAME}: Product name
+${HOST}: Server host
+${ALIAS}: Certificate alias on the server side
+${ISSUER}: The certificate/key issuer
+${FINGERPRINT_SHA1}: The certificate/key fingerprint (SHA-1)
+${VALID_FROM}: The valid from date of the key/certificate
+${VALID_TO}: The valid to date of the key/certificate
+
+[SUBJECT]
+Certificate expired
+
+
+[BODY]
+The certificate with the alias "${ALIAS}" on "${PRODUCTNAME}@${HOST}" has been expired and is unusable. 
+Please renew it.
+
+Additional information about the certificate:
+Alias: ${ALIAS}
+Issuer: ${ISSUER}
+Fingerprint (SHA-1): ${FINGERPRINT_SHA1}
+Valid from: ${VALID_FROM}
+Valid to: ${VALID_TO}

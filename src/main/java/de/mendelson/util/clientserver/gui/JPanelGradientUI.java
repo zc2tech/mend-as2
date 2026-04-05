@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/gui/JPanelGradientUI.java 2     2/11/23 14:03 Heller $
 package de.mendelson.util.clientserver.gui;
 
 import java.awt.Color;

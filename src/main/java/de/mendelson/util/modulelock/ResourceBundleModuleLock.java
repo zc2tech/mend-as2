@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/ResourceBundleModuleLock.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.MecResourceBundle;

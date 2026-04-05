@@ -1,7 +1,7 @@
-//$Header: /as4/de/mendelson/util/security/cert/gui/JDialogInfoOnExternalCertificate.java 26    12/02/25 11:58 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.security.KeyStoreUtil;
 import de.mendelson.util.security.cert.CertificateManager;
@@ -34,6 +34,14 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Dialog to display information about certificates - either in an external file

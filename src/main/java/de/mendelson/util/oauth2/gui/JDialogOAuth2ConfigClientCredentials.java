@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/util/oauth2/gui/JDialogOAuth2ConfigClientCredentials.java 2     28/11/23 17:19 Heller $
 package de.mendelson.util.oauth2.gui;
 
 import de.mendelson.util.clientserver.BaseClient;

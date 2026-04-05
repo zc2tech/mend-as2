@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/systemevents/gui/SystemEventFilter.java 3     10.10.18 12:18 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import de.mendelson.util.systemevents.SystemEvent;

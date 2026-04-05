@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/TreeCellRendererTrustChain.java 14    20/11/24 13:18 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.KeystoreCertificate;

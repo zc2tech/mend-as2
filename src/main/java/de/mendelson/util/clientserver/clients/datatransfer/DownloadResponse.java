@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/clientserver/clients/datatransfer/DownloadResponse.java 13    5/03/25 17:52 Hell $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/datasheet/DatasheetBuilder.java 23    21/11/24 17:47 Heller $
 package de.mendelson.comm.as2.datasheet;
 
 import de.intarsys.pdf.cds.CDSRectangle;

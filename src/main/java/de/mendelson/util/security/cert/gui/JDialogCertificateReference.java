@@ -1,7 +1,17 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/JDialogCertificateReference.java 6     3/07/24 14:07 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.MecResourceBundle;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.security.cert.CertificateInUseInfo;
 import de.mendelson.util.security.cert.KeystoreCertificate;

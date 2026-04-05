@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/ResourceBundleAS2Gui.java 58    8/01/25 16:18 Heller $ 
 package de.mendelson.comm.as2.client;
 
 import de.mendelson.util.MecResourceBundle;
@@ -8,6 +7,14 @@ import de.mendelson.util.MecResourceBundle;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 
 /** 
@@ -46,6 +53,8 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"menu.file.resend.multiple", "Send as new transactions"},
         {"menu.file.migrate.hsqldb", "Migrate from HSQLDB"},
         {"menu.file.ha", "High Availability Instances"},
+        {"menu.userpreference", "User Preference"},
+        {"menu.userpreference.httpauth", "HTTP Authentication"},
         {"menu.help", "Help"},
         {"menu.help.about", "About"},
         {"menu.help.supportrequest", "Support request"},
@@ -98,7 +107,6 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"server.answer.timeout.details", "The server does not answer in the defined timeframe on a request - high load?" },
         {"resend.failed.unknown.sender", "Resend failed: Unknown sender {0} - please check if this partner still exists in the system." },
         {"resend.failed.unknown.receiver", "Resend failed: Unknown receiver {0} - please check if this partner still exists in the system." },
-        {"buy.license", "Buy license" },
         {"no.helpset.for.language", "Sorry, there is no help system available for your language, the english help system will be used." },
     };
 }

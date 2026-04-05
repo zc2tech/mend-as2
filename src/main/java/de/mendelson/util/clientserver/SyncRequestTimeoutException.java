@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/SyncRequestTimeoutException.java 1     26.03.21 10:24 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

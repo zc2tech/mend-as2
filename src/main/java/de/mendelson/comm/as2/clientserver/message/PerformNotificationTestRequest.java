@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/clientserver/message/PerformNotificationTestRequest.java 6     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.clientserver.message;
 
 import de.mendelson.util.systemevents.notification.NotificationData;

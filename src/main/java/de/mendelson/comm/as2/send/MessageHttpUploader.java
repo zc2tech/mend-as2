@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/send/MessageHttpUploader.java 224   21/03/25 9:12 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;
@@ -17,6 +16,8 @@ import de.mendelson.comm.as2.partner.PartnerHttpHeader;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.AnonymousTextClient;
@@ -57,7 +58,8 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.mail.internet.MimeUtility;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -65,41 +67,42 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.http.Header;
-import org.apache.http.HttpConnection;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.StatusLine;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.conn.ManagedHttpClientConnection;
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.apache.http.ssl.SSLContexts;
+import org.apache.hc.client5.http.ConnectTimeoutException;
+import org.apache.hc.client5.http.auth.AuthCache;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.routing.DefaultProxyRoutePlanner;
+import org.apache.hc.client5.http.io.ManagedHttpClientConnection;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpConnection;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.HttpVersion;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
+import org.apache.hc.core5.util.Timeout;
 
 
 /*
@@ -108,6 +111,14 @@ import org.apache.http.ssl.SSLContexts;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Class to allow HTTP multipart uploads
@@ -146,9 +157,10 @@ public class MessageHttpUploader {
      */
     private Header[] responseHeader = null;
     /**
-     * remote answer
+     * remote answer - status code and reason phrase
      */
-    private StatusLine responseStatusLine = null;
+    private int responseStatusCode = -1;
+    private String responseReasonPhrase = null;
     private ClientServer clientserver = null;
     private IDBDriverManager dbDriverManager = null;
     //keystore data
@@ -156,6 +168,8 @@ public class MessageHttpUploader {
     private KeystoreStorage trustStore = null;
     //EDIINT faetures
     private String ediintFeatures = "multiple-attachments, CEM";
+    //WebUI user ID for HTTP auth preference resolution
+    private int userId = -1;
 
     /**
      * Creates new message uploader instance
@@ -202,6 +216,13 @@ public class MessageHttpUploader {
      */
     public void setDBConnection(IDBDriverManager dbDriverManager) {
         this.dbDriverManager = dbDriverManager;
+    }
+
+    /**
+     * Set WebUI user ID for HTTP auth preference resolution
+     */
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     /**
@@ -326,7 +347,10 @@ public class MessageHttpUploader {
                 Path tempFile = null;
                 try( AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_SENDORDER)){
                     client.setDisplayServerLogMessages(false);
-                    client.connect("localhost", AS2Server.CLIENTSERVER_COMM_PORT, 30000);
+                    // Use test mode port if enabled
+                    boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+                    int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+                    client.connect("localhost", port, 30000);
                     IncomingMessageRequest messageRequest = new IncomingMessageRequest();
                     messageRequest.setSyncMDN( true );
                     //create temporary file to store the data
@@ -414,17 +438,13 @@ public class MessageHttpUploader {
         RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
 
         if (connectionParameter.getConnectionTimeoutMillis() != -1) {
-            requestConfigBuilder.setConnectionRequestTimeout(connectionParameter.getConnectionTimeoutMillis());
+            requestConfigBuilder.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionParameter.getConnectionTimeoutMillis()));
         }
         if (connectionParameter.getSoTimeoutMillis() != -1) {
-            requestConfigBuilder.setSocketTimeout(connectionParameter.getConnectionTimeoutMillis());
+            requestConfigBuilder.setResponseTimeout(Timeout.ofMilliseconds(connectionParameter.getConnectionTimeoutMillis()));
         }
-        requestConfigBuilder.setStaleConnectionCheckEnabled(connectionParameter.isStaleConnectionCheck());
         requestConfigBuilder.setExpectContinueEnabled(connectionParameter.isUseExpectContinue());
         requestConfigBuilder.setContentCompressionEnabled(false);
-        if (connectionParameter.getLocalAddress() != null) {
-            requestConfigBuilder.setLocalAddress(connectionParameter.getLocalAddress());
-        }
         return (requestConfigBuilder.build());
     }
 
@@ -438,12 +458,15 @@ public class MessageHttpUploader {
      */
     private void addProxy(ProxyObject proxy, HttpClientBuilder clientBuilder, CredentialsProvider credentialsProvider,
             AS2Message message) throws Exception {
-        HttpHost proxyHost = new HttpHost(proxy.getHost(), proxy.getPort(), HttpHost.DEFAULT_SCHEME_NAME);
+        HttpHost proxyHost = new HttpHost("http", proxy.getHost(), proxy.getPort());
         DefaultProxyRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxyHost);
         //proxy authentication
         if (proxy.getUser() != null) {
-            credentialsProvider.setCredentials(new AuthScope(proxy.getHost(), proxy.getPort()),
-                    new UsernamePasswordCredentials(proxy.getUser(), String.valueOf(proxy.getPassword())));
+            AuthScope authScope = new AuthScope(proxy.getHost(), proxy.getPort());
+            UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(proxy.getUser(), proxy.getPassword());
+            if (credentialsProvider instanceof BasicCredentialsProvider basicProvider) {
+                basicProvider.setCredentials(authScope, credentials);
+            }
             BasicScheme basicAuth = new BasicScheme();
             AuthCache authCache = new BasicAuthCache();
             authCache.put(proxyHost, basicAuth);
@@ -500,10 +523,15 @@ public class MessageHttpUploader {
             if (receiptURL.getProtocol().equalsIgnoreCase("https")) {
                 SSLConnectionSocketFactory sslConnectionSocketFactory
                         = this.generateSSLFactory(connectionParameter, message.getAS2Info());
-                clientBuilder.setSSLSocketFactory(sslConnectionSocketFactory);
+                clientBuilder.setConnectionManager(
+                    PoolingHttpClientConnectionManagerBuilder.create()
+                        .setSSLSocketFactory(sslConnectionSocketFactory)
+                        .build()
+                );
             }
-            clientBuilder.setConnectionReuseStrategy(NoConnectionReuseStrategy.INSTANCE);
-            HttpHost targetHost = new HttpHost(receiptURL.getHost(), receiptURL.getPort(), receiptURL.getProtocol());
+            // In HttpClient 5.x, connection reuse strategy is replaced with a lambda
+            clientBuilder.setConnectionReuseStrategy((request, response, context) -> false);
+            HttpHost targetHost = new HttpHost(receiptURL.getProtocol(), receiptURL.getHost(), receiptURL.getPort());
             ProxyObject proxy = connectionParameter.getProxy();
             if (proxy != null && proxy.getHost() != null) {
                 CredentialsProvider proxyCredentialsProvider = new BasicCredentialsProvider();
@@ -514,11 +542,11 @@ public class MessageHttpUploader {
             filePost.setConfig(this.generateRequestConfig(connectionParameter));
             if (connectionParameter.getHttpProtocolVersion() == null) {
                 //default settings: HTTP 1.1
-                filePost.setProtocolVersion(HttpVersion.HTTP_1_1);
+                filePost.setVersion(HttpVersion.HTTP_1_1);
             } else if (connectionParameter.getHttpProtocolVersion().equals(HttpConnectionParameter.HTTP_1_0)) {
-                filePost.setProtocolVersion(HttpVersion.HTTP_1_0);
+                filePost.setVersion(HttpVersion.HTTP_1_0);
             } else if (connectionParameter.getHttpProtocolVersion().equals(HttpConnectionParameter.HTTP_1_1)) {
-                filePost.setProtocolVersion(HttpVersion.HTTP_1_1);
+                filePost.setVersion(HttpVersion.HTTP_1_1);
             }
             //add basic authentication
             HTTPAuthentication basicAuthentication = null;
@@ -527,10 +555,63 @@ public class MessageHttpUploader {
             } else {
                 basicAuthentication = receiver.getAuthenticationCredentialsMessage();
             }
-            if (basicAuthentication.isEnabled()) {
-                filePost.addHeader("Authorization", this.generateBasicAuth(
-                        basicAuthentication.getUser(), basicAuthentication.getPassword()
-                ));
+
+            // Resolve HTTP authentication based on authMode
+            String authUsername = null;
+            String authPassword = null;
+
+            if (basicAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
+                // Use credentials from partner configuration
+                authUsername = basicAuthentication.getUser();
+                authPassword = basicAuthentication.getPassword();
+            } else if (basicAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
+                // Retrieve credentials from user preferences
+                if (this.userId > 0 && this.dbDriverManager != null) {
+                    try {
+                        UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(
+                            this.dbDriverManager, this.logger
+                        );
+                        UserHttpAuthPreference pref = prefDB.getPreference(this.userId, receiver.getDBId());
+
+                        if (pref != null) {
+                            if (message.isMDN()) {
+                                if (pref.isUseMdnAuth()) {
+                                    authUsername = pref.getMdnUsername();
+                                    authPassword = pref.getMdnPassword();
+                                }
+                            } else {
+                                if (pref.isUseMessageAuth()) {
+                                    authUsername = pref.getMessageUsername();
+                                    authPassword = pref.getMessagePassword();
+                                }
+                            }
+                        } else {
+                            if (this.logger != null) {
+                                this.logger.log(Level.WARNING,
+                                    "HTTP auth user preference not found for userId=" + this.userId +
+                                    ", partnerId=" + receiver.getDBId() + ". Sending without authentication.",
+                                    message.getAS2Info());
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (this.logger != null) {
+                            this.logger.log(Level.SEVERE,
+                                "Failed to retrieve HTTP auth user preference: " + e.getMessage(),
+                                message.getAS2Info());
+                        }
+                    }
+                } else {
+                    if (this.logger != null) {
+                        this.logger.log(Level.WARNING,
+                            "HTTP auth user preference mode enabled but userId not set. Sending without authentication.",
+                            message.getAS2Info());
+                    }
+                }
+            }
+
+            // Add Authorization header if credentials were resolved
+            if (authUsername != null && authPassword != null) {
+                filePost.addHeader("Authorization", this.generateBasicAuth(authUsername, authPassword));
             }
             filePost.addHeader("as2-version", "1.2");
             filePost.addHeader("ediint-features", ediintFeatures);
@@ -708,8 +789,7 @@ public class MessageHttpUploader {
             filePost.addHeader("user-agent", connectionParameter.getUserAgent());
             byte[] transferData = message.getRawData();
             //using a ByteArrayEntity because this is repeatable
-            ByteArrayEntity postEntity = new ByteArrayEntity(transferData);
-            postEntity.setContentType(contentType);
+            ByteArrayEntity postEntity = new ByteArrayEntity(transferData, ContentType.parse(contentType));
             filePost.setEntity(postEntity);
             //setup oauth2 header
             if (message.isMDN()) {
@@ -718,44 +798,17 @@ public class MessageHttpUploader {
                 this.setOAuth2Header(filePost, receiver.usesOAuth2Message(), receiver.getOAuth2Message());
             }
             this.updateUploadHTTPHeaderWithUserDefinedHeaders(filePost, receiver);
-            //Monitor connection: create a httpClientContext
-            HttpClientContext httpClientContext = HttpClientContext.create();
-            try (CloseableHttpResponse httpResponse = httpClient.execute(targetHost, filePost, httpClientContext)) {
+            //Execute request
+            try (CloseableHttpResponse httpResponse = httpClient.execute(filePost)) {
                 if (httpResponse != null) {
-                    if (this.logger != null) {
-                        HttpConnection httpConnection = httpClientContext.getConnection();
-                        if (httpConnection instanceof ManagedHttpClientConnection) {
-                            ManagedHttpClientConnection managedConnection = (ManagedHttpClientConnection) httpConnection;
-                            SSLSession sslSession = managedConnection.getSSLSession();
-                            if (sslSession != null) {
-                                if (message.isMDN()) {
-                                    this.logger.log(Level.INFO,
-                                            rb.getResourceString("connection.tls.info",
-                                                    new Object[]{
-                                                        sslSession.getProtocol(),
-                                                        sslSession.getCipherSuite()
-                                                    }),
-                                            message.getAS2Info());
-
-                                } else {
-                                    this.logger.log(Level.INFO,
-                                            rb.getResourceString("connection.tls.info",
-                                                    new Object[]{
-                                                        sslSession.getProtocol(),
-                                                        sslSession.getCipherSuite()
-                                                    }),
-                                            (AS2MessageInfo) message.getAS2Info());
-                                }
-                            }
-                        }
-                    }
                     this.responseData = this.readEntityData(httpResponse);
-                    this.responseStatusLine = httpResponse.getStatusLine();
-                    statusCode = this.responseStatusLine.getStatusCode();
-                    this.responseHeader = httpResponse.getAllHeaders();
+                    this.responseStatusCode = httpResponse.getCode();
+                    this.responseReasonPhrase = httpResponse.getReasonPhrase();
+                    statusCode = this.responseStatusCode;
+                    this.responseHeader = httpResponse.getHeaders();
                 }
             }
-            for (Header singleHeader : filePost.getAllHeaders()) {
+            for (Header singleHeader : filePost.getHeaders()) {
                 if (singleHeader.getValue() != null) {
                     this.requestHeader.setProperty(singleHeader.getName(), singleHeader.getValue());
                 }
@@ -780,8 +833,8 @@ public class MessageHttpUploader {
                             rb.getResourceString("error.httpupload",
                                     new Object[]{
                                         String.valueOf(statusCode) + " "
-                                        + URLDecoder.decode(this.responseStatusLine == null ? ""
-                                                : this.responseStatusLine.getReasonPhrase(), StandardCharsets.UTF_8)
+                                        + URLDecoder.decode(this.responseReasonPhrase == null ? ""
+                                                : this.responseReasonPhrase, StandardCharsets.UTF_8)
                                     }), message.getAS2Info());
                 }
                 //store the sent data and assign the payload to the message - it should be available even if the 
@@ -834,7 +887,7 @@ public class MessageHttpUploader {
                 }
 
                 //any other generic SSL problem - no idea why both may be thrown
-                if (ex instanceof SSLException || ex instanceof ClientProtocolException) {
+                if (ex instanceof SSLException || ex instanceof IOException) {
                     if (ex.getCause() != null) {
                         Throwable causeEx = ex.getCause();
                         errorMessage.append("[");
@@ -881,13 +934,16 @@ public class MessageHttpUploader {
             this.certStore = this.trustStore;
         }
         SSLContext sslcontext;
+        // TrustStrategy for trusting self-signed certificates
+        TrustStrategy trustSelfSignedStrategy = (chain, authType) -> true;
+
         if (connectionParameter.getTrustAllRemoteServerCertificates()) {
             SSLContextBuilder builder = SSLContexts.custom()
-                    .loadTrustMaterial(this.trustStore.getKeystore(), new TrustSelfSignedStrategy());
+                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
             sslcontext = builder.build();
         } else {
             sslcontext = SSLContexts.custom()
-                    .loadTrustMaterial(this.trustStore.getKeystore(), new TrustSelfSignedStrategy())
+                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy)
                     .loadKeyMaterial(this.certStore.getKeystore(), this.certStore.getKeystorePass())
                     .build();
         }
@@ -905,65 +961,13 @@ public class MessageHttpUploader {
                     allowedProtocols,
                     null,
                     //this is the AllowAllHostnameVerifier, another verifier is the StrictHostnameVerifier
-                    new NoopHostnameVerifier()) {
-                @Override
-                /**
-                 * This is required to support SNI (Server Name Indication) -
-                 * this is more a hack as it makes use of Commons BeanUtils to
-                 * invoke Oracle private method via reflection
-                 */
-                public Socket connectSocket(
-                        int connectTimeout,
-                        Socket socket,
-                        HttpHost host,
-                        InetSocketAddress remoteAddress,
-                        InetSocketAddress localAddress,
-                        HttpContext context) throws IOException, ConnectTimeoutException {
-                    if (socket instanceof SSLSocket) {
-                        try {
-                            PropertyUtils.setProperty(socket, "host", host.getHostName());
-                        } catch (NoSuchMethodException ex) {
-                        } catch (IllegalAccessException ex) {
-                        } catch (InvocationTargetException ex) {
-                        }
-                    }
-                    return super.connectSocket(connectTimeout, socket, host, remoteAddress,
-                            localAddress, context);
-                }
-
-            };
+                    new NoopHostnameVerifier());
         } else {
             sslConnectionFactory = new SSLConnectionSocketFactory(sslcontext,
                     allowedProtocols,
                     null,
                     //this is the StrictHostnameVerifier with self signed exception
-                    new DefaultHostnameVerifierTrustedOnly(as2Info)) {
-                @Override
-                /**
-                 * This is required to support SNI (Server Name Indication) -
-                 * this is more a hack as it makes use of Commons BeanUtils to
-                 * invoke Oracle private method via reflection
-                 */
-                public Socket connectSocket(
-                        int connectTimeout,
-                        Socket socket,
-                        HttpHost host,
-                        InetSocketAddress remoteAddress,
-                        InetSocketAddress localAddress,
-                        HttpContext context) throws IOException, ConnectTimeoutException {
-                    if (socket instanceof SSLSocket) {
-                        try {
-                            PropertyUtils.setProperty(socket, "host", host.getHostName());
-                        } catch (NoSuchMethodException ex) {
-                        } catch (IllegalAccessException ex) {
-                        } catch (InvocationTargetException ex) {
-                        }
-                    }
-                    return super.connectSocket(connectTimeout, socket, host, remoteAddress,
-                            localAddress, context);
-                }
-
-            };
+                    new DefaultHostnameVerifierTrustedOnly(as2Info));
         }
         return (sslConnectionFactory);
     }
@@ -1005,7 +1009,7 @@ public class MessageHttpUploader {
      */
     private void updateUploadHTTPHeaderWithUserDefinedHeaders(HttpPost post, Partner receiver) {
         List<String> usedHeaderKeys = new ArrayList<String>();
-        for (Header singleHeader : post.getAllHeaders()) {
+        for (Header singleHeader : post.getHeaders()) {
             PartnerHttpHeader headerReplacement = receiver.getHttpHeader(singleHeader.getName());
             if (headerReplacement != null) {
                 //a value to replace is set
@@ -1072,7 +1076,7 @@ public class MessageHttpUploader {
     /**
      * Reads the data of a HTTP response entity
      */
-    public byte[] readEntityData(HttpResponse httpResponse) throws Exception {
+    public byte[] readEntityData(ClassicHttpResponse httpResponse) throws Exception {
         if (httpResponse == null) {
             return (null);
         }

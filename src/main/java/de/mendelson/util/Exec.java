@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/Exec.java 16    5/03/25 17:52 Heller $
 package de.mendelson.util;
 
 import java.io.BufferedInputStream;

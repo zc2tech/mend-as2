@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/CertificateExpireController.java 30    19/12/24 8:55 Heller $
 package de.mendelson.comm.as2.timing;
 
 import de.mendelson.util.security.cert.CertificateManager;

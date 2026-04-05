@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/httpconfig/server/HTTPServerConfigInfoProcessor.java 19    3/02/25 11:14 Heller $
 package de.mendelson.util.httpconfig.server;
 
 import de.mendelson.util.MecResourceBundle;

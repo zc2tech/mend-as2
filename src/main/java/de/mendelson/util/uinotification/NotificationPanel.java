@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/uinotification/NotificationPanel.java 26    18/06/24 14:10 Heller $
 package de.mendelson.util.uinotification;
 
 import de.mendelson.util.MendelsonMultiResolutionImage;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/database/migration/clientserver/HSQLDBMigrationRequest.java 1     7/11/23 8:15 Heller $
 package de.mendelson.comm.as2.database.migration.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

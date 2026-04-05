@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="506"
+   height="312"
+   viewBox="0 0 506 312"
+   version="1.1"
+   id="svg1166"
+   xmlns="http://www.w3.org/2000/svg">
+  <defs id="defs588">
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a365d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c5282;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3182ce;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4299e1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <title id="title590">mend-as2 Professional Edition</title>
+
+  <!-- Background -->
+  <rect width="506" height="312" fill="url(#bgGradient)" />
+
+  <!-- Subtle geometric pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="0" x2="506" y2="312" stroke="#ffffff" stroke-width="1"/>
+    <line x1="506" y1="0" x2="0" y2="312" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="253" cy="156" r="80" fill="none" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="253" cy="156" r="120" fill="none" stroke="#ffffff" stroke-width="1"/>
+  </g>
+
+  <!-- Main content area with card -->
+  <rect x="30" y="50" width="446" height="212" rx="8" fill="#ffffff" opacity="0.98"/>
+
+  <!-- Top accent bar -->
+  <rect x="30" y="50" width="446" height="8" rx="8" fill="url(#accentGradient)"/>
+
+  <!-- AS2 Icon - Modern envelope with arrows -->
+  <g transform="translate(60, 85)">
+    <!-- Envelope -->
+    <rect x="0" y="10" width="80" height="60" rx="4" fill="#2c5282" opacity="0.1" stroke="#2c5282" stroke-width="2"/>
+    <path d="M 0 10 L 40 40 L 80 10" fill="none" stroke="#2c5282" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- Bidirectional arrows -->
+    <g transform="translate(90, 35)">
+      <!-- Right arrow -->
+      <path d="M 0 0 L 35 0 L 30 -5 M 35 0 L 30 5" fill="none" stroke="#3182ce" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Left arrow -->
+      <path d="M 40 10 L 5 10 L 10 5 M 5 10 L 10 15" fill="none" stroke="#3182ce" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Lock icon for security -->
+    <g transform="translate(28, 45)">
+      <rect x="0" y="6" width="24" height="18" rx="2" fill="#2c5282"/>
+      <path d="M 6 6 L 6 0 Q 6 -6 12 -6 Q 18 -6 18 0 L 18 6" fill="none" stroke="#2c5282" stroke-width="2.5"/>
+      <circle cx="12" cy="15" r="3" fill="#4299e1"/>
+    </g>
+  </g>
+
+  <!-- Company/Product name -->
+  <text x="210" y="110" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#1a365d" letter-spacing="-1">
+    mend-as2
+  </text>
+
+  <!-- Subtitle -->
+  <text x="210" y="140" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#4a5568">
+    AS2 Message Exchange Platform
+  </text>
+
+  <!-- Feature highlights -->
+  <g transform="translate(210, 160)" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#718096">
+    <g transform="translate(0, 0)">
+      <circle cx="0" cy="-3" r="3" fill="#48bb78"/>
+      <text x="12" y="0">Secure EDI/B2B Communication</text>
+    </g>
+    <g transform="translate(0, 22)">
+      <circle cx="0" cy="-3" r="3" fill="#48bb78"/>
+      <text x="12" y="0">RFC 4130 Compliant</text>
+    </g>
+    <g transform="translate(0, 44)">
+      <circle cx="0" cy="-3" r="3" fill="#48bb78"/>
+      <text x="12" y="0">Enterprise Grade Security</text>
+    </g>
+  </g>
+
+  <!-- Bottom bar -->
+  <rect x="30" y="262" width="446" height="48" fill="#f7fafc"/>
+
+  <!-- Copyright info -->
+  <text x="50" y="290" font-family="Arial, Helvetica, sans-serif" font-size="11" fill="#718096">
+    © 2026 Professional AS2 Solution | Java 17+ | Jetty 12
+  </text>
+
+  <!-- Loading indicator (static circles - no animation) -->
+  <g transform="translate(430, 277)">
+    <circle cx="0" cy="0" r="8" fill="none" stroke="#3182ce" stroke-width="2" opacity="0.3"/>
+    <circle cx="0" cy="-8" r="1.5" fill="#3182ce"/>
+    <circle cx="6" cy="-6" r="1.5" fill="#3182ce" opacity="0.7"/>
+    <circle cx="8" cy="0" r="1.5" fill="#3182ce" opacity="0.5"/>
+  </g>
+
+  <!-- Border -->
+  <rect x="0.5" y="0.5" width="505" height="311" fill="none" stroke="#2d3748" stroke-width="1"/>
+</svg>

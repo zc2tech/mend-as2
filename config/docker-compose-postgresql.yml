@@ -1,0 +1,60 @@
+# Docker Compose Example for AS2 Server with PostgreSQL
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: as2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: as2user
+      POSTGRES_PASSWORD: as2password
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U as2user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  as2-server:
+    image: mendelson-as2:latest
+    container_name: as2-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # PostgreSQL Configuration
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: as2user
+      POSTGRES_PASSWORD: as2password
+      POSTGRES_DB_CONFIG: as2_db_config
+      POSTGRES_DB_RUNTIME: as2_db_runtime
+
+      # Connection Pool Settings
+      POSTGRES_POOL_MAX_SIZE: 20
+      POSTGRES_POOL_MIN_IDLE: 5
+
+      # SSL Settings (if needed)
+      # POSTGRES_SSL_ENABLED: "true"
+      # POSTGRES_SSL_MODE: "require"
+    ports:
+      - "8080:8080"
+      - "4080:4080"
+    volumes:
+      - as2_data:/app/data
+      - ./certificates:/app/certificates
+      - ./logs:/app/logs
+
+volumes:
+  postgres_data:
+    driver: local
+  as2_data:
+    driver: local

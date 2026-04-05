@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/JDialogPartnerConfig.java 89    20/02/25 13:41 Heller $
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.client.AS2Gui;
@@ -14,10 +13,12 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerModificationRequest;
 import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.LayoutManagerJToolbar;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.clientserver.AllowModificationCallback;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.clients.fileoperation.FileOperationClient;
@@ -53,6 +54,14 @@ import javax.swing.tree.DefaultMutableTreeNode;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Dialog to configure the partner of the AS2 server
@@ -157,9 +166,19 @@ public class JDialogPartnerConfig extends JDialog {
         this.jPanelModuleLockWarning.setBorder(new LineBorder(this.colorRed, 1));
         this.jLabelModuleLockedWarning.setForeground(this.colorRed);
         this.jPanelConfigurationWarning.setBorder(new LineBorder(this.colorRed, 1));
-        this.jLabelConfigurationWarning.setForeground(this.colorRed);        
+        this.jLabelConfigurationWarning.setForeground(this.colorRed);
         this.jPanelModuleLockWarning.setVisible(!changesAllowed);
         this.jPanelConfigurationWarning.setVisible(false);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonPartnerConfigOk, this.jButtonCancel);
     }
 
     @Override
@@ -534,7 +553,7 @@ public class JDialogPartnerConfig extends JDialog {
         jPanelConfigurationWarning = new javax.swing.JPanel();
         jLabelConfigurationWarning = new javax.swing.JLabel();
 
-        setTitle(this.rb.getResourceString( "title" ));
+        WindowTitleUtil.setTitle(this, this.rb.getResourceString( "title" ));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 closeDialog(evt);
@@ -717,7 +736,7 @@ public class JDialogPartnerConfig extends JDialog {
 
         getContentPane().add(jPanelMain, java.awt.BorderLayout.CENTER);
 
-        setSize(new java.awt.Dimension(994, 718));
+        setSize(new java.awt.Dimension(1200, 750));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 

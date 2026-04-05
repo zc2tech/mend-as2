@@ -1,7 +1,18 @@
-//$Header: /as2/de/mendelson/util/security/cert/gui/JDialogCertificates.java 137   11/02/25 13:40 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
+import de.mendelson.util.WindowTitleUtil;
+import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.security.cert.gui.keygeneration.JDialogGenerateKey;
@@ -167,7 +178,7 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     public JDialogCertificates(JFrame parent, Logger logger, GUIClient guiClient,
             String title, String productName, boolean moduleLockedByAnotherClient,
             String moduleName, LockClientInformation lockKeeper) {
-        super(parent, title, true);
+        super(parent, WindowTitleUtil.buildTitle(title), true);
         this.guiClient = guiClient;
         this.logger = logger;
         this.productName = productName;
@@ -220,6 +231,16 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         };
         KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0);
         this.getRootPane().registerKeyboardAction(actionListenerDEL, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
     }
 
     /**

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/IStatusBar.java 1     12/07/17 9:19a Heller $
 package de.mendelson.util;
 
 /*

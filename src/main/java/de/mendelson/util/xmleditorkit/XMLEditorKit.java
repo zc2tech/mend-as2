@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/xmleditorkit/XMLEditorKit.java 6     1/11/24 14:42 Heller $
 package de.mendelson.util.xmleditorkit;
 
 import de.mendelson.util.ColorUtil;

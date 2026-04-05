@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/ha/HAInstanceController.java 1     2/02/22 15:13 Heller $
 package de.mendelson.comm.as2.ha;
 
 

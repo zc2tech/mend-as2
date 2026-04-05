@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/codec/ClientServerEncoder.java 14    14/02/25 14:53 Heller $
 package de.mendelson.util.clientserver.codec;
 
 import java.io.ByteArrayOutputStream;

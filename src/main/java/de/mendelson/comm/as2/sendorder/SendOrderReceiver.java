@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/sendorder/SendOrderReceiver.java 56    13/12/24 11:24 Heller $
 package de.mendelson.comm.as2.sendorder;
 
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;
@@ -274,6 +273,7 @@ public class SendOrderReceiver {
                     messageUploader.setLogger(logger);
                     messageUploader.setAbstractServer(clientserver);
                     messageUploader.setDBConnection(dbDriverManager);
+                    messageUploader.setUserId(order.getUserId());
                     //configure the connection parameters
                     HttpConnectionParameter connectionParameter = new HttpConnectionParameter();
                     connectionParameter.setConnectionTimeoutMillis(preferences.getInt(PreferencesAS2.HTTP_SEND_TIMEOUT));

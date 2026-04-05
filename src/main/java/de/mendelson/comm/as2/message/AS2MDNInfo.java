@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2MDNInfo.java 12    2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

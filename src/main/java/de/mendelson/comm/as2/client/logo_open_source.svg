@@ -1,1 +1,102 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="537.632" height="537.632" viewBox="0 0 537.632 537.632"><defs><style>.a,.c{fill:#fff;}.a{stroke:#fff;stroke-linecap:round;stroke-linejoin:round;stroke-width:7px;}.b{fill:#ccc;}.c{stroke:#999;stroke-miterlimit:10;}.d{fill:#585858;opacity:0.8;}</style></defs><title>logo_open_source</title><path class="a" d="M339.08,371V300H457.73q41.04,0,41.04,36.73,0,34.275-38.81,34.27ZM305.13,267V488h33.95V404H459.73q36.105,0,55.01-17.42,18.885-17.445,18.9-50.47,0-31.5-18.23-50.3T466.07,267Z" transform="translate(-135.368 -102.368)"/><circle class="b" cx="268.816" cy="268.816" r="268.816"/><circle class="c" cx="270.03" cy="268.816" r="231.194"/><path class="b" d="M328.766,281.579c42.9,0,77.658,35.721,77.658,79.729s-34.761,79.73-77.658,79.73c-21.372,0-77.658.1-77.658,0v-79.73C251.108,317.3,285.87,281.579,328.766,281.579Z" transform="translate(-135.368 -102.368)"/><path class="d" d="M490.8,441.038c-42.9,0-77.658-35.671-77.658-79.73,0-44.008,34.762-79.729,77.658-79.729S568.46,317.3,568.46,361.308v79.578C568.46,441.19,510.053,441.038,490.8,441.038Z" transform="translate(-135.368 -102.368)"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="537.632"
+   height="537.632"
+   viewBox="0 0 537.632 537.632"
+   version="1.1"
+   id="svg3631"
+   sodipodi:docname="logo_open_source_test.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <sodipodi:namedview
+     id="namedview3633"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="1.5531069"
+     inkscape:cx="248.85602"
+     inkscape:cy="217.95023"
+     inkscape:window-width="1512"
+     inkscape:window-height="856"
+     inkscape:window-x="0"
+     inkscape:window-y="34"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3631" />
+  <defs
+     id="defs3617">
+    <rect
+       x="88.854154"
+       y="172.55734"
+       width="370.86951"
+       height="190.58572"
+       id="rect3695" />
+    <style
+       id="style3615">.a,.c{fill:#fff;}.a{stroke:#fff;stroke-linecap:round;stroke-linejoin:round;stroke-width:7px;}.b{fill:#ccc;}.c{stroke:#999;stroke-miterlimit:10;}.d{fill:#585858;opacity:0.8;}</style>
+  </defs>
+  <title
+     id="title3619">logo_open_source</title>
+  <path
+     class="a"
+     d="M339.08,371V300H457.73q41.04,0,41.04,36.73,0,34.275-38.81,34.27ZM305.13,267V488h33.95V404H459.73q36.105,0,55.01-17.42,18.885-17.445,18.9-50.47,0-31.5-18.23-50.3T466.07,267Z"
+     transform="translate(-135.368 -102.368)"
+     id="path3621" />
+  <circle
+     class="b"
+     cx="268.816"
+     cy="268.816"
+     r="268.816"
+     id="circle3623"
+     style="fill:#b1e7ce;fill-opacity:1" />
+  <metadata
+     id="metadata3714">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>logo_open_source</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <rect
+     style="fill:#421636;fill-opacity:0.33846155;stroke:#f15050;stroke-width:3;stroke-linecap:square;stroke-linejoin:round;paint-order:stroke fill markers"
+     id="rect1"
+     width="399.19983"
+     height="320.64761"
+     x="68.25029"
+     y="99.79995"
+     ry="9.6580601" />
+  <text
+     xml:space="preserve"
+     style="font-size:126.712px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';writing-mode:lr-tb;direction:ltr;fill:#b1e7ce;fill-opacity:1;stroke:#f15050;stroke-width:7.12753;stroke-linecap:square;stroke-linejoin:round;paint-order:stroke fill markers"
+     x="108.02203"
+     y="217.74353"
+     id="text2"
+     transform="scale(0.89296976,1.1198587)"><tspan
+       sodipodi:role="line"
+       id="tspan2"
+       x="108.02203"
+       y="217.74353"
+       style="stroke-width:7.12753">mend</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-size:111.864px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';writing-mode:lr-tb;direction:ltr;fill:#b1e7ce;fill-opacity:1;stroke:#f15050;stroke-width:6.29233;stroke-linecap:square;stroke-linejoin:round;paint-order:stroke fill markers"
+     x="179.94958"
+     y="343.93869"
+     id="text3"
+     transform="scale(0.93569109,1.0687288)"><tspan
+       sodipodi:role="line"
+       id="tspan3"
+       x="179.94958"
+       y="343.93869"
+       style="stroke-width:6.29233">as2</tspan></text>
+</svg>

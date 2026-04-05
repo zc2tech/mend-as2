@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/PEMKeys2Keystore.java 16    11/02/25 13:40 Heller $
 package de.mendelson.util.security;
 
 import java.io.ByteArrayInputStream;

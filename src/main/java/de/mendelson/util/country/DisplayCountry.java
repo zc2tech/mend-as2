@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/country/DisplayCountry.java 1     22/07/24 14:09 Heller $
 package de.mendelson.util.country;
 
 import java.text.Collator;

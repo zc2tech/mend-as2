@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/ColorUtil.java 19    11/02/25 13:39 Heller $
 package de.mendelson.util;
 
 import java.awt.Color;

@@ -1,4 +1,13 @@
-//$Header: /as2/de/mendelson/comm/as2/AS2Shutdown.java 9     14/02/25 9:58 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2;
 
 import de.mendelson.comm.as2.clientserver.message.ServerShutdown;
@@ -57,7 +66,11 @@ public class AS2Shutdown {
             }
         }
         try (TextClient client = new TextClient(BaseClient.CLIENT_COMMANDLINE_SHUTDOWN)) {
-            client.connectAndLogin("localhost", AS2Server.CLIENTSERVER_COMM_PORT,
+            // Check if test mode is enabled to use the correct port
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+
+            client.connectAndLogin("localhost", port,
                     AS2ServerVersion.getFullProductName(),
                     user, password.toCharArray(), 15000,
                     "Shutdown-");

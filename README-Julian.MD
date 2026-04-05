@@ -56,3 +56,22 @@ https://testas2.mendelson-e-c.com:8444/as2/HttpReceiver
 https://testas2.mendelson-e-c.com:8444/webas2 (guest / guest)
 
 Please note: These URLs are secured with a self-signed certificate. Your browser may flag them as untrusted — this is expected. In production, you can use your own trusted certificates.
+
+
+# Mendelson 1.1 B67 What's new
+[Site link](https://sourceforge.net/projects/mec-as2/files/src/)
+
+    *Update to Bouncycastle v180 (Crypto API).
+    *Update to Lucene 9.11.0 (Indexing of system events).
+    *Update to MINA 2.2.4 (Client-Server Interface).
+    *Update to HSQLDB 2.74 (Integrated database server).
+    *Update to Batik 1.18 (SVG Icons).
+    *Update to Hikari 6.2.1 (Database pool).
+    *Update to Jetty 10.0.24 (HTTP Server).
+
+# LICENSE
+The mendelson AS2 software, the mendelson AS4 software and the mendelson OFTP2 software are available under an open source license (GPL).
+With the help of these community licenses you can take the first steps towards professional, secure data exchange - without any financial expense.
+
+If you want to integrate parts of this software into your commercial software, please ask us for
+the commercial licence of these products.

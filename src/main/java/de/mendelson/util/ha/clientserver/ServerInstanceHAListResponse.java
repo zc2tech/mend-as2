@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/ha/clientserver/ServerInstanceHAListResponse.java 3     13/03/25 12:51 Heller $
 package de.mendelson.util.ha.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

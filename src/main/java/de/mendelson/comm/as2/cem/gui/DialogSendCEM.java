@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/gui/DialogSendCEM.java 37    2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.cem.gui;
 
 import de.mendelson.comm.as2.cem.clientserver.CEMSendRequest;
@@ -7,6 +6,8 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.clientserver.BaseClient;
@@ -34,6 +35,14 @@ import javax.swing.SwingUtilities;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Allows to select a partner and sends a certificate to him via your mail
@@ -102,6 +111,12 @@ public class DialogSendCEM extends JDialog {
         Date thirtyDays = calendar.getTime();
         this.jDateChooser.setSelectableDateRange(new Date(), nextYear);
         this.jDateChooser.setDate(thirtyDays);
+        this.setupKeyboardShortcuts();
+    }
+
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     private void setButtonState() {

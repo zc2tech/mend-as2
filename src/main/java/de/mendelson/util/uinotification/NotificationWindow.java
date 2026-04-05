@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/uinotification/NotificationWindow.java 25    21/06/24 8:59 Heller $package de.mendelson.util.uinotification;
 package de.mendelson.util.uinotification;
 
 import de.mendelson.util.ColorUtil;

@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/database/IDBDriverManager.java 15    16/12/24 14:00 Heller $
 package de.mendelson.util.database;
 
 import java.sql.Connection;

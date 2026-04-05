@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/IByteStorage.java 1     29.03.10 13:35 Heller $
 package de.mendelson.comm.as2.message;
 
 import java.io.InputStream;

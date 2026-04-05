@@ -1,7 +1,6 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2MessageCreation.java 85    17/01/25 8:48 Heller $
 package de.mendelson.comm.as2.message;
 
-import com.sun.mail.util.LineOutputStream;
+import java.io.BufferedWriter;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.server.AS2Server;
@@ -34,16 +33,16 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.activation.DataHandler;
+import jakarta.activation.DataHandler;
 import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource;
-import javax.mail.Part;
-import javax.mail.Session;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.mail.Part;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.util.ByteArrayDataSource;
 import org.apache.commons.io.output.DeferredFileOutputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
@@ -63,6 +62,14 @@ import org.bouncycastle.operator.jcajce.JcaAlgorithmParametersConverter;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Packs a message with all necessary headers and attachments
@@ -284,18 +291,16 @@ public class AS2MessageCreation {
             //normally the content type header is folded (which is correct but some products are not able to parse this properly)
             //Now take the content-type, unfold it and write it
             Enumeration headerLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
-            try (LineOutputStream lineOutStream = new LineOutputStream(signedOut)) {
-                while (headerLines.hasMoreElements()) {
-                    //requires java mail API >= 1.4
-                    String nextHeaderLine = MimeUtility.unfold((String) headerLines.nextElement());
-                    //write the line only if the as2 message is encrypted. If the as2 message is unencrypted this header is added later
-                    //in the class MessageHttpUploader
-                    if (info.getEncryptionType() != AS2Message.ENCRYPTION_NONE) {
-                        lineOutStream.writeln(nextHeaderLine);
-                    }
-                    //store the content line in the as2 message object, this value is required later in MessageHttpUploader
-                    message.setContentType(nextHeaderLine.substring(nextHeaderLine.indexOf(':') + 1));
+            while (headerLines.hasMoreElements()) {
+                //requires java mail API >= 1.4
+                String nextHeaderLine = MimeUtility.unfold((String) headerLines.nextElement());
+                //write the line only if the as2 message is encrypted. If the as2 message is unencrypted this header is added later
+                //in the class MessageHttpUploader
+                if (info.getEncryptionType() != AS2Message.ENCRYPTION_NONE) {
+                    signedOut.write((nextHeaderLine + "\r\n").getBytes("US-ASCII"));
                 }
+                //store the content line in the as2 message object, this value is required later in MessageHttpUploader
+                message.setContentType(nextHeaderLine.substring(nextHeaderLine.indexOf(':') + 1));
             }
             messagePart.writeTo(signedOut,
                     new String[]{"Message-ID", "Mime-Version", "Content-Type"});
@@ -589,7 +594,22 @@ public class AS2MessageCreation {
                 if (as2Payload.getContentId() != null) {
                     bodyPart.addHeader("Content-ID", as2Payload.getContentId());
                 }
-                if (receiver.getContentTransferEncoding() == AS2Message.CONTENT_TRANSFER_ENCODING_BASE64) {
+
+                // For multipart messages with binary content types (PDF, images, etc.),
+                // always use base64 encoding to prevent boundary conflicts in binary data
+                boolean isBinaryContentType = contentType != null && (
+                    contentType.startsWith("application/pdf") ||
+                    contentType.startsWith("image/") ||
+                    contentType.startsWith("application/octet-stream") ||
+                    contentType.startsWith("application/zip") ||
+                    contentType.startsWith("application/msword") ||
+                    contentType.startsWith("application/vnd.ms-") ||
+                    contentType.startsWith("application/vnd.openxmlformats-")
+                );
+
+                if (receiver.getContentTransferEncoding() == AS2Message.CONTENT_TRANSFER_ENCODING_BASE64 ||
+                    (payloads.length > 1 && isBinaryContentType)) {
+                    // Use base64 for: 1) configured base64, or 2) binary types in multipart messages
                     bodyPart.addHeader("Content-Transfer-Encoding", "base64");
                 } else {
                     bodyPart.addHeader("Content-Transfer-Encoding", "binary");

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/ServerAlreadyRunningException.java 1     19.06.20 11:12 Heller $
 package de.mendelson.comm.as2.server;
 
 /*

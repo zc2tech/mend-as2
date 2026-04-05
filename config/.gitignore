@@ -1,0 +1,7 @@
+# PostgreSQL configuration files to ignore (contains sensitive data)
+config/database-postgresql.properties
+config/database-postgresql.env
+config/.env
+
+# Keep example files
+!config/database-postgresql.env.example

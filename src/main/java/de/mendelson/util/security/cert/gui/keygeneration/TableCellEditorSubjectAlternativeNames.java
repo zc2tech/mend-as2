@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/keygeneration/TableCellEditorSubjectAlternativeNames.java 4     20/02/25 15:51 Heller $
 package de.mendelson.util.security.cert.gui.keygeneration;
 
 import java.awt.Component;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/MDNReceiptController.java 43    18/12/24 17:06 Heller $
 package de.mendelson.comm.as2.timing;
 
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;

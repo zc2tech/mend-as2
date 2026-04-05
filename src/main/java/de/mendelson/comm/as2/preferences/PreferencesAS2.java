@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/PreferencesAS2.java 102   12/03/25 16:57 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.preferences.PreferencesCache;

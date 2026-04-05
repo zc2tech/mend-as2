@@ -1,4 +1,13 @@
-//$Header: /as2/de/mendelson/comm/as2/message/MessageAccessDB.java 157   12/03/25 16:07 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.partner.Partner;
@@ -450,8 +459,11 @@ public class MessageAccessDB {
                 queryCondition.append(" userdefinedid=?");
                 parameterList.add(filter.getUserdefinedId());
             }
-            boolean useTimeFilter = filter.getStartTime() != 0L && filter.getEndTime() != 0L;
-            if (useTimeFilter) {
+            boolean hasStartTime = filter.getStartTime() != 0L;
+            boolean hasEndTime = filter.getEndTime() != 0L;
+
+            if (hasStartTime && hasEndTime) {
+                // Both start and end time provided
                 if (queryCondition.length() == 0) {
                     queryCondition.append(" WHERE");
                 } else {
@@ -472,7 +484,73 @@ public class MessageAccessDB {
                 calendar.set(Calendar.SECOND, 59);
                 calendar.set(Calendar.MILLISECOND, 999);
                 parameterList.add(new Timestamp(calendar.getTimeInMillis()));
+            } else if (hasStartTime) {
+                // Only start time provided - filter from start time onwards
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
+                }
+                queryCondition.append(" CAST(initdateutc AS DATE)>=?");
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(filter.getStartTime());
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                parameterList.add(new Timestamp(calendar.getTimeInMillis()));
+            } else if (hasEndTime) {
+                // Only end time provided - filter up to end time
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
+                }
+                queryCondition.append(" CAST(initdateutc AS DATE)<=?");
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTimeInMillis(filter.getEndTime());
+                calendar.add(Calendar.DAY_OF_YEAR, 0);
+                calendar.set(Calendar.HOUR_OF_DAY, 23);
+                calendar.set(Calendar.MINUTE, 59);
+                calendar.set(Calendar.SECOND, 59);
+                calendar.set(Calendar.MILLISECOND, 999);
+                parameterList.add(new Timestamp(calendar.getTimeInMillis()));
             }
+
+            // Partner visibility filtering for non-admin users
+            // Admin users or users without userId context (SwingUI) see all messages
+            if (filter.getUserId() != null && !filter.isAdmin()) {
+                try (Connection configConnectionAutoCommit = this.dbDriverManager
+                        .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+                    // Build subquery to get AS2 IDs of partners visible to this user
+                    // Include:
+                    // 1. All local stations (always visible)
+                    // 2. Remote partners with no visibility records (visible to all)
+                    // 3. Remote partners specifically assigned to this user
+                    String visibilitySubquery =
+                        "(SELECT as2ident FROM partner WHERE islocal=1 " +
+                        "UNION " +
+                        "SELECT p.as2ident FROM partner p " +
+                        "WHERE p.islocal=0 AND NOT EXISTS (SELECT 1 FROM partner_user_visibility WHERE partner_id=p.id) " +
+                        "UNION " +
+                        "SELECT p.as2ident FROM partner p " +
+                        "INNER JOIN partner_user_visibility pv ON p.id=pv.partner_id " +
+                        "WHERE pv.user_id=?)";
+
+                    if (queryCondition.length() == 0) {
+                        queryCondition.append(" WHERE");
+                    } else {
+                        queryCondition.append(" AND");
+                    }
+                    queryCondition.append(" (senderid IN ").append(visibilitySubquery)
+                                   .append(" OR receiverid IN ").append(visibilitySubquery).append(")");
+
+                    // Add userId parameter twice (once for sender, once for receiver)
+                    parameterList.add(filter.getUserId());
+                    parameterList.add(filter.getUserId());
+                }
+            }
+
             //Hint: This is the wrong order! It should be ordered using "ASC". But the HSQLDB LIMIT clause
             //just takes the n first rows of the result set and returns them. Means the first n results are taken now 
             //in the wrong order and then the returned list of transactions is built in the wrong order again 
@@ -480,6 +558,7 @@ public class MessageAccessDB {
             //- then the result is as if the LIMIT has been taken from the other side of the result set
             String query = "SELECT * FROM messages" + queryCondition.toString()
                     + " ORDER BY initdateutc DESC";
+            boolean useTimeFilter = hasStartTime || hasEndTime;
             if (!useTimeFilter) {
                 //do NOT use the limit if a time filter is set as the user want to see all transactions in range
                 query = this.dbDriverManager.addLimitToQuery(query, filter.getLimit());

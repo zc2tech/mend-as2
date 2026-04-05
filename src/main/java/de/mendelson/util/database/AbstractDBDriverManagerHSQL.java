@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/database/AbstractDBDriverManagerHSQL.java 12    11/02/25 13:40 Heller $
 package de.mendelson.util.database;
 
 import java.sql.Connection;

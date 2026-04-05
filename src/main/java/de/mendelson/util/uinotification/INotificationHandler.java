@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/uinotification/INotificationHandler.java 2     28.01.20 14:26 Heller $package de.mendelson.util.uinotification;
 package de.mendelson.util.uinotification;
 
 /*

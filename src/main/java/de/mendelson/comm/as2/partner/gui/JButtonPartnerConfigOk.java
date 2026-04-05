@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/JButtonPartnerConfigOk.java 10    27/06/24 15:49 Heller $
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.partner.Partner;
@@ -18,6 +17,14 @@ import javax.swing.UIManager;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Ok Button for the partner config. This checks if there is any error in the
@@ -260,7 +267,7 @@ public class JButtonPartnerConfigOk extends JButton {
         boolean error = false;
         error = error || this.checkForNonUniqueValues(checkPartner, partnerList);
         error = error || this.checkURLProtocol(checkPartner);
-        error = error || this.checkLocalhostAsURL(checkPartner);
+        // error = error || this.checkLocalhostAsURL(checkPartner);
         return (error);
     }
 

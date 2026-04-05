@@ -1,7 +1,7 @@
-//$Header: /mec_oftp2/de/mendelson/util/systemevents/gui/JDialogSystemEvents.java 43    14/03/25 11:33 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import com.toedter.calendar.JDateChooser;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.DateChooserUI;
 import de.mendelson.util.IStatusBar;
 import de.mendelson.util.LockingGlassPane;
@@ -50,6 +50,14 @@ import javax.swing.table.TableColumn;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 public class JDialogSystemEvents extends JDialog implements ListSelectionListener {
 

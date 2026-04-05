@@ -1,0 +1,22 @@
+$Header:$
+This file contains the mail template for a notification as result of a problem in the system
+The following variables will be substituted:
+${PRODUCTNAME}: The productname of the AS2 server
+${HOST}: The host where the AS2 server runs at
+${CATEGORY}: The error category
+${MESSAGE}: The error message
+${DETAILS}: Details about the system problem
+
+
+[SUBJECT]
+System problem
+
+
+[BODY]
+A problem occurred on the AS2 server instance. Most of these notifications are not critical for your AS2 system status. If the related transaction is on status "green" you could be sure that the transaction has been finished. Anyway please have a look at your AS2 system to see what happened there.
+
+Category: ${CATEGORY}
+Message: ${MESSAGE}
+
+${DETAILS}
+

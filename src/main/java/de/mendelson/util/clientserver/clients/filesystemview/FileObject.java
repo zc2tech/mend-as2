@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/filesystemview/FileObject.java 9     20/02/25 13:41 Heller $
 package de.mendelson.util.clientserver.clients.filesystemview;
 
 import java.io.Serializable;

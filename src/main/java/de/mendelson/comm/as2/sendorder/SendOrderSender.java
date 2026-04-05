@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/sendorder/SendOrderSender.java 30    17/01/25 8:41 Heller $
 package de.mendelson.comm.as2.sendorder;
 
 import de.mendelson.comm.as2.message.AS2Message;
@@ -60,13 +59,23 @@ public class SendOrderSender {
     public AS2Message send(CertificateManager certificateManager, Partner sender,
             Partner receiver, Path[] files, String[] originalFilenames, String userdefinedId,
             String subject, String[] payloadContentTypes) {
+        return this.send(certificateManager, sender, receiver, files, originalFilenames,
+                userdefinedId, subject, payloadContentTypes, -1);
+    }
+
+    /**
+     * Creates and sends an AS2 message with userId for HTTP auth preferences
+     */
+    public AS2Message send(CertificateManager certificateManager, Partner sender,
+            Partner receiver, Path[] files, String[] originalFilenames, String userdefinedId,
+            String subject, String[] payloadContentTypes, int userId) {
         try {
             long startProcessTime = System.currentTimeMillis();
             AS2MessageCreation messageCreation = new AS2MessageCreation(certificateManager, certificateManager);
             messageCreation.setLogger(this.logger);
             messageCreation.setServerResources(this.dbDriverManager);
             AS2Message message = messageCreation.createMessage(sender, receiver,
-                        files, originalFilenames, userdefinedId, subject, payloadContentTypes);                
+                        files, originalFilenames, userdefinedId, subject, payloadContentTypes);
             StringBuilder filenames = new StringBuilder();
             for (Path file : files) {
                 if (filenames.length() > 0) {
@@ -88,7 +97,8 @@ public class SendOrderSender {
                     .setReceiver(receiver)
                     .setMessage(message)
                     .setSender(sender)
-                    .setUserdefinedId(userdefinedId);
+                    .setUserdefinedId(userdefinedId)
+                    .setUserId(userId);
             this.send(sendOrder);
             return (message);
         } catch (Throwable e) {

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/ResourceBundlePartnerTLSCertificateChangedController.java 5     18/07/24 16:54 Heller $
 package de.mendelson.comm.as2.timing;
 
 import de.mendelson.util.MecResourceBundle;

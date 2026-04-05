@@ -1,4 +1,3 @@
-///$Header: /as2/de/mendelson/comm/as2/servlet/ServerState.java 19    19/02/25 10:08 Heller $
 package de.mendelson.comm.as2.servlet;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -29,10 +28,10 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Map;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 public class ServerState extends HttpServlet {
 
@@ -84,7 +83,10 @@ public class ServerState extends HttpServlet {
         boolean processingUnitUp = false;
         try(AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)){
             client.setDisplayServerLogMessages(false);
-            client.connect("localhost", AS2Server.CLIENTSERVER_COMM_PORT, 30000);
+            // Use test mode port if enabled
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+            client.connect("localhost", port, 30000);
             ServerInfoResponse response = (ServerInfoResponse) client.sendSync(new ServerInfoRequest(), 30000);
             long startTime = Long.parseLong(response.getProperties().getProperty(ServerInfoResponse.SERVER_START_TIME));
             ZonedDateTime zonedDateTime = Instant.ofEpochMilli(startTime).atZone(ZoneId.systemDefault());

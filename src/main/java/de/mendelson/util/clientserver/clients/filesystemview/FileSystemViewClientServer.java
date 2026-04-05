@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/filesystemview/FileSystemViewClientServer.java 8     2/11/23 14:03 Heller $
 package de.mendelson.util.clientserver.clients.filesystemview;
 
 import de.mendelson.util.clientserver.BaseClient;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/ModuleStarter.java 3     29/02/24 17:21 Heller $ 
 package de.mendelson.comm.as2.client;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

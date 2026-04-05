@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/security/cert/ComboBoxModelCertificates.java 1     9.01.15 10:35 Heller $
 package de.mendelson.util.security.cert;
 
 import java.util.ArrayList;

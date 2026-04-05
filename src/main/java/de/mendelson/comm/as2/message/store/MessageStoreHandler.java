@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/store/MessageStoreHandler.java 102   11/03/25 13:51 Heller $
 package de.mendelson.comm.as2.message.store;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

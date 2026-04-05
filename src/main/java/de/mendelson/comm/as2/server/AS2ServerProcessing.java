@@ -1,4 +1,13 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/server/AS2ServerProcessing.java 285   21/03/25 9:12 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Exception;
@@ -92,6 +101,12 @@ import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferences;
 import de.mendelson.comm.as2.send.DirPollManager;
 import de.mendelson.comm.as2.sendorder.SendOrder;
+import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.clientserver.*;
+import de.mendelson.util.clientserver.user.User;
 import de.mendelson.comm.as2.sendorder.SendOrderSender;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
 import de.mendelson.comm.as2.statistic.ServerInteroperabilityAccessDB;
@@ -256,7 +271,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.mina.core.session.IoSession;
 import org.bouncycastle.asn1.crmf.CertReqMessages;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -413,152 +428,152 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         }
         //process client requests
         try {
-            if (message instanceof PreferencesRequest) {
-                this.processPreferencesRequest(session, (PreferencesRequest) message);
+            if (message instanceof PreferencesRequest msg) {
+                this.processPreferencesRequest(session, msg);
                 return (true);
-            } else if (message instanceof DeleteMessageRequest) {
-                this.processDeleteMessageRequest(session, (DeleteMessageRequest) message);
+            } else if (message instanceof DeleteMessageRequest msg) {
+                this.processDeleteMessageRequest(session, msg);
                 return (true);
-            } else if (message instanceof ManualSendRequest) {
-                this.processManualSendRequest(session, (ManualSendRequest) message);
+            } else if (message instanceof ManualSendRequest msg) {
+                this.processManualSendRequest(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestKeystore) {
-                this.processUploadRequestKeystore(session, (UploadRequestKeystore) message);
+            } else if (message instanceof UploadRequestKeystore msg) {
+                this.processUploadRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof DownloadRequestKeystore) {
-                this.processDownloadRequestKeystore(session, (DownloadRequestKeystore) message);
+            } else if (message instanceof DownloadRequestKeystore msg) {
+                this.processDownloadRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof FileRenameRequest) {
-                this.processFileRenameRequest(session, (FileRenameRequest) message);
+            } else if (message instanceof FileRenameRequest msg) {
+                this.processFileRenameRequest(session, msg);
                 return (true);
-            } else if (message instanceof FileDeleteRequest) {
-                this.processFileDeleteRequest(session, (FileDeleteRequest) message);
+            } else if (message instanceof FileDeleteRequest msg) {
+                this.processFileDeleteRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticExportRequest) {
-                this.processStatisticExportRequest(session, (StatisticExportRequest) message);
+            } else if (message instanceof StatisticExportRequest msg) {
+                this.processStatisticExportRequest(session, msg);
                 return (true);
-            } else if (message instanceof DownloadRequestFile) {
-                this.processDownloadRequestFile(session, (DownloadRequestFile) message);
+            } else if (message instanceof DownloadRequestFile msg) {
+                this.processDownloadRequestFile(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestChunk) {
-                this.processUploadRequestChunk(session, (UploadRequestChunk) message);
+            } else if (message instanceof UploadRequestChunk msg) {
+                this.processUploadRequestChunk(session, msg);
                 return (true);
-            } else if (message instanceof UploadRequestFile) {
-                this.processUploadRequestFile(session, (UploadRequestFile) message);
+            } else if (message instanceof UploadRequestFile msg) {
+                this.processUploadRequestFile(session, msg);
                 return (true);
-            } else if (message instanceof FileSystemViewRequest) {
-                session.write(this.filesystemview.performRequest((FileSystemViewRequest) message));
+            } else if (message instanceof FileSystemViewRequest msg) {
+                session.write(this.filesystemview.performRequest(msg));
                 return (true);
-            } else if (message instanceof PartnerListRequest) {
-                this.processPartnerListRequest(session, (PartnerListRequest) message);
+            } else if (message instanceof PartnerListRequest msg) {
+                this.processPartnerListRequest(session, msg);
                 return (true);
-            } else if (message instanceof PartnerModificationRequest) {
-                this.processPartnerModificationMessage(session, (PartnerModificationRequest) message);
+            } else if (message instanceof PartnerModificationRequest msg) {
+                this.processPartnerModificationMessage(session, msg);
                 return (true);
-            } else if (message instanceof MessageOverviewRequest) {
-                this.processMessageOverviewRequest(session, (MessageOverviewRequest) message);
+            } else if (message instanceof MessageOverviewRequest msg) {
+                this.processMessageOverviewRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageDetailRequest) {
-                this.processMessageDetailRequest(session, (MessageDetailRequest) message);
+            } else if (message instanceof MessageDetailRequest msg) {
+                this.processMessageDetailRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageLogRequest) {
-                this.processMessageLogRequest(session, (MessageLogRequest) message);
+            } else if (message instanceof MessageLogRequest msg) {
+                this.processMessageLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessagePayloadRequest) {
-                this.processMessagePayloadRequest(session, (MessagePayloadRequest) message);
+            } else if (message instanceof MessagePayloadRequest msg) {
+                this.processMessagePayloadRequest(session, msg);
                 return (true);
-            } else if (message instanceof NotificationGetRequest) {
-                this.processNotificationGetRequest(session, (NotificationGetRequest) message);
+            } else if (message instanceof NotificationGetRequest msg) {
+                this.processNotificationGetRequest(session, msg);
                 return (true);
-            } else if (message instanceof NotificationSetMessage) {
-                this.processNotificationSetRequest(session, (NotificationSetMessage) message);
+            } else if (message instanceof NotificationSetMessage msg) {
+                this.processNotificationSetRequest(session, msg);
                 return (true);
-            } else if (message instanceof PerformNotificationTestRequest) {
-                this.performNotificationTest(session, (PerformNotificationTestRequest) message);
+            } else if (message instanceof PerformNotificationTestRequest msg) {
+                this.performNotificationTest(session, msg);
                 return (true);
-            } else if (message instanceof PartnerSystemRequest) {
-                this.performPartnerSystemRequest(session, (PartnerSystemRequest) message);
+            } else if (message instanceof PartnerSystemRequest msg) {
+                this.performPartnerSystemRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInteroperabilityRequest) {
-                this.performServerInteroperabilityRequest(session, (ServerInteroperabilityRequest) message);
+            } else if (message instanceof ServerInteroperabilityRequest msg) {
+                this.performServerInteroperabilityRequest(session, msg);
                 return (true);
-            } else if (message instanceof QuotaResetRequest) {
-                this.performQuotaResetRequest(session, (QuotaResetRequest) message);
+            } else if (message instanceof QuotaResetRequest msg) {
+                this.performQuotaResetRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticOverviewRequest) {
-                this.performStatisticOverviewRequest(session, (StatisticOverviewRequest) message);
+            } else if (message instanceof StatisticOverviewRequest msg) {
+                this.performStatisticOverviewRequest(session, msg);
                 return (true);
-            } else if (message instanceof StatisticDetailRequest) {
-                this.performStatisticDetailRequest(session, (StatisticDetailRequest) message);
+            } else if (message instanceof StatisticDetailRequest msg) {
+                this.performStatisticDetailRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMListRequest) {
-                this.processCEMListRequest(session, (CEMListRequest) message);
+            } else if (message instanceof CEMListRequest msg) {
+                this.processCEMListRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMDeleteRequest) {
-                this.processCEMDeleteRequest(session, (CEMDeleteRequest) message);
+            } else if (message instanceof CEMDeleteRequest msg) {
+                this.processCEMDeleteRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMCancelRequest) {
-                this.processCEMCancelRequest(session, (CEMCancelRequest) message);
+            } else if (message instanceof CEMCancelRequest msg) {
+                this.processCEMCancelRequest(session, msg);
                 return (true);
-            } else if (message instanceof MessageRequestLastMessage) {
-                this.processMessageRequestLastMessage(session, (MessageRequestLastMessage) message);
+            } else if (message instanceof MessageRequestLastMessage msg) {
+                this.processMessageRequestLastMessage(session, msg);
                 return (true);
-            } else if (message instanceof CEMSendRequest) {
-                this.processCEMSendRequest(session, (CEMSendRequest) message);
+            } else if (message instanceof CEMSendRequest msg) {
+                this.processCEMSendRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerShutdown) {
-                this.performServerShutdown(session, (ServerShutdown) message);
+            } else if (message instanceof ServerShutdown msg) {
+                this.performServerShutdown(session, msg);
                 return (true);
-            } else if (message instanceof ModuleLockRequest) {
-                this.processModuleLockRequest(session, (ModuleLockRequest) message);
+            } else if (message instanceof ModuleLockRequest msg) {
+                this.processModuleLockRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInfoRequest) {
-                this.processServerInfoRequest(session, (ServerInfoRequest) message);
+            } else if (message instanceof ServerInfoRequest msg) {
+                this.processServerInfoRequest(session, msg);
                 return (true);
-            } else if (message instanceof IncomingMessageRequest) {
-                this.processIncomingMessageRequest(session, (IncomingMessageRequest) message);
+            } else if (message instanceof IncomingMessageRequest msg) {
+                this.processIncomingMessageRequest(session, msg);
                 return (true);
-            } else if (message instanceof ConnectionTestRequest) {
-                this.processConnectionTestRequest(session, (ConnectionTestRequest) message);
+            } else if (message instanceof ConnectionTestRequest msg) {
+                this.processConnectionTestRequest(session, msg);
                 return (true);
-            } else if (message instanceof DisplayHTTPServerConfigurationRequest) {
-                this.processDisplayServerConfigurationRequest(session, (DisplayHTTPServerConfigurationRequest) message);
+            } else if (message instanceof DisplayHTTPServerConfigurationRequest msg) {
+                this.processDisplayServerConfigurationRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerlogfileSearchRequest) {
-                this.processServerlogfileSearchRequest(session, (ServerlogfileSearchRequest) message);
+            } else if (message instanceof ServerlogfileSearchRequest msg) {
+                this.processServerlogfileSearchRequest(session, msg);
                 return (true);
-            } else if (message instanceof HSQLDBPartnerRequest) {
-                this.processHSQLDBPartnerRequest(session, (HSQLDBPartnerRequest) message);
+            } else if (message instanceof HSQLDBPartnerRequest msg) {
+                this.processHSQLDBPartnerRequest(session, msg);
                 return (true);
-            } else if (message instanceof CommandRequest) {
-                this.processCommandRequest(session, (CommandRequest) message);
+            } else if (message instanceof CommandRequest msg) {
+                this.processCommandRequest(session, msg);
                 return (true);
-            } else if (message instanceof ConfigurationCheckRequest) {
-                this.processConfigurationCheckRequest(session, (ConfigurationCheckRequest) message);
+            } else if (message instanceof ConfigurationCheckRequest msg) {
+                this.processConfigurationCheckRequest(session, msg);
                 return (true);
-            } else if (message instanceof SystemEventSearchRequest) {
-                this.processSystemEventSearchRequest(session, (SystemEventSearchRequest) message);
+            } else if (message instanceof SystemEventSearchRequest msg) {
+                this.processSystemEventSearchRequest(session, msg);
                 return (true);
-            } else if (message instanceof ServerInstanceHAListRequest) {
-                this.processServerInstanceHAListRequest(session, (ServerInstanceHAListRequest) message);
+            } else if (message instanceof ServerInstanceHAListRequest msg) {
+                this.processServerInstanceHAListRequest(session, msg);
                 return (true);
-            } else if (message instanceof ExternalLogRequest) {
-                this.processExternalLogRequest(session, (ExternalLogRequest) message);
+            } else if (message instanceof ExternalLogRequest msg) {
+                this.processExternalLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof ClientToServerLogRequest) {
-                this.processClientToServerLogRequest(session, (ClientToServerLogRequest) message);
+            } else if (message instanceof ClientToServerLogRequest msg) {
+                this.processClientToServerLogRequest(session, msg);
                 return (true);
-            } else if (message instanceof MailAutoConfigDetectRequest) {
-                this.processMailAutoConfigDetectRequest(session, (MailAutoConfigDetectRequest) message);
+            } else if (message instanceof MailAutoConfigDetectRequest msg) {
+                this.processMailAutoConfigDetectRequest(session, msg);
                 return (true);
-            } else if (message instanceof ExportRequestPrivateKey) {
-                this.processExportRequestPrivateKey(session, (ExportRequestPrivateKey) message);
+            } else if (message instanceof ExportRequestPrivateKey msg) {
+                this.processExportRequestPrivateKey(session, msg);
                 return (true);
-            } else if (message instanceof ExportRequestKeystore) {
-                this.processExportRequestKeystore(session, (ExportRequestKeystore) message);
+            } else if (message instanceof ExportRequestKeystore msg) {
+                this.processExportRequestKeystore(session, msg);
                 return (true);
-            } else if (message instanceof CSRGenerationRequest) {
-                this.processCSRGenerationRequest(session, (CSRGenerationRequest) message);
+            } else if (message instanceof CSRGenerationRequest msg) {
+                this.processCSRGenerationRequest(session, msg);
                 return (true);
             } else if (message instanceof CSRAnswerImportRequest) {
                 this.processCSRAnswerImportRequest(session, (CSRAnswerImportRequest) message);
@@ -584,6 +599,39 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             } else if (message instanceof SinglePartnerModificationRequest) {
                 this.processPartnerModificationRequest(session, (SinglePartnerModificationRequest) message);
                 return (true);
+            } else if (message instanceof UserListRequest msg) {
+                session.write(this.processUserListRequest(msg));
+                return (true);
+            } else if (message instanceof UserCreateRequest msg) {
+                session.write(this.processUserCreateRequest(msg));
+                return (true);
+            } else if (message instanceof UserModifyRequest msg) {
+                session.write(this.processUserModifyRequest(msg));
+                return (true);
+            } else if (message instanceof UserDeleteRequest msg) {
+                session.write(this.processUserDeleteRequest(msg));
+                return (true);
+            } else if (message instanceof UserPasswordChangeRequest msg) {
+                session.write(this.processUserPasswordChangeRequest(msg));
+                return (true);
+            } else if (message instanceof RoleListRequest msg) {
+                session.write(this.processRoleListRequest(msg));
+                return (true);
+            } else if (message instanceof UserRolesRequest msg) {
+                session.write(this.processUserRolesRequest(msg));
+                return (true);
+            } else if (message instanceof UserRoleAssignRequest msg) {
+                session.write(this.processUserRoleAssignRequest(msg));
+                return (true);
+            } else if (message instanceof UserRoleRemoveRequest msg) {
+                session.write(this.processUserRoleRemoveRequest(msg));
+                return (true);
+            } else if (message instanceof UserHttpAuthPreferenceRequest msg) {
+                session.write(this.processUserHttpAuthPreferenceRequest(msg));
+                return (true);
+            } else if (message instanceof UserHttpAuthPreferenceSaveRequest msg) {
+                session.write(this.processUserHttpAuthPreferenceSaveRequest(msg));
+                return (true);
             }
         } catch (Throwable e) {
             e.printStackTrace();
@@ -599,6 +647,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerModificationRequest(IoSession session, SinglePartnerModificationRequest request) {
+        SinglePartnerModificationResponse response = processPartnerModificationRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Modify a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerModificationResponse processPartnerModificationRequest(SinglePartnerModificationRequest request) {
         SinglePartnerModificationResponse response = new SinglePartnerModificationResponse(request);
         Partner newPartner = request.getPartner();
         try {
@@ -622,8 +678,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -634,6 +689,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerDeleteRequest(IoSession session, SinglePartnerDeleteRequest request) {
+        SinglePartnerDeleteResponse response = processPartnerDeleteRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Delete a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerDeleteResponse processPartnerDeleteRequest(SinglePartnerDeleteRequest request) {
         SinglePartnerDeleteResponse response = new SinglePartnerDeleteResponse(request);
         try {
             Partner foundPartner = this.partnerAccess.getPartner(request.getAS2id());
@@ -653,8 +716,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -665,6 +727,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request Request that contains the AS2 id of the partner to delete
      */
     private void processPartnerAddRequest(IoSession session, SinglePartnerAddRequest request) {
+        SinglePartnerAddResponse response = processPartnerAddRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Add a partner without IoSession dependency (for REST API)
+     */
+    public SinglePartnerAddResponse processPartnerAddRequest(SinglePartnerAddRequest request) {
         SinglePartnerAddResponse response = new SinglePartnerAddResponse(request);
         try {
             Partner newPartner = request.getPartner();
@@ -684,11 +754,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processCRLVerificationRequest(IoSession session, CRLVerificationRequest request) {
+        CRLVerificationResponse response = processCRLVerificationRequest(request);
+        session.write(response);
+    }
+
+    public CRLVerificationResponse processCRLVerificationRequest(CRLVerificationRequest request) {
         CRLVerificationResponse response = new CRLVerificationResponse(request);
         try {
             CertificateManager manager;
@@ -735,8 +809,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processHSQLDBMigrationRequest(IoSession session, HSQLDBMigrationRequest request) {
@@ -890,6 +963,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processCertificateExportRequest(IoSession session, CertificateExportRequest request) {
+        CertificateExportResponse response = processCertificateExportRequest(request);
+        session.write(response);
+    }
+
+    public CertificateExportResponse processCertificateExportRequest(CertificateExportRequest request) {
         CertificateExportResponse response = new CertificateExportResponse(request);
         try {
             CertificateManager manager;
@@ -924,8 +1002,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processCSRAnswerImportRequest(IoSession session, CSRAnswerImportRequest request) {
@@ -999,6 +1076,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processCSRGenerationRequest(IoSession session, CSRGenerationRequest request) {
+        CSRGenerationResponse response = processCSRGenerationRequest(request);
+        session.write(response);
+    }
+
+    public CSRGenerationResponse processCSRGenerationRequest(CSRGenerationRequest request) {
         CSRGenerationResponse response = new CSRGenerationResponse(request);
         try {
             CertificateManager manager;
@@ -1035,8 +1117,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             e.printStackTrace();
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     private void processExportRequestPrivateKey(IoSession session, ExportRequestPrivateKey request) {
@@ -1130,6 +1211,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processExportRequestKeystore(IoSession session, ExportRequestKeystore request) {
+        ExportResponseKeystore response = processExportRequestKeystore(request);
+        session.write(response);
+    }
+
+    public ExportResponseKeystore processExportRequestKeystore(ExportRequestKeystore request) {
         ExportResponseKeystore response = new ExportResponseKeystore(request);
         try {
             String extension = null;
@@ -1192,8 +1278,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync response
-        session.write(response);
+        return response;
     }
 
     /**
@@ -1593,6 +1678,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processStatisticExportRequest(IoSession session, StatisticExportRequest request) {
+        StatisticExportResponse response = processStatisticExportRequest(request);
+        session.write(response);
+    }
+
+    public StatisticExportResponse processStatisticExportRequest(StatisticExportRequest request) {
         StatisticExportResponse response = new StatisticExportResponse(request);
         StatisticExport exporter = new StatisticExport(this.dbDriverManager);
         try (ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
@@ -1605,8 +1695,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync respond to the request
-        session.write(response);
+        return response;
     }
 
     /**
@@ -1671,6 +1760,11 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processDownloadRequestKeystore(IoSession session, DownloadRequestKeystore request) {
+        DownloadResponseKeystore response = processDownloadRequestKeystore(request);
+        session.write(response);
+    }
+
+    public DownloadResponseKeystore processDownloadRequestKeystore(DownloadRequestKeystore request) {
         DownloadResponseKeystore response = new DownloadResponseKeystore(request);
         List<KeystoreCertificate> certificateList;
         CertificateManager relatedCertificateManager = null;
@@ -1698,13 +1792,18 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        session.write(response);
+        return response;
     }
 
     private void processUploadRequestKeystore(IoSession session, UploadRequestKeystore request) {
-        UploadResponseKeystore response = new UploadResponseKeystore(request);
         String processOriginHost = session.getRemoteAddress().toString();
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
+        UploadResponseKeystore response = processUploadRequestKeystore(request, userName, processOriginHost);
+        session.write(response);
+    }
+
+    public UploadResponseKeystore processUploadRequestKeystore(UploadRequestKeystore request, String userName, String processOriginHost) {
+        UploadResponseKeystore response = new UploadResponseKeystore(request);
         String storageType = null;
         List<KeystoreCertificate> existingCertificateList = new ArrayList<KeystoreCertificate>();
         CertificateManager relatedCertificateManager = null;
@@ -1756,12 +1855,12 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        session.write(response);
         if (response.getException() == null && newManager != null) {
             //everything worked fine? Now check the changes and fire system events
             this.analyzeCertificateChanges(userName, processOriginHost,
                     keystoreTypeForLog, existingCertificateList, newManager.getKeyStoreCertificateList());
         }
+        return response;
     }
 
     /**
@@ -1997,33 +2096,81 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * @param request
      */
     private void processPreferencesRequest(IoSession session, PreferencesRequest request) {
+        String processOriginHost = session.getRemoteAddress().toString();
+        String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
         if (request.getType() == PreferencesRequest.TYPE_GET) {
-            PreferencesResponse response = new PreferencesResponse(request);
-            this.preferences.clearCache();
-            response.setValue(this.preferences.get(request.getKey()));
+            PreferencesResponse response = processPreferencesGetRequest(request);
             session.write(response);
         } else if (request.getType() == PreferencesRequest.TYPE_GET_DEFAULT) {
-            PreferencesResponse response = new PreferencesResponse(request);
-            response.setValue(PreferencesAS2.getDefaultValue(request.getKey()));
+            PreferencesResponse response = processPreferencesGetDefaultRequest(request);
             session.write(response);
         } else if (request.getType() == PreferencesRequest.TYPE_SET) {
-            this.preferences.clearCache();
-            String oldValue = this.preferences.get(request.getKey());
-            if (!oldValue.equals(request.getValue())) {
-                this.preferences.put(request.getKey(), request.getValue());
-                String processOriginHost = session.getRemoteAddress().toString();
-                String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
-                this.fireEventPreferencesModified(userName, processOriginHost, request.getKey(),
-                        oldValue, request.getValue());
-                //some specials - do something on user defined changes
-                if (request.getKey().equals(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
-                    if (this.preferences.getBoolean(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
-                        this.partnerTLSCertificateChangedController.startTLSCertificateChangedControl(true);
-                    } else {
-                        this.partnerTLSCertificateChangedController.stopTLSCertificateChangedControl();
-                    }
+            processPreferencesSetRequest(request, userName, processOriginHost);
+        }
+    }
+
+    public PreferencesResponse processPreferencesGetRequest(PreferencesRequest request) {
+        PreferencesResponse response = new PreferencesResponse(request);
+        this.preferences.clearCache();
+        response.setValue(this.preferences.get(request.getKey()));
+        return response;
+    }
+
+    public PreferencesResponse processPreferencesGetDefaultRequest(PreferencesRequest request) {
+        PreferencesResponse response = new PreferencesResponse(request);
+        response.setValue(PreferencesAS2.getDefaultValue(request.getKey()));
+        return response;
+    }
+
+    public void processPreferencesSetRequest(PreferencesRequest request, String userName, String processOriginHost) {
+        this.preferences.clearCache();
+        String oldValue = this.preferences.get(request.getKey());
+        if (!oldValue.equals(request.getValue())) {
+            this.preferences.put(request.getKey(), request.getValue());
+            this.fireEventPreferencesModified(userName, processOriginHost, request.getKey(),
+                    oldValue, request.getValue());
+            //some specials - do something on user defined changes
+            if (request.getKey().equals(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
+                if (this.preferences.getBoolean(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
+                    this.partnerTLSCertificateChangedController.startTLSCertificateChangedControl(true);
+                } else {
+                    this.partnerTLSCertificateChangedController.stopTLSCertificateChangedControl();
                 }
             }
+        }
+    }
+
+    /**
+     * Public wrapper for REST API - get notification data
+     */
+    public NotificationGetResponse processNotificationGetRequest(NotificationGetRequest request) {
+        NotificationGetResponse response = new NotificationGetResponse(request);
+        NotificationAccessDB access = new NotificationAccessDBImplAS2(this.dbDriverManager);
+        response.setData(access.getNotificationData());
+        return response;
+    }
+
+    /**
+     * Public wrapper for REST API - set notification data
+     */
+    public void processNotificationSetMessage(NotificationSetMessage request, String userName, String processOriginHost) {
+        NotificationAccessDB access = new NotificationAccessDBImplAS2(this.dbDriverManager);
+        NotificationDataImplAS2 oldNotificationData = (NotificationDataImplAS2) access.getNotificationData();
+        NotificationDataImplAS2 newNotificationData = (NotificationDataImplAS2) request.getData();
+        access.updateNotification(newNotificationData);
+        if (!oldNotificationData.toXML(0).equals(newNotificationData.toXML(0))) {
+            SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_INFO,
+                    SystemEvent.ORIGIN_USER, SystemEvent.TYPE_SERVER_CONFIGURATION_CHANGED);
+            event.setSubject(this.rbPreferences.getResourceString("event.notificationdata.modified.subject"));
+            event.setBody(this.rbPreferences.getResourceString("event.notificationdata.modified.body",
+                    new Object[]{
+                        oldNotificationData.toXML(0),
+                        newNotificationData.toXML(0)
+                    }));
+            event.setProcessOriginHost(processOriginHost);
+            event.setUser(userName);
+            SystemEventManagerImplAS2.instance().newEvent(event);
+            this.clientserver.broadcastToClients(new ConfigurationChangedOnServerNotification());
         }
     }
 
@@ -2192,7 +2339,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                             "partnerevent",
                             "httpheader",
                             "partnersystem",
-                            "oauth2"
+                            // "oauth2"
                         });
                 try {
                     //first delete all partners that are in the DB but not in the new list
@@ -2304,6 +2451,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * A client asks for partner information
      */
     private void processPartnerListRequest(IoSession session, PartnerListRequest request) {
+        PartnerListResponse response = processPartnerListRequest(request);
+        session.write(response);
+    }
+
+    /**
+     * Get partner list without IoSession dependency (for REST API)
+     */
+    public PartnerListResponse processPartnerListRequest(PartnerListRequest request) {
         PartnerListResponse response = new PartnerListResponse(request);
         try {
             if (request.getListOption() == PartnerListRequest.LIST_ALL) {
@@ -2345,11 +2500,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageOverviewRequest(IoSession session, MessageOverviewRequest request) {
+        MessageOverviewResponse response = processMessageOverviewRequest(request);
+        session.write(response);
+    }
+
+    public MessageOverviewResponse processMessageOverviewRequest(MessageOverviewRequest request) {
         MessageOverviewResponse response = new MessageOverviewResponse(request);
         if (request.getFilter() != null) {
             response.setList(this.messageAccess.getMessageOverview(request.getFilter()));
@@ -2357,29 +2516,40 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             response.setList(this.messageAccess.getMessageOverview(request.getMessageId()));
         }
         response.setMessageSumOnServer(this.messageAccess.getMessageCount());
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageLogRequest(IoSession session, MessageLogRequest request) {
+        MessageLogResponse response = processMessageLogRequest(request);
+        session.write(response);
+    }
+
+    public MessageLogResponse processMessageLogRequest(MessageLogRequest request) {
         MessageLogResponse response = new MessageLogResponse(request);
         response.setList(this.logAccess.getLog(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     private void processMessageDetailRequest(IoSession session, MessageDetailRequest request) {
-        MessageDetailResponse response = new MessageDetailResponse(request);
-        response.setList(this.messageAccess.getMessageDetails(request.getMessageId()));
-        //sync answer
+        MessageDetailResponse response = processMessageDetailRequest(request);
         session.write(response);
     }
 
+    public MessageDetailResponse processMessageDetailRequest(MessageDetailRequest request) {
+        MessageDetailResponse response = new MessageDetailResponse(request);
+        response.setList(this.messageAccess.getMessageDetails(request.getMessageId()));
+        return response;
+    }
+
     private void processMessagePayloadRequest(IoSession session, MessagePayloadRequest request) {
+        MessagePayloadResponse response = processMessagePayloadRequest(request);
+        session.write(response);
+    }
+
+    public MessagePayloadResponse processMessagePayloadRequest(MessagePayloadRequest request) {
         MessagePayloadResponse response = new MessagePayloadResponse(request);
         response.setList(this.messageAccess.getPayload(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
@@ -2487,17 +2657,26 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      * sync
      */
     private void processCEMListRequest(IoSession session, CEMListRequest request) {
+        CEMListResponse response = processCEMListRequest(request);
+        session.write(response);
+    }
+
+    public CEMListResponse processCEMListRequest(CEMListRequest request) {
         CEMListResponse response = new CEMListResponse(request);
         CEMAccessDB access = new CEMAccessDB(this.dbDriverManager);
         response.setList(access.getCEMEntries());
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
      * sync
      */
     private void processCEMDeleteRequest(IoSession session, CEMDeleteRequest request) {
+        ClientServerResponse response = processCEMDeleteRequest(request);
+        session.write(response);
+    }
+
+    public ClientServerResponse processCEMDeleteRequest(CEMDeleteRequest request) {
         CEMEntry entry = request.getEntry();
         CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
         cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
@@ -2516,36 +2695,48 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             this.messageAccess.deleteMessages(responseMessageList);
         }
         cemAccess.removeEntry(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId());
-        //sync answer
-        session.write(new ClientServerResponse(request));
+        return new ClientServerResponse(request);
     }
 
     /**
      * sync
      */
     private void processCEMCancelRequest(IoSession session, CEMCancelRequest request) {
+        ClientServerResponse response = processCEMCancelRequest(request);
+        session.write(response);
+    }
+
+    public ClientServerResponse processCEMCancelRequest(CEMCancelRequest request) {
         CEMEntry entry = request.getEntry();
         CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
         cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
                 CEMEntry.STATUS_CANCELED_INT);
-        //sync answer
-        session.write(new ClientServerResponse(request));
+        return new ClientServerResponse(request);
     }
 
     /**
      * sync
      */
     private void processMessageRequestLastMessage(IoSession session, MessageRequestLastMessage request) {
+        MessageResponseLastMessage response = processMessageRequestLastMessage(request);
+        session.write(response);
+    }
+
+    public MessageResponseLastMessage processMessageRequestLastMessage(MessageRequestLastMessage request) {
         MessageResponseLastMessage response = new MessageResponseLastMessage(request);
         response.setInfo(this.messageAccess.getLastMessageEntry(request.getMessageId()));
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
      * sync
      */
     private void processCEMSendRequest(IoSession session, CEMSendRequest request) {
+        CEMSendResponse response = processCEMSendRequest(request);
+        session.write(response);
+    }
+
+    public CEMSendResponse processCEMSendRequest(CEMSendRequest request) {
         CEMSendResponse response = new CEMSendResponse(request);
         Partner initiator = request.getInitiator();
         KeystoreCertificate certificate = request.getCertificate();
@@ -2569,8 +2760,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Throwable e) {
             response.setException(e);
         }
-        //sync answer
-        session.write(response);
+        return response;
     }
 
     /**
@@ -3060,6 +3250,327 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         catch (Exception e) {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
         }
+    }
+
+    /**
+     * Process user list request
+     */
+    public UserListResponse processUserListRequest(UserListRequest request) {
+        UserListResponse response = new UserListResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            List<WebUIUser> users = userMgmt.getAllUsers();
+            // Remove password hashes for security
+            for (WebUIUser user : users) {
+                user.setPasswordHash(null);
+            }
+            response.setUsers(users);
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user list request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user create request
+     */
+    public UserCreateResponse processUserCreateRequest(UserCreateRequest request) {
+        UserCreateResponse response = new UserCreateResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            WebUIUser user = request.getUser();
+
+            String password;
+            if (request.isGenerateAndEmailPassword()) {
+                // Generate random password
+                password = de.mendelson.comm.as2.usermanagement.PasswordGenerator.generatePassword();
+            } else {
+                password = request.getPlainPassword();
+            }
+
+            // All new users must change password on first login (except admin)
+            if (!"admin".equals(user.getUsername())) {
+                user.setMustChangePassword(true);
+            }
+
+            // Hash the password
+            String passwordHash = User.cryptPassword(password.toCharArray());
+            user.setPasswordHash(passwordHash);
+
+            // Create user
+            int userId = userMgmt.createUser(user);
+            response.setUserId(userId);
+
+            // Send email if requested
+            if (request.isGenerateAndEmailPassword()) {
+                try {
+                    de.mendelson.util.systemevents.notification.NotificationAccessDB notificationAccess
+                        = new de.mendelson.util.systemevents.notification.NotificationAccessDBImplAS2(this.dbDriverManager);
+                    de.mendelson.util.systemevents.notification.NotificationData notificationData
+                        = notificationAccess.getNotificationData();
+
+                    // Get server URL from preferences (construct from HTTP port)
+                    String httpPort = this.preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
+                    String serverUrl = "http://localhost:" + httpPort + "/as2";
+
+                    de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
+                        user, password, notificationData, serverUrl);
+                } catch (Exception emailEx) {
+                    this.logger.warning("User created but email failed: " + emailEx.getMessage());
+                    response.setException(new Exception("User created but email notification failed: " + emailEx.getMessage()));
+                }
+            }
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user create request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user modify request
+     */
+    public UserModifyResponse processUserModifyRequest(UserModifyRequest request) {
+        UserModifyResponse response = new UserModifyResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.updateUser(request.getUser());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user modify request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user delete request
+     */
+    public UserDeleteResponse processUserDeleteRequest(UserDeleteRequest request) {
+        UserDeleteResponse response = new UserDeleteResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.deleteUser(request.getUserId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user delete request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process password change request
+     */
+    public UserPasswordChangeResponse processUserPasswordChangeRequest(UserPasswordChangeRequest request) {
+        UserPasswordChangeResponse response = new UserPasswordChangeResponse(request);
+        try {
+            // Hash the password server-side
+            String passwordHash = User.cryptPassword(request.getPlainPassword().toCharArray());
+
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.changePassword(request.getUserId(), passwordHash);
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing password change request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process role list request
+     */
+    public RoleListResponse processRoleListRequest(RoleListRequest request) {
+        RoleListResponse response = new RoleListResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            response.setRoles(userMgmt.getAllRoles());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing role list request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user roles request
+     */
+    public UserRolesResponse processUserRolesRequest(UserRolesRequest request) {
+        UserRolesResponse response = new UserRolesResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            response.setRoles(userMgmt.getUserRoles(request.getUserId()));
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user roles request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user role assign request
+     */
+    public UserRoleAssignResponse processUserRoleAssignRequest(UserRoleAssignRequest request) {
+        UserRoleAssignResponse response = new UserRoleAssignResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.assignRoleToUser(request.getUserId(), request.getRoleId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user role assign request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user role remove request
+     */
+    public UserRoleRemoveResponse processUserRoleRemoveRequest(UserRoleRemoveRequest request) {
+        UserRoleRemoveResponse response = new UserRoleRemoveResponse(request);
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            userMgmt.removeRoleFromUser(request.getUserId(), request.getRoleId());
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user role remove request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user HTTP authentication preferences request
+     */
+    public UserHttpAuthPreferenceResponse processUserHttpAuthPreferenceRequest(UserHttpAuthPreferenceRequest request) {
+        UserHttpAuthPreferenceResponse response = new UserHttpAuthPreferenceResponse(request);
+        try {
+            UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(this.dbDriverManager, this.logger);
+
+            // Get all partners
+            PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
+            List<Partner> allPartners = partnerDB.getAllPartner();
+
+            // Get existing preferences for user
+            List<UserHttpAuthPreference> existingPrefs = prefDB.getPreferencesForUser(request.getUserId());
+
+            // Convert to response structure
+            for (UserHttpAuthPreference pref : existingPrefs) {
+                int partnerId = pref.getPartnerId();
+
+                // Add message auth if enabled
+                if (pref.isUseMessageAuth()) {
+                    response.addPreference(partnerId, "message", "username", pref.getMessageUsername() != null ? pref.getMessageUsername() : "");
+                    response.addPreference(partnerId, "message", "password", pref.getMessagePassword() != null ? pref.getMessagePassword() : "");
+                }
+
+                // Add MDN auth if enabled
+                if (pref.isUseMdnAuth()) {
+                    response.addPreference(partnerId, "mdn", "username", pref.getMdnUsername() != null ? pref.getMdnUsername() : "");
+                    response.addPreference(partnerId, "mdn", "password", pref.getMdnPassword() != null ? pref.getMdnPassword() : "");
+                }
+            }
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user HTTP auth preference request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user HTTP authentication preferences save request
+     */
+    public UserHttpAuthPreferenceSaveResponse processUserHttpAuthPreferenceSaveRequest(UserHttpAuthPreferenceSaveRequest request) {
+        UserHttpAuthPreferenceSaveResponse response = new UserHttpAuthPreferenceSaveResponse(request);
+        try {
+            UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(this.dbDriverManager, this.logger);
+
+            // Get all partners to determine which ones to process
+            PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
+            List<Partner> allPartners = partnerDB.getAllPartner();
+
+            // First, delete all existing preferences for this user
+            for (Partner partner : allPartners) {
+                if (!partner.isLocalStation()) {
+                    prefDB.deletePreference(request.getUserId(), partner.getDBId());
+                }
+            }
+
+            // Save new preferences from request
+            Map<Integer, Map<String, Map<String, String>>> preferences = request.getPreferences();
+            for (Map.Entry<Integer, Map<String, Map<String, String>>> partnerEntry : preferences.entrySet()) {
+                int partnerId = partnerEntry.getKey();
+                Map<String, Map<String, String>> types = partnerEntry.getValue();
+
+                UserHttpAuthPreference pref = new UserHttpAuthPreference();
+                pref.setUserId(request.getUserId());
+                pref.setPartnerId(partnerId);
+
+                // Extract message auth
+                if (types.containsKey("message")) {
+                    Map<String, String> messageFields = types.get("message");
+                    String messageUser = messageFields.get("username");
+                    String messagePass = messageFields.get("password");
+
+                    if (messageUser != null && !messageUser.trim().isEmpty()) {
+                        pref.setUseMessageAuth(true);
+                        pref.setMessageUsername(messageUser);
+                        pref.setMessagePassword(messagePass != null ? messagePass : "");
+                    }
+                }
+
+                // Extract MDN auth
+                if (types.containsKey("mdn")) {
+                    Map<String, String> mdnFields = types.get("mdn");
+                    String mdnUser = mdnFields.get("username");
+                    String mdnPass = mdnFields.get("password");
+
+                    if (mdnUser != null && !mdnUser.trim().isEmpty()) {
+                        pref.setUseMdnAuth(true);
+                        pref.setMdnUsername(mdnUser);
+                        pref.setMdnPassword(mdnPass != null ? mdnPass : "");
+                    }
+                }
+
+                // Only save if at least one auth type is enabled
+                if (pref.isUseMessageAuth() || pref.isUseMdnAuth()) {
+                    prefDB.savePreference(pref);
+                }
+            }
+
+            response.setSuccess(true);
+        } catch (Exception e) {
+            response.setSuccess(false);
+            response.setErrorMessage(e.getMessage());
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user HTTP auth preference save request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Get the certificate manager for signing/encryption certificates
+     */
+    public CertificateManager getCertificateManagerSignEncrypt() {
+        return this.certificateManagerEncSign;
+    }
+
+    /**
+     * Get the certificate manager for TLS certificates
+     */
+    public CertificateManager getCertificateManagerTLS() {
+        return this.certificateManagerTLS;
+    }
+
+    /**
+     * Get the database driver manager
+     */
+    public IDBDriverManager getDBDriverManager() {
+        return this.dbDriverManager;
+    }
+
+    /**
+     * Get the client server instance
+     */
+    public ClientServer getClientserver() {
+        return this.clientserver;
     }
 
 }

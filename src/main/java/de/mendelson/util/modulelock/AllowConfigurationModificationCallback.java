@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/AllowConfigurationModificationCallback.java 4     2/11/23 14:03 Heller $
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.modulelock.message.ModuleLockRequest;

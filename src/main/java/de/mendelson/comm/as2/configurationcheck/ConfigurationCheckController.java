@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/configurationcheck/ConfigurationCheckController.java 52    21/02/25 16:04 Heller $
 package de.mendelson.comm.as2.configurationcheck;
 
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
@@ -31,6 +30,14 @@ import oshi.software.os.OperatingSystem;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Checks several issues of the configuration
@@ -83,7 +90,7 @@ public class ConfigurationCheckController {
     public List<ConfigurationIssue> runClientRelatedTests(
             String clientProcessId, String serverProcessId) {
         List<ConfigurationIssue> clientIssueList = new ArrayList<ConfigurationIssue>();
-        this.checkClientAndServerRunInOneProcess(clientIssueList, clientProcessId, serverProcessId);
+        // this.checkClientAndServerRunInOneProcess(clientIssueList, clientProcessId, serverProcessId);
         return (clientIssueList);
     }
 

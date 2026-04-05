@@ -1,11 +1,19 @@
-//$Header: /as2/de/mendelson/comm/as2/send/DirPollManager.java 63    19/02/25 17:31 Heller $
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.MecResourceBundle;
-import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.security.cert.CertificateManager;
@@ -20,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -49,11 +58,14 @@ public class DirPollManager {
     private final Map<String, DirPollThread> mapPollThread
             = Collections.synchronizedMap(new HashMap<String, DirPollThread>());
     /**
-     * Executor service for all poll threads, with n poll threads at the same
-     * time
+     * Executor service for all poll threads (Java 17 compatible)
      */
-    private final ScheduledThreadPoolExecutor scheduledExecutor = new ScheduledThreadPoolExecutor(5,
-            new NamedThreadFactory("dir-poll"));
+    private final ScheduledThreadPoolExecutor scheduledExecutor =
+        (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(
+            Runtime.getRuntime().availableProcessors()
+            // Virtual threads require Java 21+
+            // Thread.ofVirtual().name("dir-poll-", 0).factory()
+        );
     /**
      * Localize the GUI
      */

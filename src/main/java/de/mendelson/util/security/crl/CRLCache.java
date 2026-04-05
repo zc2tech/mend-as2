@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/crl/CRLCache.java 1     26/02/24 11:26 Heller $
 package de.mendelson.util.security.crl;
 
 import java.security.cert.X509CRL;

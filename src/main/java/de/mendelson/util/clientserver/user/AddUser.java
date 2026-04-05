@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/clientserver/user/AddUser.java 3     25/02/25 10:27 Heller $
 package de.mendelson.util.clientserver.user;
 
 import java.util.logging.Logger;

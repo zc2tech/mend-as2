@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/preferences/ConfigurationChangedOnServerPreferences.java 2     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.clients.preferences;
 
 import java.io.Serializable;

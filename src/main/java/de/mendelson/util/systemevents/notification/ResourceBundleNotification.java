@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/systemevents/notification/ResourceBundleNotification.java 17    2/12/24 10:32 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.MecResourceBundle;

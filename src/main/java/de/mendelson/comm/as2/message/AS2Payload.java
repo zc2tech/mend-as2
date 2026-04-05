@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2Payload.java 24    1/11/24 11:34 Heller $
 package de.mendelson.comm.as2.message;
 
 import java.io.ByteArrayOutputStream;

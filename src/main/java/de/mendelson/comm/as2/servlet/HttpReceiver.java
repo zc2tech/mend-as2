@@ -1,5 +1,4 @@
- ///$Header: /as2/de/mendelson/comm/as2/servlet/HttpReceiver.java 64    14/02/25 9:58 Heller $
-package de.mendelson.comm.as2.servlet;
+ package de.mendelson.comm.as2.servlet;
 
 import de.mendelson.Copyright;
 import de.mendelson.comm.as2.AS2ServerVersion;
@@ -23,11 +22,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Properties;
 import javax.net.ssl.SSLSession;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -191,7 +190,10 @@ public class HttpReceiver extends HttpServlet {
         }
         try(AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)){
             client.setDisplayServerLogMessages(false);
-            client.connect("localhost", AS2Server.CLIENTSERVER_COMM_PORT, 30000);
+            // Use test mode port if enabled
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+            client.connect("localhost", port, 30000);
             IncomingMessageResponse messageResponse = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
             if (messageResponse.getException() != null) {
                 throw (messageResponse.getException());

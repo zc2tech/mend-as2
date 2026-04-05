@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/LockClientInformation.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.modulelock;
 
 import java.io.Serializable;

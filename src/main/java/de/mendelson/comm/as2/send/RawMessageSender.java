@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/RawMessageSender.java 28    10/07/24 13:39 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.AS2ServerVersion;
@@ -21,6 +20,14 @@ import java.util.logging.Logger;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Raw data uploader, for test purpose. Sends a already fully prepared
@@ -52,7 +59,10 @@ public class RawMessageSender {
         }
         AnonymousTextClient client = null;
         client = new AnonymousTextClient(BaseClient.CLIENT_UNSPECIFIED);
-        client.connect("localhost", AS2Server.CLIENTSERVER_COMM_PORT, 30000);        
+        // Use test mode port if enabled
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+        int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+        client.connect("localhost", port, 30000);        
         IncomingMessageRequest messageRequest = new IncomingMessageRequest();
         messageRequest.setMessageDataFilename(rawDataFile.toAbsolutePath().toString());
         messageRequest.setHeader(header);

@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/statistic/StatisticExport.java 4     2/01/23 16:47 Heller $
 package de.mendelson.comm.as2.statistic;
 
 /*

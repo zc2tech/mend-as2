@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/gui/ListCellRendererEventCategory.java 3     14/05/24 13:47 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import java.awt.Component;

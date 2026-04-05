@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/database/migration/clientserver/HSQLDBMigrationVersionMismatchException.java 2     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.database.migration.clientserver;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

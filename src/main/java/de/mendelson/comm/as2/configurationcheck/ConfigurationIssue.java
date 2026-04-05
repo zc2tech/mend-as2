@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/configurationcheck/ConfigurationIssue.java 23    19/06/24 13:20 Heller $
 package de.mendelson.comm.as2.configurationcheck;
 
 import de.mendelson.util.MecResourceBundle;

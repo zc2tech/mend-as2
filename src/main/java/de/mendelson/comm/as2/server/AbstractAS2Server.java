@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/AbstractAS2Server.java 6     20/02/25 13:41 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.util.security.cert.CertificateManager;

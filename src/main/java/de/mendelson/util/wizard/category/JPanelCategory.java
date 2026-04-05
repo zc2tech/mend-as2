@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/wizard/category/JPanelCategory.java 10    11/02/25 13:40 Heller $Revision: 7 $
 package de.mendelson.util.wizard.category;
 
 import java.awt.event.MouseAdapter;

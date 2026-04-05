@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/sendorder/SendOrder.java 8     14/01/25 14:20 Heller $
 package de.mendelson.comm.as2.sendorder;
 
 import de.mendelson.comm.as2.message.AS2Message;
@@ -30,6 +29,7 @@ public class SendOrder implements Serializable {
     private final AtomicInteger retryCount = new AtomicInteger(0);
     private int dbId = -1;
     private String userdefinedId = null;
+    private int userId = -1; // WebUI user ID for HTTP auth preference resolution
 
     public Partner getReceiver() {
         return receiver;
@@ -91,5 +91,20 @@ public class SendOrder implements Serializable {
         this.userdefinedId = userdefinedId;
         return( this );
     }
-        
+
+    /**
+     * @return the userId (WebUI user ID for HTTP auth preference resolution)
+     */
+    public int getUserId() {
+        return userId;
+    }
+
+    /**
+     * @param userId the userId to set
+     */
+    public SendOrder setUserId(int userId) {
+        this.userId = userId;
+        return( this );
+    }
+
 }

@@ -1,7 +1,5 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2MDNCreation.java 55    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.message;
 
-import com.sun.mail.util.LineOutputStream;
 import de.mendelson.comm.as2.AS2Exception;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.util.security.cert.CertificateManager;
@@ -24,14 +22,14 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.activation.DataHandler;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
-import javax.mail.util.ByteArrayDataSource;
+import jakarta.activation.DataHandler;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
+import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.util.ByteArrayDataSource;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -39,6 +37,14 @@ import javax.mail.util.ByteArrayDataSource;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Packs a message with all necessary headers and attachments
@@ -196,12 +202,10 @@ public class AS2MDNCreation {
             //normally the content type header is folded (which is correct but some products are not able to parse this properly)
             //Now take the content-type, unfold it and write it
             Enumeration hdrLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
-            try (LineOutputStream los = new LineOutputStream(memOutUnsigned)) {
-                while (hdrLines.hasMoreElements()) {
-                    //requires java mail API >= 1.4
-                    String nextHeaderLine = MimeUtility.unfold((String) hdrLines.nextElement());
-                    los.writeln(nextHeaderLine);
-                }
+            while (hdrLines.hasMoreElements()) {
+                //requires java mail API >= 1.4
+                String nextHeaderLine = MimeUtility.unfold((String) hdrLines.nextElement());
+                memOutUnsigned.write((nextHeaderLine + "\r\n").getBytes("US-ASCII"));
             }
             messagePart.writeTo(memOutUnsigned,
                     new String[]{"Message-ID", "Mime-Version", "Content-Type"});

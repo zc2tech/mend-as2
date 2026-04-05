@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/clientserver/ClientServerSessionHandlerCallback.java 1     9/16/15 12:29p Heller $
 package de.mendelson.util.clientserver;
 
 import org.apache.mina.core.session.IoSession;

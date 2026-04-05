@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/crl/CRLVerificationException.java 1     29/02/24 10:06 Heller $
 package de.mendelson.util.security.crl;
 
 /*

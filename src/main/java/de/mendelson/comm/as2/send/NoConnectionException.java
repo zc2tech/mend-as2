@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/NoConnectionException.java 1     3.01.12 16:29 Heller $
 package de.mendelson.comm.as2.send;
 
 /*

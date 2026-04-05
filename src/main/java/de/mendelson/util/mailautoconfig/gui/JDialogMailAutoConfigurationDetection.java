@@ -1,7 +1,7 @@
-//$Header: /mec_oftp2/de/mendelson/util/mailautoconfig/gui/JDialogMailAutoConfigurationDetection.java 8     14/03/25 11:33 Heller $
 package de.mendelson.util.mailautoconfig.gui;
 
 import de.mendelson.util.IStatusBar;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -16,8 +16,8 @@ import de.mendelson.util.uinotification.UINotification;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -33,6 +33,14 @@ import javax.swing.event.ListSelectionListener;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Detect mail server settings by a give mail address

@@ -1,4 +1,3 @@
-//$Header: /converteride/de/mendelson/util/wizard/category/Subcategory.java 3     30.03.05 11:55 Heller $
 package de.mendelson.util.wizard.category;
 
 import javax.swing.ImageIcon;

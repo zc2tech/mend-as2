@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/LockingGlassPane.java 3     28.07.11 10:18 Heller $
 package de.mendelson.util;
 
 import java.awt.Color;

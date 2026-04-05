@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/database/SQLScriptExecutor.java 3     16/12/24 9:51 Heller $
 package de.mendelson.util.database;
 
 import de.mendelson.IProductVersion;
@@ -20,6 +19,14 @@ import java.util.TimeZone;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Class that can execute SQL scripts or execute predefined commands which are
@@ -104,12 +111,41 @@ public class SQLScriptExecutor {
     private void executeScript(Connection connection, InputStream is) throws Exception {
         ConsoleProgressBar.print(0f);
         List<String> queryList = new ArrayList<String>();
+        StringBuilder currentQuery = new StringBuilder();
         String line = "";
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             while (line != null) {
                 line = reader.readLine();
-                if (line != null && !line.trim().isEmpty() && (!line.startsWith("#"))) {
-                    queryList.add(line);
+                if (line != null) {
+                    String trimmedLine = line.trim();
+                    // Skip empty lines and comments
+                    if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("--")) {
+                        continue;
+                    }
+                    // Append line to current query
+                    if (currentQuery.length() > 0) {
+                        currentQuery.append(" ");
+                    }
+                    currentQuery.append(trimmedLine);
+                    // Check if the line ends with a semicolon (statement terminator)
+                    if (trimmedLine.endsWith(";")) {
+                        // Remove the semicolon and add the complete query to the list
+                        String completeQuery = currentQuery.toString();
+                        if (completeQuery.endsWith(";")) {
+                            completeQuery = completeQuery.substring(0, completeQuery.length() - 1).trim();
+                        }
+                        if (!completeQuery.isEmpty()) {
+                            queryList.add(completeQuery);
+                        }
+                        currentQuery.setLength(0); // Reset for next query
+                    }
+                }
+            }
+            // Handle any remaining query that doesn't end with semicolon
+            if (currentQuery.length() > 0) {
+                String remainingQuery = currentQuery.toString().trim();
+                if (!remainingQuery.isEmpty()) {
+                    queryList.add(remainingQuery);
                 }
             }
         }
@@ -137,6 +173,17 @@ public class SQLScriptExecutor {
             }
             try (PreparedStatement statement = connection.prepareStatement(modifiedQuery)) {
                 statement.executeUpdate();
+            } catch (Exception e) {
+                // Check if the error is due to an object already existing
+                String errorMsg = e.getMessage();
+                if (errorMsg != null && errorMsg.toLowerCase().contains("object name already exists")) {
+                    // Log warning but continue execution
+                    System.out.println("Warning: Skipping statement as object already exists: " + errorMsg);
+                    continue;
+                } else {
+                    // Re-throw other exceptions
+                    throw e;
+                }
             }
         }
         System.out.println();

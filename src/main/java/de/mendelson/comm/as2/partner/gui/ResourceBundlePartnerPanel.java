@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/ResourceBundlePartnerPanel.java 92    21/08/24 10:58 Heller $
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.util.MecResourceBundle;
@@ -165,6 +164,7 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
         {"tab.httpauth", "HTTP authentication"},
         {"tab.httpheader", "HTTP header"},
         {"tab.notification", "Notification"},
+        {"tab.visibility", "Visibility"},
         {"tab.events", "Postprocessing"},
         {"tab.partnersystem", "Info"},
         {"label.subject", "Payload subject"},

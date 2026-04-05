@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/AS2ServerVersion.java 94    20/03/25 14:45 Heller $
 package de.mendelson.comm.as2;
 
 import de.mendelson.Copyright;
@@ -10,6 +9,15 @@ import de.mendelson.IProductVersion;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 
 /**
@@ -27,7 +35,7 @@ public class AS2ServerVersion implements IProductVersion {
         StringBuilder agent = new StringBuilder();
         agent.append(AS2ServerVersion.getProductName()).append(" ");
         agent.append(AS2ServerVersion.getVersion()).append(" ");
-        agent.append(AS2ServerVersion.getBuild()).append(" - www.mendelson-e-c.com");
+        agent.append(AS2ServerVersion.getBuild());
         return (agent.toString());
     }
 
@@ -35,7 +43,7 @@ public class AS2ServerVersion implements IProductVersion {
      * Returns this products version number
      */
     public static String getVersion() {
-        return ("1.1");
+        return ("1.0");
     }
 
     /**
@@ -49,14 +57,14 @@ public class AS2ServerVersion implements IProductVersion {
      * Returns the internal build number
      */
     public static int getBuildNo() {
-        return (67);
+        return (0);
     }
 
     /**
      * returns the name of this product
      */
     public static String getProductName() {
-        return ("mendelson opensource AS2");
+        return ("mend-as2");
     }
 
     /**
@@ -65,7 +73,7 @@ public class AS2ServerVersion implements IProductVersion {
      * defined here, an auto update of the database is performed.
      */
     public static int getRequiredDBVersionConfig() {
-        return (56);
+        return (0);
     }
 
     /**
@@ -74,7 +82,7 @@ public class AS2ServerVersion implements IProductVersion {
      * defined here, an auto update of the database is performed.
      */
     public static int getRequiredDBVersionRuntime() {
-        return (51);
+        return (0);
     }
 
     /**
@@ -82,7 +90,7 @@ public class AS2ServerVersion implements IProductVersion {
      * short name exists!
      */
     public static String getProductNameShortcut() {
-        return ("mendelson opensource AS2");
+        return ("mend-as2");
     }
 
     /**

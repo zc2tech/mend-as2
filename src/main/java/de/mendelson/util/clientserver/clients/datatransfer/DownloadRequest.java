@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/datatransfer/DownloadRequest.java 6     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

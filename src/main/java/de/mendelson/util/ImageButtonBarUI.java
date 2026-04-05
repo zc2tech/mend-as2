@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/ImageButtonBarUI.java 8     8/05/24 14:47 Heller $
 package de.mendelson.util;
 
 import com.l2fprod.common.swing.plaf.basic.BasicButtonBarUI;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/uinotification/ShapedPanel.java 2     21/06/24 8:59 Heller $
 package de.mendelson.util.uinotification;
 
 import java.awt.Color;

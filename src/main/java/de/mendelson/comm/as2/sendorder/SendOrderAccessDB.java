@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/sendorder/SendOrderAccessDB.java 36    12/03/25 16:07 Heller $
 package de.mendelson.comm.as2.sendorder;
 
 import de.mendelson.util.database.IDBDriverManager;

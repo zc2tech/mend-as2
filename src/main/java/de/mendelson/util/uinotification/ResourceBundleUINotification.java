@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/uinotification/ResourceBundleUINotification.java 3     2/11/23 15:53 Heller $ 
 package de.mendelson.util.uinotification;
 
 import de.mendelson.util.MecResourceBundle;

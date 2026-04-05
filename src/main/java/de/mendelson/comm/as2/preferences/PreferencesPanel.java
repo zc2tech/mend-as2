@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/PreferencesPanel.java 8     17/02/23 15:48 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import javax.swing.ImageIcon;

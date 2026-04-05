@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/DirPollThread.java 45    19/02/25 17:31 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;

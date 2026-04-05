@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/connectiontest/OFTP2SSRM.java 2     2/11/23 14:03 Heller $
 package de.mendelson.util.clientserver.connectiontest;
 
 /*

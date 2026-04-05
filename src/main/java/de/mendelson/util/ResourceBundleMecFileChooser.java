@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/ResourceBundleMecFileChooser.java 6     2/11/23 15:53 Heller $
 package de.mendelson.util;
 
 /*

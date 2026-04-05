@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/clientserver/CRLVerificationRequest.java 3     29/02/24 10:22 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

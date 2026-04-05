@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/gui/ResourceBundleLogin.java 5     12/06/24 16:25 Heller $
 package de.mendelson.util.clientserver.gui;
 
 import de.mendelson.util.MecResourceBundle;

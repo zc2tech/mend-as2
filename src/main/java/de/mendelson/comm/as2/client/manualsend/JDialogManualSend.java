@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/manualsend/JDialogManualSend.java 44    19/12/24 8:54 Heller $
 package de.mendelson.comm.as2.client.manualsend;
 
 import de.mendelson.comm.as2.client.AS2StatusBar;
@@ -6,6 +5,8 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.gui.ListCellRendererPartner;
+import de.mendelson.util.KeyboardShortcutUtil;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;
@@ -37,6 +38,14 @@ import javax.swing.SwingUtilities;
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
  */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
 /**
  * Dialog to send a file to a single partner
  *
@@ -45,7 +54,7 @@ import javax.swing.SwingUtilities;
  */
 public class JDialogManualSend extends JDialog {
 
-    private final static boolean MULTIPLE_FILES = false;
+    private final static boolean MULTIPLE_FILES = true;
 
     /**
      * ResourceBundle to localize the GUI
@@ -93,6 +102,8 @@ public class JDialogManualSend extends JDialog {
         this.jLabelFilename2.setVisible(MULTIPLE_FILES);
 
         this.getRootPane().setDefaultButton(this.jButtonOk);
+        // Setup keyboard shortcuts
+        this.setupKeyboardShortcuts();
         //fill in data
         try {
             PartnerListResponse response = (PartnerListResponse) baseClient.sendSync(
@@ -134,6 +145,14 @@ public class JDialogManualSend extends JDialog {
 
     private void setMultiresolutionIcons() {
         this.jLabelIcon.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(32)));
+    }
+
+    /**
+     * Setup keyboard shortcuts for this dialog
+     */
+    private void setupKeyboardShortcuts() {
+        // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
+        KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, this.jButtonCancel);
     }
 
     /**

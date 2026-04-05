@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/loggui/ResourceBundleFileDisplay.java 7     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.message.loggui;
 import de.mendelson.util.MecResourceBundle;
 /*

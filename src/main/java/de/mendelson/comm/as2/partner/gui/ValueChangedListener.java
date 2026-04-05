@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/ValueChangedListener.java 2     2/11/23 14:02 Heller $
 package de.mendelson.comm.as2.partner.gui;
 
 import java.util.*;

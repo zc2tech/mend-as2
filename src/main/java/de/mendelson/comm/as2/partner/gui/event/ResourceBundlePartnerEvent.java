@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/event/ResourceBundlePartnerEvent.java 7     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.partner.gui.event;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
 import de.mendelson.util.MecResourceBundle;

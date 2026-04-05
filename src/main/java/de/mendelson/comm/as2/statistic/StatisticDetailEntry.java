@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/statistic/StatisticDetailEntry.java 1     2/02/22 15:36 Heller $
 package de.mendelson.comm.as2.statistic;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import java.io.Serializable;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/ListCellRendererDirection.java 5     14/05/24 13:47 Heller $
 package de.mendelson.comm.as2.client;
 
 import de.mendelson.util.MecResourceBundle;

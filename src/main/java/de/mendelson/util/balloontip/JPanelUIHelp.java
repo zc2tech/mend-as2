@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/balloontip/JPanelUIHelp.java 21    19/02/25 12:59 Heller $
 package de.mendelson.util.balloontip;
 
 import de.mendelson.util.MecResourceBundle;

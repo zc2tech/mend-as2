@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/wizard/category/JDialogCategorySelection.java 10    11/02/25 13:40 Heller $
 package de.mendelson.util.wizard.category;
 
 import de.mendelson.util.MecResourceBundle;

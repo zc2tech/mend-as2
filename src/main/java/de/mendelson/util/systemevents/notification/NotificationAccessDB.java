@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/NotificationAccessDB.java 5     28/07/22 13:06 Heller $
 package de.mendelson.util.systemevents.notification;
 
 /*

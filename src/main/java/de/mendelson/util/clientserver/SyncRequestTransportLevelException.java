@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/SyncRequestTransportLevelException.java 1     12.01.11 17:54 Heller $
 package de.mendelson.util.clientserver;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/TableModelCertificates.java 28    4/03/25 14:36 Heller $
 package de.mendelson.util.security.cert;
 
 import de.mendelson.util.ImageUtil;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/JettyConfigfileHandler.java 2     24/01/25 10:24 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;

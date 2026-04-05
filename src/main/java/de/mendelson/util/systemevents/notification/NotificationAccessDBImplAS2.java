@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/NotificationAccessDBImplAS2.java 22    12/03/25 17:28 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.database.IDBDriverManager;
@@ -18,6 +17,14 @@ import java.sql.Types;
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
  * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
  * Stores the notification data for the AS2
@@ -65,18 +72,18 @@ public class NotificationAccessDBImplAS2 implements NotificationAccessDB {
                         data.setMaxNotificationsPerMin(result.getInt("maxnotificationspermin"));
                         data.setNotifyConnectionProblem(result.getInt("notifyconnectionproblem") == 1 ? true : false);
                         data.setNotifyPostprocessingProblem(result.getInt("notifypostprocessing") == 1 ? true : false);
-                        int oAuth2Id = result.getInt("smtpoauth2id");
-                        if (!result.wasNull()) {
-                            OAuth2AccessDB oauth2Access = new OAuth2AccessDB(this.dbDriverManager, SystemEventManagerImplAS2.instance());
-                            OAuth2Config config = oauth2Access.getOAuth2Config(oAuth2Id, configConnectionAutoCommit);
-                            if (config != null) {
-                                data.setOAuth2Config(config);
-                            } else {
-                                data.setUsesSMTPAuthOAuth2(false);
-                            }
-                        } else {
+                        // int oAuth2Id = result.getInt("smtpoauth2id");
+                        // if (!result.wasNull()) {
+                        //     OAuth2AccessDB oauth2Access = new OAuth2AccessDB(this.dbDriverManager, SystemEventManagerImplAS2.instance());
+                        //     OAuth2Config config = oauth2Access.getOAuth2Config(oAuth2Id, configConnectionAutoCommit);
+                        //     if (config != null) {
+                        //         data.setOAuth2Config(config);
+                        //     } else {
+                        //         data.setUsesSMTPAuthOAuth2(false);
+                        //     }
+                        // } else {
                             data.setUsesSMTPAuthOAuth2(false);
-                        }
+                        // }
                         data.setNotifyClientServerProblem(result.getInt("notifyclientserver") == 1 ? true : false);
                         return (data);
                     }

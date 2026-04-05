@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/gui/JTreeTrustChain.java 14    20/11/24 8:01 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.KeystoreCertificate;

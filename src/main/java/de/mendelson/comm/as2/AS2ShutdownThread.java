@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/AS2ShutdownThread.java 18    8/11/24 9:00 Heller $
 package de.mendelson.comm.as2;
 
 import de.mendelson.comm.as2.server.AS2Server;

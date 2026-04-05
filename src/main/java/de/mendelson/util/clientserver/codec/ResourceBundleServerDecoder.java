@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/codec/ResourceBundleServerDecoder.java 4     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.codec;
 
 import de.mendelson.util.MecResourceBundle;

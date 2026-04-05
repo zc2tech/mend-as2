@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/mailautoconfig/clientserver/MailAutoConfigDetectRequest.java 3     2/11/23 15:53 Heller $
 package de.mendelson.util.mailautoconfig.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

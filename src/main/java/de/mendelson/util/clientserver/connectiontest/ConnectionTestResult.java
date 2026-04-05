@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/connectiontest/ConnectionTestResult.java 6     19/09/24 14:12 Heller $
 package de.mendelson.util.clientserver.connectiontest;
 
 import java.io.Serializable;

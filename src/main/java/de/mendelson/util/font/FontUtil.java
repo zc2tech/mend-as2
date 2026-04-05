@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/font/FontUtil.java 14    11/02/25 13:40 Heller $
 package de.mendelson.util.font;
 
 import java.awt.Color;
