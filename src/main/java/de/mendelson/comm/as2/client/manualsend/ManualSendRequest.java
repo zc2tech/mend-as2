@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/manualsend/ManualSendRequest.java 14    2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.client.manualsend;
 
 import de.mendelson.util.clientserver.clients.datatransfer.UploadRequestFile;

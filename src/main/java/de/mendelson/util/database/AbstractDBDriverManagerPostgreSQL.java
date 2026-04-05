@@ -1,4 +1,3 @@
-//$Header: /mec_as4/de/mendelson/util/database/AbstractDBDriverManagerPostgreSQL.java 3     6.01.22 9:25 Heller $
 package de.mendelson.util.database;
 
 import java.sql.PreparedStatement;

@@ -1,5 +1,4 @@
- ///$Header: /as2/de/mendelson/comm/as2/servlet/HttpReceiver.java 64    14/02/25 9:58 Heller $
-package de.mendelson.comm.as2.servlet;
+ /package de.mendelson.comm.as2.servlet;
 
 import de.mendelson.Copyright;
 import de.mendelson.comm.as2.AS2ServerVersion;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/HttpConnectionParameter.java 7     2/11/23 14:02 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

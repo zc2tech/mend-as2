@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2MessageCreation.java 85    17/01/25 8:48 Heller $
 package de.mendelson.comm.as2.message;
 
 import java.io.BufferedWriter;

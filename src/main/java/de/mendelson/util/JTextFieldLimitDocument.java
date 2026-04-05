@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/JTextFieldLimitDocument.java 2     8.04.15 13:54 Heller $
 package de.mendelson.util;
 
 import javax.swing.text.AttributeSet;

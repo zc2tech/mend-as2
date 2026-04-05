@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/CertificateCEMController.java 22    18/12/24 17:06 Heller $
 package de.mendelson.comm.as2.cem;
 
 import de.mendelson.util.security.cert.CertificateManager;

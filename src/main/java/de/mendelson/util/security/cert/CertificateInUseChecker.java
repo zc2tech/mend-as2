@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/CertificateInUseChecker.java 4     7/04/22 10:33 Heller $
 package de.mendelson.util.security.cert;
 
 /*

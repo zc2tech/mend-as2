@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/toggleswitch/ResourceBundleToggleSwitch.java 1     27/03/24 16:52 Heller $
 package de.mendelson.util.toggleswitch;
 
 import de.mendelson.util.MecResourceBundle;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/DisplayMode.java 2     11/02/25 13:39 Heller $
 package de.mendelson.util;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

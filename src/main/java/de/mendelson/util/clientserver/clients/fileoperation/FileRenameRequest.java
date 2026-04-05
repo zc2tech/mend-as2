@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/fileoperation/FileRenameRequest.java 4     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.clients.fileoperation;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

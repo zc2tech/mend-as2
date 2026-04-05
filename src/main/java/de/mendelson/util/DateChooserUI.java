@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/DateChooserUI.java 11    27/06/24 12:21 Heller $
 package de.mendelson.util;
 
 import com.toedter.calendar.JCalendar;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/connectionprogress/JDialogConnectionProgress.java 1     13.01.11 12:36 Heller $
 package de.mendelson.util.clientserver.connectionprogress;
 
 import de.mendelson.util.MecResourceBundle;

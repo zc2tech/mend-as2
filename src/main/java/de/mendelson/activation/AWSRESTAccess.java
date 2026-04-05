@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/activation/AWSRESTAccess.java 2     13/03/25 13:23 Heller $
 package de.mendelson.activation;
 
 /*

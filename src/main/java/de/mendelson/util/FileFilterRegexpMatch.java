@@ -1,5 +1,4 @@
- //$Header: /as2/de/mendelson/util/FileFilterRegexpMatch.java 9     11/02/25 13:39 Heller $
-package de.mendelson.util;
+ package de.mendelson.util;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;

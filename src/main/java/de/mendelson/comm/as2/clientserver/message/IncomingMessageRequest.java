@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/clientserver/message/IncomingMessageRequest.java 8     21/03/25 9:12 Heller $
 package de.mendelson.comm.as2.clientserver.message;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/AnonymousProcessingAS2.java 6     1-11-16 12:19p Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;

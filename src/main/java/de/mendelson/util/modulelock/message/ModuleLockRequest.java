@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/message/ModuleLockRequest.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.modulelock.message;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

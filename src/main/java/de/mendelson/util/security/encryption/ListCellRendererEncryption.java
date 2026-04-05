@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/encryption/ListCellRendererEncryption.java 5     31/05/24 11:55 Heller $
 package de.mendelson.util.security.encryption;
 
 import de.mendelson.util.ImageUtil;

@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/clientserver/clients/datatransfer/UploadRequestChunk.java 5     5/03/25 17:53 He $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

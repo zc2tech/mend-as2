@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/util/database/AbstractDBDriverManagerMySQL.java 3     2/02/22 13:44 Heller $
 package de.mendelson.util.database;
 
 import java.sql.SQLException;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/SystemEventNotificationControllerImplAS2.java 19    2/11/23 14:03 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.comm.as2.server.AS2Server;

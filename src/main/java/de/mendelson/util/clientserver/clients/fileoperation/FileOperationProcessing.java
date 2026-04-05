@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/clients/fileoperation/FileOperationProcessing.java 2     3/12/24 13:13 Heller $
 package de.mendelson.util.clientserver.clients.fileoperation;
 
 import java.io.IOException;

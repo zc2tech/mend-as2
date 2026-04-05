@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/statistic/ServerInteroperabilityAccessDB.java 5     2/01/23 12:08 Heller $
 package de.mendelson.comm.as2.statistic;
 
 import java.util.List;

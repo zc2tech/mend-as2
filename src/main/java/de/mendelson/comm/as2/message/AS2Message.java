@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2Message.java 74    20/02/25 13:41 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

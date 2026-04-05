@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/IProductVersion.java 1     21.04.21 10:56 Heller $
 package de.mendelson;
 
 /*

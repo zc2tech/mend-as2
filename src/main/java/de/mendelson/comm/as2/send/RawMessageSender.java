@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/RawMessageSender.java 28    10/07/24 13:39 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

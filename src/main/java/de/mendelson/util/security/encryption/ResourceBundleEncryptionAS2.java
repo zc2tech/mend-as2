@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/encryption/ResourceBundleEncryptionAS2.java 9     3/09/24 15:58 Heller $
 package de.mendelson.util.security.encryption;
 
 import de.mendelson.util.MecResourceBundle;

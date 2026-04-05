@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/database/DebuggablePreparedStatement.java 14    15/01/25 12:56 Heller $
 package de.mendelson.util.database;
 
 import java.io.InputStream;

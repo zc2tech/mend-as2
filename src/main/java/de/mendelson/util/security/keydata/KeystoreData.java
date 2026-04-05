@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/keydata/KeystoreData.java 1     17/04/24 15:36 Heller $
 package de.mendelson.util.security.keydata;
 
 import de.mendelson.util.security.cert.KeystoreStorageImplDB;

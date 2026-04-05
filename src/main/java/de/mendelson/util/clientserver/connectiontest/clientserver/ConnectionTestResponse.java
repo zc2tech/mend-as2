@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/connectiontest/clientserver/ConnectionTestResponse.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.connectiontest.clientserver;
 
 import de.mendelson.util.clientserver.connectiontest.ConnectionTestResult;

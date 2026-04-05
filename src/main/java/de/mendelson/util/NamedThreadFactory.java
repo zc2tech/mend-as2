@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/NamedThreadFactory.java 4     29/05/24 11:44 Heller $
 package de.mendelson.util;
 
 import java.util.concurrent.ThreadFactory;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/ConsoleProgressBar.java 5     11/02/25 13:39 Heller $
 package de.mendelson.util;
 
 import java.text.DecimalFormat;

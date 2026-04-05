@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/httpconfig/server/HTTPServerConfigInfo.java 19    2/11/23 14:03 Heller $
 package de.mendelson.util.httpconfig.server;
 
 import java.net.InetAddress;

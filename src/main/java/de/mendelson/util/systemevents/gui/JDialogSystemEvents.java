@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/systemevents/gui/JDialogSystemEvents.java 43    14/03/25 11:33 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import com.toedter.calendar.JDateChooser;

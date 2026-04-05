@@ -1,5 +1,4 @@
-///$Header: /mec_as2/de/mendelson/util/oauth2/OAuth2Config.java 5     28/11/23 17:21 Heller $
-package de.mendelson.util.oauth2;
+/package de.mendelson.util.oauth2;
 
 import java.io.Serializable;
 

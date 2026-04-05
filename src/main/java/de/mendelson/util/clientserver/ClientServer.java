@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/ClientServer.java 46    11/02/25 13:39 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.MecResourceBundle;

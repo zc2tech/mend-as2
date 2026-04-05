@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/datatransfer/TransferClient.java 18    1/11/24 13:24 Heller $
 package de.mendelson.util.clientserver.clients.datatransfer;
 
 import de.mendelson.util.clientserver.SyncRequestTransportLevelException;

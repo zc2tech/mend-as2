@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/sendorder/SendOrderReceiver.java 56    13/12/24 11:24 Heller $
 package de.mendelson.comm.as2.sendorder;
 
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;

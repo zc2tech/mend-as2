@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/CEMReceiptController.java 82    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.cem;
 
 import de.mendelson.comm.as2.AS2Exception;

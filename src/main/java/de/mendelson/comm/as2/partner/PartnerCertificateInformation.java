@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/PartnerCertificateInformation.java 18    2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.partner;
 
 import de.mendelson.comm.as2.cem.CEMEntry;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/event/PartnerEventResource.java 2     11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.partner.gui.event;
 
 import de.mendelson.util.MendelsonMultiResolutionImage;

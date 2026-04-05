@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/crl/ResourceBundleCRL.java 3     27/02/24 11:19 Heller $
 package de.mendelson.util.security.crl;
 import de.mendelson.util.MecResourceBundle;
 /*

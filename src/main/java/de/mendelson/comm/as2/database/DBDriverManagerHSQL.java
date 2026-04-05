@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/database/DBDriverManagerHSQL.java 36    8/11/24 9:00 Heller $
 package de.mendelson.comm.as2.database;
 
 import de.mendelson.util.database.SQLScriptExecutor;

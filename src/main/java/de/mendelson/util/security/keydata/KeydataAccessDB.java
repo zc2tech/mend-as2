@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/keydata/KeydataAccessDB.java 24    12/03/25 17:28 Heller $
 package de.mendelson.util.security.keydata;
 
 import de.mendelson.util.MecResourceBundle;

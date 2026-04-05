@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/tables/JTableSortable.java 4     26.07.12 13:46 Heller $
 package de.mendelson.util.tables;
 
 import javax.swing.JTable;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/gui/TableModelSystemEvents.java 15    5/12/23 8:58 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import de.mendelson.util.MecResourceBundle;

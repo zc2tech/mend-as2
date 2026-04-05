@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/codec/ClientServerCodecFactory.java 7     2/11/23 14:03 Heller $
 package de.mendelson.util.clientserver.codec;
 
 import de.mendelson.util.clientserver.ClientSessionHandlerCallback;

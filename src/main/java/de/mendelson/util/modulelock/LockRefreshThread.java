@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/modulelock/LockRefreshThread.java 6     2/11/23 15:53 Heller $
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.modulelock.message.ModuleLockRequest;

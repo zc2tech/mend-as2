@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/NotificationAccessDBImplAS2.java 22    12/03/25 17:28 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.database.IDBDriverManager;

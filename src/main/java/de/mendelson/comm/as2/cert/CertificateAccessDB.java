@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/cert/CertificateAccessDB.java 35    21/03/25 8:14 Heller $
 package de.mendelson.comm.as2.cert;
 
 import de.mendelson.comm.as2.partner.Partner;

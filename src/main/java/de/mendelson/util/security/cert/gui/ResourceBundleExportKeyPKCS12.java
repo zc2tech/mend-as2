@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/gui/ResourceBundleExportKeyPKCS12.java 1     5/12/24 10:58 Heller $ 
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.MecResourceBundle;

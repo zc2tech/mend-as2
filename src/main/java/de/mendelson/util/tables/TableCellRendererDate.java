@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/TableCellRendererDate.java 3     2/11/23 14:03 Heller $
 package de.mendelson.util.tables;
 import java.awt.Color;
 import java.awt.Component;

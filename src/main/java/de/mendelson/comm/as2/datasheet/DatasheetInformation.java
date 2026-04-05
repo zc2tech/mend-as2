@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/datasheet/DatasheetInformation.java 5     21/11/24 17:47 Heller $
 package de.mendelson.comm.as2.datasheet;
 
 import de.mendelson.comm.as2.message.AS2Message;

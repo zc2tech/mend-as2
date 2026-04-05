@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/MendelsonMultiResolutionImage.java 43    14/03/25 11:13 Heller $
 package de.mendelson.util;
 
 import java.awt.Graphics2D;

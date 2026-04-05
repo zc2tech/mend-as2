@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/AS2MessageInfo.java 67    17/01/25 9:57 Heller $
 package de.mendelson.comm.as2.message;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;

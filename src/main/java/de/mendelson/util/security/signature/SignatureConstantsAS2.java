@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/signature/SignatureConstantsAS2.java 3     16/08/24 8:23 Heller $
 package de.mendelson.util.security.signature;
 
 import java.io.Serializable;

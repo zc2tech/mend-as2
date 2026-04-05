@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/client/AS2StatusBar.java 48    19/12/24 8:54 Heller $
 package de.mendelson.comm.as2.client;
 
 import de.mendelson.comm.as2.configurationcheck.gui.JDialogIssuesList;

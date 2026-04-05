@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/AS2Exception.java 3     2/11/23 14:02 Heller $
 package de.mendelson.comm.as2;
 import de.mendelson.comm.as2.message.AS2Message;
 /*

@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/AS2.java 9     20/03/25 11:29 Heller $
 package de.mendelson.comm.as2;
 
 import de.mendelson.comm.as2.client.AS2Gui;

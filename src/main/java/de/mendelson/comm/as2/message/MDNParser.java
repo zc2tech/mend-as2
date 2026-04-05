@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/MDNParser.java 36    4/02/25 14:26 Heller $
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.util.MecResourceBundle;

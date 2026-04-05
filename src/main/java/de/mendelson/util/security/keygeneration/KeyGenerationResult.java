@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/keygeneration/KeyGenerationResult.java 1     7.04.10 14:17 Heller $
 package de.mendelson.util.security.keygeneration;
 
 import java.security.KeyPair;

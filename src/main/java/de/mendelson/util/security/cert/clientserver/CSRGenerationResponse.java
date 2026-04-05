@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/clientserver/CSRGenerationResponse.java 4     12/09/24 8:52 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

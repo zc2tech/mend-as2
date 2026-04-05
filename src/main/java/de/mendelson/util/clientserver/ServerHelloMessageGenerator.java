@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/ServerHelloMessageGenerator.java 2     24/02/22 14:20 Heller $
 package de.mendelson.util.clientserver;
 
 import java.util.List;

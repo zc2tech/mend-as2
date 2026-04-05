@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/ResourceBundleAS2Server.java 23    18/02/25 14:39 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

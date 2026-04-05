@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/database/DBServerHSQL.java 35    12/03/25 17:13 Heller $
 package de.mendelson.comm.as2.database;
 
 import de.mendelson.util.database.IUpdater;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/AS2Server.java 201   18/02/25 14:39 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

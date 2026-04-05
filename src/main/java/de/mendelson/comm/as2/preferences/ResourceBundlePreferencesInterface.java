@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/ResourceBundlePreferencesInterface.java 9     19/07/24 11:21 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.comm.as2.timing.PartnerTLSCertificateChangedController;

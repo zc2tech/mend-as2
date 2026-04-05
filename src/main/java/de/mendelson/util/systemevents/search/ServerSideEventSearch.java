@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/systemevents/search/ServerSideEventSearch.java 16    12/02/25 11:58 Heller $
 package de.mendelson.util.systemevents.search;
 
 import de.mendelson.util.systemevents.SystemEvent;

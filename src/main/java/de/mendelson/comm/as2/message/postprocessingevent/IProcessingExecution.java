@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/postprocessingevent/IProcessingExecution.java 2     10.09.20 12:57 Heller $
 package de.mendelson.comm.as2.message.postprocessingevent;
 
 

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/xmleditorkit/XMLEditorKitXMLReader.java 9     11/02/25 13:40 Heller $
 package de.mendelson.util.xmleditorkit;
 
 import java.io.IOException;

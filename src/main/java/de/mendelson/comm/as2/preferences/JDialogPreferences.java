@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/JDialogPreferences.java 65    9/12/24 16:02 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

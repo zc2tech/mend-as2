@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/MessageAccessDB.java 157   12/03/25 16:07 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

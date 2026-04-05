@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/user/User.java 11    11/06/24 9:20 Heller $
 package de.mendelson.util.clientserver.user;
 
 import de.mendelson.util.security.PBKDF2;

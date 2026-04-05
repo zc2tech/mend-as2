@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/ByteStorageImplMemory.java 3     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.message;
 
 import java.io.ByteArrayInputStream;

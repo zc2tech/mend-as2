@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/CertificateUsedByPartnerChecker.java 8     1/11/23 11:29 Heller $
 package de.mendelson.comm.as2.partner;
 
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;

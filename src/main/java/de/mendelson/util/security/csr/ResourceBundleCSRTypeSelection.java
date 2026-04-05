@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/csr/ResourceBundleCSRTypeSelection.java 3     12/09/24 8:52 Heller $ 
 package de.mendelson.util.security.csr;
 
 import de.mendelson.util.MecResourceBundle;

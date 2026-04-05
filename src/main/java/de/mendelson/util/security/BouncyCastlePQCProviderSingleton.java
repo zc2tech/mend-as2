@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/BouncyCastlePQCProviderSingleton.java 1     15/08/24 9:58 Heller $
 package de.mendelson.util.security;
 
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;

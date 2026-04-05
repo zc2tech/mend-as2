@@ -1,5 +1,4 @@
-///$Header: /as2/de/mendelson/comm/as2/servlet/ServerState.java 19    19/02/25 10:08 Heller $
-package de.mendelson.comm.as2.servlet;
+/package de.mendelson.comm.as2.servlet;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *

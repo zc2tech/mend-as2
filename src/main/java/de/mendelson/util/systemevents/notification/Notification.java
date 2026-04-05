@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/Notification.java 35    20/02/25 13:42 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

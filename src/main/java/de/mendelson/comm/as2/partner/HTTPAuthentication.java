@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/HTTPAuthentication.java 9     15/01/25 17:50 Heller $
 package de.mendelson.comm.as2.partner;
 
 import java.io.Serializable;

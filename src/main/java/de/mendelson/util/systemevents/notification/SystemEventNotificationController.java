@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/SystemEventNotificationController.java 26    20/02/25 13:42 Heller $
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.NamedThreadFactory;

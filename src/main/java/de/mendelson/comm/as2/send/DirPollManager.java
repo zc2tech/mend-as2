@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/DirPollManager.java 63    19/02/25 17:31 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

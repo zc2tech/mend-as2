@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/database/DBClientInformation.java 1     8/11/24 8:59 Heller $
 package de.mendelson.util.database;
 
 import java.io.Serializable;

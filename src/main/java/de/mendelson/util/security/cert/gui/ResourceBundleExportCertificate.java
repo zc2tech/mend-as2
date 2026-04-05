@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/gui/ResourceBundleExportCertificate.java 13    16/09/24 10:41 Heller $ 
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.MecResourceBundle;

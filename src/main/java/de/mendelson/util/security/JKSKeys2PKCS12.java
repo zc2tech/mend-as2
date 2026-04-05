@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/JKSKeys2PKCS12.java 11    3/02/25 10:14 Heller $
 package de.mendelson.util.security;
 
 import java.io.OutputStream;

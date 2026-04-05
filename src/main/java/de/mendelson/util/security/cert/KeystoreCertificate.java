@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/KeystoreCertificate.java 65    4/03/25 11:54 Heller $
 package de.mendelson.util.security.cert;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;

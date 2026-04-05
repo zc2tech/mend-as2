@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/ha/ServerCertificateRefreshControllerHA.java 2     28/11/23 17:25 Heller $
 package de.mendelson.comm.as2.ha;
 
 import de.mendelson.util.NamedThreadFactory;

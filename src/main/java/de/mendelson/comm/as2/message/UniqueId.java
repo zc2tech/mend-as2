@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/message/UniqueId.java 13    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

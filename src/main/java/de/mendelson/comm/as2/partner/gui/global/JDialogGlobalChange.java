@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/gui/global/JDialogGlobalChange.java 8     11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.partner.gui.global;
 
 import de.mendelson.comm.as2.client.AS2Gui;

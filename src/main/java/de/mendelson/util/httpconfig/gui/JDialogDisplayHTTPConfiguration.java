@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/httpconfig/gui/JDialogDisplayHTTPConfiguration.java 21    11/02/25 13:40 Heller $
 package de.mendelson.util.httpconfig.gui;
 
 import de.mendelson.util.IStatusBar;

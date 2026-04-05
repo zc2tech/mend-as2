@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/ClientServerTLS.java 1     7/03/24 13:04 Heller $
 package de.mendelson.util.clientserver;
 
 import javax.net.ssl.SSLContext;

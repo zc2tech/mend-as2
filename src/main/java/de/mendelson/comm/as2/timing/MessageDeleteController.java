@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/MessageDeleteController.java 57    12/03/25 16:07 Heller $
 package de.mendelson.comm.as2.timing;
 
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;

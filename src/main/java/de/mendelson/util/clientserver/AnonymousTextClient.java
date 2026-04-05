@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/AnonymousTextClient.java 6     14/02/25 9:58 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

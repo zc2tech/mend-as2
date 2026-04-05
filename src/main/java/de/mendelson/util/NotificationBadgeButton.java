@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/NotificationBadgeButton.java 8     18/06/24 12:38 Heller $
 package de.mendelson.util;
 
 import java.awt.Color;

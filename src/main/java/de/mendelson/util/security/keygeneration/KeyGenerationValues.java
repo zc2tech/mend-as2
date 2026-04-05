@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/keygeneration/KeyGenerationValues.java 15    15/08/24 11:54 Heller $
 package de.mendelson.util.security.keygeneration;
 
 import java.util.ArrayList;

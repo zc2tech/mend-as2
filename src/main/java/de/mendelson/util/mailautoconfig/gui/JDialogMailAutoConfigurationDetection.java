@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/mailautoconfig/gui/JDialogMailAutoConfigurationDetection.java 8     14/03/25 11:33 Heller $
 package de.mendelson.util.mailautoconfig.gui;
 
 import de.mendelson.util.IStatusBar;

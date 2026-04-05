@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/hideablecolumns/TableColumnHiddenStateListener.java 1     14.07.15 10:01 Heller $
 package de.mendelson.util.tables.hideablecolumns;
 import java.util.EventListener;
 import java.util.EventObject;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/ResourceBundlePreferences.java 94    31/05/24 13:40 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.MecResourceBundle;

@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/ha/HAAccessDB.java 4     13/03/25 13:24 Heller $
 package de.mendelson.util.ha;
 
 import de.mendelson.util.systemevents.SystemEventManager;

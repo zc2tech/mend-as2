@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/clientserver/message/ConfigurationCheckRequest.java 5     29/05/24 12:44 Heller $
 package de.mendelson.comm.as2.clientserver.message;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

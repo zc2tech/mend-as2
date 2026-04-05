@@ -1,4 +1,3 @@
-//$Header: /converteride/de/mendelson/util/IMecFileChooser.java 6     28.05.04 13:01 Heller $
 package de.mendelson.util;
 import javax.swing.*;
 import javax.swing.filechooser.*;

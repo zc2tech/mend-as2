@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/server/ServerPlugins.java 8     28/11/23 17:23 Heller $
 package de.mendelson.comm.as2.server;
 
 import java.io.Serializable;

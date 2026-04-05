@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/keylength/KeyLengthDisplay.java 1     8/12/22 11:35 Heller $
 package de.mendelson.util.security.keylength;
 
 import de.mendelson.util.MendelsonMultiResolutionImage;

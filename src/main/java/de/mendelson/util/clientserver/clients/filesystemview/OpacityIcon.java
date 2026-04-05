@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/clients/filesystemview/OpacityIcon.java 2     16.11.18 14:00 Heller $
 package de.mendelson.util.clientserver.clients.filesystemview;
 
 import java.awt.AlphaComposite;

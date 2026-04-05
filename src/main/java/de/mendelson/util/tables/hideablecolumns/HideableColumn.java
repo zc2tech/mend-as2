@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/hideablecolumns/HideableColumn.java 1     10.07.15 13:01 Heller $
 package de.mendelson.util.tables.hideablecolumns;
 import javax.swing.table.TableColumn;
 /*

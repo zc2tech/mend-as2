@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/TimingScheduledThreadPool.java 4     11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.timing;
 
 import java.util.concurrent.Executors;

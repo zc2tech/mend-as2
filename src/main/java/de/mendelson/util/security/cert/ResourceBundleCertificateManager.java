@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/ResourceBundleCertificateManager.java 17    17/09/24 9:18 Heller $
 package de.mendelson.util.security.cert;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.security.BCCryptoHelper;

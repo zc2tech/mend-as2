@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/gui/DialogSendCEM.java 37    2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.cem.gui;
 
 import de.mendelson.comm.as2.cem.clientserver.CEMSendRequest;

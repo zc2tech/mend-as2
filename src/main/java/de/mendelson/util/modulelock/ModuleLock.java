@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/modulelock/ModuleLock.java 27    12/03/25 13:13 Heller $
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.database.IDBDriverManager;

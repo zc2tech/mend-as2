@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/clientserver/CSRAnswerImportResponse.java 3     11/02/25 13:40 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

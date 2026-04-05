@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/AS2Agent.java 2     20.04.09 12:03 Heller $
 package de.mendelson.comm.as2.server;
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanServer;

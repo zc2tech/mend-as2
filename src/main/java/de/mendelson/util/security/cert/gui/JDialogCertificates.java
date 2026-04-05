@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/gui/JDialogCertificates.java 137   11/02/25 13:40 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

@@ -1,4 +1,3 @@
-//$Header: /converteride/de/mendelson/util/Splash.java 62    28/02/25 15:38 Heller $
 package de.mendelson.util;
 
 import java.awt.BorderLayout;

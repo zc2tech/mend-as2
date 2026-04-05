@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/BaseClient.java 73    11/02/25 13:39 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

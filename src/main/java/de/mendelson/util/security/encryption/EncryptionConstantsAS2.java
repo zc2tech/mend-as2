@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/encryption/EncryptionConstantsAS2.java 8     20/02/25 13:42 Heller $
 package de.mendelson.util.security.encryption;
 
 import java.io.Serializable;

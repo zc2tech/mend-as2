@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/send/MessageHttpUploader.java 224   21/03/25 9:12 Heller $
 package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;

@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/database/SQLScriptExecutor.java 3     16/12/24 9:51 Heller $
 package de.mendelson.util.database;
 
 import de.mendelson.IProductVersion;

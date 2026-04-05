@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/KeystoreStorage.java 13    11/03/24 16:47 Heller $
 package de.mendelson.util.security.cert;
 
 import java.security.Key;

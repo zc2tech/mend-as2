@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/MecResourceBundle.java 18    20/02/25 13:41 Heller $
 package de.mendelson.util;
 
 import java.io.Serializable;

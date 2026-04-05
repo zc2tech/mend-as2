@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/clientserver/ExportRequestKeystore.java 3     9/11/23 9:52 Heller $
 package de.mendelson.util.security.cert.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

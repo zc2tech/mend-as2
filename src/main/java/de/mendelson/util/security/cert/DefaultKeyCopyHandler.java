@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/DefaultKeyCopyHandler.java 5     2/11/23 14:03 Heller $
 package de.mendelson.util.security.cert;
 
 import de.mendelson.util.MecResourceBundle;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/database/DebuggableConnection.java 12    24/11/23 11:55 Heller $
 package de.mendelson.util.database;
 
 import java.sql.Array;

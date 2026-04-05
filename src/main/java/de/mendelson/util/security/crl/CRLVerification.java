@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/crl/CRLVerification.java 9     4/02/25 11:07 Heller $
 package de.mendelson.util.security.crl;
 
 import com.unboundid.ldap.sdk.Attribute;

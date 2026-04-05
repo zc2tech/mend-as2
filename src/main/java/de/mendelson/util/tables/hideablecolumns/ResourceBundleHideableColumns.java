@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/hideablecolumns/ResourceBundleHideableColumns.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.tables.hideablecolumns;
 
 import de.mendelson.util.MecResourceBundle;

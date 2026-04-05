@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/PreferencesObjectKeyValue.java 2     22.02.06 16:21 Heller $
 package de.mendelson.comm.as2.preferences;
 
 /*

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/TestdataGenerator.java 4     9/12/24 16:03 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.util.AS2Tools;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/ResourceBundleHttpSendManager.java 5     2/11/23 15:53 Heller $
 package de.mendelson.comm.as2.send;
 import de.mendelson.util.MecResourceBundle;
 /*

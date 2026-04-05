@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/balloontip/BalloonToolTip.java 16    12/02/25 11:57 Heller $
 package de.mendelson.util.balloontip;
 
 import java.awt.AlphaComposite;

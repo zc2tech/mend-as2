@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/JDialogExport.java 6     3/07/24 14:07 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.KeyboardShortcutUtil;

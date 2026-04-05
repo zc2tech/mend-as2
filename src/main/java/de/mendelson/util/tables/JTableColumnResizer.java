@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/JTableColumnResizer.java 9     11/02/25 13:40 Heller $
 package de.mendelson.util.tables;
 
 import java.awt.Component;

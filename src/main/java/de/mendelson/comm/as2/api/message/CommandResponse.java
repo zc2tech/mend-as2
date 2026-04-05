@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/api/message/CommandResponse.java 3     2/11/23 15:52 Heller $
 package de.mendelson.comm.as2.api.message;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

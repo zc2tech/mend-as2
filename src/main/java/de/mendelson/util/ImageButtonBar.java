@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/ImageButtonBar.java 18    11/02/25 16:26 Heller $
 package de.mendelson.util;
 
 import com.l2fprod.common.swing.JButtonBar;

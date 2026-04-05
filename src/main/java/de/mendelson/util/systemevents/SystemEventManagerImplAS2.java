@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/SystemEventManagerImplAS2.java 32    15/01/25 12:56 Heller $
 package de.mendelson.util.systemevents;
 
 import de.mendelson.comm.as2.AS2ServerVersion;

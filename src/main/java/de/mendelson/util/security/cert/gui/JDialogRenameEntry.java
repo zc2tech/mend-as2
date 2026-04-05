@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/JDialogRenameEntry.java 18    3/07/24 14:19 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;

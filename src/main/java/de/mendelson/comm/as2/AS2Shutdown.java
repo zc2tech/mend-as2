@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/AS2Shutdown.java 9     14/02/25 9:58 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

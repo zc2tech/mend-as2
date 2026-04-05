@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/search/ServerSideEventFilter.java 3     2/11/23 15:53 Heller $
 package de.mendelson.util.systemevents.search;
 
 import java.io.Serializable;

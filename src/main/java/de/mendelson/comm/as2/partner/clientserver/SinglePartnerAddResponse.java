@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/clientserver/SinglePartnerAddResponse.java 1     31/10/24 7:31 Heller $
 package de.mendelson.comm.as2.partner.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/TextOverlay.java 16    19/02/25 9:39 Heller $
 package de.mendelson.util;
 
 import java.awt.Container;

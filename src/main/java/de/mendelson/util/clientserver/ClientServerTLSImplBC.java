@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/ClientServerTLSImplBC.java 2     22/03/24 15:58 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.security.BCCryptoHelper;

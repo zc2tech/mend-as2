@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/LayoutManagerJToolbar.java 7     3/11/23 9:57 Heller $
 package de.mendelson.util;
 
 import java.awt.Component;

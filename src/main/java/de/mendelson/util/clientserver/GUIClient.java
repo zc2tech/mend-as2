@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/GUIClient.java 46    20/02/25 13:41 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.MecResourceBundle;

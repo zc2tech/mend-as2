@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/server/ServerInstance.java 2     4/02/22 10:18 Heller $
 package de.mendelson.comm.as2.server;
 
 /*

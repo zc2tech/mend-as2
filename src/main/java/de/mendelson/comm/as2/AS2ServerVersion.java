@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/AS2ServerVersion.java 94    20/03/25 14:45 Heller $
 package de.mendelson.comm.as2;
 
 import de.mendelson.Copyright;

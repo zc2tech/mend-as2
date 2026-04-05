@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/keylength/ListCellRendererKeyLength.java 3     31/05/24 11:55 Heller $
 package de.mendelson.util.security.keylength;
 
 import de.mendelson.util.ImageUtil;

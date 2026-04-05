@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/clientserver/connectiontest/OFTP2AbstractCommand.java 1     4/06/17 2:13p Heller $
 package de.mendelson.util.clientserver.connectiontest;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

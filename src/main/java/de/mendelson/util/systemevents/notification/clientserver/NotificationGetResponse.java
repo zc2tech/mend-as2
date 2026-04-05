@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/systemevents/notification/clientserver/NotificationGetResponse.java 2     2/11/23 15:53 Heller $
 package de.mendelson.util.systemevents.notification.clientserver;
 
 import de.mendelson.util.systemevents.notification.NotificationData;

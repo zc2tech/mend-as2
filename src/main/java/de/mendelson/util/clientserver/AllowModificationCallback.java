@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/clientserver/AllowModificationCallback.java 2     4/03/18 1:25p Heller $
 package de.mendelson.util.clientserver;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

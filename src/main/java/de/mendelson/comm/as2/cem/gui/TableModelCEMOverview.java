@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/gui/TableModelCEMOverview.java 6     2/11/23 14:02 Heller $
 package de.mendelson.comm.as2.cem.gui;
 
 import de.mendelson.comm.as2.cem.CEMEntry;

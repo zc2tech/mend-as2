@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/TableCellRendererCertificates.java 11    20/02/25 15:51 Heller $
 package de.mendelson.util.security.cert;
 
 import de.mendelson.util.security.cert.gui.JDialogCertificates;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/partner/Partner.java 97    19/02/25 10:08 Heller $
 package de.mendelson.comm.as2.partner;
 
 import de.mendelson.util.security.cert.CertificateManager;

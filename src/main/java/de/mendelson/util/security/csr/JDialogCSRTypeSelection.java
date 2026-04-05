@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/csr/JDialogCSRTypeSelection.java 4     20/11/24 14:13 Heller $
 package de.mendelson.util.security.csr;
 
 import de.mendelson.util.MecFileChooser;

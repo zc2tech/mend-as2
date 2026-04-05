@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/database/DBDriverManagerOracleDB.java 3     20/03/25 11:33 Heller $
 package de.mendelson.comm.as2.database;
 
 import de.mendelson.util.database.AbstractDBDriverManagerMySQL;

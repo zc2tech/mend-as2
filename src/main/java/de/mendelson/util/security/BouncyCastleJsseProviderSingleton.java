@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/BouncyCastleJsseProviderSingleton.java 2     6/07/23 12:14 Heller $
 package de.mendelson.util.security;
 
 import org.bouncycastle.jsse.provider.BouncyCastleJsseProvider;

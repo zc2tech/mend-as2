@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/send/ComparatorFiledateOldestFirst.java 2     24.10.18 11:30 Heller $
 package de.mendelson.comm.as2.send;
 
 import java.nio.file.Files;

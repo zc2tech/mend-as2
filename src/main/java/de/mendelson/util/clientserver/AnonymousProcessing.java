@@ -1,4 +1,3 @@
-//$Header: /mendelson_business_integration/de/mendelson/util/clientserver/AnonymousProcessing.java 2     16.06.14 16:43 Heller $
 package de.mendelson.util.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;

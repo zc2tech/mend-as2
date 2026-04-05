@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/security/cert/gui/JDialogInfoOnExternalCertificate.java 26    12/02/25 11:58 Heller $
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;

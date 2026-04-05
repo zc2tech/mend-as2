@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/systemevents/gui/JPanelDisplaySingleSystemEvent.java 11    11/02/25 16:26 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import de.mendelson.util.MecResourceBundle;

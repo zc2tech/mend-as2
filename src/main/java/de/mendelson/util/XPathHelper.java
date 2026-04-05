@@ -1,4 +1,3 @@
-//$Header: /converteride/de/mendelson/util/XPathHelper.java 34    26/02/25 17:55 Heller $
 package de.mendelson.util;
 
 import java.io.InputStream;

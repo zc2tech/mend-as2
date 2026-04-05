@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/JDialogCertificateReference.java 6     3/07/24 14:07 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

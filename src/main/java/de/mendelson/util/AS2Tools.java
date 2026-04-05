@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/AS2Tools.java 20    11/02/25 13:39 Heller $
 package de.mendelson.util;
 
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;

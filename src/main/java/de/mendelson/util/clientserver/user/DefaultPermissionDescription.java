@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/clientserver/user/DefaultPermissionDescription.java 5     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.user;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

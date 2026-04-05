@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/cert/KeystoreStorageImplFile.java 30    11/02/25 13:40 Heller $
 package de.mendelson.util.security.cert;
 
 import de.mendelson.util.MecResourceBundle;

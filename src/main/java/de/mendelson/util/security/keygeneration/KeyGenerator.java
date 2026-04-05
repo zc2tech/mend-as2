@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/security/keygeneration/KeyGenerator.java 28    16/08/24 14:51 Heller $
 package de.mendelson.util.security.keygeneration;
 
 import de.mendelson.util.security.BouncyCastlePQCProviderSingleton;

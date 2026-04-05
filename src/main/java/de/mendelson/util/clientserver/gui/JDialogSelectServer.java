@@ -1,4 +1,3 @@
-//$Header: /as4/de/mendelson/util/clientserver/gui/JDialogSelectServer.java 3     19/02/25 9:39 Heller $
 package de.mendelson.util.clientserver.gui;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;

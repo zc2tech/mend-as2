@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/mailautoconfig/MailServiceConfiguration.java 3     2/11/23 15:53 Heller $
 package de.mendelson.util.mailautoconfig;
 
 import de.mendelson.util.MecResourceBundle;

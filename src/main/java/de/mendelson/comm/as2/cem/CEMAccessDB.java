@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/CEMAccessDB.java 35    12/03/25 17:28 Heller $
 package de.mendelson.comm.as2.cem;
 
 import de.mendelson.comm.as2.cem.messages.EDIINTCertificateExchangeRequest;

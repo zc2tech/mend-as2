@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/client/HTMLPanel.java 9     2/28/17 12:29p Heller $
 package de.mendelson.comm.as2.client;
 
 import java.awt.Cursor;

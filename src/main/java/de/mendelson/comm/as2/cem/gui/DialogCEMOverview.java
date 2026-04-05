@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/cem/gui/DialogCEMOverview.java 46    18/06/24 11:51 Heller $
 package de.mendelson.comm.as2.cem.gui;
 
 import de.mendelson.comm.as2.cem.CEMEntry;

@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/util/oauth2/OAuth2AccessDB.java 3     2/01/23 16:47 Heller $
 package de.mendelson.util.oauth2;
 
 /*

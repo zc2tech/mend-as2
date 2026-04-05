@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/cert/gui/keygeneration/JDialogGenerateKey.java 46    19/02/25 13:00 Heller $
 
 /*
  * Modifications Copyright (C) 2026 Julian Xu

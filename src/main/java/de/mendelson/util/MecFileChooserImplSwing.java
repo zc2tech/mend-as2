@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/MecFileChooserImplSwing.java 17    2/11/23 14:02 Heller $
 package de.mendelson.util;
 
 import javax.swing.filechooser.*;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/tables/hideablecolumns/TableCellRendererHideableColumnBoolean.java 1     10.07.15 15:13 Heller $
 package de.mendelson.util.tables.hideablecolumns;
 
 import java.awt.Color;

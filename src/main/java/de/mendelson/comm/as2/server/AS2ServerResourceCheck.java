@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/server/AS2ServerResourceCheck.java 5     23.08.21 13:48 Heller $
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.util.AS2Tools;

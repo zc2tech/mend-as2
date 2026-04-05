@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/timing/ResourceBundleMessageDeleteController.java 10    11/02/25 13:39 Heller $
 package de.mendelson.comm.as2.timing;
 import de.mendelson.util.MecResourceBundle;
 /*

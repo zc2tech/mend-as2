@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/systemevents/gui/UIEventCategory.java 11    1/03/24 15:01 Heller $
 package de.mendelson.util.systemevents.gui;
 
 import de.mendelson.util.MecResourceBundle;

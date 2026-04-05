@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/clientserver/clients/preferences/PreferencesClient.java 9     19/02/25 12:59 Heller $
 package de.mendelson.util.clientserver.clients.preferences;
 
 import de.mendelson.util.clientserver.BaseClient;

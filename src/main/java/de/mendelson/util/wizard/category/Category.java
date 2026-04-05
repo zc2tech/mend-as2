@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/wizard/category/Category.java 3     2/11/23 14:03 Heller $
 package de.mendelson.util.wizard.category;
 
 import java.util.ArrayList;

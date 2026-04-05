@@ -1,5 +1,4 @@
-///$Header: /as2/de/mendelson/comm/as2/configurationcheck/gui/JDialogIssuesList.java 12    11/02/25 13:39 Heller $
-package de.mendelson.comm.as2.configurationcheck.gui;
+/package de.mendelson.comm.as2.configurationcheck.gui;
 
 import de.mendelson.comm.as2.client.ModuleStarter;
 import de.mendelson.comm.as2.clientserver.message.ConfigurationCheckRequest;

@@ -1,4 +1,3 @@
-//$Header: /oftp2/de/mendelson/util/security/BCCryptoHelper.java 157   12/02/25 9:26 Heller $
 package de.mendelson.util.security;
 
 import de.mendelson.util.security.cert.KeystoreCertificate;

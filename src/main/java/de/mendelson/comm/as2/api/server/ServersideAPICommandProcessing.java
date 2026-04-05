@@ -1,4 +1,3 @@
-//$Header: /mec_as2/de/mendelson/comm/as2/api/server/ServersideAPICommandProcessing.java 4     2/01/23 12:25 Heller $
 package de.mendelson.comm.as2.api.server;
 
 import de.mendelson.comm.as2.api.message.CommandResponse;

@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/util/httpconfig/clientserver/DisplayHTTPServerConfigurationResponse.java 9     2/11/23 15:53 Heller $
 package de.mendelson.util.httpconfig.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;

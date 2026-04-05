@@ -1,5 +1,4 @@
- //$Header: /as2/de/mendelson/util/IOFileFilterCreationDate.java 6     11/02/25 13:39 Heller $
-package de.mendelson.util;
+ package de.mendelson.util;
 
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;

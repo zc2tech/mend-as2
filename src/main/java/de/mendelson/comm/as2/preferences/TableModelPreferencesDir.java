@@ -1,4 +1,3 @@
-//$Header: /as2/de/mendelson/comm/as2/preferences/TableModelPreferencesDir.java 7     10/07/24 8:43 Heller $
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.comm.as2.client.AS2Gui;

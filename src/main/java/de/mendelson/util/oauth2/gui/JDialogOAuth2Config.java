@@ -1,4 +1,3 @@
-//$Header: /mec_oftp2/de/mendelson/util/oauth2/gui/JDialogOAuth2Config.java 3     13/03/25 13:53 Heller $
 package de.mendelson.util.oauth2.gui;
 
 import javax.swing.JDialog;
