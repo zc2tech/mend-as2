@@ -44,12 +44,15 @@ export function AuthProvider({ children }) {
       // Try to get system info - if it works, we're authenticated
       await api.get('/system/info');
 
+      // Fetch current user info
+      const userResponse = await api.get('/users/current');
+      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+
       // Fetch user permissions
       const permissionsResponse = await api.get('/users/current/permissions');
       const userPermissions = permissionsResponse.data;
 
       setPermissions(userPermissions);
-      setUser({ username: 'admin' }); // JWT doesn't expose username easily
     } catch (error) {
       setUser(null);
       setPermissions([]);
@@ -68,7 +71,7 @@ export function AuthProvider({ children }) {
       // Check if user must change password
       if (response.data.mustChangePassword) {
         setMustChangePassword(true);
-        setUser({ username: response.data.username });
+        setUser({ id: response.data.id, username: response.data.username });
         return { success: true, mustChangePassword: true };
       }
 
@@ -77,7 +80,7 @@ export function AuthProvider({ children }) {
       const userPermissions = permissionsResponse.data;
 
       setPermissions(userPermissions);
-      setUser({ username: response.data.username });
+      setUser({ id: response.data.id, username: response.data.username });
       setMustChangePassword(false);
       return { success: true, mustChangePassword: false };
     } catch (error) {

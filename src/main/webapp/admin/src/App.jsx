@@ -34,6 +34,7 @@ import CertificateList from './features/certificates/CertificateList';
 import MessageList from './features/messages/MessageList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
+import UserPreferences from './features/preferences/UserPreferences';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function App() {
               <Route index element={<Dashboard />} />
               {/* Change password within the app layout */}
               <Route path="change-password" element={<ChangePassword />} />
+              <Route path="preferences" element={<UserPreferences />} />
               <Route
                 path="partners"
                 element={

@@ -165,6 +165,7 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
         {"tab.httpauth", "HTTP authentication"},
         {"tab.httpheader", "HTTP header"},
         {"tab.notification", "Notification"},
+        {"tab.visibility", "Visibility"},
         {"tab.events", "Postprocessing"},
         {"tab.partnersystem", "Info"},
         {"label.subject", "Payload subject"},

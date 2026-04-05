@@ -512,6 +512,45 @@ public class UserManagementResource {
     }
 
     /**
+     * GET /api/v1/users/current - Get current user info
+     */
+    @GET
+    @Path("/current")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getCurrentUser(@jakarta.ws.rs.core.Context jakarta.ws.rs.core.SecurityContext securityContext) {
+        try {
+            UserManagementAccessDB userMgmt = getUserManagementAccess();
+            if (userMgmt == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            // Get username from security context (set by JwtAuthenticationFilter)
+            String username = securityContext.getUserPrincipal().getName();
+
+            // Get user by username
+            WebUIUser user = userMgmt.getUserByUsername(username);
+            if (user == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"User not found\"}").build();
+            }
+
+            // Return user info
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("username", user.getUsername());
+            userInfo.put("fullName", user.getFullName());
+            userInfo.put("email", user.getEmail());
+
+            return Response.ok(userInfo).build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error getting current user info", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"Internal server error\"}").build();
+        }
+    }
+
+    /**
      * GET /api/v1/users/current/permissions - Get current user's permissions
      */
     @GET

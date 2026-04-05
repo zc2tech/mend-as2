@@ -17,6 +17,8 @@ import de.mendelson.comm.as2.partner.PartnerHttpHeader;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.AnonymousTextClient;
@@ -167,6 +169,8 @@ public class MessageHttpUploader {
     private KeystoreStorage trustStore = null;
     //EDIINT faetures
     private String ediintFeatures = "multiple-attachments, CEM";
+    //WebUI user ID for HTTP auth preference resolution
+    private int userId = -1;
 
     /**
      * Creates new message uploader instance
@@ -213,6 +217,13 @@ public class MessageHttpUploader {
      */
     public void setDBConnection(IDBDriverManager dbDriverManager) {
         this.dbDriverManager = dbDriverManager;
+    }
+
+    /**
+     * Set WebUI user ID for HTTP auth preference resolution
+     */
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     /**
@@ -545,10 +556,63 @@ public class MessageHttpUploader {
             } else {
                 basicAuthentication = receiver.getAuthenticationCredentialsMessage();
             }
-            if (basicAuthentication.isEnabled()) {
-                filePost.addHeader("Authorization", this.generateBasicAuth(
-                        basicAuthentication.getUser(), basicAuthentication.getPassword()
-                ));
+
+            // Resolve HTTP authentication based on authMode
+            String authUsername = null;
+            String authPassword = null;
+
+            if (basicAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
+                // Use credentials from partner configuration
+                authUsername = basicAuthentication.getUser();
+                authPassword = basicAuthentication.getPassword();
+            } else if (basicAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
+                // Retrieve credentials from user preferences
+                if (this.userId > 0 && this.dbDriverManager != null) {
+                    try {
+                        UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(
+                            this.dbDriverManager, this.logger
+                        );
+                        UserHttpAuthPreference pref = prefDB.getPreference(this.userId, receiver.getDBId());
+
+                        if (pref != null) {
+                            if (message.isMDN()) {
+                                if (pref.isUseMdnAuth()) {
+                                    authUsername = pref.getMdnUsername();
+                                    authPassword = pref.getMdnPassword();
+                                }
+                            } else {
+                                if (pref.isUseMessageAuth()) {
+                                    authUsername = pref.getMessageUsername();
+                                    authPassword = pref.getMessagePassword();
+                                }
+                            }
+                        } else {
+                            if (this.logger != null) {
+                                this.logger.log(Level.WARNING,
+                                    "HTTP auth user preference not found for userId=" + this.userId +
+                                    ", partnerId=" + receiver.getDBId() + ". Sending without authentication.",
+                                    message.getAS2Info());
+                            }
+                        }
+                    } catch (Exception e) {
+                        if (this.logger != null) {
+                            this.logger.log(Level.SEVERE,
+                                "Failed to retrieve HTTP auth user preference: " + e.getMessage(),
+                                message.getAS2Info());
+                        }
+                    }
+                } else {
+                    if (this.logger != null) {
+                        this.logger.log(Level.WARNING,
+                            "HTTP auth user preference mode enabled but userId not set. Sending without authentication.",
+                            message.getAS2Info());
+                    }
+                }
+            }
+
+            // Add Authorization header if credentials were resolved
+            if (authUsername != null && authPassword != null) {
+                filePost.addHeader("Authorization", this.generateBasicAuth(authUsername, authPassword));
             }
             filePost.addHeader("as2-version", "1.2");
             filePost.addHeader("ediint-features", ediintFeatures);

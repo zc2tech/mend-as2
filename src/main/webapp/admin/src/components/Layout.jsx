@@ -73,6 +73,21 @@ export default function Layout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span>User: {user?.username}</span>
           <Link
+            to="/preferences"
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block'
+            }}
+          >
+            Preferences
+          </Link>
+          <Link
             to="/change-password"
             style={{
               padding: '0.5rem 1rem',

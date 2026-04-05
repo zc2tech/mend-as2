@@ -131,6 +131,16 @@ public class Partner implements Serializable, Comparable, Cloneable {
     private OAuth2Config oauth2Message = null;
     private OAuth2Config oauth2MDN = null;
     private boolean overwriteLocalStationSecurity = false;
+    /**
+     * List of WebUI user IDs who can see this partner when sending messages.
+     * Empty list means visible to ALL users (default).
+     * Only applies to remote partners (localStation=false).
+     */
+    private List<Integer> visibleToUserIds = new ArrayList<>();
+    /**
+     * ID of the WebUI user who created this partner (0 = created via SwingUI/admin)
+     */
+    private int createdByUserId = 0;
 
     public Partner() {
     }
@@ -1282,6 +1292,68 @@ public class Partner implements Serializable, Comparable, Cloneable {
      */
     public void setOverwriteLocalStationSecurity(boolean overwriteLocalStationSecurity) {
         this.overwriteLocalStationSecurity = overwriteLocalStationSecurity;
+    }
+
+    /**
+     * Get list of WebUI user IDs who can see this partner when sending messages
+     */
+    public List<Integer> getVisibleToUserIds() {
+        return visibleToUserIds;
+    }
+
+    /**
+     * Set list of WebUI user IDs who can see this partner when sending messages.
+     * Empty list means visible to ALL users (default).
+     */
+    public void setVisibleToUserIds(List<Integer> visibleToUserIds) {
+        this.visibleToUserIds = visibleToUserIds != null ? visibleToUserIds : new ArrayList<>();
+    }
+
+    /**
+     * Check if this partner is visible to all users (no restrictions)
+     */
+    public boolean isVisibleToAllUsers() {
+        return visibleToUserIds.isEmpty();
+    }
+
+    /**
+     * Add a user ID to the visibility list
+     */
+    public void addVisibleUser(int userId) {
+        if (!visibleToUserIds.contains(userId)) {
+            visibleToUserIds.add(userId);
+        }
+    }
+
+    /**
+     * Remove a user ID from the visibility list
+     */
+    public void removeVisibleUser(int userId) {
+        visibleToUserIds.remove(Integer.valueOf(userId));
+    }
+
+    /**
+     * Get the ID of the user who created this partner
+     */
+    public int getCreatedByUserId() {
+        return createdByUserId;
+    }
+
+    /**
+     * Set the ID of the user who created this partner
+     */
+    public void setCreatedByUserId(int createdByUserId) {
+        this.createdByUserId = createdByUserId;
+    }
+
+    /**
+     * Ensure creator is always in visibility list if visibility is restricted.
+     * Call this when saving visibility for a partner.
+     */
+    public void ensureCreatorInVisibilityList() {
+        if (!isLocalStation() && !isVisibleToAllUsers() && createdByUserId > 0) {
+            addVisibleUser(createdByUserId);
+        }
     }
 
 }

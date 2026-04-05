@@ -38,6 +38,8 @@ import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;
 import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
+import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -720,6 +722,7 @@ public class MessageResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public Response sendMessage(
             @Context HttpServletRequest request,
+            @Context SecurityContext securityContext,
             @FormDataParam("files") List<FormDataBodyPart> fileParts,
             @FormDataParam("senderId") String senderId,
             @FormDataParam("receiverId") String receiverId,
@@ -734,6 +737,22 @@ public class MessageResource {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                     .entity(new ErrorResponse("Server processing not available"))
                     .build();
+        }
+
+        // Get current WebUI user ID for HTTP auth preferences
+        int currentUserId = -1;
+        try {
+            String username = securityContext.getUserPrincipal().getName();
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                processing.getDBDriverManager(),
+                java.util.logging.Logger.getLogger(MessageResource.class.getName())
+            );
+            WebUIUser user = userMgmt.getUserByUsername(username);
+            if (user != null) {
+                currentUserId = user.getId();
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not resolve user ID for HTTP auth: " + e.getMessage());
         }
 
         // Validate input
@@ -835,7 +854,7 @@ public class MessageResource {
                                    " - Size: " + tempFile.length());
             }
 
-            // Send the message using SendOrderSender
+            // Send the message using SendOrderSender with userId
             SendOrderSender orderSender = new SendOrderSender(processing.getDBDriverManager());
 
             AS2Message message = orderSender.send(
@@ -846,7 +865,8 @@ public class MessageResource {
                     originalFilenames,
                     null, // userdefinedId
                     subject,
-                    payloadContentTypes
+                    payloadContentTypes,
+                    currentUserId // userId for HTTP auth preferences
             );
 
             if (message == null) {

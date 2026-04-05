@@ -19,13 +19,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCreatePartner, useUpdatePartner } from './usePartners';
 import { useCertificates } from '../certificates/useCertificates';
 import { useToast } from '../../components/Toast';
+import api from '../../api/client';
 
 const partnerSchema = z.object({
   // General tab
@@ -67,17 +68,19 @@ const partnerSchema = z.object({
   httpProtocolVersion: z.string().default('HTTP/1.1'),
   contentTransferEncoding: z.number().default(0),
 
+  // HTTP Authentication tab
+  authModeMessage: z.number().default(0),
+  useHttpAuthMessage: z.boolean().default(false),
+  httpAuthMessageUser: z.string().optional(),
+  httpAuthMessagePassword: z.string().optional(),
+  authModeAsyncMDN: z.number().default(0),
+  useHttpAuthAsyncMDN: z.boolean().default(false),
+  httpAuthAsyncMDNUser: z.string().optional(),
+  httpAuthAsyncMDNPassword: z.string().optional(),
+
   // Contact tab
   contactAS2: z.string().optional(),
-  contactCompany: z.string().optional(),
-
-  // Notification tab
-  notifySendEnabled: z.boolean().default(false),
-  notifyReceiveEnabled: z.boolean().default(false),
-  notifySendReceiveEnabled: z.boolean().default(false),
-  notifySend: z.number().default(0),
-  notifyReceive: z.number().default(0),
-  notifySendReceive: z.number().default(0)
+  contactCompany: z.string().optional()
 });
 
 export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
@@ -87,6 +90,12 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const updatePartner = useUpdatePartner();
   const toast = useToast();
   const isEdit = !!partner;
+
+  // Visibility control state
+  const [visibilityMode, setVisibilityMode] = useState('all');
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Fetch certificates for the dropdowns
   const { data: certificates, isLoading: certsLoading } = useCertificates('sign');
@@ -120,11 +129,16 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       keepFilenameOnReceipt: false,
       httpProtocolVersion: 'HTTP/1.1',
       contentTransferEncoding: 0,
+      authModeMessage: 0,
+      useHttpAuthMessage: false,
+      httpAuthMessageUser: '',
+      httpAuthMessagePassword: '',
+      authModeAsyncMDN: 0,
+      useHttpAuthAsyncMDN: false,
+      httpAuthAsyncMDNUser: '',
+      httpAuthAsyncMDNPassword: '',
       overwriteLocalStationSecurity: false,
       useAlgorithmIdentifierProtectionAttribute: true,
-      notifySendEnabled: false,
-      notifyReceiveEnabled: false,
-      notifySendReceiveEnabled: false,
       signFingerprintSHA1: '',
       cryptFingerprintSHA1: '',
       overwriteSignFingerprintSHA1: '',
@@ -145,13 +159,30 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
 
   const onSubmit = async (data) => {
     try {
+      let savedPartnerId;
       if (isEdit) {
         await updatePartner.mutateAsync({ id: partner.dbId, partner: data });
+        savedPartnerId = partner.dbId;
         toast.success('Partner updated successfully');
       } else {
-        await createPartner.mutateAsync(data);
+        const result = await createPartner.mutateAsync(data);
+        savedPartnerId = result?.dbId || result?.id;
         toast.success('Partner created successfully');
       }
+
+      // Save visibility settings (only for remote partners)
+      if (!localStation && savedPartnerId) {
+        try {
+          await api.put(`/partners/${savedPartnerId}/visibility`, {
+            visibleToAll: visibilityMode === 'all',
+            userIds: visibilityMode === 'specific' ? selectedUserIds : []
+          });
+        } catch (error) {
+          console.error('Failed to save visibility settings:', error);
+          toast.error('Partner saved, but failed to update visibility settings');
+        }
+      }
+
       onSuccess?.();
       onClose();
     } catch (error) {
@@ -159,16 +190,61 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     }
   };
 
+  // Fetch users list when visibility tab is active
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (activeTab === 'visibility' && !localStation) {
+        setLoadingUsers(true);
+        try {
+          const response = await api.get('/users');
+          setUsers(response.data || []);
+        } catch (error) {
+          console.error('Failed to fetch users:', error);
+          toast.error('Failed to load users list');
+        } finally {
+          setLoadingUsers(false);
+        }
+      }
+    };
+    fetchUsers();
+  }, [activeTab, localStation, toast]);
+
+  // Load visibility settings when editing existing partner
+  useEffect(() => {
+    const fetchVisibility = async () => {
+      if (partner && partner.dbId && !localStation) {
+        try {
+          const response = await api.get(`/partners/${partner.dbId}/visibility`);
+          const data = response.data;
+
+          if (data.visibleToAll) {
+            setVisibilityMode('all');
+            setSelectedUserIds([]);
+          } else {
+            setVisibilityMode('specific');
+            setSelectedUserIds(data.visibleToUserIds || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch visibility settings:', error);
+          // Default to visible to all
+          setVisibilityMode('all');
+          setSelectedUserIds([]);
+        }
+      }
+    };
+    fetchVisibility();
+  }, [partner, localStation]);
+
   // Define all tabs, but filter based on localStation
   const allTabs = [
     { id: 'general', label: 'General', showForLocal: true, showForRemote: true },
-    { id: 'send', label: 'Send', showForLocal: false, showForRemote: true },
-    { id: 'receive', label: 'Receive/MDN', showForLocal: false, showForRemote: true },
     { id: 'security', label: 'Security', showForLocal: true, showForRemote: true },
+    { id: 'send', label: 'Send', showForLocal: false, showForRemote: true },
+    { id: 'mdn', label: 'MDN', showForLocal: true, showForRemote: true },
     { id: 'dirpoll', label: 'Directory Poll', showForLocal: false, showForRemote: true },
-    { id: 'http', label: 'HTTP', showForLocal: false, showForRemote: true },
-    { id: 'contact', label: 'Contact', showForLocal: true, showForRemote: true },
-    { id: 'notification', label: 'Notification', showForLocal: true, showForRemote: true }
+    { id: 'httpauth', label: 'HTTP Authentication', showForLocal: false, showForRemote: true },
+    { id: 'visibility', label: 'Visibility', showForLocal: false, showForRemote: true },
+    { id: 'contact', label: 'Contact', showForLocal: true, showForRemote: true }
   ];
 
   // Filter tabs based on localStation value
@@ -444,7 +520,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
               </>
             )}
 
-            {/* Send Tab - Only visible for remote partners */}
+            {/* Send Tab - Only visible for remote partners (includes HTTP settings) */}
             {activeTab === 'send' && !localStation && (
               <>
                 <div style={formGroupStyle}>
@@ -475,11 +551,35 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <option value="1">ZLIB</option>
                   </select>
                 </div>
+
+                {/* HTTP Settings Section */}
+                <div style={{ marginTop: '2rem', marginBottom: '1rem', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: '#495057' }}>HTTP Protocol Settings</h3>
+                </div>
+
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>HTTP Protocol Version</label>
+                  <select {...register('httpProtocolVersion')} style={inputStyle} disabled={isSubmitting}>
+                    <option value="HTTP/1.1">HTTP/1.1</option>
+                    <option value="HTTP/1.0">HTTP/1.0</option>
+                  </select>
+                </div>
+
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Content Transfer Encoding</label>
+                  <select {...register('contentTransferEncoding', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
+                    <option value="0">Binary</option>
+                    <option value="1">Base64</option>
+                    <option value="2">Quoted-Printable</option>
+                    <option value="3">8bit</option>
+                    <option value="4">7bit</option>
+                  </select>
+                </div>
               </>
             )}
 
-            {/* Receive/MDN Tab - Only visible for remote partners */}
-            {activeTab === 'receive' && !localStation && (
+            {/* MDN Tab */}
+            {activeTab === 'mdn' && (
               <>
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>MDN URL</label>
@@ -731,26 +831,160 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
               </>
             )}
 
-            {/* HTTP Tab - Only visible for remote partners */}
-            {activeTab === 'http' && !localStation && (
+            {/* HTTP Authentication Tab - Only visible for remote partners */}
+            {activeTab === 'httpauth' && !localStation && (
               <>
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>HTTP Protocol Version</label>
-                  <select {...register('httpProtocolVersion')} style={inputStyle} disabled={isSubmitting}>
-                    <option value="HTTP/1.1">HTTP/1.1</option>
-                    <option value="HTTP/1.0">HTTP/1.0</option>
-                  </select>
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#495057' }}>HTTP Authentication Settings</h3>
+                  <p style={{ fontSize: '0.875rem', color: '#6c757d', marginBottom: 0 }}>
+                    Configure HTTP basic authentication for message transmission and async MDN delivery
+                  </p>
                 </div>
 
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>Content Transfer Encoding</label>
-                  <select {...register('contentTransferEncoding', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
-                    <option value="0">Binary</option>
-                    <option value="1">Base64</option>
-                    <option value="2">Quoted-Printable</option>
-                    <option value="3">8bit</option>
-                    <option value="4">7bit</option>
-                  </select>
+                {/* Message Authentication Section */}
+                <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Message Transmission Authentication</h4>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="0"
+                        {...register('authModeMessage', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      No HTTP Authentication
+                    </label>
+                  </div>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="1"
+                        {...register('authModeMessage', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Basic Auth (credentials in this form)
+                    </label>
+                  </div>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="2"
+                        {...register('authModeMessage', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Use User Preference
+                    </label>
+                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                      Credentials will be taken from the user's HTTP Authentication preferences
+                    </div>
+                  </div>
+
+                  {watch('authModeMessage') === 1 && (
+                    <>
+                      <div style={formGroupStyle}>
+                        <label style={labelStyle}>Username</label>
+                        <input
+                          type="text"
+                          {...register('httpAuthMessageUser')}
+                          placeholder="HTTP authentication username"
+                          style={inputStyle}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div style={formGroupStyle}>
+                        <label style={labelStyle}>Password</label>
+                        <input
+                          type="password"
+                          {...register('httpAuthMessagePassword')}
+                          placeholder="HTTP authentication password"
+                          style={inputStyle}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Async MDN Authentication Section */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Async MDN Authentication</h4>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="0"
+                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      No HTTP Authentication
+                    </label>
+                  </div>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="1"
+                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Basic Auth (credentials in this form)
+                    </label>
+                  </div>
+
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      <input
+                        type="radio"
+                        value="2"
+                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
+                        disabled={isSubmitting}
+                        style={{ marginRight: '0.5rem' }}
+                      />
+                      Use User Preference
+                    </label>
+                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                      Credentials will be taken from the user's HTTP Authentication preferences
+                    </div>
+                  </div>
+
+                  {watch('authModeAsyncMDN') === 1 && (
+                    <>
+                      <div style={formGroupStyle}>
+                        <label style={labelStyle}>Username</label>
+                        <input
+                          type="text"
+                          {...register('httpAuthAsyncMDNUser')}
+                          placeholder="HTTP authentication username for async MDN"
+                          style={inputStyle}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div style={formGroupStyle}>
+                        <label style={labelStyle}>Password</label>
+                        <input
+                          type="password"
+                          {...register('httpAuthAsyncMDNPassword')}
+                          placeholder="HTTP authentication password for async MDN"
+                          style={inputStyle}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -770,29 +1004,99 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
               </>
             )}
 
-            {/* Notification Tab */}
-            {activeTab === 'notification' && (
+            {/* Visibility Tab */}
+            {activeTab === 'visibility' && (
               <>
+                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Partner Visibility</h3>
+                <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.875rem' }}>
+                  Control which WebUI users can see and use this partner when sending messages.
+                </p>
+
                 <div style={formGroupStyle}>
-                  <div style={checkboxContainerStyle}>
-                    <input type="checkbox" {...register('notifySendEnabled')} disabled={isSubmitting} />
-                    <label style={{...labelStyle, marginBottom: 0}}>Enable Send Notifications</label>
-                  </div>
+                  <label style={labelStyle}>
+                    <input
+                      type="radio"
+                      checked={visibilityMode === 'all'}
+                      onChange={() => {
+                        setVisibilityMode('all');
+                        setSelectedUserIds([]);
+                      }}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    Visible to all WebUI users
+                  </label>
                 </div>
 
                 <div style={formGroupStyle}>
-                  <div style={checkboxContainerStyle}>
-                    <input type="checkbox" {...register('notifyReceiveEnabled')} disabled={isSubmitting} />
-                    <label style={{...labelStyle, marginBottom: 0}}>Enable Receive Notifications</label>
-                  </div>
+                  <label style={labelStyle}>
+                    <input
+                      type="radio"
+                      checked={visibilityMode === 'specific'}
+                      onChange={() => setVisibilityMode('specific')}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    Visible to specific users only
+                  </label>
                 </div>
 
-                <div style={formGroupStyle}>
-                  <div style={checkboxContainerStyle}>
-                    <input type="checkbox" {...register('notifySendReceiveEnabled')} disabled={isSubmitting} />
-                    <label style={{...labelStyle, marginBottom: 0}}>Enable Send/Receive Notifications</label>
+                {visibilityMode === 'specific' && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                    <label style={{ ...labelStyle, marginBottom: '0.75rem', display: 'block' }}>
+                      Select Users Who Can See This Partner:
+                    </label>
+                    {loadingUsers ? (
+                      <p style={{ color: '#666', fontSize: '0.875rem' }}>Loading users...</p>
+                    ) : (
+                      <div style={{
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '4px',
+                        padding: '0.5rem',
+                        backgroundColor: 'white'
+                      }}>
+                        {users.length === 0 ? (
+                          <p style={{ color: '#666', fontSize: '0.875rem', padding: '0.5rem' }}>
+                            No users available
+                          </p>
+                        ) : (
+                          users.map(user => (
+                            <div key={user.id} style={{ padding: '0.5rem', borderBottom: '1px solid #f0f0f0' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedUserIds.includes(user.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedUserIds([...selectedUserIds, user.id]);
+                                    } else {
+                                      setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
+                                    }
+                                  }}
+                                  style={{ marginRight: '0.75rem' }}
+                                />
+                                <div>
+                                  <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{user.username}</div>
+                                  {user.fullName && (
+                                    <div style={{ color: '#666', fontSize: '0.75rem' }}>{user.fullName}</div>
+                                  )}
+                                  {user.email && (
+                                    <div style={{ color: '#999', fontSize: '0.75rem' }}>{user.email}</div>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                    {visibilityMode === 'specific' && selectedUserIds.length === 0 && (
+                      <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                        ⚠️ Warning: No users selected. Partner will not be visible to anyone when sending messages.
+                      </p>
+                    )}
                   </div>
-                </div>
+                )}
               </>
             )}
           </div>

@@ -274,6 +274,7 @@ public class SendOrderReceiver {
                     messageUploader.setLogger(logger);
                     messageUploader.setAbstractServer(clientserver);
                     messageUploader.setDBConnection(dbDriverManager);
+                    messageUploader.setUserId(order.getUserId());
                     //configure the connection parameters
                     HttpConnectionParameter connectionParameter = new HttpConnectionParameter();
                     connectionParameter.setConnectionTimeoutMillis(preferences.getInt(PreferencesAS2.HTTP_SEND_TIMEOUT));

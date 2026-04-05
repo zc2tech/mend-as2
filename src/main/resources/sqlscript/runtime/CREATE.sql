@@ -175,7 +175,7 @@ CREATE TABLE modulelock (
   clientip VARCHAR(255) NOT NULL,
   clientid VARCHAR(255) NOT NULL,
   username VARCHAR(255) NOT NULL,
-  clientpid VARCHAR(255) NOT NULL
+  clientpid VARCHAR(255)
 );
 
 CREATE INDEX idx_refreshlockmillies ON modulelock(refreshlockmillies);

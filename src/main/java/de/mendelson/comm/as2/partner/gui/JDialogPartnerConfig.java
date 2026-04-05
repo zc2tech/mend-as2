@@ -737,7 +737,7 @@ public class JDialogPartnerConfig extends JDialog {
 
         getContentPane().add(jPanelMain, java.awt.BorderLayout.CENTER);
 
-        setSize(new java.awt.Dimension(994, 718));
+        setSize(new java.awt.Dimension(1200, 750));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 

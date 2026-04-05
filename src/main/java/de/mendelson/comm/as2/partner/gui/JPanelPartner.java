@@ -136,6 +136,10 @@ public class JPanelPartner extends JPanel {
      * Stores the last selection of the tab panels if a new partner is set
      */
     private Component lastSelectedPanel = null;
+    /**
+     * Visibility panel reference (for remote partners only)
+     */
+    private JPanelPartnerVisibility jPanelVisibility = null;
 
     private final static MendelsonMultiResolutionImage IMAGE_DELETE
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/delete.svg", 
@@ -575,13 +579,21 @@ public class JPanelPartner extends JPanel {
         this.jTextFieldPollMaxFiles.setText(String.valueOf(this.partner.getMaxPollFiles()));
         this.jTextFieldPollInterval.setText(String.valueOf(this.partner.getPollInterval()));
         this.setUIValueWithoutEvent(this.switchCompress, this.partner.getCompressionType() == AS2Message.COMPRESSION_ZLIB);
-        if (this.partner.getAuthenticationCredentialsMessage().isEnabled()) {
+        // Set HTTP Auth mode for Message
+        int authModeMessage = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
+        if (authModeMessage == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
+        } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
+            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMessage, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
         }
-        if (this.partner.getAuthenticationCredentialsAsyncMDN().isEnabled()) {
+        // Set HTTP Auth mode for Async MDN
+        int authModeMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getAuthMode();
+        if (authModeMDN == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMDN, true);
+        } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
+            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMDN, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
         }
@@ -730,6 +742,9 @@ public class JPanelPartner extends JPanel {
             if (this.displayNotificationPanel) {
                 this.jTabbedPane.addTab(rb.getResourceString("tab.notification"), this.jPanelNotification);
             }
+            // Add Visibility tab for remote partners
+            this.jPanelVisibility = new JPanelPartnerVisibility(this.baseClient, this.partner);
+            this.jTabbedPane.addTab(rb.getResourceString("tab.visibility"), this.jPanelVisibility);
             this.jTabbedPane.addTab(rb.getResourceString("tab.events"), this.jPanelEvents);
             this.jTabbedPane.addTab(rb.getResourceString("tab.partnersystem"), this.jPanelPartnerSystem);
         }
@@ -3861,7 +3876,13 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
 
     private void jRadioButtonHttpAuthCredentialsMessageItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMessageItemStateChanged
         if (this.partner != null) {
-            this.partner.getAuthenticationCredentialsMessage().setEnabled(this.jRadioButtonHttpAuthCredentialsMessage.isSelected());
+            if (this.jRadioButtonHttpAuthNoneMessage.isSelected()) {
+                this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
+            } else if (this.jRadioButtonHttpAuthCredentialsMessage.isSelected()) {
+                this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
+            } else if (this.jRadioButtonHttpAuthUserPreferenceMessage.isSelected()) {
+                this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
+            }
             this.informTreeModelNodeChanged();
         }
         this.updateHttpAuthState();
@@ -3885,7 +3906,13 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
 
     private void jRadioButtonHttpAuthCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
         if (this.partner != null) {
-            this.partner.getAuthenticationCredentialsAsyncMDN().setEnabled(this.jRadioButtonHttpAuthCredentialsMDN.isSelected());
+            if (this.jRadioButtonHttpAuthNoneMDN.isSelected()) {
+                this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
+            } else if (this.jRadioButtonHttpAuthCredentialsMDN.isSelected()) {
+                this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
+            } else if (this.jRadioButtonHttpAuthUserPreferenceMDN.isSelected()) {
+                this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
+            }
             this.informTreeModelNodeChanged();
         }
         this.updateHttpAuthState();
@@ -4225,6 +4252,8 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JRadioButton jRadioButtonHttpAuthCredentialsMessage;
     private javax.swing.JRadioButton jRadioButtonHttpAuthNoneMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthNoneMessage;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthUserPreferenceMDN;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthUserPreferenceMessage;
     private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage;
     private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2ClientCredentialsMDN;

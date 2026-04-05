@@ -39,10 +39,10 @@ CREATE TABLE partner(
     pollinterval INTEGER,
     msgcompression INTEGER,
     signedmdn INTEGER,
-    usehttpauth INTEGER,
+    authmodehttp INTEGER DEFAULT 0 NOT NULL,
     httpauthuser VARCHAR(256),
     httpauthpass VARCHAR(256),
-    usehttpauthasyncmdn INTEGER,
+    authmodehttpasynmdn INTEGER DEFAULT 0 NOT NULL,
     httpauthuserasnymdn VARCHAR(256),
     httpauthpassasnymdn VARCHAR(256),
     keeporiginalfilenameonreceipt INTEGER,
@@ -65,6 +65,7 @@ CREATE TABLE partner(
     oauth2idmessage INTEGER,
     oauth2idmdn INTEGER,
     overwritelocalsecurity INTEGER DEFAULT 0 NOT NULL,
+    created_by_user_id INTEGER DEFAULT 0,
     FOREIGN KEY(oauth2idmessage) REFERENCES oauth2(id),
     FOREIGN KEY(oauth2idmdn) REFERENCES oauth2(id)
 );
@@ -72,6 +73,42 @@ CREATE TABLE partner(
 
 CREATE INDEX idx_partner_islocal ON partner(islocal);
 CREATE INDEX idx_partner_as2ident ON partner(as2ident);
+
+-- Partner visibility control for WebUI users
+CREATE TABLE partner_user_visibility(
+    id SERIAL PRIMARY KEY,
+    partner_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(partner_id) REFERENCES partner(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE,
+    UNIQUE(partner_id, user_id)
+);
+
+CREATE INDEX idx_partner_visibility_partner ON partner_user_visibility(partner_id);
+CREATE INDEX idx_partner_visibility_user ON partner_user_visibility(user_id);
+
+-- User preference for HTTP authentication per partner
+CREATE TABLE user_preference_http_auth(
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    partner_id INTEGER NOT NULL,
+    use_message_auth BOOLEAN DEFAULT FALSE,
+    message_username VARCHAR(256),
+    message_password VARCHAR(256),
+    use_mdn_auth BOOLEAN DEFAULT FALSE,
+    mdn_username VARCHAR(256),
+    mdn_password VARCHAR(256),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE,
+    FOREIGN KEY(partner_id) REFERENCES partner(id) ON DELETE CASCADE,
+    UNIQUE(user_id, partner_id)
+);
+
+CREATE INDEX idx_user_http_auth_user ON user_preference_http_auth(user_id);
+CREATE INDEX idx_user_http_auth_partner ON user_preference_http_auth(partner_id);
+
 CREATE TABLE partnerevent(
     id SERIAL PRIMARY KEY,
     partnerid INTEGER,
