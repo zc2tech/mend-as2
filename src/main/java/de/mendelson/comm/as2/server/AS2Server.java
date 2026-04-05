@@ -216,7 +216,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
 
         System.setProperty("mendelson.as2.embeddedhttpserver", startHTTPServer ? "TRUE" : "FALSE");
         // Store test mode in system property for JettyStarter to access
-        System.setProperty("mendelson.as2.testmode", String.valueOf(config.isTestMode()));
+        System.setProperty("mend.as2.testmode", String.valueOf(config.isTestMode()));
         this.fireSystemEventServerStartupBegins();
         this.allowAllClients = allowAllClients;
         PLUGINS.setStartPlugins(startPlugins);

@@ -1,4 +1,4 @@
-/package de.mendelson.util.oauth2;
+package de.mendelson.util.oauth2;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

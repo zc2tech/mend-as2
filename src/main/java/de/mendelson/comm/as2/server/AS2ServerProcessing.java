@@ -102,6 +102,8 @@ import de.mendelson.comm.as2.preferences.ResourceBundlePreferences;
 import de.mendelson.comm.as2.send.DirPollManager;
 import de.mendelson.comm.as2.sendorder.SendOrder;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
+import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.comm.as2.usermanagement.clientserver.*;
 import de.mendelson.util.clientserver.user.User;
@@ -623,6 +625,12 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof UserRoleRemoveRequest msg) {
                 session.write(this.processUserRoleRemoveRequest(msg));
+                return (true);
+            } else if (message instanceof UserHttpAuthPreferenceRequest msg) {
+                session.write(this.processUserHttpAuthPreferenceRequest(msg));
+                return (true);
+            } else if (message instanceof UserHttpAuthPreferenceSaveRequest msg) {
+                session.write(this.processUserHttpAuthPreferenceSaveRequest(msg));
                 return (true);
             }
         } catch (Throwable e) {
@@ -3424,6 +3432,115 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } catch (Exception e) {
             response.setException(e);
             this.logger.log(Level.SEVERE, "Error processing user role remove request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user HTTP authentication preferences request
+     */
+    public UserHttpAuthPreferenceResponse processUserHttpAuthPreferenceRequest(UserHttpAuthPreferenceRequest request) {
+        UserHttpAuthPreferenceResponse response = new UserHttpAuthPreferenceResponse(request);
+        try {
+            UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(this.dbDriverManager, this.logger);
+
+            // Get all partners
+            PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
+            List<Partner> allPartners = partnerDB.getAllPartner();
+
+            // Get existing preferences for user
+            List<UserHttpAuthPreference> existingPrefs = prefDB.getPreferencesForUser(request.getUserId());
+
+            // Convert to response structure
+            for (UserHttpAuthPreference pref : existingPrefs) {
+                int partnerId = pref.getPartnerId();
+
+                // Add message auth if enabled
+                if (pref.isUseMessageAuth()) {
+                    response.addPreference(partnerId, "message", "username", pref.getMessageUsername() != null ? pref.getMessageUsername() : "");
+                    response.addPreference(partnerId, "message", "password", pref.getMessagePassword() != null ? pref.getMessagePassword() : "");
+                }
+
+                // Add MDN auth if enabled
+                if (pref.isUseMdnAuth()) {
+                    response.addPreference(partnerId, "mdn", "username", pref.getMdnUsername() != null ? pref.getMdnUsername() : "");
+                    response.addPreference(partnerId, "mdn", "password", pref.getMdnPassword() != null ? pref.getMdnPassword() : "");
+                }
+            }
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user HTTP auth preference request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user HTTP authentication preferences save request
+     */
+    public UserHttpAuthPreferenceSaveResponse processUserHttpAuthPreferenceSaveRequest(UserHttpAuthPreferenceSaveRequest request) {
+        UserHttpAuthPreferenceSaveResponse response = new UserHttpAuthPreferenceSaveResponse(request);
+        try {
+            UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(this.dbDriverManager, this.logger);
+
+            // Get all partners to determine which ones to process
+            PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
+            List<Partner> allPartners = partnerDB.getAllPartner();
+
+            // First, delete all existing preferences for this user
+            for (Partner partner : allPartners) {
+                if (!partner.isLocalStation()) {
+                    prefDB.deletePreference(request.getUserId(), partner.getDBId());
+                }
+            }
+
+            // Save new preferences from request
+            Map<Integer, Map<String, Map<String, String>>> preferences = request.getPreferences();
+            for (Map.Entry<Integer, Map<String, Map<String, String>>> partnerEntry : preferences.entrySet()) {
+                int partnerId = partnerEntry.getKey();
+                Map<String, Map<String, String>> types = partnerEntry.getValue();
+
+                UserHttpAuthPreference pref = new UserHttpAuthPreference();
+                pref.setUserId(request.getUserId());
+                pref.setPartnerId(partnerId);
+
+                // Extract message auth
+                if (types.containsKey("message")) {
+                    Map<String, String> messageFields = types.get("message");
+                    String messageUser = messageFields.get("username");
+                    String messagePass = messageFields.get("password");
+
+                    if (messageUser != null && !messageUser.trim().isEmpty()) {
+                        pref.setUseMessageAuth(true);
+                        pref.setMessageUsername(messageUser);
+                        pref.setMessagePassword(messagePass != null ? messagePass : "");
+                    }
+                }
+
+                // Extract MDN auth
+                if (types.containsKey("mdn")) {
+                    Map<String, String> mdnFields = types.get("mdn");
+                    String mdnUser = mdnFields.get("username");
+                    String mdnPass = mdnFields.get("password");
+
+                    if (mdnUser != null && !mdnUser.trim().isEmpty()) {
+                        pref.setUseMdnAuth(true);
+                        pref.setMdnUsername(mdnUser);
+                        pref.setMdnPassword(mdnPass != null ? mdnPass : "");
+                    }
+                }
+
+                // Only save if at least one auth type is enabled
+                if (pref.isUseMessageAuth() || pref.isUseMdnAuth()) {
+                    prefDB.savePreference(pref);
+                }
+            }
+
+            response.setSuccess(true);
+        } catch (Exception e) {
+            response.setSuccess(false);
+            response.setErrorMessage(e.getMessage());
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user HTTP auth preference save request", e);
         }
         return response;
     }

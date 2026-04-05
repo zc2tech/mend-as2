@@ -1,4 +1,4 @@
-/package de.mendelson.comm.as2.configurationcheck.gui;
+package de.mendelson.comm.as2.configurationcheck.gui;
 
 import de.mendelson.comm.as2.client.ModuleStarter;
 import de.mendelson.comm.as2.clientserver.message.ConfigurationCheckRequest;

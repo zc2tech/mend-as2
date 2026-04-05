@@ -5,6 +5,7 @@ import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.util.security.signature.ListCellRendererSignature;
 import de.mendelson.comm.as2.message.AS2Message;
+import de.mendelson.comm.as2.partner.HTTPAuthentication;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerCertificateInformation;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;

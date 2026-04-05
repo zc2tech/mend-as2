@@ -1,4 +1,4 @@
-/package de.mendelson.util.oauth2;
+package de.mendelson.util.oauth2;
 
 import java.io.Serializable;
 

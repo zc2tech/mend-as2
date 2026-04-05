@@ -60,7 +60,7 @@ public class RawMessageSender {
         AnonymousTextClient client = null;
         client = new AnonymousTextClient(BaseClient.CLIENT_UNSPECIFIED);
         // Use test mode port if enabled
-        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
         int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
         client.connect("localhost", port, 30000);        
         IncomingMessageRequest messageRequest = new IncomingMessageRequest();

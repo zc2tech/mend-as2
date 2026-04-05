@@ -94,7 +94,7 @@ public class JettyStarter {
         this.logger.info(MODULE_NAME + " " + this.rb.getResourceString("httpserver.willstart"));
 
         // Check if test mode is enabled
-        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
 
         SystemEventManagerImplAS2.instance().newEvent(
                 SystemEvent.SEVERITY_INFO,

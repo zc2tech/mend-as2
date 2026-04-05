@@ -53,6 +53,8 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"menu.file.resend.multiple", "Send as new transactions"},
         {"menu.file.migrate.hsqldb", "Migrate from HSQLDB"},
         {"menu.file.ha", "High Availability Instances"},
+        {"menu.userpreference", "User Preference"},
+        {"menu.userpreference.httpauth", "HTTP Authentication"},
         {"menu.help", "Help"},
         {"menu.help.about", "About"},
         {"menu.help.supportrequest", "Support request"},

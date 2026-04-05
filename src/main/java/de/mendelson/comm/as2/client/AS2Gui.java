@@ -34,6 +34,7 @@ import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.PreferencesPanel;
 import de.mendelson.comm.as2.preferences.PreferencesPanelConnectivity;
 import de.mendelson.comm.as2.preferences.PreferencesPanelDirectories;
+import de.mendelson.comm.as2.preferences.PreferencesPanelHttpAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelInterface;
 import de.mendelson.comm.as2.preferences.PreferencesPanelLog;
 import de.mendelson.comm.as2.preferences.PreferencesPanelMDN;
@@ -280,7 +281,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Test mode is detected by checking if the system property is set
      */
     private static String getLogoPath(String defaultLogoName) {
-        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
         if (isTestMode) {
             // Replace .svg with _test.svg
             return "/de/mendelson/comm/as2/client/" + defaultLogoName.replace(".svg", "_test.svg");
@@ -814,6 +815,26 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
         this.as2StatusBar.initialize(this.getBaseClient(), this);
         this.as2StatusBar.startConfigurationChecker();
+    }
+
+    /**
+     * Override messageReceivedFromServer to detect ServerInfo and initialize the UI
+     * Since LoginRequired is no longer sent, we use ServerInfo as the trigger
+     */
+    @Override
+    public void messageReceivedFromServer(de.mendelson.util.clientserver.messages.ClientServerMessage message) {
+        // Detect ServerInfo message (sent when client connects)
+        if (message instanceof de.mendelson.util.clientserver.messages.ServerInfo) {
+            // Call parent to process ServerInfo
+            super.messageReceivedFromServer(message);
+            // Trigger the same initialization that loginRequestedFromServer would have done
+            SwingUtilities.invokeLater(() -> {
+                loginRequestedFromServer();
+            });
+        } else {
+            // Let parent handle other messages
+            super.messageReceivedFromServer(message);
+        }
     }
 
     @Override
@@ -1392,6 +1413,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             new PreferencesPanelNotification(AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar));
                     panelList.add(new PreferencesPanelInterface(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelLog(AS2Gui.this.getBaseClient()));
+                    // HTTP Auth panel moved to separate User Preference menu
                     dialog = new JDialogPreferences(AS2Gui.this, panelList, selectedTab, "");
                 } catch (Exception e) {
                     UINotification.instance().addNotification(e);
@@ -1402,6 +1424,39 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         dialog.setVisible(true);
                     }
                     AS2Gui.this.jMenuItemFilePreferences.setEnabled(true);
+                }
+            }
+        };
+        GUIClient.submit(prefRunner);
+    }
+
+    /**
+     * Display HTTP Authentication preferences dialog
+     */
+    public void displayHttpAuthPreferences() {
+        final String uniqueId = this.getClass().getName() + ".displayHttpAuthPreferences." + System.currentTimeMillis();
+        Runnable prefRunner = new Runnable() {
+            @Override
+            public void run() {
+                JDialogPreferences dialog = null;
+                // display wait indicator
+                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                        AS2Gui.this.rb.getResourceString("menu.userpreference.httpauth"), uniqueId);
+                try {
+                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(false);
+                    List<PreferencesPanel> panelList = new ArrayList<PreferencesPanel>();
+                    // Add only HTTP Auth panel
+                    panelList.add(new PreferencesPanelHttpAuth(AS2Gui.this.getBaseClient()));
+                    dialog = new JDialogPreferences(AS2Gui.this, panelList, "httpauth", "");
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                    e.printStackTrace();
+                } finally {
+                    AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
+                    if (dialog != null) {
+                        dialog.setVisible(true);
+                    }
+                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(true);
                 }
             }
         };
@@ -1575,6 +1630,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jSeparator3 = new javax.swing.JSeparator();
         jMenuItemHTTPServerInfo = new javax.swing.JMenuItem();
         jMenuItemSystemEvents = new javax.swing.JMenuItem();
+        jMenuUserPreference = new javax.swing.JMenu();
+        jMenuItemUserPrefHttpAuth = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
         jSeparator8 = new javax.swing.JSeparator();
         jMenuItemFileExit = new javax.swing.JMenuItem();
@@ -2246,6 +2303,19 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuBar.add(jMenuFile);
 
+        // User Preference menu
+        jMenuUserPreference.setText(this.rb.getResourceString("menu.userpreference"));
+
+        jMenuItemUserPrefHttpAuth.setText(this.rb.getResourceString("menu.userpreference.httpauth"));
+        jMenuItemUserPrefHttpAuth.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemUserPrefHttpAuthActionPerformed(evt);
+            }
+        });
+        jMenuUserPreference.add(jMenuItemUserPrefHttpAuth);
+
+        jMenuBar.add(jMenuUserPreference);
+
         jMenuItemHelpSystem.setText(this.rb.getResourceString("menu.help.helpsystem"));
         jMenuItemHelpSystem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2329,6 +2399,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void jMenuItemPartnerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPartnerActionPerformed
         this.displayPartnerManager(null);
     }// GEN-LAST:event_jMenuItemPartnerActionPerformed
+
+    private void jMenuItemUserPrefHttpAuthActionPerformed(java.awt.event.ActionEvent evt) {
+        this.displayHttpAuthPreferences();
+    }
 
     private void jMenuItemUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
         de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(
@@ -2496,6 +2570,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuFile;
     private javax.swing.JMenu jMenuFileCertificates;
+    private javax.swing.JMenu jMenuUserPreference;
+    private javax.swing.JMenuItem jMenuItemUserPrefHttpAuth;
     private javax.swing.JMenuItem jMenuItemCEMManager;
     private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;
@@ -2689,7 +2765,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     JTableColumnResizer.adjustColumnWidthByContent(AS2Gui.this.jTableMessageOverview);
                 }
             } catch (Throwable e) {
-                // nop
+                // Exception in refresh thread - log it but don't crash
             }
         }
 
@@ -2727,7 +2803,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 AS2Gui.this.updatePartnerFilter(partnerList);
                 AS2Gui.this.updateLocalStationFilter(partnerList);
             } catch (Exception e) {
-                // nop
+                // Failed to refresh partner data - will retry on next cycle
             }
         }
 

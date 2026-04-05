@@ -1,4 +1,4 @@
- /package de.mendelson.comm.as2.servlet;
+ package de.mendelson.comm.as2.servlet;
 
 import de.mendelson.Copyright;
 import de.mendelson.comm.as2.AS2ServerVersion;
@@ -191,7 +191,7 @@ public class HttpReceiver extends HttpServlet {
         try(AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)){
             client.setDisplayServerLogMessages(false);
             // Use test mode port if enabled
-            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
             int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
             client.connect("localhost", port, 30000);
             IncomingMessageResponse messageResponse = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);

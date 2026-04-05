@@ -516,6 +516,41 @@ public class MessageAccessDB {
                 calendar.set(Calendar.MILLISECOND, 999);
                 parameterList.add(new Timestamp(calendar.getTimeInMillis()));
             }
+
+            // Partner visibility filtering for non-admin users
+            // Admin users or users without userId context (SwingUI) see all messages
+            if (filter.getUserId() != null && !filter.isAdmin()) {
+                try (Connection configConnectionAutoCommit = this.dbDriverManager
+                        .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+                    // Build subquery to get AS2 IDs of partners visible to this user
+                    // Include:
+                    // 1. All local stations (always visible)
+                    // 2. Remote partners with no visibility records (visible to all)
+                    // 3. Remote partners specifically assigned to this user
+                    String visibilitySubquery =
+                        "(SELECT as2ident FROM partner WHERE islocal=1 " +
+                        "UNION " +
+                        "SELECT p.as2ident FROM partner p " +
+                        "WHERE p.islocal=0 AND NOT EXISTS (SELECT 1 FROM partner_user_visibility WHERE partner_id=p.id) " +
+                        "UNION " +
+                        "SELECT p.as2ident FROM partner p " +
+                        "INNER JOIN partner_user_visibility pv ON p.id=pv.partner_id " +
+                        "WHERE pv.user_id=?)";
+
+                    if (queryCondition.length() == 0) {
+                        queryCondition.append(" WHERE");
+                    } else {
+                        queryCondition.append(" AND");
+                    }
+                    queryCondition.append(" (senderid IN ").append(visibilitySubquery)
+                                   .append(" OR receiverid IN ").append(visibilitySubquery).append(")");
+
+                    // Add userId parameter twice (once for sender, once for receiver)
+                    parameterList.add(filter.getUserId());
+                    parameterList.add(filter.getUserId());
+                }
+            }
+
             //Hint: This is the wrong order! It should be ordered using "ASC". But the HSQLDB LIMIT clause
             //just takes the n first rows of the result set and returns them. Means the first n results are taken now 
             //in the wrong order and then the returned list of transactions is built in the wrong order again 

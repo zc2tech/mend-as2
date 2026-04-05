@@ -79,7 +79,7 @@ public class UserHttpAuthPreferenceAccessDB {
                     preferences.add(pref);
                 }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             this.logger.severe("Error loading HTTP auth preferences for user " + userId + ": " + e.getMessage());
         }
         return preferences;
@@ -119,7 +119,7 @@ public class UserHttpAuthPreferenceAccessDB {
                     return pref;
                 }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             this.logger.severe("Error loading HTTP auth preference: " + e.getMessage());
         }
         return null;
@@ -179,7 +179,7 @@ public class UserHttpAuthPreferenceAccessDB {
                 }
             }
             configConnection.commit();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             if (configConnection != null) {
                 try {
                     configConnection.rollback();
@@ -187,7 +187,7 @@ public class UserHttpAuthPreferenceAccessDB {
                     this.logger.severe("Error rolling back: " + ex.getMessage());
                 }
             }
-            throw e;
+            throw new SQLException(e);
         } finally {
             if (configConnection != null) {
                 try {
@@ -211,6 +211,8 @@ public class UserHttpAuthPreferenceAccessDB {
             stmt.setInt(1, userId);
             stmt.setInt(2, partnerId);
             stmt.executeUpdate();
+        } catch (Exception e) {
+            throw new SQLException(e);
         }
     }
 }

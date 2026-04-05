@@ -38,7 +38,7 @@ public class WindowTitleUtil {
     private static final boolean IS_TEST_MODE;
 
     static {
-        IS_TEST_MODE = Boolean.parseBoolean(System.getProperty("mendelson.as2.testmode", "false"));
+        IS_TEST_MODE = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
     }
 
     /**

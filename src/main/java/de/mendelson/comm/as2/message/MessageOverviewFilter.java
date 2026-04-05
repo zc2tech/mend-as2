@@ -40,6 +40,8 @@ public class MessageOverviewFilter implements Serializable{
     private long startTime = 0L;
     private long endTime = 0L;
     private String userdefinedId = null;
+    private Integer userId = null;  // WebUI user ID for partner visibility filtering
+    private boolean isAdmin = false;  // True if user has ADMIN role (bypasses visibility filtering)
     
     /**Filters for the message type that should be displayed*/
     public void setShowMessageType( final int MESSAGETYPE ){
@@ -179,7 +181,36 @@ public class MessageOverviewFilter implements Serializable{
     public void setUserdefinedId(String userdefinedId) {
         this.userdefinedId = userdefinedId;
     }
-    
+
+    /**
+     * @return the userId for partner visibility filtering. Null means no user context (show all)
+     */
+    public Integer getUserId() {
+        return userId;
+    }
+
+    /**
+     * @param userId the WebUI user ID to set for partner visibility filtering.
+     * Set to null to show all messages (e.g., for SwingUI or admin users)
+     */
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+
+    /**
+     * @return true if user has ADMIN role (full visibility to all messages)
+     */
+    public boolean isAdmin() {
+        return isAdmin;
+    }
+
+    /**
+     * @param isAdmin set to true if user has ADMIN role (bypasses visibility filtering)
+     */
+    public void setAdmin(boolean isAdmin) {
+        this.isAdmin = isAdmin;
+    }
+
     /**Prevent an overwrite of the readObject method for de-serialization*/
     private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException{
         inStream.defaultReadObject();

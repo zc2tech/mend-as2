@@ -40,6 +40,7 @@ import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.Role;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -82,6 +83,7 @@ public class MessageResource {
      */
     @GET
     public Response listMessages(
+            @Context SecurityContext securityContext,
             @QueryParam("startTime") Long startTime,
             @QueryParam("endTime") Long endTime,
             @QueryParam("limit") Integer limit,
@@ -108,6 +110,26 @@ public class MessageResource {
         } else {
             // Get filtered list
             MessageOverviewFilter filter = new MessageOverviewFilter();
+
+            // Get current user's ID and role for partner visibility filtering
+            try {
+                String username = securityContext.getUserPrincipal().getName();
+                UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                        processing.getDBDriverManager(), null);
+                WebUIUser user = userMgmt.getUserByUsername(username);
+                if (user != null) {
+                    filter.setUserId(user.getId());
+
+                    // Check if user has ADMIN role
+                    List<Role> roles = userMgmt.getUserRoles(user.getId());
+                    boolean isAdmin = roles.stream()
+                            .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
+                    filter.setAdmin(isAdmin);
+                }
+            } catch (Exception e) {
+                // If we can't get user info, treat as non-admin with no user context
+                // This will show all messages (fallback for compatibility)
+            }
 
             if (startTime != null) {
                 filter.setStartTime(startTime);
