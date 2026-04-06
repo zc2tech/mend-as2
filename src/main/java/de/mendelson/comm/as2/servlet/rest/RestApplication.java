@@ -36,6 +36,7 @@ import de.mendelson.comm.as2.servlet.rest.resources.PartnerResource;
 import de.mendelson.comm.as2.servlet.rest.resources.PreferencesResource;
 import de.mendelson.comm.as2.servlet.rest.resources.StatisticsResource;
 import de.mendelson.comm.as2.servlet.rest.resources.SystemResource;
+import de.mendelson.comm.as2.servlet.rest.resources.UserHttpAuthPreferenceResource;
 import de.mendelson.comm.as2.servlet.rest.resources.UserManagementResource;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -77,6 +78,7 @@ public class RestApplication extends ResourceConfig {
         register(NotificationResource.class);
         System.out.println("RestApplication: Registering UserManagementResource");
         register(UserManagementResource.class);
+        register(UserHttpAuthPreferenceResource.class);
 
         System.out.println("RestApplication: Jersey REST application initialized");
 
