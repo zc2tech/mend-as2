@@ -109,6 +109,19 @@ CREATE TABLE user_preference_http_auth(
 CREATE INDEX idx_user_http_auth_user ON user_preference_http_auth(user_id);
 CREATE INDEX idx_user_http_auth_partner ON user_preference_http_auth(partner_id);
 
+-- Inbound authentication credentials for system-wide incoming message authentication
+CREATE TABLE inbound_auth_credentials(
+    id SERIAL PRIMARY KEY,
+    auth_type INTEGER NOT NULL,  -- 1=basic auth, 2=certificate auth
+    username VARCHAR(255),        -- For basic auth
+    password VARCHAR(255),        -- For basic auth
+    cert_alias VARCHAR(255),      -- For certificate auth
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_inbound_auth_type CHECK (auth_type IN (1, 2))
+);
+
+CREATE INDEX idx_inbound_auth_type ON inbound_auth_credentials(auth_type);
+
 CREATE TABLE partnerevent(
     id SERIAL PRIMARY KEY,
     partnerid INTEGER,
@@ -151,6 +164,19 @@ CREATE TABLE serversettings(
 );
 
 CREATE INDEX idx_serversettings_vkey ON serversettings(vkey);
+
+-- Inbound authentication credentials table
+CREATE TABLE inbound_auth_credentials(
+    id SERIAL PRIMARY KEY,
+    auth_type INTEGER NOT NULL,  -- 1=basic auth, 2=certificate auth
+    username VARCHAR(255),
+    password VARCHAR(255),
+    cert_alias VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_inbound_auth_type CHECK (auth_type IN (1, 2))
+);
+
+CREATE INDEX idx_inbound_auth_type ON inbound_auth_credentials(auth_type);
 
 CREATE TABLE notification(
     id SERIAL PRIMARY KEY,

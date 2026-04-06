@@ -22,13 +22,19 @@
 package de.mendelson.comm.as2.servlet.rest.resources;
 
 import de.mendelson.comm.as2.AS2ServerVersion;
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.preferences.InboundAuthCredential;
+import de.mendelson.comm.as2.preferences.InboundAuthCredentialAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.util.systemevents.SystemEvent;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -329,6 +335,155 @@ public class SystemResource {
         }
     }
 
+    // Inbound Authentication endpoints
+    @GET
+    @Path("/inbound-auth/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getInboundAuthConfig() {
+        try {
+            PreferencesAS2 preferences = new PreferencesAS2();
+            int authMode = preferences.getInt(PreferencesAS2.INBOUND_AUTH_MODE);
+
+            InboundAuthConfig config = new InboundAuthConfig();
+            config.setAuthMode(authMode);
+
+            return Response.ok(config).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @POST
+    @Path("/inbound-auth/config")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveInboundAuthConfig(InboundAuthConfig config) {
+        try {
+            PreferencesAS2 preferences = new PreferencesAS2();
+            preferences.putInt(PreferencesAS2.INBOUND_AUTH_MODE, config.getAuthMode());
+
+            return Response.ok("{\"success\":true}").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @GET
+    @Path("/inbound-auth/credentials/basic")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getBasicAuthCredentials() {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
+            InboundAuthCredentialAccessDB credentialDB =
+                new InboundAuthCredentialAccessDB(dbDriverManager, null);
+
+            List<InboundAuthCredential> credentials =
+                credentialDB.getCredentials(InboundAuthCredential.TYPE_BASIC);
+
+            return Response.ok(credentials).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @POST
+    @Path("/inbound-auth/credentials/basic")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveBasicAuthCredentials(List<InboundAuthCredential> credentials) {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
+            InboundAuthCredentialAccessDB credentialDB =
+                new InboundAuthCredentialAccessDB(dbDriverManager, null);
+
+            // Delete existing and add new
+            credentialDB.deleteAllCredentials(InboundAuthCredential.TYPE_BASIC);
+            for (InboundAuthCredential cred : credentials) {
+                if (cred.getUsername() != null && !cred.getUsername().trim().isEmpty()) {
+                    cred.setAuthType(InboundAuthCredential.TYPE_BASIC);
+                    credentialDB.addCredential(cred);
+                }
+            }
+
+            return Response.ok("{\"success\":true}").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @GET
+    @Path("/inbound-auth/credentials/cert")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getCertAuthCredentials() {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
+            InboundAuthCredentialAccessDB credentialDB =
+                new InboundAuthCredentialAccessDB(dbDriverManager, null);
+
+            List<InboundAuthCredential> credentials =
+                credentialDB.getCredentials(InboundAuthCredential.TYPE_CERTIFICATE);
+
+            return Response.ok(credentials).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @POST
+    @Path("/inbound-auth/credentials/cert")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveCertAuthCredentials(List<InboundAuthCredential> credentials) {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
+            InboundAuthCredentialAccessDB credentialDB =
+                new InboundAuthCredentialAccessDB(dbDriverManager, null);
+
+            // Delete existing and add new
+            credentialDB.deleteAllCredentials(InboundAuthCredential.TYPE_CERTIFICATE);
+            for (InboundAuthCredential cred : credentials) {
+                if (cred.getCertAlias() != null && !cred.getCertAlias().trim().isEmpty()) {
+                    cred.setAuthType(InboundAuthCredential.TYPE_CERTIFICATE);
+                    credentialDB.addCredential(cred);
+                }
+            }
+
+            return Response.ok("{\"success\":true}").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
     public static class SystemInfo {
         private String productName;
         private String version;
@@ -488,5 +643,12 @@ public class SystemResource {
         public void setValue(int value) { this.value = value; }
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
+    }
+
+    public static class InboundAuthConfig {
+        private int authMode;
+
+        public int getAuthMode() { return authMode; }
+        public void setAuthMode(int authMode) { this.authMode = authMode; }
     }
 }

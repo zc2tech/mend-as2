@@ -93,6 +93,10 @@ public class PreferencesAS2 {
     public static final String AUTH_PROXY_USER = "proxyuser";
     public static final String AUTH_PROXY_PASS = "proxypass";
     public static final String AUTH_PROXY_USE = "proxyuseauth";
+    /**
+     * Inbound authentication mode for incoming AS2 messages (0=none, 1=basic, 2=certificate)
+     */
+    public static final String INBOUND_AUTH_MODE = "inbound.auth.mode";
     public static final String AUTO_MSG_DELETE = "automsgdelete";
     public static final String AUTO_MSG_DELETE_OLDERTHAN_MULTIPLIER_S = "automsgdeleteolderthanmults";
     public static final String AUTO_MSG_DELETE_OLDERTHAN = "automsgdeleteolderthan";
@@ -150,6 +154,7 @@ public class PreferencesAS2 {
                             AUTH_PROXY_USER,
                             AUTH_PROXY_PASS,
                             AUTH_PROXY_USE,
+                            INBOUND_AUTH_MODE,
                             AUTO_MSG_DELETE,
                             AUTO_MSG_DELETE_OLDERTHAN_MULTIPLIER_S,
                             AUTO_MSG_DELETE_OLDERTHAN,
@@ -219,6 +224,7 @@ public class PreferencesAS2 {
                     Map.entry(AUTH_PROXY_PASS, "mypass"),
                     Map.entry(AUTH_PROXY_USER, "myuser"),
                     Map.entry(AUTH_PROXY_USE, "FALSE"),
+                    Map.entry(INBOUND_AUTH_MODE, "0"),
                     Map.entry(ASYNC_MDN_TIMEOUT, "30"),
                     Map.entry(AUTO_MSG_DELETE_LOG, "TRUE"),
                     Map.entry(AUTO_STATS_DELETE, "TRUE"),

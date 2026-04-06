@@ -34,6 +34,8 @@ import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.ExternalLogRequest;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageResponse;
+import de.mendelson.comm.as2.clientserver.message.InboundAuthCredentialRequest;
+import de.mendelson.comm.as2.clientserver.message.InboundAuthCredentialResponse;
 import de.mendelson.util.modulelock.message.ModuleLockRequest;
 import de.mendelson.util.modulelock.message.ModuleLockResponse;
 import de.mendelson.comm.as2.clientserver.message.PartnerConfigurationChanged;
@@ -98,6 +100,8 @@ import de.mendelson.comm.as2.partner.clientserver.SinglePartnerModificationRespo
 import de.mendelson.comm.as2.partner.gui.ResourceBundlePartnerConfig;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferences;
+import de.mendelson.comm.as2.preferences.InboundAuthCredential;
+import de.mendelson.comm.as2.preferences.InboundAuthCredentialAccessDB;
 import de.mendelson.comm.as2.send.DirPollManager;
 import de.mendelson.comm.as2.sendorder.SendOrder;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
@@ -531,6 +535,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof IncomingMessageRequest msg) {
                 this.processIncomingMessageRequest(session, msg);
+                return (true);
+            } else if (message instanceof InboundAuthCredentialRequest msg) {
+                this.processInboundAuthCredentialRequest(session, msg);
                 return (true);
             } else if (message instanceof ConnectionTestRequest msg) {
                 this.processConnectionTestRequest(session, msg);
@@ -2810,6 +2817,53 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
         }
         session.write(incomingMessageResponse);
+    }
+
+    /**
+     * Process inbound authentication credential operations (get/save/delete)
+     */
+    private void processInboundAuthCredentialRequest(IoSession session, InboundAuthCredentialRequest request) {
+        InboundAuthCredentialResponse response = new InboundAuthCredentialResponse(request);
+
+        try {
+            InboundAuthCredentialAccessDB credentialDB =
+                new InboundAuthCredentialAccessDB(this.dbDriverManager, this.logger);
+
+            switch (request.getOperation()) {
+                case InboundAuthCredentialRequest.OPERATION_GET:
+                    // Get credentials for specified auth type
+                    List<InboundAuthCredential> credentials = credentialDB.getCredentials(request.getAuthType());
+                    response.setCredentials(credentials);
+                    break;
+
+                case InboundAuthCredentialRequest.OPERATION_SAVE:
+                    // Delete all existing credentials for this type, then save new ones
+                    credentialDB.deleteAllCredentials(request.getAuthType());
+                    if (request.getCredentials() != null) {
+                        for (InboundAuthCredential cred : request.getCredentials()) {
+                            credentialDB.addCredential(cred);
+                        }
+                    }
+                    response.setSuccess(true);
+                    break;
+
+                case InboundAuthCredentialRequest.OPERATION_DELETE_ALL:
+                    // Delete all credentials for specified auth type
+                    credentialDB.deleteAllCredentials(request.getAuthType());
+                    response.setSuccess(true);
+                    break;
+
+                default:
+                    response.setSuccess(false);
+                    this.logger.warning("Unknown inbound auth credential operation: " + request.getOperation());
+            }
+        } catch (Exception e) {
+            response.setSuccess(false);
+            response.setException(e);
+            this.logger.severe("Error processing inbound auth credential request: " + e.getMessage());
+        }
+
+        session.write(response);
     }
 
     /**

@@ -41,6 +41,7 @@ import de.mendelson.comm.as2.preferences.PreferencesPanelLog;
 import de.mendelson.comm.as2.preferences.PreferencesPanelMDN;
 import de.mendelson.comm.as2.preferences.PreferencesPanelNotification;
 import de.mendelson.comm.as2.preferences.PreferencesPanelProxy;
+import de.mendelson.comm.as2.preferences.PreferencesPanelInboundAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelSystemMaintenance;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
@@ -1405,6 +1406,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     panelList.add(new PreferencesPanelMDN(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelConnectivity(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelProxy(AS2Gui.this.getBaseClient()));
+                    // Create CertificateManager for inbound auth panel
+                    KeystoreStorage storageEncSign = new KeystoreStorageImplClientServer(
+                            AS2Gui.this.getBaseClient(),
+                            KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+                    CertificateManager certificateManagerEncSign = new CertificateManager(AS2Gui.this.getLogger());
+                    certificateManagerEncSign.loadKeystoreCertificates(storageEncSign);
+                    panelList.add(new PreferencesPanelInboundAuth(
+                            AS2Gui.this.getBaseClient(),
+                            certificateManagerEncSign,
+                            null,  // IDBDriverManager not available in client, will be handled server-side
+                            AS2Gui.logger));
                     // modifying the underlaying keystore settings makes only sense if HA is enabled
                     ServerInfoResponse infoResponse = (ServerInfoResponse) AS2Gui.this.getBaseClient()
                             .sendSync(new ServerInfoRequest());
@@ -1416,7 +1429,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     panelList.add(new PreferencesPanelLog(AS2Gui.this.getBaseClient()));
                     // HTTP Auth panel moved to separate User Preference menu
                     dialog = new JDialogPreferences(AS2Gui.this, panelList, selectedTab, "");
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     UINotification.instance().addNotification(e);
                     e.printStackTrace();
                 } finally {
@@ -2154,8 +2167,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFilePreferences.setText(this.rb.getResourceString("menu.file.preferences"));
-        jMenuItemFilePreferences
-                .setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
+        // Only set accelerator on non-macOS platforms
+        // On macOS, desktop integration handles CMD+, automatically
+        if (!System.getProperty("os.name").toLowerCase().contains("mac")) {
+            jMenuItemFilePreferences
+                    .setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
+        }
         jMenuItemFilePreferences.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFilePreferencesActionPerformed(evt);
