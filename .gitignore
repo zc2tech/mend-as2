@@ -12,6 +12,7 @@ messages/
 *.cer
 *.key
 temp/
+*.lock
 
 # Frontend
 src/main/webapp/admin/node_modules/

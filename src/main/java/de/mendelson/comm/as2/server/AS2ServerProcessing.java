@@ -44,7 +44,6 @@ import de.mendelson.comm.as2.clientserver.message.ServerShutdown;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
-import de.mendelson.comm.as2.database.DBDriverManagerHSQL;
 import de.mendelson.util.database.DBServerInformation;
 import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBMigrationRequest;
 import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBMigrationResponse;
@@ -543,8 +542,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 this.processServerlogfileSearchRequest(session, msg);
                 return (true);
             } else if (message instanceof HSQLDBPartnerRequest msg) {
-                this.processHSQLDBPartnerRequest(session, msg);
-                return (true);
+                return (false);
             } else if (message instanceof CommandRequest msg) {
                 this.processCommandRequest(session, msg);
                 return (true);
@@ -585,8 +583,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 this.processKeyCopyRequest(session, (KeyCopyRequest) message);
                 return (true);
             } else if (message instanceof HSQLDBMigrationRequest) {
-                this.processHSQLDBMigrationRequest(session, (HSQLDBMigrationRequest) message);
-                return (true);
+                return (false);
             } else if (message instanceof CRLVerificationRequest) {
                 this.processCRLVerificationRequest(session, (CRLVerificationRequest) message);
                 return (true);
@@ -812,84 +809,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         return response;
     }
 
-    private void processHSQLDBMigrationRequest(IoSession session, HSQLDBMigrationRequest request) {
-        HSQLDBMigrationResponse response = new HSQLDBMigrationResponse(request);
-        try {
-            DBDriverManagerHSQL driverManagerHSQL = DBDriverManagerHSQL.instance();
-            Connection configConnectionHSQLDB = null;
-            Connection runtimeConnectionHSQLDB = null;
-            try {
-                configConnectionHSQLDB = driverManagerHSQL.getConnectionFileBased(IDBDriverManager.DB_CONFIG);
-                configConnectionHSQLDB.setReadOnly(true);
-                runtimeConnectionHSQLDB = driverManagerHSQL.getConnectionFileBased(IDBDriverManager.DB_RUNTIME);
-                runtimeConnectionHSQLDB.setReadOnly(true);
-                int configDBVersion = this.getActualDBVersionHSQLDBMigration(configConnectionHSQLDB);
-                int runtimeDBVersion = this.getActualDBVersionHSQLDBMigration(runtimeConnectionHSQLDB);
-                if (configDBVersion != AS2ServerVersion.getRequiredDBVersionConfig()
-                        || runtimeDBVersion != AS2ServerVersion.getRequiredDBVersionRuntime()) {
-                    HSQLDBMigrationVersionMismatchException exception = new HSQLDBMigrationVersionMismatchException();
-                    exception.setRequiredVersionConfigDB(AS2ServerVersion.getRequiredDBVersionConfig());
-                    exception.setRequiredVersionRuntimeDB(AS2ServerVersion.getRequiredDBVersionRuntime());
-                    exception.setFoundVersionRuntimeDB(runtimeDBVersion);
-                    exception.setFoundVersionConfigDB(configDBVersion);
-                    throw exception;
-                }
-                if (request.isMigrateKeystores()) {
-                    int importCount = 0;
-                    KeydataAccessDB keydataAccessHSQL = new KeydataAccessDB(driverManagerHSQL,
-                            SystemEventManagerImplAS2.instance());
-                    KeystoreData keydataTLS = keydataAccessHSQL.getKeydata(KeydataAccessDB.KEYSTORE_USAGE_TLS);
-                    KeystoreData keydataEncSign = keydataAccessHSQL.getKeydata(KeydataAccessDB.KEYSTORE_USAGE_ENC_SIGN);
-                    KeydataAccessDB keydataAccessSystem = new KeydataAccessDB(this.dbDriverManager,
-                            SystemEventManagerImplAS2.instance());
-                    keydataAccessSystem.updateKeydata(keydataTLS.getData(),
-                            KeydataAccessDB.KEYSTORE_JKS,
-                            KeydataAccessDB.KEYSTORE_USAGE_TLS,
-                            keydataTLS.getSecurityProvider());
-                    importCount++;
-                    keydataAccessSystem.updateKeydata(keydataEncSign.getData(),
-                            KeydataAccessDB.KEYSTORE_PKCS12,
-                            KeydataAccessDB.KEYSTORE_USAGE_ENC_SIGN,
-                            keydataEncSign.getSecurityProvider());
-                    importCount++;
-                    response.setKeystoresSuccessfullyImported(importCount);
-                }
-                if (request.isMigratePreferences()) {
-                    this.preferences.resetAllServerValuesToDefaultValue(this.logger);
-                    int importCount = 0;
-                    try (PreparedStatement statement = configConnectionHSQLDB.prepareStatement(
-                            "SELECT vkey,vvalue FROM serversettings")) {
-                        try (ResultSet result = statement.executeQuery()) {
-                            while (result.next()) {
-                                String key = result.getString("vkey");
-                                String value = result.getString("vvalue");
-                                this.preferences.put(key, value);
-                                importCount++;
-                            }
-                        }
-                        response.setPreferencesSuccessfullyImported(importCount);
-                    }
-                }
-            } finally {
-                if (configConnectionHSQLDB != null) {
-                    try (Statement shutdownStatement = configConnectionHSQLDB.createStatement()) {
-                        shutdownStatement.execute("SHUTDOWN");
-                    }
-                    configConnectionHSQLDB.close();
-                }
-                if (runtimeConnectionHSQLDB != null) {
-                    try (Statement shutdownStatement = runtimeConnectionHSQLDB.createStatement()) {
-                        shutdownStatement.execute("SHUTDOWN");
-                    }
-                    runtimeConnectionHSQLDB.close();
-                }
-            }
-        } catch (Throwable e) {
-            response.setException(e);
-        }
-        //sync response
-        session.write(response);
-    }
+    
 
     private void processKeyCopyRequest(IoSession session, KeyCopyRequest request) {
         KeyCopyResponse response = new KeyCopyResponse(request);
@@ -1370,55 +1290,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     /**
      * Partner request for the database migration wizard
      */
-    private void processHSQLDBPartnerRequest(IoSession session, HSQLDBPartnerRequest request) {
-        HSQLDBPartnerResponse response = new HSQLDBPartnerResponse(request);
-        try {
-            DBDriverManagerHSQL driverManager = DBDriverManagerHSQL.instance();
-            Connection configConnectionHSQLDB = null;
-            Connection runtimeConnectionHSQLDB = null;
-            try {
-                configConnectionHSQLDB = driverManager.getConnectionFileBased(IDBDriverManager.DB_CONFIG);
-                configConnectionHSQLDB.setReadOnly(true);
-                runtimeConnectionHSQLDB = driverManager.getConnectionFileBased(IDBDriverManager.DB_RUNTIME);
-                runtimeConnectionHSQLDB.setReadOnly(true);
-                int configDBVersion = this.getActualDBVersionHSQLDBMigration(configConnectionHSQLDB);
-                int runtimeDBVersion = this.getActualDBVersionHSQLDBMigration(runtimeConnectionHSQLDB);
-                if (configDBVersion != AS2ServerVersion.getRequiredDBVersionConfig()
-                        || runtimeDBVersion != AS2ServerVersion.getRequiredDBVersionRuntime()) {
-                    HSQLDBMigrationVersionMismatchException exception = new HSQLDBMigrationVersionMismatchException();
-                    exception.setRequiredVersionConfigDB(AS2ServerVersion.getRequiredDBVersionConfig());
-                    exception.setRequiredVersionRuntimeDB(AS2ServerVersion.getRequiredDBVersionRuntime());
-                    exception.setFoundVersionRuntimeDB(runtimeDBVersion);
-                    exception.setFoundVersionConfigDB(configDBVersion);
-                    throw exception;
-                }
-                PartnerAccessDB partnerAccessHSQLDB = new PartnerAccessDB(DBDriverManagerHSQL.instance());
-                List<Partner> partnerList = partnerAccessHSQLDB.getAllPartner(PartnerAccessDB.DATA_COMPLETENESS_FULL, configConnectionHSQLDB);
-                //set all DB ids to -1 as these indicies are not related to the database they should be imported in later
-                for (Partner partner : partnerList) {
-                    partner.setDBId(-1);
-                }
-                response.addPartner(partnerList);
-            } finally {
-                if (configConnectionHSQLDB != null) {
-                    try (Statement shutdownStatement = configConnectionHSQLDB.createStatement()) {
-                        shutdownStatement.execute("SHUTDOWN");
-                    }
-                    configConnectionHSQLDB.close();
-                }
-                if (runtimeConnectionHSQLDB != null) {
-                    try (Statement shutdownStatement = runtimeConnectionHSQLDB.createStatement()) {
-                        shutdownStatement.execute("SHUTDOWN");
-                    }
-                    runtimeConnectionHSQLDB.close();
-                }
-            }
-        } catch (Throwable e) {
-            response.setException(e);
-        }
-        //sync response
-        session.write(response);
-    }
+    
 
     private void processServerInstanceHAListRequest(IoSession session, ServerInstanceHAListRequest request) {
         ServerInstanceHAListResponse response = new ServerInstanceHAListResponse(request);
