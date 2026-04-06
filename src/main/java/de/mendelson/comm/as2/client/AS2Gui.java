@@ -35,6 +35,7 @@ import de.mendelson.comm.as2.preferences.PreferencesPanel;
 import de.mendelson.comm.as2.preferences.PreferencesPanelConnectivity;
 import de.mendelson.comm.as2.preferences.PreferencesPanelDirectories;
 import de.mendelson.comm.as2.preferences.PreferencesPanelHttpAuth;
+import de.mendelson.comm.as2.preferences.JDialogUserPreferences;
 import de.mendelson.comm.as2.preferences.PreferencesPanelInterface;
 import de.mendelson.comm.as2.preferences.PreferencesPanelLog;
 import de.mendelson.comm.as2.preferences.PreferencesPanelMDN;
@@ -1438,7 +1439,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         Runnable prefRunner = new Runnable() {
             @Override
             public void run() {
-                JDialogPreferences dialog = null;
+                JDialogUserPreferences dialog = null;
                 // display wait indicator
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("menu.userpreference.httpauth"), uniqueId);
@@ -1447,7 +1448,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     List<PreferencesPanel> panelList = new ArrayList<PreferencesPanel>();
                     // Add only HTTP Auth panel
                     panelList.add(new PreferencesPanelHttpAuth(AS2Gui.this.getBaseClient()));
-                    dialog = new JDialogPreferences(AS2Gui.this, panelList, "httpauth", "");
+                    dialog = new JDialogUserPreferences(AS2Gui.this, panelList, "httpauth", "");
                 } catch (Exception e) {
                     UINotification.instance().addNotification(e);
                     e.printStackTrace();

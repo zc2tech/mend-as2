@@ -45,12 +45,10 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
     private Map<Integer, Map<String, Map<String, String>>> preferencesData;
 
     private static final int COL_PARTNER = 0;
-    private static final int COL_MESSAGE_AUTH = 1;
-    private static final int COL_MESSAGE_USER = 2;
-    private static final int COL_MESSAGE_PASS = 3;
-    private static final int COL_MDN_AUTH = 4;
-    private static final int COL_MDN_USER = 5;
-    private static final int COL_MDN_PASS = 6;
+    private static final int COL_MESSAGE_USER = 1;
+    private static final int COL_MESSAGE_PASS = 2;
+    private static final int COL_MDN_USER = 3;
+    private static final int COL_MDN_PASS = 4;
 
     public PreferencesPanelHttpAuth(BaseClient baseClient) {
         super();
@@ -77,10 +75,8 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
         // Table
         String[] columns = {
             this.rb.getResourceString("httpauth.col.partner"),
-            this.rb.getResourceString("httpauth.col.message.auth"),
             this.rb.getResourceString("httpauth.col.message.user"),
             this.rb.getResourceString("httpauth.col.message.pass"),
-            this.rb.getResourceString("httpauth.col.mdn.auth"),
             this.rb.getResourceString("httpauth.col.mdn.user"),
             this.rb.getResourceString("httpauth.col.mdn.pass")
         };
@@ -88,9 +84,6 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == COL_MESSAGE_AUTH || columnIndex == COL_MDN_AUTH) {
-                    return Boolean.class;
-                }
                 return String.class;
             }
 
@@ -110,19 +103,11 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
         partnerCol.setPreferredWidth(200);
         partnerCol.setMinWidth(150);
 
-        TableColumn msgAuthCol = table.getColumnModel().getColumn(COL_MESSAGE_AUTH);
-        msgAuthCol.setPreferredWidth(80);
-        msgAuthCol.setMaxWidth(80);
-
         TableColumn msgUserCol = table.getColumnModel().getColumn(COL_MESSAGE_USER);
         msgUserCol.setPreferredWidth(150);
 
         TableColumn msgPassCol = table.getColumnModel().getColumn(COL_MESSAGE_PASS);
         msgPassCol.setPreferredWidth(150);
-
-        TableColumn mdnAuthCol = table.getColumnModel().getColumn(COL_MDN_AUTH);
-        mdnAuthCol.setPreferredWidth(80);
-        mdnAuthCol.setMaxWidth(80);
 
         TableColumn mdnUserCol = table.getColumnModel().getColumn(COL_MDN_USER);
         mdnUserCol.setPreferredWidth(150);
@@ -193,15 +178,10 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
                     }
                 }
 
-                boolean messageAuthEnabled = messageUser != null && !messageUser.isEmpty();
-                boolean mdnAuthEnabled = mdnUser != null && !mdnUser.isEmpty();
-
                 Object[] row = {
                     partnerName,
-                    messageAuthEnabled,
                     messageUser,
                     messagePass,
-                    mdnAuthEnabled,
                     mdnUser,
                     mdnPass
                 };
@@ -227,21 +207,19 @@ public class PreferencesPanelHttpAuth extends PreferencesPanel {
                 Partner partner = remotePartners.get(row);
                 int partnerId = partner.getDBId();
 
-                boolean messageAuthEnabled = (Boolean) tableModel.getValueAt(row, COL_MESSAGE_AUTH);
                 String messageUser = (String) tableModel.getValueAt(row, COL_MESSAGE_USER);
                 String messagePass = (String) tableModel.getValueAt(row, COL_MESSAGE_PASS);
 
-                boolean mdnAuthEnabled = (Boolean) tableModel.getValueAt(row, COL_MDN_AUTH);
                 String mdnUser = (String) tableModel.getValueAt(row, COL_MDN_USER);
                 String mdnPass = (String) tableModel.getValueAt(row, COL_MDN_PASS);
 
-                // Only save if auth is enabled and username is provided
-                if (messageAuthEnabled && messageUser != null && !messageUser.trim().isEmpty()) {
+                // Only save if username is provided (non-empty)
+                if (messageUser != null && !messageUser.trim().isEmpty()) {
                     request.addPreference(partnerId, "message", "username", messageUser.trim());
                     request.addPreference(partnerId, "message", "password", messagePass != null ? messagePass : "");
                 }
 
-                if (mdnAuthEnabled && mdnUser != null && !mdnUser.trim().isEmpty()) {
+                if (mdnUser != null && !mdnUser.trim().isEmpty()) {
                     request.addPreference(partnerId, "mdn", "username", mdnUser.trim());
                     request.addPreference(partnerId, "mdn", "password", mdnPass != null ? mdnPass : "");
                 }

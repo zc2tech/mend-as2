@@ -35,6 +35,7 @@ public class ResourceBundlePreferences extends MecResourceBundle {
         {"button.browse", "Browse"},
         {"filechooser.selectdir", "Select a directory to set"},
         {"title", "Preferences"},
+        {"title.userpreferences", "User Preferences"},
         {"tab.language", "Client"},
         {"tab.dir", "Directories"},
         {"tab.security", "Security"},
