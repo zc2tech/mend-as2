@@ -40,7 +40,7 @@ public class Copyright {
 
     /** What you actually display in About/CLI banners */
     public static String getCopyrightMessage() {
-        return getUpstreamCopyright() + " | " + getForkCopyright();
+        return getForkCopyright();
     }
 
 }

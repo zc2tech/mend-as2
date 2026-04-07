@@ -239,7 +239,7 @@ public class PreferencesAS2 {
                     Map.entry(WRITE_OUTBOUND_STATUS_FILE, "FALSE"),
                     Map.entry(MAX_CONNECTION_RETRY_COUNT, "10"),
                     Map.entry(CONNECTION_RETRY_WAIT_TIME_IN_S, "30"),
-                    Map.entry(DATASHEET_RECEIPT_URL, "http://testas2.mendelson-e-c.com:8080/as2/HttpReceiver"),
+                    Map.entry(DATASHEET_RECEIPT_URL, "http://localhost:8080/as2/HttpReceiver"),
                     Map.entry(HIDDENCOLSDEFAULT, "1111111111100"),
                     Map.entry(HIDDENCOLS, "1111111111000"),
                     Map.entry(HIDEABLECOLS, "0011111111111"),

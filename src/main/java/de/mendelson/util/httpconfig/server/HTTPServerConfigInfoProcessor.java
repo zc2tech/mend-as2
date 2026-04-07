@@ -8,6 +8,7 @@ import de.mendelson.util.security.cert.KeystoreCertificate;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -150,9 +151,24 @@ public class HTTPServerConfigInfoProcessor {
             logBuilder.append("--\n");
         }
         for (String deployedWARPath : deployedWars) {
-            Path path = Paths.get(deployedWARPath);
+            Path path;
+            String filename;
+            try {
+                // Handle URI strings (file:///C:/...) properly
+                if (deployedWARPath.startsWith("file:")) {
+                    path = Paths.get(new URI(deployedWARPath));
+                } else {
+                    path = Paths.get(deployedWARPath);
+                }
+                filename = path.getFileName().toString();
+            } catch (Exception e) {
+                // Fallback: use the path as-is and extract filename manually
+                filename = deployedWARPath.substring(deployedWARPath.lastIndexOf('/') + 1);
+                if (filename.isEmpty()) {
+                    filename = deployedWARPath.substring(deployedWARPath.lastIndexOf('\\') + 1);
+                }
+            }
             logBuilder.append("[");
-            String filename = path.getFileName().toString();
             if (this.rb.containsResourceString("webapp." + filename)) {
                 logBuilder.append(this.rb.getResourceString("webapp." + filename));
             } else {

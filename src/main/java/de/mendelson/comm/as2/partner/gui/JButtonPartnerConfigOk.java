@@ -138,8 +138,11 @@ public class JButtonPartnerConfigOk extends JButton {
             } else {
                 try {
                     URL testURL = new URL(receiverURL);
-                    //no port defined
-                    if (testURL.getPort() == -1) {
+                    // Port validation: Accept explicit port OR default port (80 for HTTP, 443 for HTTPS)
+                    int port = testURL.getPort();
+                    int defaultPort = testURL.getDefaultPort();
+                    // Error only if no port AND no default port available
+                    if (port == -1 && defaultPort == -1) {
                         //graphical modifications for current displayed partner only!
                         if (this.remotePartner.equals(checkPartner)) {
                             this.markErrorInTextField(this.jTextFieldReceiptURL);
@@ -172,8 +175,11 @@ public class JButtonPartnerConfigOk extends JButton {
             } else {
                 try {
                     URL testURL = new URL(mdnURL);
-                    //no port defined
-                    if (testURL.getPort() == -1) {
+                    // Port validation: Accept explicit port OR default port (80 for HTTP, 443 for HTTPS)
+                    int port = testURL.getPort();
+                    int defaultPort = testURL.getDefaultPort();
+                    // Error only if no port AND no default port available
+                    if (port == -1 && defaultPort == -1) {
                         //graphical modifications for current displayed partner only!
                         if (this.remotePartner.equals(checkPartner)) {
                             this.markErrorInTextField(this.jTextFieldMDNURL);

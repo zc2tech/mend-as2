@@ -74,62 +74,87 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - **Database**: PostgreSQL 15+ (replaced HSQLDB)
   - **Build**: Maven 3.9+
 
-## 📋 Prerequisites
+## 📦 Installation
 
-- **Java 17** or higher (JDK) - compiled with Java 17, runs on 17+
-- **PostgreSQL 15** or higher
-- **Maven 3.9** or higher
-- **Node.js 18** or higher (for WebUI development)
-- **npm** or **yarn** (for WebUI dependencies)
+### For End Users (Recommended)
 
-## 🔧 Installation
+Download the latest release from [GitHub Releases](https://github.com/zc2tech/mend-as2/releases):
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions.
+**Single Distribution** (`mend-as2-1.1.0-dist.tar.gz`) - **81 MB**
+- Supports both GUI mode (SwingUI) and Headless mode (WebUI only)
+- Choose your mode at startup with command-line flag or config file
 
-### Build Profiles
-
-Mend AS2 offers two build profiles:
-
-**1. Full Profile (Default)** - SwingUI + WebUI
+**Quick Start:**
 ```bash
-# Build with all features
-mvn clean package
+# 1. Download and extract
+wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.0/mend-as2-1.1.0-dist.tar.gz
+tar -xzf mend-as2-1.1.0-dist.tar.gz
+cd mend-as2-1.1.0
 
-# Output: target/mend-as2-1.1.0-full.jar (~120 MB)
+# 2. Install PostgreSQL 14+ and create databases
+createdb -O as2user as2_db_config
+createdb -O as2user as2_db_runtime
+
+# 3. Configure database connection
+nano config/database-postgresql.properties
+
+# 4. Choose your mode:
+
+# GUI Mode (SwingUI + WebUI):
+./start.sh
+
+# Headless Mode (WebUI only):
+./start-headless.sh
+# Or:
+java -jar mend-as2-1.1.0.jar -nogui
+
+# 5. Access WebUI
+# http://localhost:8080/as2/webui/
+# Login: admin / admin (forced password change)
 ```
 
-**2. Headless Profile** - WebUI only (optimized for containers)
+**Mode Selection:**
+- **GUI Mode**: Desktop client (SwingUI) + Web interface
+  - Best for: Workstations, development environments
+  - Start with: `./start.sh` or `java -jar mend-as2-1.1.0.jar`
+  
+- **Headless Mode**: Web interface only (no desktop GUI)
+  - Best for: Servers, containers, cloud deployments
+  - Start with: `./start-headless.sh` or `java -jar mend-as2-1.1.0.jar -nogui`
+  - Can also set in config: `as2.startup.gui.enabled=false`
+
+**📖 Full Installation Guide:** [INSTALL.md](INSTALL.md)
+
+### For Developers
+
+Build from source for development or customization:
+
+**Prerequisites:**
+- Java 17+ JDK
+- Maven 3.9+
+- PostgreSQL 14+
+- Node.js 18+ (for WebUI development)
+
+**Build:**
+
 ```bash
-# Build without SwingUI dependencies
-mvn clean package -Pheadless
-
-# Output: target/mend-as2-1.1.0-headless.jar (~100-105 MB)
-# 15-20 MB smaller, Mina port disabled for security
-```
-
-See [BUILD_PROFILES.md](md-memo/BUILD_PROFILES.md) for detailed comparison.
-
-### Quick Start
-
-```bash
-# 1. Clone repository
+# Clone repository
 git clone https://github.com/zc2tech/mend-as2.git
 cd mend-as2
 
-# 2. Set up PostgreSQL (see INSTALL.md)
+# Build release distribution
+mvn clean package
 
-# 3. Build project (full profile)
-mvn clean package -DskipTests
+# Run in GUI mode
+java -jar target/mend-as2-1.1.0.jar
 
-# 4. Run server
-java -jar target/mend-as2-1.1.0-full.jar
-
-# Or run in headless mode (no GUI)
-java -jar target/mend-as2-1.1.0-full.jar -nogui
+# Run in headless mode
+java -jar target/mend-as2-1.1.0.jar -nogui
 ```
 
-Access WebUI at: http://localhost:8080/as2/webui/  
-Default credentials: `admin` / `admin` (must change on first login)
+**📖 Developer Guide:** [md-memo/BUILD.md](md-memo/BUILD.md)  
+**📦 Build Profiles:** [md-memo/BUILD_PROFILES.md](md-memo/BUILD_PROFILES.md)  
+**🚀 Release Process:** [RELEASE.md](RELEASE.md)
 
 ## 🎯 Usage
 
@@ -387,7 +412,15 @@ mvn test
 - New: Partner visibility controls
 - New: User-specific preferences
 
-See migration guide in docs/ for details.
+**Migration Steps:**
+1. Export data from mendelson AS2 (use database export tools)
+2. Install Mend AS2 following [INSTALL.md](INSTALL.md)
+3. Configure PostgreSQL databases
+4. Import certificates and partner configurations
+5. Set up users and roles using new RBAC system
+6. Test connections with trading partners
+
+For detailed migration assistance, see [GitHub Issues](https://github.com/zc2tech/mend-as2/issues) or contact support.
 
 ## 🤝 Contributing
 
@@ -399,7 +432,7 @@ See migration guide in docs/ for details.
 
 ## 📄 License
 
-GNU General Public License v2.0 - see [LICENSE](LICENSE)
+GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 
 ## 🙏 Acknowledgments
 
@@ -421,8 +454,10 @@ GNU General Public License v2.0 - see [LICENSE](LICENSE)
 - [x] Message filtering by partner visibility
 - [x] SwingUI authentication with login dialog
 - [x] Forced password change for admin user
-- [x] Maven build profiles (full vs headless)
-- [x] Headless mode with Mina server disabled
+- [x] Mode selection (GUI vs headless) via config/flag
+- [x] Database auto-creation on first run
+- [x] Fat JAR with all dependencies (no Maven needed)
+- [x] Single release distribution (81 MB)
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard

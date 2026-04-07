@@ -224,7 +224,7 @@ public class Partner implements Serializable, Comparable, Cloneable {
      * Returns the default URL where to connect to
      */
     public String getDefaultURL() {
-        return ("http://testas2.mendelson-e-c.com:8080/as2/HttpReceiver");
+        return ("http://localhost:8080/as2/HttpReceiver");
     }
 
     /**

@@ -183,6 +183,52 @@
                 </configuration>
             </plugin>
 
+            <!-- Maven Shade Plugin: Create fat JAR with all dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <!-- Add Main-Class to manifest -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>de.mendelson.comm.as2.AS2</mainClass>
+                                </transformer>
+                                <!-- Merge service files -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <!-- Merge META-INF/services -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/services/javax.servlet.ServletContainerInitializer</resource>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <!-- Exclude signature files to avoid security exceptions -->
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
@@ -223,24 +269,7 @@
             </plugin>
 
 
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.7.0</version>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/assembly/distribution.xml</descriptor>
-                    </descriptors>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-dist</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            <!-- Old assembly plugin removed - now using profile-specific assemblies -->
 
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -350,21 +379,6 @@
             <version>${jetty.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.ee10</groupId>
-            <artifactId>jetty-ee10-apache-jsp</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jetty.ee10</groupId>
-            <artifactId>jetty-ee10-glassfish-jstl</artifactId>
-            <version>${jetty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.7.4</version>
-        </dependency>
-        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.4</version>
@@ -407,6 +421,21 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcjmail-jdk15on</artifactId>
             <version>1.70</version>
+            <exclusions>
+                <!-- Exclude old JDK15 versions - we use JDK18 versions (1.80) -->
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcutil-jdk15on</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpkix-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 
@@ -490,31 +519,11 @@
             <artifactId>oshi-core</artifactId>
             <version>6.4.6</version>
         </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.14.0</version>
-        </dependency>
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna-platform</artifactId>
-            <version>5.14.0</version>
-        </dependency>
         <!-- FlatLaf (SwingUI Look and Feel) - Only included in 'full' profile -->
         <!-- See profiles section at end of POM -->
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-dbcp2</artifactId>
-            <version>2.12.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
-            <version>5.3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5-fluent</artifactId>
             <version>5.3.1</version>
         </dependency>
         <!-- Batik SVG - Required for compilation (used by MendelsonMultiResolutionImage) -->
@@ -634,12 +643,6 @@
         </dependency>
 
 
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.108.Final</version>
-        </dependency>
-
         <!-- JAX-RS (Jersey) for REST API -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
@@ -684,9 +687,9 @@
     </dependencies>
 
     <profiles>
-        <!-- Full release profile: includes SwingUI and WebUI -->
+        <!-- Release profile: Supports both GUI and headless modes -->
         <profile>
-            <id>full</id>
+            <id>release</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -748,46 +751,111 @@
                 </dependency>
             </dependencies>
             <build>
-                <finalName>${project.artifactId}-${project.version}-full</finalName>
+                <finalName>${project.artifactId}-${project.version}</finalName>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <executions>
+                            <execution>
+                                <id>create-distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/assembly/distribution.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
 
-        <!-- Headless release profile: WebUI only, no SwingUI dependencies -->
+        <!-- Profile: thin - Creates thin JAR with dependencies downloaded on first run -->
         <profile>
-            <id>headless</id>
-            <properties>
-                <build.profile>headless</build.profile>
-            </properties>
-            <!-- In headless profile, Mina remains scope=provided (not in distribution) -->
-            <!-- SwingUI dependencies are completely excluded -->
+            <id>thin</id>
             <build>
-                <finalName>${project.artifactId}-${project.version}-headless</finalName>
-                <resources>
-                    <!-- Override config to force headless mode -->
-                    <resource>
-                        <directory>src/main/resources</directory>
-                    </resource>
-                    <resource>
-                        <directory>src/main/resources-headless</directory>
-                        <filtering>true</filtering>
-                    </resource>
-                    <!-- Include non-Java files from java source directory -->
-                    <resource>
-                        <directory>src/main/java</directory>
-                        <includes>
-                            <include>**/*.svg</include>
-                            <include>**/*.png</include>
-                            <include>**/*.gif</include>
-                            <include>**/*.jpg</include>
-                            <include>**/*.jpeg</include>
-                            <include>**/*.properties</include>
-                            <include>**/*.xml</include>
-                            <include>**/*.txt</include>
-                        </includes>
-                    </resource>
-                </resources>
+                <finalName>${project.artifactId}-${project.version}-thin</finalName>
+                <plugins>
+                    <!-- Disable shade plugin for thin JAR -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>default</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Create thin JAR (without dependencies) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>de.mendelson.comm.as2.AS2</mainClass>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Copy dependencies NOT in Maven Central for pre-packaging -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.6.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-non-central-dependencies</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>copy-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/lib-prepackaged</outputDirectory>
+                                    <includeArtifactIds>
+                                        jcalendar,jfreechart,jcommon,l2fprod-common-buttonbar,l2fprod-common-shared,
+                                        isfreetype,isrt,isnativec,jPod,iscwt,jai-core,jai-codec,jbig2,jPodRenderer,jPodFonts
+                                    </includeArtifactIds>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Create distribution with thin JAR and lib/ directory -->
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <executions>
+                            <execution>
+                                <id>create-thin-distribution</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>src/assembly/distribution-thin.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
+
 
         <profile>
             <id>it</id>

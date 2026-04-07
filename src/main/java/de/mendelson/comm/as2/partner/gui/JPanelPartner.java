@@ -2149,7 +2149,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPAuthCredentialsMessage.add(jLabelHttpPass, gridBagConstraints);
 
         jPasswordFieldHttpAuthMessagePass.setColumns(30);
-        jPasswordFieldHttpAuthMessagePass.setText("jPasswordField1");
+        jPasswordFieldHttpAuthMessagePass.setText("");
         jPasswordFieldHttpAuthMessagePass.setMinimumSize(new java.awt.Dimension(150, 22));
         jPasswordFieldHttpAuthMessagePass.setPreferredSize(new java.awt.Dimension(150, 22));
         jPasswordFieldHttpAuthMessagePass.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -2212,7 +2212,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPAuthCredentialsMDN.add(jLabelHttpPassAsyncMDN, gridBagConstraints);
 
         jPasswordFieldHttpPassAsyncMDN.setColumns(30);
-        jPasswordFieldHttpPassAsyncMDN.setText("jPasswordField1");
+        jPasswordFieldHttpPassAsyncMDN.setText("");
         jPasswordFieldHttpPassAsyncMDN.setMinimumSize(new java.awt.Dimension(150, 22));
         jPasswordFieldHttpPassAsyncMDN.setPreferredSize(new java.awt.Dimension(150, 22));
         jPasswordFieldHttpPassAsyncMDN.addKeyListener(new java.awt.event.KeyAdapter() {

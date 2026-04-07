@@ -22,6 +22,17 @@ CREATE TABLE oauth2(
     pkceverifier VARCHAR(128) DEFAULT '_new' NOT NULL
 );
 
+-- Keystore data storage - stores certificate keystores in database
+-- purpose: 1=TLS keystore, 2=ENC/SIGN keystore
+-- storagetype: 1=JKS, 2=PKCS12
+CREATE TABLE keydata(
+    purpose INTEGER NOT NULL PRIMARY KEY,
+    storagedata BYTEA,
+    storagetype INTEGER,
+    lastchanged BIGINT,
+    securityprovider VARCHAR(255)
+);
+
 CREATE TABLE partner(
     id SERIAL PRIMARY KEY,
     as2ident VARCHAR(255),
@@ -73,6 +84,89 @@ CREATE TABLE partner(
 
 CREATE INDEX idx_partner_islocal ON partner(islocal);
 CREATE INDEX idx_partner_as2ident ON partner(as2ident);
+
+-- ============================================================================
+-- User Management System Schema
+-- ============================================================================
+-- NOTE: Must be created BEFORE partner_user_visibility and user_preference_http_auth
+-- because those tables have foreign keys referencing webui_users(id)
+
+-- Users table - stores WebUI user accounts
+CREATE TABLE webui_users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(64) NOT NULL UNIQUE,
+    password_hash VARCHAR(256) NOT NULL,
+    email VARCHAR(128),
+    full_name VARCHAR(128),
+    enabled BOOLEAN DEFAULT TRUE,
+    must_change_password BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP NULL
+);
+CREATE INDEX idx_webui_users_username ON webui_users(username);
+CREATE INDEX idx_webui_users_enabled ON webui_users(enabled);
+
+-- Roles table - defines user roles (ADMIN, USER, VIEWER, etc.)
+CREATE TABLE webui_roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL UNIQUE,
+    description VARCHAR(256),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_webui_roles_name ON webui_roles(name);
+
+-- User-Role mapping - many-to-many relationship
+CREATE TABLE webui_user_roles (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES webui_users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_webui_user_roles_user_id ON webui_user_roles(user_id);
+CREATE INDEX idx_webui_user_roles_role_id ON webui_user_roles(role_id);
+
+-- Permissions table - granular permissions (PARTNER_READ, CERT_WRITE, etc.)
+CREATE TABLE webui_permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(64) NOT NULL UNIQUE,
+    description VARCHAR(256),
+    category VARCHAR(64),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_webui_permissions_name ON webui_permissions(name);
+CREATE INDEX idx_webui_permissions_category ON webui_permissions(category);
+
+-- Role-Permission mapping - many-to-many relationship
+CREATE TABLE webui_role_permissions (
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES webui_permissions(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_webui_role_permissions_role_id ON webui_role_permissions(role_id);
+CREATE INDEX idx_webui_role_permissions_permission_id ON webui_role_permissions(permission_id);
+
+-- Trigger function to auto-update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_webui_users_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to call the function before update
+CREATE TRIGGER trigger_update_webui_users_updated_at
+    BEFORE UPDATE ON webui_users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_webui_users_updated_at();
+
+-- ============================================================================
+-- Partner-related tables that reference webui_users
+-- ============================================================================
 
 -- Partner visibility control for WebUI users
 CREATE TABLE partner_user_visibility(
@@ -165,19 +259,6 @@ CREATE TABLE serversettings(
 
 CREATE INDEX idx_serversettings_vkey ON serversettings(vkey);
 
--- Inbound authentication credentials table
-CREATE TABLE inbound_auth_credentials(
-    id SERIAL PRIMARY KEY,
-    auth_type INTEGER NOT NULL,  -- 1=basic auth, 2=certificate auth
-    username VARCHAR(255),
-    password VARCHAR(255),
-    cert_alias VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT check_inbound_auth_type CHECK (auth_type IN (1, 2))
-);
-
-CREATE INDEX idx_inbound_auth_type ON inbound_auth_credentials(auth_type);
-
 CREATE TABLE notification(
     id SERIAL PRIMARY KEY,
      mailhost VARCHAR(255),
@@ -200,84 +281,6 @@ CREATE TABLE notification(
   smtpoauth2id INTEGER,
   notifyclientserver INTEGER
 );
-
--- ============================================================================
--- User Management System Schema
--- ============================================================================
-
--- Users table - stores WebUI user accounts
-CREATE TABLE webui_users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(64) NOT NULL UNIQUE,
-    password_hash VARCHAR(256) NOT NULL,
-    email VARCHAR(128),
-    full_name VARCHAR(128),
-    enabled BOOLEAN DEFAULT TRUE,
-    must_change_password BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL
-);
-CREATE INDEX idx_webui_users_username ON webui_users(username);
-CREATE INDEX idx_webui_users_enabled ON webui_users(enabled);
-
--- Roles table - defines user roles (ADMIN, USER, VIEWER, etc.)
-CREATE TABLE webui_roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(64) NOT NULL UNIQUE,
-    description VARCHAR(256),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX idx_webui_roles_name ON webui_roles(name);
-
--- User-Role mapping - many-to-many relationship
-CREATE TABLE webui_user_roles (
-    user_id INT NOT NULL,
-    role_id INT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES webui_users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_webui_user_roles_user_id ON webui_user_roles(user_id);
-CREATE INDEX idx_webui_user_roles_role_id ON webui_user_roles(role_id);
-
--- Permissions table - granular permissions (PARTNER_READ, CERT_WRITE, etc.)
-CREATE TABLE webui_permissions (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(64) NOT NULL UNIQUE,
-    description VARCHAR(256),
-    category VARCHAR(64),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX idx_webui_permissions_name ON webui_permissions(name);
-CREATE INDEX idx_webui_permissions_category ON webui_permissions(category);
-
--- Role-Permission mapping - many-to-many relationship
-CREATE TABLE webui_role_permissions (
-    role_id INT NOT NULL,
-    permission_id INT NOT NULL,
-    PRIMARY KEY (role_id, permission_id),
-    FOREIGN KEY (role_id) REFERENCES webui_roles(id) ON DELETE CASCADE,
-    FOREIGN KEY (permission_id) REFERENCES webui_permissions(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_webui_role_permissions_role_id ON webui_role_permissions(role_id);
-CREATE INDEX idx_webui_role_permissions_permission_id ON webui_role_permissions(permission_id);
-
--- Trigger function to auto-update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_webui_users_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to call the function before update
-CREATE TRIGGER trigger_update_webui_users_updated_at
-    BEFORE UPDATE ON webui_users
-    FOR EACH ROW
-    EXECUTE FUNCTION update_webui_users_updated_at();
-
 
 INSERT INTO notification (mailhost, mailhostport, notificationemailaddress, notifycertexpire, notifytransactionerror,
   notifycem, notifysystemfailure, notifypostprocessing, replyto,

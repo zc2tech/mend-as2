@@ -123,7 +123,7 @@ public class JettyStarter {
             if (isTestMode) {
                 // Use fixed test mode ports: HTTP=11080, HTTPS=11443
                 userConfiguration.setProperty("jetty.http.port", "11080");
-                userConfiguration.setProperty("jetty.https.port", "11443");
+                userConfiguration.setProperty("jetty.ssl.port", "11443");
 
                 this.logger.info(MODULE_NAME + " *** TEST MODE: Using HTTP port 11080 and HTTPS port 11443 ***");
             }

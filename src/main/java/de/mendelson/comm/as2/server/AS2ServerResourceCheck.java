@@ -36,13 +36,8 @@ public class AS2ServerResourceCheck {
     }
 
     /**Checks if a required port is used by another process*/
-    public void performPortCheck() throws Exception {
-        int[] ports = new int[]{
-            AS2Server.CLIENTSERVER_COMM_PORT
-        };
-        for (int port : ports) {
-            this.checkPort(port);
-        }
+    public void performPortCheck(int portToCheck) throws Exception {
+        this.checkPort(portToCheck);
     }
 
     private void checkPort(int port) throws Exception {

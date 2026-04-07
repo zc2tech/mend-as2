@@ -47,7 +47,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed, redirect to login only if not already there
         if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/as2/admin/login';
+          window.location.href = '/as2/webui/login';
         }
         return Promise.reject(refreshError);
       }

@@ -7,15 +7,15 @@
         <format>zip</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>mend-as2-${project.version}</baseDirectory>
+    <baseDirectory>mend-as2-${project.version}-thin</baseDirectory>
 
     <fileSets>
-        <!-- Main JAR file -->
+        <!-- Thin JAR file (without dependencies) -->
         <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>mend-as2-${project.version}.jar</include>
+                <include>mend-as2-${project.version}-thin.jar</include>
             </includes>
         </fileSet>
 
@@ -69,9 +69,27 @@
             </includes>
         </fileSet>
 
-        <!-- Startup scripts -->
+        <!-- Dependency manifest for automatic download (only Maven Central dependencies) -->
         <fileSet>
-            <directory>src/assembly/scripts</directory>
+            <directory>src/assembly</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>dependencies-downloadable.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Pre-package dependencies NOT in Maven Central -->
+        <fileSet>
+            <directory>${project.build.directory}/lib-prepackaged</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- Startup scripts for thin JAR -->
+        <fileSet>
+            <directory>src/assembly/scripts-thin</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
                 <include>start.sh</include>
@@ -80,6 +98,15 @@
                 <include>start-headless.bat</include>
             </includes>
             <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- Jetty configuration and webapps -->
+        <fileSet>
+            <directory>jetty12</directory>
+            <outputDirectory>jetty12</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
         </fileSet>
 
         <!-- Create empty directories -->
@@ -105,4 +132,6 @@
             </excludes>
         </fileSet>
     </fileSets>
+
+    <!-- Do NOT include dependencies - they will be downloaded on first run -->
 </assembly>

@@ -20,7 +20,26 @@ When test mode is enabled, the AS2 server uses alternative ports to avoid confli
 
 ## Configuration
 
-### Method 1: Properties File (Recommended)
+### Method 1: System Property (Quickest for Testing)
+
+Pass the system property directly when starting:
+
+```bash
+# Linux/Mac
+./start.sh -Dmend.as2.testmode=true
+./start-headless.sh -Dmend.as2.testmode=true
+
+# Windows
+start.bat -Dmend.as2.testmode=true
+start-headless.bat -Dmend.as2.testmode=true
+
+# Or with java directly:
+java -Dmend.as2.testmode=true -jar mend-as2-1.1.0.jar
+```
+
+This method is ideal for quick testing and doesn't require editing configuration files.
+
+### Method 2: Properties File (Recommended for Persistent Configuration)
 
 Edit `config/as2.properties` and set:
 
@@ -30,7 +49,7 @@ as2.test.mode=true
 
 An example configuration is provided in `config/as2-test.properties.example`.
 
-### Method 2: Environment Variable
+### Method 3: Environment Variable
 
 Set the environment variable before starting the server:
 

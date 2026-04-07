@@ -113,22 +113,67 @@ public class SQLScriptExecutor {
         List<String> queryList = new ArrayList<String>();
         StringBuilder currentQuery = new StringBuilder();
         String line = "";
+        boolean inDollarQuote = false; // Track if we're inside $$ ... $$
+
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
             while (line != null) {
                 line = reader.readLine();
                 if (line != null) {
                     String trimmedLine = line.trim();
-                    // Skip empty lines and comments
-                    if (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("--")) {
+
+                    // Skip empty lines and comments (only if not inside dollar quotes)
+                    if (!inDollarQuote && (trimmedLine.isEmpty() || trimmedLine.startsWith("#") || trimmedLine.startsWith("--"))) {
                         continue;
                     }
+
+                    // Remove inline comments (-- ...) unless we're inside dollar quotes
+                    if (!inDollarQuote) {
+                        int commentIndex = trimmedLine.indexOf("--");
+                        if (commentIndex >= 0) {
+                            // Check if -- is inside a string literal (single quotes)
+                            // Simple check: count single quotes before --
+                            String beforeComment = trimmedLine.substring(0, commentIndex);
+                            int singleQuoteCount = 0;
+                            for (int i = 0; i < beforeComment.length(); i++) {
+                                if (beforeComment.charAt(i) == '\'') {
+                                    singleQuoteCount++;
+                                }
+                            }
+                            // If even number of quotes, -- is outside string, so it's a comment
+                            if (singleQuoteCount % 2 == 0) {
+                                trimmedLine = trimmedLine.substring(0, commentIndex).trim();
+                            }
+                        }
+                    }
+
+                    // Skip if line became empty after removing comment
+                    if (trimmedLine.isEmpty()) {
+                        continue;
+                    }
+
                     // Append line to current query
                     if (currentQuery.length() > 0) {
                         currentQuery.append(" ");
                     }
                     currentQuery.append(trimmedLine);
+
+                    // Check for dollar-quote delimiters ($$)
+                    // Count occurrences of $$ to track entry/exit
+                    int dollarCount = 0;
+                    int index = 0;
+                    while ((index = trimmedLine.indexOf("$$", index)) != -1) {
+                        dollarCount++;
+                        index += 2; // Move past the $$
+                    }
+
+                    // Toggle inDollarQuote state for each $$
+                    if (dollarCount % 2 == 1) {
+                        inDollarQuote = !inDollarQuote;
+                    }
+
                     // Check if the line ends with a semicolon (statement terminator)
-                    if (trimmedLine.endsWith(";")) {
+                    // Only split if we're NOT inside dollar quotes
+                    if (!inDollarQuote && trimmedLine.endsWith(";")) {
                         // Remove the semicolon and add the complete query to the list
                         String completeQuery = currentQuery.toString();
                         if (completeQuery.endsWith(";")) {
@@ -173,17 +218,6 @@ public class SQLScriptExecutor {
             }
             try (PreparedStatement statement = connection.prepareStatement(modifiedQuery)) {
                 statement.executeUpdate();
-            } catch (Exception e) {
-                // Check if the error is due to an object already existing
-                String errorMsg = e.getMessage();
-                if (errorMsg != null && errorMsg.toLowerCase().contains("object name already exists")) {
-                    // Log warning but continue execution
-                    System.out.println("Warning: Skipping statement as object already exists: " + errorMsg);
-                    continue;
-                } else {
-                    // Re-throw other exceptions
-                    throw e;
-                }
             }
         }
         System.out.println();

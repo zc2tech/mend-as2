@@ -223,6 +223,21 @@ public class DBDriverManagerPostgreSQL extends AbstractDBDriverManagerPostgreSQL
             }
 
             if (databaseExists) {
+                // Database exists, but check if keystores are initialized (only for config DB)
+                if (DB_TYPE == IDBDriverManager.DB_CONFIG) {
+                    try (Connection connection = DriverManager.getConnection(
+                            this.getConnectionURI(DB_TYPE), config.getUser(), config.getPassword())) {
+                        // Check if keydata table has any entries
+                        try (Statement statement = connection.createStatement()) {
+                            java.sql.ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM keydata");
+                            if (rs.next() && rs.getInt(1) == 0) {
+                                // Keystores missing - initialize them
+                                logger.info(MODULE_NAME + " Keystore data missing, initializing empty keystores");
+                                this.initializeEmptyKeystores(connection);
+                            }
+                        }
+                    }
+                }
                 return true;
             }
 
@@ -232,6 +247,11 @@ public class DBDriverManagerPostgreSQL extends AbstractDBDriverManagerPostgreSQL
                     this.getConnectionURI(DB_TYPE), config.getUser(), config.getPassword())) {
                 SQLScriptExecutor executor = new SQLScriptExecutor();
                 executor.create(connection, createResource, dbVersion, new AS2ServerVersion());
+
+                // Initialize empty keystores after table creation (only for config DB)
+                if (DB_TYPE == IDBDriverManager.DB_CONFIG) {
+                    this.initializeEmptyKeystores(connection);
+                }
             } catch (Exception e) {
                 throw new Exception(rb.getResourceString("database.creation.failed." + DB_TYPE)
                         + " [" + e.getMessage() + "]");
@@ -261,6 +281,72 @@ public class DBDriverManagerPostgreSQL extends AbstractDBDriverManagerPostgreSQL
             throw e;
         }
         return (true);
+    }
+
+    /**
+     * Initialize empty PKCS12 keystores in the keydata table
+     * Called during initial database creation
+     */
+    private void initializeEmptyKeystores(Connection connection) throws Exception {
+        Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
+        logger.info("[DATABASE] Initializing empty keystores");
+
+        try {
+            // Create empty PKCS12 keystores
+            de.mendelson.util.security.BCCryptoHelper cryptoHelper =
+                new de.mendelson.util.security.BCCryptoHelper();
+
+            String keystoreType = de.mendelson.util.security.BCCryptoHelper.KEYSTORE_PKCS12;
+            String securityProvider = org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME;  // "BC"
+
+            // Create empty ENC/SIGN keystore (purpose=2)
+            java.security.KeyStore encSignKeystore = cryptoHelper.createKeyStoreInstance(keystoreType);
+            char[] keystorePass = "test".toCharArray();
+            encSignKeystore.load(null, keystorePass);
+
+            // Create empty TLS keystore (purpose=1)
+            java.security.KeyStore tlsKeystore = cryptoHelper.createKeyStoreInstance(keystoreType);
+            tlsKeystore.load(null, keystorePass);
+
+            // Save keystores to byte arrays
+            java.io.ByteArrayOutputStream encSignOut = new java.io.ByteArrayOutputStream();
+            encSignKeystore.store(encSignOut, keystorePass);
+            byte[] encSignData = encSignOut.toByteArray();
+
+            java.io.ByteArrayOutputStream tlsOut = new java.io.ByteArrayOutputStream();
+            tlsKeystore.store(tlsOut, keystorePass);
+            byte[] tlsData = tlsOut.toByteArray();
+
+            // Insert into keydata table
+            // purpose: 1=TLS, 2=ENC/SIGN
+            // storagetype: 2=PKCS12
+            try (java.sql.PreparedStatement stmt = connection.prepareStatement(
+                    "INSERT INTO keydata (purpose, storagedata, storagetype, lastchanged, securityprovider) " +
+                    "VALUES (?, ?, ?, ?, ?)")) {
+
+                // Insert ENC/SIGN keystore (purpose=2)
+                stmt.setInt(1, 2);  // purpose = ENC/SIGN
+                stmt.setBytes(2, encSignData);
+                stmt.setInt(3, 2);  // storagetype = PKCS12
+                stmt.setLong(4, System.currentTimeMillis());
+                stmt.setString(5, securityProvider);
+                stmt.executeUpdate();
+
+                // Insert TLS keystore (purpose=1)
+                stmt.setInt(1, 1);  // purpose = TLS
+                stmt.setBytes(2, tlsData);
+                stmt.setInt(3, 2);  // storagetype = PKCS12
+                stmt.setLong(4, System.currentTimeMillis());
+                stmt.setString(5, securityProvider);
+                stmt.executeUpdate();
+            }
+
+            logger.info("[DATABASE] Empty keystores initialized successfully");
+
+        } catch (Exception e) {
+            logger.severe("[DATABASE] Failed to initialize keystores: " + e.getMessage());
+            throw new Exception("Failed to initialize empty keystores: " + e.getMessage(), e);
+        }
     }
 
     /**

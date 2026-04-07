@@ -173,6 +173,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private final Handler loggingHandlerSystemOut = new ConsoleHandlerStdout();
     public final static CryptoProvider CRYPTO_PROVIDER = new CryptoProvider();
     private ServerCertificateRefreshControllerHA serverCertificateRefreshController = null;
+    private final AS2Config config;
 
     // Static reference for REST API access
     private static AS2Server staticServerReference = null;
@@ -204,6 +205,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         }
         this.startTime = Instant.now().toEpochMilli();
         this.skipStartupConfigCheck = skipStartupConfigCheck;
+        this.config = config;
         staticServerReference = this;  // Set static reference for REST API access
         this.initializeLogger();
         this.logger.info(rb.getResourceString("server.willstart", AS2ServerVersion.getFullProductName()));
@@ -394,9 +396,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
 
     private void performStartupChecks() throws Exception {
         this.checkLock();
-        // check if all ports are available
+        // check if all ports are available - use the correct port based on test mode
         AS2ServerResourceCheck resourceCheck = new AS2ServerResourceCheck();
-        resourceCheck.performPortCheck();
+        int clientServerPort = config.getClientServerPort();
+        resourceCheck.performPortCheck(clientServerPort);
         resourceCheck.checkCPUCores(this.logger);
         resourceCheck.checkHeap(this.logger);
         BCCryptoHelper helper = new BCCryptoHelper();

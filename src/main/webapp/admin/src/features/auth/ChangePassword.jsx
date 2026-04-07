@@ -29,7 +29,7 @@ export default function ChangePassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, logout, clearMustChangePassword } = useAuth();
+  const { user, logout, clearMustChangePassword, refreshPermissions } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -67,9 +67,8 @@ export default function ChangePassword() {
       // Clear the must change password flag
       clearMustChangePassword();
 
-      // Fetch permissions after password change
-      const permissionsResponse = await api.get('/users/current/permissions');
-      // Permissions are now loaded in context
+      // Refresh user permissions to update the menu
+      await refreshPermissions();
 
       alert('Password changed successfully!');
       navigate('/');

@@ -108,6 +108,15 @@ export function AuthProvider({ children }) {
     setMustChangePassword(false);
   };
 
+  const refreshPermissions = async () => {
+    try {
+      const permissionsResponse = await api.get('/users/current/permissions');
+      setPermissions(permissionsResponse.data);
+    } catch (error) {
+      console.error('Failed to refresh permissions:', error);
+    }
+  };
+
   const hasPermission = (permissionName) => {
     return permissions.some(p => p.name === permissionName);
   };
@@ -125,6 +134,7 @@ export function AuthProvider({ children }) {
       login,
       logout,
       clearMustChangePassword,
+      refreshPermissions,
       hasPermission,
       hasAnyPermission
     }}>

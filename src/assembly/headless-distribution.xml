@@ -1,13 +1,13 @@
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.1.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.1.0 http://maven.apache.org/xsd/assembly-2.1.0.xsd">
-    <id>dist</id>
+    <id>headless</id>
     <formats>
         <format>tar.gz</format>
         <format>zip</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
-    <baseDirectory>mend-as2-${project.version}</baseDirectory>
+    <baseDirectory>mend-as2-${project.version}-headless</baseDirectory>
 
     <fileSets>
         <!-- Main JAR file -->
@@ -15,21 +15,26 @@
             <directory>${project.build.directory}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>mend-as2-${project.version}.jar</include>
+                <include>mend-as2-${project.version}-headless.jar</include>
             </includes>
         </fileSet>
 
-        <!-- Configuration files -->
+        <!-- Configuration files (headless specific) -->
         <fileSet>
-            <directory>config</directory>
+            <directory>src/main/resources-headless/config</directory>
             <outputDirectory>config</outputDirectory>
             <includes>
                 <include>**/*</include>
             </includes>
-            <excludes>
-                <exclude>**/*.db</exclude>
-                <exclude>**/*.lck</exclude>
-            </excludes>
+        </fileSet>
+
+        <!-- Database configuration -->
+        <fileSet>
+            <directory>config</directory>
+            <outputDirectory>config</outputDirectory>
+            <includes>
+                <include>database-postgresql.properties</include>
+            </includes>
         </fileSet>
 
         <!-- Documentation -->
@@ -69,14 +74,12 @@
             </includes>
         </fileSet>
 
-        <!-- Startup scripts -->
+        <!-- Startup scripts (headless only) -->
         <fileSet>
             <directory>src/assembly/scripts</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>start.sh</include>
                 <include>start-headless.sh</include>
-                <include>start.bat</include>
                 <include>start-headless.bat</include>
             </includes>
             <fileMode>0755</fileMode>
