@@ -186,11 +186,14 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * @param allowAllClients Allow client-server connections from other than
      *                        localhost
      * @param startPlugins    Starts the plugins if there are any in the system
+     * @param startMinaServer Start the Mina client-server for SwingUI. Should be
+     *                        disabled in headless mode for security
      * @param config          AS2 configuration object for test mode and other settings
      *
      */
     public AS2Server(boolean startHTTPServer, boolean allowAllClients, boolean startPlugins,
-            boolean importTLS, boolean importSignEnc, boolean skipStartupConfigCheck, AS2Config config) throws Exception {
+            boolean importTLS, boolean importSignEnc, boolean skipStartupConfigCheck,
+            boolean startMinaServer, AS2Config config) throws Exception {
         // Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -221,11 +224,23 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.performStartupChecks();
         this.serverStartupSequence.performWork();
         dbDriverManager = getActivatedDBDriverManager();
-        this.clientserver = new ClientServer(this.logger, clientServerPort,
-                new ClientServerTLSImplDefault(AS2ServerVersion.getFullProductName()));
-        this.clientserver.setProductName(AS2ServerVersion.getFullProductName());
-        this.initializeServerInstanceHA();
-        this.setupClientServerSessionHandler();
+
+        // Conditionally start Mina client-server for SwingUI
+        if (startMinaServer) {
+            this.logger.info("Starting Mina client-server for SwingUI on port " + clientServerPort);
+            this.clientserver = new ClientServer(this.logger, clientServerPort,
+                    new ClientServerTLSImplDefault(AS2ServerVersion.getFullProductName()));
+            this.clientserver.setProductName(AS2ServerVersion.getFullProductName());
+            this.initializeServerInstanceHA();
+            this.setupClientServerSessionHandler();
+        } else {
+            this.logger.info("Mina client-server DISABLED (headless mode) - SwingUI access not available");
+            this.logger.info("Management available via WebUI at http://localhost:8080/as2/webui/");
+            // Set clientserver to null so we can detect headless mode
+            this.clientserver = null;
+            this.clientServerSessionHandler = null;
+        }
+
         this.start(importTLS, importSignEnc);
         // stop logging to the console here
         this.logger.removeHandler(this.loggingHandlerSystemOut);
@@ -435,8 +450,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             // be a log poll to ensure
             // all displayed data is synchronized. In HA any other node may add entries, in
             // REST API any call may modify the log, too
-            if (PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)
-                    || PLUGINS.isActivated(ServerPlugins.PLUGIN_REST_API)) {
+            // Note: In headless mode (clientserver==null), only REST API log refresh is needed
+            if ((PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)
+                    || PLUGINS.isActivated(ServerPlugins.PLUGIN_REST_API))
+                    && this.clientserver != null) {
                 // In HA mode the server process should check if there is a change in the number
                 // of transactions
                 // and then inform all clients to refresh
@@ -468,7 +485,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.certificateManagerEncSign, this.certificateManagerTLS, this.dbDriverManager,
                     this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
                     this.dbClientInformation);
-            this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
+            // Only set session handler if Mina server is running
+            if (this.clientServerSessionHandler != null) {
+                this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
+            }
             // Make serverProcessing available to REST API
             de.mendelson.comm.as2.servlet.rest.RestApplication.ServerProcessingHolder.setInstance(this.serverProcessing);
             this.expireController = new CertificateExpireController(this.certificateManagerEncSign,
@@ -491,8 +511,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.getLogger(),
                     this.dbDriverManager);
             Runtime.getRuntime().addShutdownHook(new AS2ShutdownThread(this.dbServer));
-            // listen for inbound client connects
-            this.clientserver.start();
+            // listen for inbound client connects (only if Mina server is enabled)
+            if (this.clientserver != null) {
+                this.clientserver.start();
+            }
             // run the configuration check unless skipped
             List<ConfigurationIssue> configurationIssues;
             if (skipStartupConfigCheck) {
@@ -584,8 +606,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * log to the existing logger
      */
     private void initializeAdditionalLogger() {
-        // send the log info to the attached clients of the client-server framework
-        logger.addHandler(new ClientServerLoggingHandler(this.clientServerSessionHandler));
+        // send the log info to the attached clients of the client-server framework (only if Mina enabled)
+        if (this.clientServerSessionHandler != null) {
+            logger.addHandler(new ClientServerLoggingHandler(this.clientServerSessionHandler));
+        }
         logger.addHandler(new DBLoggingHandler(dbDriverManager));
         // add file logger that logs in a daily subdir
         logger.addHandler(new DailySubdirFileLoggingHandler(
@@ -596,11 +620,12 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     }
 
     private void setupClientServerSessionHandler() {
+        // Only called if Mina server is enabled (startMinaServer=true)
         // set up session handler for incoming client requests
         this.clientServerSessionHandler = new ClientServerSessionHandlerLocalhost(this.logger,
                 new String[] { AS2ServerVersion.getFullProductName() }, this.allowAllClients,
                 this.preferences.getBoolean(PreferencesAS2.COMMUNITY_EDITION) ? 1 : -1,
-                SystemEventManagerImplAS2.instance());
+                SystemEventManagerImplAS2.instance(), this.dbDriverManager);
         this.clientServerSessionHandler.setAnonymousProcessing(new AnonymousProcessingAS2());
         this.clientserver.setSessionHandler(this.clientServerSessionHandler);
         this.clientServerSessionHandler.setProductName(AS2ServerVersion.getProductName());
@@ -830,7 +855,12 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.serverInstanceHA.setOS(System.getProperty("os.name")
                 + " " + System.getProperty("os.version")
                 + " " + System.getProperty("os.arch"));
-        this.serverInstanceHA.setNumberOfClients(this.clientserver.getSessions().size());
+        // Only count clients if Mina server is running
+        if (this.clientserver != null) {
+            this.serverInstanceHA.setNumberOfClients(this.clientserver.getSessions().size());
+        } else {
+            this.serverInstanceHA.setNumberOfClients(0);
+        }
         try {
             InetAddress inetAddress = InetAddress.getLocalHost();
             this.serverInstanceHA.setLocalIP(inetAddress.getHostAddress());
@@ -852,7 +882,12 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * performed once as this is expensive
      */
     public ServerInstanceHA getServerInstanceHA() {
-        this.serverInstanceHA.setNumberOfClients(this.clientserver.getSessions().size());
+        // Only count clients if Mina server is running
+        if (this.clientserver != null) {
+            this.serverInstanceHA.setNumberOfClients(this.clientserver.getSessions().size());
+        } else {
+            this.serverInstanceHA.setNumberOfClients(0);
+        }
         return (this.serverInstanceHA);
     }
 

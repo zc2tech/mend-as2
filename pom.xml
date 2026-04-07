@@ -440,15 +440,26 @@
             <artifactId>jaxen</artifactId>
             <version>1.2.0</version>
         </dependency>
+        <!-- JCalendar, JFreeChart, L2FProd (SwingUI components) - Required for compilation -->
+        <!-- In 'headless' profile: scope=provided (not included in distribution) -->
+        <!-- In 'full' profile: scope=compile (included in distribution) -->
         <dependency>
             <groupId>com.toedter</groupId>
             <artifactId>jcalendar</artifactId>
             <version>1.4</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jfree</groupId>
             <artifactId>jfreechart</artifactId>
             <version>1.0.13</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.l2fprod.common</groupId>
+            <artifactId>l2fprod-common-buttonbar</artifactId>
+            <version>6.9.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
@@ -465,10 +476,14 @@
             <artifactId>lucene-analysis-common</artifactId>
             <version>${lucene.version}</version>
         </dependency>
+        <!-- Apache Mina - Required for compilation in all profiles -->
+        <!-- In 'headless' profile: scope=provided (not included in distribution) -->
+        <!-- In 'full' profile: scope=compile (included in distribution) -->
         <dependency>
             <groupId>org.apache.mina</groupId>
             <artifactId>mina-core</artifactId>
             <version>${mina.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.github.oshi</groupId>
@@ -485,24 +500,8 @@
             <artifactId>jna-platform</artifactId>
             <version>5.14.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.formdev</groupId>
-            <artifactId>flatlaf</artifactId>
-            <version>${flatlaf.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.formdev</groupId>
-            <artifactId>flatlaf-swingx</artifactId>
-            <version>${flatlaf.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.formdev</groupId>
-            <artifactId>flatlaf-extras</artifactId>
-            <version>${flatlaf.version}</version>
-            <scope>runtime</scope>
-        </dependency>
+        <!-- FlatLaf (SwingUI Look and Feel) - Only included in 'full' profile -->
+        <!-- See profiles section at end of POM -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
@@ -518,10 +517,14 @@
             <artifactId>httpclient5-fluent</artifactId>
             <version>5.3.1</version>
         </dependency>
+        <!-- Batik SVG - Required for compilation (used by MendelsonMultiResolutionImage) -->
+        <!-- In 'headless' profile: scope=provided (not included in distribution) -->
+        <!-- In 'full' profile: scope=compile (included in distribution) -->
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-all</artifactId>
             <version>1.18</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>commons-beanutils</groupId>
@@ -534,11 +537,8 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>com.l2fprod.common</groupId>
-            <artifactId>l2fprod-common-buttonbar</artifactId>
-            <version>6.9.1</version>
-        </dependency>
+        <!-- JCalendar, JFreeChart, L2FProd (SwingUI components) - Only included in 'full' profile -->
+        <!-- See profiles section at end of POM -->
 
         <dependency>
             <groupId>dnsjava</groupId>
@@ -684,6 +684,111 @@
     </dependencies>
 
     <profiles>
+        <!-- Full release profile: includes SwingUI and WebUI -->
+        <profile>
+            <id>full</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <build.profile>full</build.profile>
+            </properties>
+            <dependencies>
+                <!-- Override Mina scope to include it in distribution -->
+                <dependency>
+                    <groupId>org.apache.mina</groupId>
+                    <artifactId>mina-core</artifactId>
+                    <version>${mina.version}</version>
+                    <scope>compile</scope>
+                </dependency>
+                <!-- Override Batik scope to include it in distribution -->
+                <dependency>
+                    <groupId>org.apache.xmlgraphics</groupId>
+                    <artifactId>batik-all</artifactId>
+                    <version>1.18</version>
+                    <scope>compile</scope>
+                </dependency>
+                <!-- FlatLaf Look and Feel for SwingUI -->
+                <dependency>
+                    <groupId>com.formdev</groupId>
+                    <artifactId>flatlaf</artifactId>
+                    <version>${flatlaf.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.formdev</groupId>
+                    <artifactId>flatlaf-swingx</artifactId>
+                    <version>${flatlaf.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.formdev</groupId>
+                    <artifactId>flatlaf-extras</artifactId>
+                    <version>${flatlaf.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <!-- SwingUI components -->
+                <dependency>
+                    <groupId>com.toedter</groupId>
+                    <artifactId>jcalendar</artifactId>
+                    <version>1.4</version>
+                    <scope>compile</scope>
+                </dependency>
+                <dependency>
+                    <groupId>jfree</groupId>
+                    <artifactId>jfreechart</artifactId>
+                    <version>1.0.13</version>
+                    <scope>compile</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.l2fprod.common</groupId>
+                    <artifactId>l2fprod-common-buttonbar</artifactId>
+                    <version>6.9.1</version>
+                    <scope>compile</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <finalName>${project.artifactId}-${project.version}-full</finalName>
+            </build>
+        </profile>
+
+        <!-- Headless release profile: WebUI only, no SwingUI dependencies -->
+        <profile>
+            <id>headless</id>
+            <properties>
+                <build.profile>headless</build.profile>
+            </properties>
+            <!-- In headless profile, Mina remains scope=provided (not in distribution) -->
+            <!-- SwingUI dependencies are completely excluded -->
+            <build>
+                <finalName>${project.artifactId}-${project.version}-headless</finalName>
+                <resources>
+                    <!-- Override config to force headless mode -->
+                    <resource>
+                        <directory>src/main/resources</directory>
+                    </resource>
+                    <resource>
+                        <directory>src/main/resources-headless</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                    <!-- Include non-Java files from java source directory -->
+                    <resource>
+                        <directory>src/main/java</directory>
+                        <includes>
+                            <include>**/*.svg</include>
+                            <include>**/*.png</include>
+                            <include>**/*.gif</include>
+                            <include>**/*.jpg</include>
+                            <include>**/*.jpeg</include>
+                            <include>**/*.properties</include>
+                            <include>**/*.xml</include>
+                            <include>**/*.txt</include>
+                        </includes>
+                    </resource>
+                </resources>
+            </build>
+        </profile>
+
         <profile>
             <id>it</id>
             <build>

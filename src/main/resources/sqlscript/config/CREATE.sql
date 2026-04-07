@@ -328,9 +328,9 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 -- User management permissions
 ('USER_MANAGE', 'Manage users and roles', 'Administration');
 
--- Default admin user (password: "admin" - should be changed after first login)
-INSERT INTO webui_users (username, password_hash, full_name, enabled) VALUES
-('admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE);
+-- Default admin user (password: "admin" - MUST be changed on first login)
+INSERT INTO webui_users (username, password_hash, full_name, enabled, must_change_password) VALUES
+('admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
 
 -- Grant ALL permissions to ADMIN role
 INSERT INTO webui_role_permissions (role_id, permission_id)

@@ -83,35 +83,6 @@ public abstract class SystemEventManager {
     }
 
     /**
-     * Throws a new system event that a login was successful
-     * These methods are kept for WebUI JWT authentication events
-     * @deprecated SwingUI no longer uses these methods
-     */
-    @Deprecated
-    public void newEventClientLoginSuccess(String username, SocketAddress remoteAddress, String sessionId,
-            String clientInfo, String tlsProtocol, String tlsCipherSuite) {
-        SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_INFO, SystemEvent.ORIGIN_USER,
-                SystemEvent.TYPE_CLIENT_LOGIN_SUCCESS);
-        StringBuilder builder = new StringBuilder();
-        builder.append(rb.getResourceString("label.body.tlsprotocol",
-                (tlsProtocol == null ? "--" : tlsProtocol))).append("\n")
-                .append(rb.getResourceString("label.body.tlsciphersuite",
-                        (tlsCipherSuite == null ? "--" : tlsCipherSuite))).append("\n")
-                .append(rb.getResourceString("label.body.clientip",
-                        remoteAddress.toString())).append("\n")
-                .append(rb.getResourceString("label.body.details",
-                        clientInfo)).append("\n");
-        event.setBody(builder.toString());
-        String subject = rb.getResourceString("label.subject.login.success", username);
-        event.setSubject(subject);
-        try {
-            this.storeEventToFile(event);
-        } catch (Exception e) {
-            return;
-        }
-    }
-
-    /**
      * Throws a new system event that a login has failed
      * @deprecated SwingUI no longer uses these methods
      */

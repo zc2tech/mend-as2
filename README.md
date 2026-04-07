@@ -3,7 +3,7 @@
 A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B communication, forked from mendelson AS2.
 
 ![License](https://img.shields.io/badge/license-GPL--2.0-blue.svg)
-![Java](https://img.shields.io/badge/Java-21-orange.svg)
+![Java](https://img.shields.io/badge/Java-17+-orange.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)
 
 ## 🚀 Features
@@ -33,12 +33,22 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password complexity enforcement
   - Account enable/disable functionality
 
-- **HTTP Authentication**
+- **HTTP Authentication (Outbound)**
   - Flexible HTTP Basic Auth for partner connections
   - Three modes: None, Always Use, Use User Preference
   - User-specific credential management (WebUI & SwingUI)
   - Separate credentials for Message and MDN requests
   - Runtime credential resolution based on partner configuration
+
+- **Inbound Authentication**
+  - System-wide authentication for incoming AS2 messages
+  - Two authentication types (can enable both):
+    - **Basic Authentication** - Multiple username/password pairs
+    - **Certificate Authentication** - Multiple trusted certificates
+  - OR logic: message accepted if ANY credential matches
+  - Configuration via SwingUI (System Preferences) and WebUI (System menu)
+  - HTTP 401 response for failed authentication
+  - Authentication logging for security auditing
 
 - **Partner Visibility Control**
   - User-based partner access restrictions
@@ -50,20 +60,23 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 - **Enhanced Security**
   - JWT-based authentication for WebUI
   - HttpOnly cookies for session management
-  - PBKDF2 password hashing
+  - PBKDF2 password hashing with mandatory first-login password change
+  - SwingUI authentication with login dialog (Mina port 1234)
   - Permission-based API endpoint protection
   - Read-only UI for viewer roles
   - Partner-level visibility controls
+  - Inbound message authentication (Basic + Certificate Auth)
+  - Headless mode: Mina server disabled for reduced attack surface
 
 - **Modern Tech Stack**
-  - **Backend**: Java 21, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
+  - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
   - **Frontend**: React 18, React Router, TanStack Query, Vite
   - **Database**: PostgreSQL 15+ (replaced HSQLDB)
   - **Build**: Maven 3.9+
 
 ## 📋 Prerequisites
 
-- **Java 21** or higher (JDK)
+- **Java 17** or higher (JDK) - compiled with Java 17, runs on 17+
 - **PostgreSQL 15** or higher
 - **Maven 3.9** or higher
 - **Node.js 18** or higher (for WebUI development)
@@ -73,7 +86,31 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 
 See [INSTALL.md](INSTALL.md) for detailed installation instructions.
 
-Quick start:
+### Build Profiles
+
+Mend AS2 offers two build profiles:
+
+**1. Full Profile (Default)** - SwingUI + WebUI
+```bash
+# Build with all features
+mvn clean package
+
+# Output: target/mend-as2-1.1.0-full.jar (~120 MB)
+```
+
+**2. Headless Profile** - WebUI only (optimized for containers)
+```bash
+# Build without SwingUI dependencies
+mvn clean package -Pheadless
+
+# Output: target/mend-as2-1.1.0-headless.jar (~100-105 MB)
+# 15-20 MB smaller, Mina port disabled for security
+```
+
+See [BUILD_PROFILES.md](md-memo/BUILD_PROFILES.md) for detailed comparison.
+
+### Quick Start
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/zc2tech/mend-as2.git
@@ -81,17 +118,53 @@ cd mend-as2
 
 # 2. Set up PostgreSQL (see INSTALL.md)
 
-# 3. Build project
+# 3. Build project (full profile)
 mvn clean package -DskipTests
 
 # 4. Run server
-java -jar target/mend-as2-1.1.jar
+java -jar target/mend-as2-1.1.0-full.jar
+
+# Or run in headless mode (no GUI)
+java -jar target/mend-as2-1.1.0-full.jar -nogui
 ```
 
 Access WebUI at: http://localhost:8080/as2/webui/  
-Default credentials: `admin` / `admin`
+Default credentials: `admin` / `admin` (must change on first login)
 
 ## 🎯 Usage
+
+### Inbound Authentication
+
+Configure authentication required for incoming AS2 messages:
+
+**WebUI:**
+1. Login as Admin
+2. Navigate to **System** → **Inb. Auth** tab
+3. Enable authentication types:
+   - ☑ **Enable Basic Authentication**
+     - Click **Add Credential** to add username/password pairs
+     - Support multiple credentials (OR logic - any match accepted)
+     - Password visibility toggle available
+   - ☑ **Enable Certificate Authentication**
+     - Click **Add Certificate** to select certificates from repository
+     - Support multiple certificates (OR logic - any match accepted)
+4. Click **Save Settings**
+
+**SwingUI:**
+1. Open AS2Gui
+2. Menu → **File → Preferences**
+3. Navigate to **Inb. Auth** tab
+4. Check authentication types:
+   - ☑ **Enable Basic Authentication** - Add multiple username/password rows
+   - ☑ **Enable Certificate Authentication** - Add multiple certificates from dropdown
+5. Click **OK** to save
+
+**Behavior:**
+- If both unchecked: No authentication required (open access)
+- If one enabled: Must pass that authentication type
+- If both enabled: Must pass EITHER Basic OR Certificate auth
+- Failed authentication returns HTTP 401 Unauthorized
+- All authentication attempts logged to server log
 
 ### Partner Visibility Control
 
@@ -148,7 +221,13 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
 - **Partners** - Manage trading partners with visibility controls
 - **Certificates** - Import/export certificates
 - **Messages** - View and send AS2 messages (filtered by partner visibility)
-- **System** - Server configuration
+- **System** - Server configuration and inbound authentication
+  - HTTP Server Configuration
+  - **Inbound Authentication** - Configure incoming message authentication
+  - System Events
+  - Server Log Search
+  - Maintenance
+  - Notification
 - **Users** - User and role management (Admin only)
 - **Preferences** - HTTP authentication credentials (user-specific)
 
@@ -162,9 +241,13 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 - **File → Partner** - Manage trading partners
 - **File → Certificates** - Certificate management
 - **File → Preferences** - System-wide preferences
+  - HTTP Server Configuration
+  - **Inbound Authentication** - Configure incoming message authentication
+  - Connectivity, Proxy, Directories, etc.
 - **User Preference → HTTP Authentication** - Configure HTTP auth credentials
 
 **Keyboard Shortcuts:**
+- `Cmd/Ctrl + ,` - Open Preferences
 - `Cmd/Ctrl + U` - Open User Management
 - `Cmd/Ctrl + N` - Create new user
 - `Cmd/Ctrl + E` - Edit selected
@@ -193,6 +276,12 @@ curl http://localhost:8080/as2/api/v1/users -b cookies.txt
 - `GET /certificates` - List certificates (CERT_READ)
 - `GET /messages` - List messages (MESSAGE_READ, filtered by partner visibility)
 - `GET /system/info` - System info (SYSTEM_READ)
+- `GET /system/inbound-auth/config` - Get inbound auth mode
+- `POST /system/inbound-auth/config` - Set inbound auth mode
+- `GET /system/inbound-auth/credentials/basic` - Get basic auth credentials
+- `POST /system/inbound-auth/credentials/basic` - Save basic credentials
+- `GET /system/inbound-auth/credentials/cert` - Get cert credentials
+- `POST /system/inbound-auth/credentials/cert` - Save cert credentials
 - `GET /user-preferences/http-auth` - Get user's HTTP auth preferences
 - `POST /user-preferences/http-auth` - Save HTTP auth credentials
 
@@ -234,14 +323,18 @@ mend-as2/
 
 ## 🔐 Security
 
-- ✅ JWT authentication with HttpOnly cookies
+- ✅ JWT authentication with HttpOnly cookies (WebUI)
+- ✅ SwingUI authentication with login dialog (admin only)
+- ✅ Mina client-server port authentication (localhost-only)
 - ✅ PBKDF2 password hashing
 - ✅ Role-based access control (RBAC)
 - ✅ API permission enforcement
 - ✅ Forced password change on first login
 - ✅ Session timeout and refresh tokens
 - ✅ Partner visibility controls
-- ✅ User-specific HTTP authentication credentials
+- ✅ User-specific HTTP authentication credentials (outbound)
+- ✅ System-wide inbound message authentication (Basic + Certificate Auth)
+- ✅ Headless mode: Mina server disabled for security
 
 **Best Practices:**
 1. Change default admin password immediately
@@ -251,6 +344,11 @@ mend-as2/
 5. Regular database backups
 6. Configure partner visibility for sensitive partners
 7. Use "User Preference" mode for HTTP auth when multiple users share partners
+8. Enable inbound authentication to prevent unauthorized message submission
+9. Use certificate authentication for strongest security
+10. Regularly audit authentication logs for suspicious activity
+11. Use headless build profile for containerized deployments
+12. Never expose Mina port 1234 to external networks
 
 ## 🔄 Backup & Restore
 
@@ -317,9 +415,14 @@ GNU General Public License v2.0 - see [LICENSE](LICENSE)
 ## 🗺️ Roadmap
 
 - [x] Role-Based Access Control (RBAC)
-- [x] HTTP Authentication preferences
+- [x] HTTP Authentication preferences (outbound)
+- [x] Inbound message authentication (Basic + Certificate)
 - [x] Partner visibility controls
 - [x] Message filtering by partner visibility
+- [x] SwingUI authentication with login dialog
+- [x] Forced password change for admin user
+- [x] Maven build profiles (full vs headless)
+- [x] Headless mode with Mina server disabled
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -354,10 +457,31 @@ GNU General Public License v2.0 - see [LICENSE](LICENSE)
 - Verify user is in the "visible to" list (or visibility is "all users")
 - Admin users can see all partners
 
-**HTTP Authentication Not Working**
+**HTTP Authentication Not Working (Outbound)**
 - Verify partner is configured with "Use User Preference" mode
 - Check user has set credentials in User Preference → HTTP Authentication
 - For SwingUI: Check credentials are set for admin user (ID=1)
+
+**Inbound Messages Being Rejected (401 Unauthorized)**
+- Check System → Inb. Auth settings (WebUI) or File → Preferences → Inb. Auth (SwingUI)
+- Verify at least one authentication type is enabled
+- For Basic Auth: Ensure sending partner uses one of the configured username/password pairs
+- For Certificate Auth: Ensure sending partner's certificate is in the trusted list
+- Check server logs for authentication failure details
+- If both auth types enabled, message must pass EITHER one (OR logic)
+
+**SwingUI Login Issues**
+- Default username is "admin" (cannot be changed, readonly field)
+- If password forgotten, reset in database: `UPDATE webui_users SET password_hash='...' WHERE username='admin'`
+- Login dialog appears before main window (splash closes first)
+- If Mina library missing (headless build), GUI automatically falls back to headless mode
+
+**Headless Mode**
+- Use `-nogui` flag: `java -jar mend-as2-1.1.0-full.jar -nogui`
+- Or use headless build profile: `mvn clean package -Pheadless`
+- Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
+- Mina port 1234 is not started in headless mode
+- Access via WebUI at http://localhost:8080/as2/webui/
 
 ---
 

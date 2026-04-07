@@ -1,8 +1,17 @@
 package de.mendelson.comm.as2.server;
 
+import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.MecResourceBundle;
+import de.mendelson.util.clientserver.BaseClient;
 import de.mendelson.util.clientserver.ClientServerSessionHandler;
+import de.mendelson.util.clientserver.messages.ClientServerMessage;
+import de.mendelson.util.clientserver.messages.LoginRequest;
+import de.mendelson.util.clientserver.messages.LoginResponse;
 import de.mendelson.util.clientserver.messages.ServerLogMessage;
+import de.mendelson.util.clientserver.user.User;
+import de.mendelson.util.database.IDBDriverManager;
+import de.mendelson.util.security.PBKDF2;
 import de.mendelson.util.systemevents.SystemEventManager;
 import java.net.InetSocketAddress;
 import java.util.MissingResourceException;
@@ -26,12 +35,16 @@ import org.apache.mina.core.session.IoSession;
  */
 public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHandler {
 
+    private static final String SESSION_ATTRIB_AUTHENTICATED = "authenticated";
     private final MecResourceBundle rb;
     private boolean allowAllClients = false;
+    private IDBDriverManager dbDriverManager;
+    private Logger myLogger;
 
     public ClientServerSessionHandlerLocalhost(Logger logger, String[] validClientIds, boolean allowAllClients, int maxClients,
-            SystemEventManager eventManager) {
+            SystemEventManager eventManager, IDBDriverManager dbDriverManager) {
         super(logger, validClientIds, maxClients, eventManager);
+        this.myLogger = logger;
         //Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -41,6 +54,7 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
         this.allowAllClients = allowAllClients;
+        this.dbDriverManager = dbDriverManager;
         System.out.println(this.rb.getResourceString("allowallclients." + String.valueOf(allowAllClients)));
     }
 
@@ -65,5 +79,107 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
         } catch (Exception e) {
             session.close(true);
         }
+    }
+
+    @Override
+    /**
+     * Intercept messages to handle authentication first
+     */
+    public void messageReceived(IoSession session, Object message) {
+        if (!(message instanceof ClientServerMessage)) {
+            super.messageReceived(session, message);
+            return;
+        }
+
+        // Handle login request
+        if (message instanceof LoginRequest) {
+            LoginRequest request = (LoginRequest) message;
+            LoginResponse response = this.processLoginRequest(request, session);
+            session.write(response);
+
+            if (!response.isSuccess()) {
+                // Authentication failed - close connection
+                this.log(Level.WARNING, "Authentication failed for user: " + request.getUsername());
+                session.close(false);
+            } else {
+                // Mark session as authenticated
+                session.setAttribute(SESSION_ATTRIB_AUTHENTICATED, Boolean.TRUE);
+            }
+            return;
+        }
+
+        // For all other messages, check authentication first
+        Boolean authenticated = (Boolean) session.getAttribute(SESSION_ATTRIB_AUTHENTICATED);
+        if (authenticated == null || !authenticated) {
+            // Not authenticated - reject message
+            this.log(Level.SEVERE, "Rejecting unauthenticated message: " + message.getClass().getSimpleName());
+            session.close(false);
+            return;
+        }
+
+        // Authenticated - pass to parent handler
+        super.messageReceived(session, message);
+    }
+
+    /**
+     * Process login request and validate credentials
+     */
+    private LoginResponse processLoginRequest(LoginRequest request, IoSession session) {
+        LoginResponse response = new LoginResponse(request);
+
+        try {
+            // For SwingUI: Only allow "admin" user
+            if (!"admin".equals(request.getUsername())) {
+                response.setSuccess(false);
+                response.setErrorMessage("Only 'admin' user can access SwingUI");
+                this.log(Level.WARNING, "SwingUI login rejected: user '" + request.getUsername() + "' not allowed");
+                return response;
+            }
+
+            // Validate credentials against database
+            UserManagementAccessDB userDB = new UserManagementAccessDB(this.dbDriverManager, this.myLogger);
+            WebUIUser dbUser = userDB.getUserByUsername(request.getUsername());
+
+            if (dbUser == null || !dbUser.isEnabled()) {
+                response.setSuccess(false);
+                response.setErrorMessage("Invalid credentials or user disabled");
+                this.log(Level.WARNING, "SwingUI login failed: user not found or disabled");
+                return response;
+            }
+
+            // Verify password using PBKDF2
+            boolean passwordValid = PBKDF2.validatePassword(
+                    new String(request.getPassword()),
+                    dbUser.getPasswordHash()
+            );
+
+            if (!passwordValid) {
+                response.setSuccess(false);
+                response.setErrorMessage("Invalid credentials");
+                this.log(Level.WARNING, "SwingUI login failed: invalid password for user '" + request.getUsername() + "'");
+                return response;
+            }
+
+            // Success - create User object
+            User user = new User();
+            user.setName(dbUser.getUsername());
+
+            // Store user in session attributes
+            session.setAttribute(SESSION_ATTRIB_USER, user.getName());
+            session.setAttribute(SESSION_ATTRIB_CLIENT_TYPE, Integer.valueOf(BaseClient.CLIENT_RICH_CLIENT));
+
+            response.setSuccess(true);
+            response.setUser(user);
+            response.setMustChangePassword(dbUser.isMustChangePassword());
+
+            this.log(Level.INFO, "SwingUI login successful: " + request.getUsername());
+
+        } catch (Exception e) {
+            response.setSuccess(false);
+            response.setErrorMessage("Authentication error: " + e.getMessage());
+            this.log(Level.SEVERE, "SwingUI login error: " + e.getMessage());
+        }
+
+        return response;
     }
 }

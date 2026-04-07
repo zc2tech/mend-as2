@@ -1,6 +1,7 @@
 package de.mendelson.comm.as2;
 
 import de.mendelson.comm.as2.client.AS2Gui;
+import de.mendelson.comm.as2.client.JDialogLogin;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.server.ServerAlreadyRunningException;
@@ -11,7 +12,7 @@ import de.mendelson.util.font.FontUtil;
 import de.mendelson.util.security.BCCryptoHelper;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
-import java.awt.Color; 
+import java.awt.Color;
 import java.awt.image.RescaleOp;
 import java.util.Locale;
 import javax.swing.JOptionPane;
@@ -79,8 +80,6 @@ public class AS2 {
                 startHTTP = false;
             } else if (args[optind].toLowerCase().equals("-nogui")) {
                 startGUI = false;
-            } else if (args[optind].toLowerCase().equals("-headless")) {
-                startGUI = false;
             } else if (args[optind].toLowerCase().equals("-mode")) {
                 String modeParameter = args[++optind];
                 if (modeParameter != null) {
@@ -147,6 +146,24 @@ public class AS2 {
         // Set headless mode if GUI is disabled
         if (!startGUI) {
             System.setProperty("java.awt.headless", "true");
+        } else {
+            // Check if Mina is available (headless builds exclude it)
+            try {
+                Class.forName("org.apache.mina.core.service.IoAcceptor");
+            } catch (ClassNotFoundException e) {
+                System.err.println("ERROR: SwingUI requested but Mina library not found.");
+                System.err.println("This appears to be a headless build (built with -Pheadless profile).");
+                System.err.println("SwingUI is not available in headless builds.");
+                System.err.println("");
+                System.err.println("Solutions:");
+                System.err.println("  1. Use headless mode: java -jar as2.jar -nogui");
+                System.err.println("  2. Access WebUI at: http://localhost:8080/as2/webui/");
+                System.err.println("  3. Rebuild with full profile: mvn clean package -Pfull");
+                System.err.println("");
+                System.err.println("Forcing headless mode...");
+                startGUI = false;
+                System.setProperty("java.awt.headless", "true");
+            }
         }
 
         String displayMode = clientPreferences.get(PreferencesAS2.DISPLAY_MODE_CLIENT);
@@ -183,7 +200,10 @@ public class AS2 {
             //initialize the security provider
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
-            new AS2Server(startHTTP, false, false, importTLS, importEncSign, config.shouldSkipConfigCheck(), config);
+            // Only start Mina server if GUI mode is enabled (for SwingUI)
+            // In headless mode, disable Mina for security - WebUI uses REST API
+            new AS2Server(startHTTP, false, false, importTLS, importEncSign,
+                         config.shouldSkipConfigCheck(), startGUI, config);
         } catch (ServerAlreadyRunningException e) {
             //don't delete the lockfile in this case!
             SystemEventManagerImplAS2.instance().newEvent(
@@ -232,13 +252,40 @@ public class AS2 {
 
         // Start GUI client or run in headless mode
         if (startGUI) {
-            //start client
-            AS2Gui gui = new AS2Gui(splash, "localhost", "admin", "admin", displayMode);
+            // Close splash screen before showing login dialog
+            if (splash != null) {
+                splash.destroy();
+                splash.dispose();
+            }
+
+            // Show login dialog
+            JDialogLogin loginDialog = new JDialogLogin(null, displayMode);
+            loginDialog.setVisible(true);
+
+            if (!loginDialog.isLoginSuccessful()) {
+                // User cancelled login - exit application
+                System.out.println("Login cancelled by user");
+                System.exit(0);
+            }
+
+            // Get credentials from login dialog
+            String username = loginDialog.getUsername();
+            char[] password = loginDialog.getPassword();
+
+            // Start client with provided credentials (no splash - already closed)
+            AS2Gui gui = new AS2Gui(null, "localhost", username, new String(password), displayMode);
+
+            // Clear sensitive data
+            loginDialog.clearPassword();
+            if (password != null) {
+                for (int i = 0; i < password.length; i++) {
+                    password[i] = 0;
+                }
+            }
+
             gui.setVisible(true);
-            splash.destroy();
-            splash.dispose();
         } else {
-            // Headless mode - server keeps running
+            // Headless mode - server keeps running without GUI or authentication
             System.out.println("Running in headless mode - GUI disabled");
             System.out.println("Server is now running. Press Ctrl+C to stop.");
             // Keep the main thread alive - server runs in background threads

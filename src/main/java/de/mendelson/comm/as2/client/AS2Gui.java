@@ -61,6 +61,10 @@ import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.SyncRequestTimeoutException;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
 import de.mendelson.util.clientserver.about.ServerInfoResponse;
+import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.gui.JDialogChangePassword;
+import de.mendelson.comm.as2.usermanagement.clientserver.UserListRequest;
+import de.mendelson.comm.as2.usermanagement.clientserver.UserListResponse;
 import de.mendelson.util.clientserver.clients.datatransfer.DownloadRequestFile;
 import de.mendelson.util.clientserver.clients.datatransfer.DownloadResponseFile;
 import de.mendelson.util.clientserver.clients.datatransfer.TransferClientWithProgress;
@@ -70,7 +74,9 @@ import de.mendelson.util.clientserver.clients.preferences.PreferencesClient;
 import de.mendelson.util.clientserver.log.search.gui.JDialogSearchLogfile;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.LoginResponse;
 import de.mendelson.util.clientserver.messages.ServerInfo;
+import de.mendelson.util.clientserver.user.User;
 import de.mendelson.util.log.LogFormatter;
 import de.mendelson.util.log.LogFormatterAS2;
 import de.mendelson.util.log.panel.LogConsolePanel;
@@ -106,8 +112,6 @@ import java.awt.Taskbar;
 import java.awt.Toolkit;
 import java.awt.desktop.AboutEvent;
 import java.awt.desktop.AboutHandler;
-import java.awt.desktop.PreferencesEvent;
-import java.awt.desktop.PreferencesHandler;
 import java.awt.desktop.QuitEvent;
 import java.awt.desktop.QuitHandler;
 import java.awt.desktop.QuitResponse;
@@ -141,6 +145,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
@@ -452,6 +457,24 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         this.initializeUINotification();
         this.connect(new InetSocketAddress(host, clientServerCommPort), 5000);
+
+        // Perform authentication
+        LoginResponse loginResponse = this.performLogin(username, password.toCharArray(), "AS2Gui");
+
+        if (loginResponse == null || !loginResponse.isSuccess()) {
+            String errorMsg = loginResponse != null ? loginResponse.getErrorMessage() : "Authentication failed";
+            this.getLogger().severe("SwingUI login failed: " + errorMsg);
+            JOptionPane.showMessageDialog(null,
+                    "Authentication failed: " + errorMsg,
+                    "Login Error",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+
+        // Check if password change required
+        if (loginResponse.isMustChangePassword()) {
+            this.showForcedPasswordChangeDialog(loginResponse.getUser());
+        }
     }
 
     /**
@@ -748,15 +771,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
                 // do nothing
             }
-            if (desktop.isSupported(Desktop.Action.APP_PREFERENCES)) {
-                desktop.setPreferencesHandler(new PreferencesHandler() {
-                    @Override
-                    public void handlePreferences(PreferencesEvent e) {
-                        AS2Gui.this.displayPreferences(null);
-                    }
-
-                });
-            }
+            // Removed APP_PREFERENCES handler - using File menu Preferences instead
             if (desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
                 desktop.setQuitHandler(new QuitHandler() {
                     @Override
@@ -842,6 +857,75 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     @Override
     public Logger getLogger() {
         return (this.logger);
+    }
+
+    /**
+     * Shows forced password change dialog if user must change password on first login
+     */
+    private void showForcedPasswordChangeDialog(User user) {
+        try {
+            // Get user info from server via client-server messaging
+            UserListRequest request = new UserListRequest();
+            UserListResponse response = (UserListResponse) this.sendSync(request, 10000);
+
+            if (response == null || response.getUsers() == null) {
+                this.getLogger().severe("Cannot load user list for password change");
+                return;
+            }
+
+            // Find the current user (admin)
+            WebUIUser dbUser = null;
+            for (WebUIUser u : response.getUsers()) {
+                if (u.getUsername().equals(user.getName())) {
+                    dbUser = u;
+                    break;
+                }
+            }
+
+            if (dbUser == null) {
+                this.getLogger().severe("Cannot find user for password change: " + user.getName());
+                return;
+            }
+
+            // Show message about password change requirement
+            JOptionPane.showMessageDialog(this,
+                    "<html><b>Password change required</b><br><br>" +
+                    "This is your first login or your password has been reset.<br>" +
+                    "You must change your password to continue.</html>",
+                    "Password Change Required",
+                    JOptionPane.WARNING_MESSAGE);
+
+            // Show password change dialog
+            JDialog parentDialog = new JDialog(this, "Change Password", true);
+            JDialogChangePassword passwordDialog = new JDialogChangePassword(
+                    parentDialog,
+                    this,  // GUIClient
+                    dbUser
+            );
+            passwordDialog.setVisible(true);
+
+            // After password changed, verify the flag was cleared
+            response = (UserListResponse) this.sendSync(new UserListRequest(), 10000);
+            if (response != null && response.getUsers() != null) {
+                for (WebUIUser u : response.getUsers()) {
+                    if (u.getUsername().equals(user.getName())) {
+                        if (u.isMustChangePassword()) {
+                            // User closed dialog without changing - force exit
+                            JOptionPane.showMessageDialog(this,
+                                    "Password change is required. Application will exit.",
+                                    "Password Change Required",
+                                    JOptionPane.WARNING_MESSAGE);
+                            System.exit(0);
+                        }
+                        break;
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            this.getLogger().severe("Error showing forced password change dialog: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -2167,12 +2251,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFilePreferences.setText(this.rb.getResourceString("menu.file.preferences"));
-        // Only set accelerator on non-macOS platforms
-        // On macOS, desktop integration handles CMD+, automatically
-        if (!System.getProperty("os.name").toLowerCase().contains("mac")) {
-            jMenuItemFilePreferences
-                    .setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
-        }
+        jMenuItemFilePreferences
+                .setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_COMMA));
         jMenuItemFilePreferences.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemFilePreferencesActionPerformed(evt);

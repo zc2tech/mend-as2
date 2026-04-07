@@ -33,6 +33,7 @@ public class ResourceBundleGUIClient extends MecResourceBundle {
         {"connectionrefused.title", "Connection problem"},
         {"login.success", "Logged in as user \"{0}\""},
         {"login.failure", "Login as user \"{0}\" failed."},
+        {"login.failed", "Login failed for user {0}"},
         {"connection.success", "Client connected to {0}"},
         {"logout.from.server", "Logged out from server"},
         {"connection.closed", "The local client-server connection has been disconnected by the server"},
@@ -40,6 +41,7 @@ public class ResourceBundleGUIClient extends MecResourceBundle {
         {"connection.closed.message", "The local client-server connection has been disconnected by the server"},
         {"client.received.unprocessed.message", "A message has been received by the client that is not processed: {0}."},
         {"error", "Error: {0}"},
+        {"authentication.error", "Authentication error: {0}"},
         {"login.failed.client.incompatible.message", "The server reports that this client is incompatible. Please use the proper client version."},
         {"login.failed.client.incompatible.title", "Login rejected"},
     };

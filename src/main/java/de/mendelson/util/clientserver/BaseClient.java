@@ -14,6 +14,8 @@ import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.codec.ClientServerCodecFactory;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.LoginRequest;
+import de.mendelson.util.clientserver.messages.LoginResponse;
 import de.mendelson.util.clientserver.messages.QuitRequest;
 import de.mendelson.util.clientserver.user.User;
 import java.net.InetAddress;
@@ -158,15 +160,29 @@ public class BaseClient {
     }
 
     /**
-     * Login method removed - SwingUI clients no longer require authentication
-     * WebUI uses JWT tokens via REST API instead
-     * @deprecated No longer used - authentication removed for client-server protocol
+     * Authenticates the user with the server
+     *
+     * @param user the username
+     * @param passwd the password
+     * @param clientId the client identifier
+     * @return LoginResponse containing success status, user object, and mustChangePassword flag
      */
-    @Deprecated
-    public Object login(String user, char[] passwd, String clientId) {
-        // SwingUI clients connect without authentication
-        // This method is kept for backward compatibility but does nothing
-        return null;
+    public LoginResponse login(String user, char[] passwd, String clientId) {
+        if (!this.isConnected()) {
+            throw new IllegalStateException("[Client-Server communication] BaseClient.login: "
+                    + "Not connected to a server. Please connect first.");
+        }
+
+        // Send login request to server
+        LoginRequest request = new LoginRequest(user, passwd, clientId);
+        LoginResponse response = (LoginResponse) this.sendSync(request, 10000);
+
+        if (response != null && response.isSuccess()) {
+            // Store authenticated user
+            this.setUser(response.getUser());
+        }
+
+        return response;
     }
 
     /**

@@ -5,6 +5,7 @@ import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.connectionprogress.JDialogConnectionProgress;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.LoginResponse;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.messages.ServerSideNotification;
 import de.mendelson.util.clientserver.user.User;
@@ -125,19 +126,30 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
     public abstract Logger getLogger();
 
     /**
-     * Login method simplified - SwingUI no longer requires authentication
-     * This method is kept for backward compatibility
+     * Authenticates the user with the server
+     *
+     * @param user the username
+     * @param passwd the password
+     * @param clientId the client identifier
+     * @return LoginResponse containing success status, user info, and mustChangePassword flag, or null if authentication failed
      */
-    public void performLogin(String user, char[] passwd, String clientId) {
+    public LoginResponse performLogin(String user, char[] passwd, String clientId) {
         if (this.getLogger() == null) {
-            throw new RuntimeException("GUIClient.loggedIn: No logger set.");
+            throw new RuntimeException("GUIClient.performLogin: No logger set.");
         }
-        // No authentication needed for SwingUI
-        // Create a dummy user object for compatibility
-        User dummyUser = new User();
-        dummyUser.setName(user != null ? user : "swing_client");
-        this.getBaseClient().setUser(dummyUser);
-        this.log(Level.CONFIG, rb.getResourceString("login.success", dummyUser.getName()));
+
+        // Call BaseClient.login() which now validates credentials
+        LoginResponse response = this.getBaseClient().login(user, passwd, clientId);
+
+        if (response == null || !response.isSuccess()) {
+            String errorMsg = response != null ? response.getErrorMessage() : "No response from server";
+            this.log(Level.SEVERE, rb.getResourceString("login.failed", user) + ": " + errorMsg);
+            return response;
+        }
+
+        // Login successful
+        // this.log(Level.CONFIG, rb.getResourceString("login.success", user));
+        return response;
     }
 
     /**
