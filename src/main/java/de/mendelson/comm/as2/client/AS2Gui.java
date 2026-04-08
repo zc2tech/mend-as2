@@ -458,22 +458,80 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.initializeUINotification();
         this.connect(new InetSocketAddress(host, clientServerCommPort), 5000);
 
-        // Perform authentication
-        LoginResponse loginResponse = this.performLogin(username, password.toCharArray(), "AS2Gui");
-
-        if (loginResponse == null || !loginResponse.isSuccess()) {
-            String errorMsg = loginResponse != null ? loginResponse.getErrorMessage() : "Authentication failed";
-            this.getLogger().severe("SwingUI login failed: " + errorMsg);
-            JOptionPane.showMessageDialog(null,
-                    "Authentication failed: " + errorMsg,
-                    "Login Error",
-                    JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
+        // Perform authentication with retry capability
+        LoginResponse loginResponse = this.performLoginWithRetry(username, password.toCharArray());
 
         // Check if password change required
-        if (loginResponse.isMustChangePassword()) {
+        if (loginResponse != null && loginResponse.isMustChangePassword()) {
             this.showForcedPasswordChangeDialog(loginResponse.getUser());
+        }
+    }
+
+    /**
+     * Perform login with retry capability on failure
+     * Shows a login dialog that allows the user to retry if authentication fails
+     * @param initialUsername Initial username to try
+     * @param initialPassword Initial password to try
+     * @return LoginResponse if successful, null if user cancels
+     */
+    private LoginResponse performLoginWithRetry(String initialUsername, char[] initialPassword) {
+        String username = initialUsername;
+        char[] password = initialPassword;
+
+        while (true) {
+            // Attempt login
+            LoginResponse loginResponse = this.performLogin(username, password, "AS2Gui");
+
+            if (loginResponse != null && loginResponse.isSuccess()) {
+                // Login successful - start the table update thread and initialize status bar
+                GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
+                this.as2StatusBar.initialize(this.getBaseClient(), this);
+                this.as2StatusBar.startConfigurationChecker();
+                return loginResponse;
+            }
+
+            // Login failed - show error and prompt for retry
+            String errorMsg = loginResponse != null ? loginResponse.getErrorMessage() : "Authentication failed";
+            this.getLogger().severe("SwingUI login failed: " + errorMsg);
+
+            // Create a custom dialog with retry/cancel options
+            Object[] options = {"Retry", "Exit"};
+            int choice = JOptionPane.showOptionDialog(
+                null,
+                "Authentication failed: " + errorMsg + "\n\nWould you like to retry?",
+                "Login Error",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.ERROR_MESSAGE,
+                null,
+                options,
+                options[0]
+            );
+
+            if (choice != 0) { // User chose "Exit" or closed dialog
+                System.exit(1);
+            }
+
+            // Show login dialog for retry
+            // Detect display mode from current Look and Feel
+            String currentLaF = UIManager.getLookAndFeel().getClass().getName();
+            String displayMode = DisplayMode.LIGHT; // Default
+            if (currentLaF.contains("Darcula")) {
+                displayMode = DisplayMode.DARK;
+            } else if (currentLaF.contains("HighContrast")) {
+                displayMode = DisplayMode.HICONTRAST;
+            }
+
+            JDialogLogin loginDialog = new JDialogLogin(this, displayMode);
+            loginDialog.setUsername(username); // Pre-fill with previous username
+            loginDialog.setVisible(true);
+
+            if (loginDialog.isCanceled()) {
+                System.exit(1);
+            }
+
+            // Get new credentials from dialog
+            username = loginDialog.getUsername();
+            password = loginDialog.getPassword();
         }
     }
 
@@ -826,12 +884,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
     @Override
     public void loginRequestedFromServer() {
-        super.performLogin(this.username, this.password.toCharArray(), AS2ServerVersion.getFullProductName());
+        // Authentication is now handled by performLoginWithRetry() in constructor
+        // Just initialize the UI components here
         this.as2StatusBar.setConnectedHost(this.host);
-        // start the table update thread
-        GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
-        this.as2StatusBar.initialize(this.getBaseClient(), this);
-        this.as2StatusBar.startConfigurationChecker();
+        // Note: RefreshThread will be started after successful authentication
     }
 
     /**
@@ -2353,41 +2409,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuFileCertificates);
         jMenuFile.add(jSeparator3);
 
-        jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemHTTPServerInfo.setText(this.rb.getResourceString("menu.file.serverinfo"));
-        jMenuItemHTTPServerInfo.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_I));
-        jMenuItemHTTPServerInfo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemHTTPServerInfoActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemHTTPServerInfo);
-
-        jMenuItemSystemEvents.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemSystemEvents.setText(this.rb.getResourceString("menu.file.systemevents"));
-        jMenuItemSystemEvents.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Y));
-        jMenuItemSystemEvents.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemSystemEventsActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemSystemEvents);
-
-        jMenuItemSearchInServerLog.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemSearchInServerLog.setText(this.rb.getResourceString("menu.file.searchinserverlog"));
-        jMenuItemSearchInServerLog.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_F,
-                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemSearchInServerLog.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemSearchInServerLogActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemSearchInServerLog);
-        jMenuFile.add(jSeparator8);
-
         jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFileExit.setText(this.rb.getResourceString("menu.file.exit"));
@@ -2400,6 +2421,74 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuFile.add(jMenuItemFileExit);
 
         jMenuBar.add(jMenuFile);
+
+        // System menu
+        jMenuSystem = new javax.swing.JMenu();
+        jMenuSystem.setText(this.rb.getResourceString("menu.system"));
+
+        jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemHTTPServerInfo.setText(this.rb.getResourceString("menu.system.serverinfo"));
+        jMenuItemHTTPServerInfo.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_I));
+        jMenuItemHTTPServerInfo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemHTTPServerInfoActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemHTTPServerInfo);
+
+        jMenuItemSystemEvents.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemSystemEvents.setText(this.rb.getResourceString("menu.system.events"));
+        jMenuItemSystemEvents.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Y));
+        jMenuItemSystemEvents.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemSystemEventsActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemSystemEvents);
+
+        jMenuItemSearchInServerLog.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemSearchInServerLog.setText(this.rb.getResourceString("menu.system.searchlog"));
+        jMenuItemSearchInServerLog.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_F,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
+        jMenuItemSearchInServerLog.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemSearchInServerLogActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemSearchInServerLog);
+
+        jMenuBar.add(jMenuSystem);
+
+        // Tracker menu
+        jMenuTracker = new javax.swing.JMenu();
+        jMenuItemTrackerConfig = new javax.swing.JMenuItem();
+        jMenuItemTrackerMessage = new javax.swing.JMenuItem();
+
+        jMenuTracker.setText(this.rb.getResourceString("menu.tracker"));
+
+        jMenuItemTrackerConfig.setText(this.rb.getResourceString("menu.tracker.config"));
+        jMenuItemTrackerConfig.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_K));
+        jMenuItemTrackerConfig.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTrackerConfigActionPerformed(evt);
+            }
+        });
+        jMenuTracker.add(jMenuItemTrackerConfig);
+
+        jMenuItemTrackerMessage.setText(this.rb.getResourceString("menu.tracker.message"));
+        jMenuItemTrackerMessage.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_K,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
+        jMenuItemTrackerMessage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTrackerMessageActionPerformed(evt);
+            }
+        });
+        jMenuTracker.add(jMenuItemTrackerMessage);
+
+        jMenuBar.add(jMenuTracker);
 
         // User Preference menu
         jMenuUserPreference.setText(this.rb.getResourceString("menu.userpreference"));
@@ -2500,6 +2589,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
     private void jMenuItemUserPrefHttpAuthActionPerformed(java.awt.event.ActionEvent evt) {
         this.displayHttpAuthPreferences();
+    }
+
+    private void jMenuItemTrackerConfigActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.tracker.gui.JDialogTrackerConfig dialog =
+                new de.mendelson.comm.as2.tracker.gui.JDialogTrackerConfig(this, this.getBaseClient());
+        dialog.setVisible(true);
+    }
+
+    private void jMenuItemTrackerMessageActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.tracker.gui.JDialogTrackerMessage dialog =
+                new de.mendelson.comm.as2.tracker.gui.JDialogTrackerMessage(this, this.getBaseClient(), this.as2StatusBar);
+        dialog.setVisible(true);
     }
 
     private void jMenuItemUserManagementActionPerformed(java.awt.event.ActionEvent evt) {
@@ -2668,8 +2769,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuFile;
     private javax.swing.JMenu jMenuFileCertificates;
+    private javax.swing.JMenu jMenuSystem;
     private javax.swing.JMenu jMenuUserPreference;
     private javax.swing.JMenuItem jMenuItemUserPrefHttpAuth;
+    private javax.swing.JMenu jMenuTracker;
+    private javax.swing.JMenuItem jMenuItemTrackerConfig;
+    private javax.swing.JMenuItem jMenuItemTrackerMessage;
     private javax.swing.JMenuItem jMenuItemCEMManager;
     private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;

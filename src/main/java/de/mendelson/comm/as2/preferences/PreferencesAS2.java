@@ -139,6 +139,18 @@ public class PreferencesAS2 {
     public static final String SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG = "showoverwritelocalstationsecurity";
     public static final String CHECK_REVOCATION_LISTS = "checkrevocationlist";
     public static final String AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES = "autoimportpartnertlscertificates";
+    // Tracker configuration keys
+    public static final String TRACKER_ENABLED = "tracker.enabled";
+    public static final String TRACKER_AUTH_REQUIRED = "tracker.auth.required";
+    public static final String TRACKER_MAX_SIZE_MB = "tracker.maxsize.mb";
+    public static final String TRACKER_RATE_LIMIT_FAILURES = "tracker.ratelimit.failures";
+    public static final String TRACKER_RATE_LIMIT_WINDOW_HOURS = "tracker.ratelimit.window.hours";
+    public static final String TRACKER_RATE_LIMIT_BLOCK_MINUTES = "tracker.ratelimit.block.minutes";
+    // Login rate limiting configuration keys
+    public static final String LOGIN_RATE_LIMIT_ENABLED = "login.ratelimit.enabled";
+    public static final String LOGIN_RATE_LIMIT_FAILURES = "login.ratelimit.failures";
+    public static final String LOGIN_RATE_LIMIT_WINDOW_HOURS = "login.ratelimit.window.hours";
+    public static final String LOGIN_RATE_LIMIT_BLOCK_MINUTES = "login.ratelimit.block.minutes";
 
     private IDBDriverManager dbDriverManager = null;
 
@@ -254,7 +266,17 @@ public class PreferencesAS2 {
                     Map.entry(MAX_INBOUND_CONNECTIONS, "1000"),
                     Map.entry(SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG, "FALSE"),
                     Map.entry(CHECK_REVOCATION_LISTS, "FALSE"),
-                    Map.entry(AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES, "FALSE")
+                    Map.entry(AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES, "FALSE"),
+                    Map.entry(TRACKER_ENABLED, "true"),
+                    Map.entry(TRACKER_AUTH_REQUIRED, "true"),
+                    Map.entry(TRACKER_MAX_SIZE_MB, "2"),
+                    Map.entry(TRACKER_RATE_LIMIT_FAILURES, "3"),
+                    Map.entry(TRACKER_RATE_LIMIT_WINDOW_HOURS, "1"),
+                    Map.entry(TRACKER_RATE_LIMIT_BLOCK_MINUTES, "60"),
+                    Map.entry(LOGIN_RATE_LIMIT_ENABLED, "true"),
+                    Map.entry(LOGIN_RATE_LIMIT_FAILURES, "5"),
+                    Map.entry(LOGIN_RATE_LIMIT_WINDOW_HOURS, "1"),
+                    Map.entry(LOGIN_RATE_LIMIT_BLOCK_MINUTES, "30")
             );
 
     /**

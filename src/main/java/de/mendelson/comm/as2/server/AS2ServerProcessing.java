@@ -128,6 +128,9 @@ import de.mendelson.comm.as2.statistic.clientserver.StatisticDetailResponse;
 import de.mendelson.comm.as2.statistic.clientserver.StatisticOverviewRequest;
 import de.mendelson.comm.as2.statistic.clientserver.StatisticOverviewResponse;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
+import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageRequest;
+import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageResponse;
+import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageHandler;
 import de.mendelson.comm.as2.timing.PartnerTLSCertificateChangedController;
 import de.mendelson.comm.as2.timing.ResourceBundleMessageDeleteController;
 import de.mendelson.util.AS2Tools;
@@ -635,6 +638,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof UserHttpAuthPreferenceSaveRequest msg) {
                 session.write(this.processUserHttpAuthPreferenceSaveRequest(msg));
+                return (true);
+            } else if (message instanceof TrackerMessageRequest) {
+                // Handle tracker message requests
+                TrackerMessageHandler trackerHandler = new TrackerMessageHandler(this.dbDriverManager);
+                List<ClientServerMessage> responses = trackerHandler.processRequest(message);
+                for (ClientServerMessage response : responses) {
+                    session.write(response);
+                }
                 return (true);
             }
         } catch (Throwable e) {

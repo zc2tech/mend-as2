@@ -29,6 +29,21 @@
         <url-pattern>/HttpReceiver</url-pattern>
     </servlet-mapping>
 
+    <!-- Tracker Endpoint -->
+    <servlet>
+        <servlet-name>TrackerServlet</servlet-name>
+        <servlet-class>de.mendelson.comm.as2.tracker.TrackerServlet</servlet-class>
+        <load-on-startup>2</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TrackerServlet</servlet-name>
+        <url-pattern>/tracker</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>TrackerServlet</servlet-name>
+        <url-pattern>/tracker/*</url-pattern>
+    </servlet-mapping>
+
     <!-- REST API (Jersey) -->
     <servlet>
         <servlet-name>REST API</servlet-name>

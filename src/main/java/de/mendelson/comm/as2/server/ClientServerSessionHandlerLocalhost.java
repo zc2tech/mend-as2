@@ -1,5 +1,7 @@
 package de.mendelson.comm.as2.server;
 
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.security.LoginRateLimiter;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.MecResourceBundle;
@@ -14,6 +16,7 @@ import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.security.PBKDF2;
 import de.mendelson.util.systemevents.SystemEventManager;
 import java.net.InetSocketAddress;
+import java.sql.Connection;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -97,14 +100,11 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             LoginResponse response = this.processLoginRequest(request, session);
             session.write(response);
 
-            if (!response.isSuccess()) {
-                // Authentication failed - close connection
-                this.log(Level.WARNING, "Authentication failed for user: " + request.getUsername());
-                session.close(false);
-            } else {
-                // Mark session as authenticated
+            if (response.isSuccess()) {
+                // Mark session as authenticated on successful login
                 session.setAttribute(SESSION_ATTRIB_AUTHENTICATED, Boolean.TRUE);
             }
+            // Note: Do NOT close session on failed login - allow retry
             return;
         }
 
@@ -126,10 +126,38 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
      */
     private LoginResponse processLoginRequest(LoginRequest request, IoSession session) {
         LoginResponse response = new LoginResponse(request);
+        Connection connection = null;
+
+        // Get remote address for rate limiting
+        InetSocketAddress remoteAddress = (InetSocketAddress) session.getRemoteAddress();
+        String remoteAddr = remoteAddress != null ? remoteAddress.getAddress().getHostAddress() : "unknown";
 
         try {
+            // Get database connection for rate limiting
+            connection = this.dbDriverManager.getConnectionWithoutErrorHandling(
+                    IDBDriverManager.DB_RUNTIME);
+            PreferencesAS2 prefs = new PreferencesAS2(this.dbDriverManager);
+
+            // Check if IP is blocked due to rate limiting
+            if (LoginRateLimiter.isBlocked(remoteAddr)) {
+                long remainingSeconds = LoginRateLimiter.getBlockRemainingSeconds(remoteAddr);
+                response.setSuccess(false);
+                response.setErrorMessage("Too many failed login attempts. Access temporarily blocked for " +
+                        remainingSeconds + " seconds.");
+                this.log(Level.WARNING, "Blocked SwingUI login attempt from " + remoteAddr +
+                        " - " + remainingSeconds + "s remaining");
+                return response;
+            }
+
             // For SwingUI: Only allow "admin" user
             if (!"admin".equals(request.getUsername())) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, request.getUsername(),
+                        LoginRateLimiter.SOURCE_SWING_UI, null, connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 response.setSuccess(false);
                 response.setErrorMessage("Only 'admin' user can access SwingUI");
                 this.log(Level.WARNING, "SwingUI login rejected: user '" + request.getUsername() + "' not allowed");
@@ -141,6 +169,13 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             WebUIUser dbUser = userDB.getUserByUsername(request.getUsername());
 
             if (dbUser == null || !dbUser.isEnabled()) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, request.getUsername(),
+                        LoginRateLimiter.SOURCE_SWING_UI, null, connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 response.setSuccess(false);
                 response.setErrorMessage("Invalid credentials or user disabled");
                 this.log(Level.WARNING, "SwingUI login failed: user not found or disabled");
@@ -154,6 +189,13 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             );
 
             if (!passwordValid) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, request.getUsername(),
+                        LoginRateLimiter.SOURCE_SWING_UI, null, connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 response.setSuccess(false);
                 response.setErrorMessage("Invalid credentials");
                 this.log(Level.WARNING, "SwingUI login failed: invalid password for user '" + request.getUsername() + "'");
@@ -167,17 +209,28 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             // Store user in session attributes
             session.setAttribute(SESSION_ATTRIB_USER, user.getName());
             session.setAttribute(SESSION_ATTRIB_CLIENT_TYPE, Integer.valueOf(BaseClient.CLIENT_RICH_CLIENT));
+            // Mark session as authenticated
+            session.setAttribute(SESSION_ATTRIB_AUTHENTICATED, Boolean.TRUE);
 
             response.setSuccess(true);
             response.setUser(user);
             response.setMustChangePassword(dbUser.isMustChangePassword());
 
-            this.log(Level.INFO, "SwingUI login successful: " + request.getUsername());
+            this.log(Level.INFO, "SwingUI login successful: " + request.getUsername() +
+                    " from " + remoteAddr);
 
         } catch (Exception e) {
             response.setSuccess(false);
             response.setErrorMessage("Authentication error: " + e.getMessage());
             this.log(Level.SEVERE, "SwingUI login error: " + e.getMessage());
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    this.log(Level.WARNING, "Failed to close database connection: " + e.getMessage());
+                }
+            }
         }
 
         return response;

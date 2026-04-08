@@ -91,6 +91,59 @@ CREATE TABLE payload (
 
 CREATE INDEX idx_payload_messageid ON payload(messageid);
 
+-- Tracker message table (drop first if exists from previous run)
+DROP TABLE IF EXISTS tracker_auth_failure CASCADE;
+DROP TABLE IF EXISTS tracker_message CASCADE;
+
+CREATE TABLE tracker_message (
+  id SERIAL PRIMARY KEY,
+  messageid VARCHAR(255) NOT NULL,
+  tracker_id VARCHAR(255) UNIQUE NOT NULL,
+  remote_addr VARCHAR(255),
+  user_agent VARCHAR(512),
+  content_type VARCHAR(255),
+  content_size INTEGER NOT NULL,
+  initdateutc TIMESTAMP NOT NULL,
+  auth_status INTEGER DEFAULT 0,
+  auth_user VARCHAR(255),
+  rawfilename VARCHAR(512) NOT NULL,
+  request_headers TEXT
+);
+
+CREATE INDEX idx_tracker_message_id ON tracker_message(messageid);
+CREATE INDEX idx_tracker_tracker_id ON tracker_message(tracker_id);
+CREATE INDEX idx_tracker_initdate ON tracker_message(initdateutc);
+CREATE INDEX idx_tracker_auth_status ON tracker_message(auth_status);
+CREATE INDEX idx_tracker_remote_addr ON tracker_message(remote_addr);
+
+-- Authentication failure tracking table
+CREATE TABLE tracker_auth_failure (
+  id SERIAL PRIMARY KEY,
+  remote_addr VARCHAR(255) NOT NULL,
+  failure_time TIMESTAMP NOT NULL,
+  user_agent VARCHAR(512),
+  attempted_user VARCHAR(255)
+);
+
+CREATE INDEX idx_tracker_auth_failure_addr ON tracker_auth_failure(remote_addr);
+CREATE INDEX idx_tracker_auth_failure_time ON tracker_auth_failure(failure_time);
+
+-- Login authentication failure tracking table
+DROP TABLE IF EXISTS login_auth_failure CASCADE;
+
+CREATE TABLE login_auth_failure (
+  id SERIAL PRIMARY KEY,
+  remote_addr VARCHAR(255) NOT NULL,
+  failure_time TIMESTAMP NOT NULL,
+  attempted_user VARCHAR(255),
+  source VARCHAR(50),
+  user_agent VARCHAR(512)
+);
+
+CREATE INDEX idx_login_auth_failure_addr ON login_auth_failure(remote_addr);
+CREATE INDEX idx_login_auth_failure_time ON login_auth_failure(failure_time);
+CREATE INDEX idx_login_auth_failure_source ON login_auth_failure(source);
+
 -- Statistics overview table
 CREATE TABLE statisticoverview (
   relationshipid VARCHAR(255) PRIMARY KEY,

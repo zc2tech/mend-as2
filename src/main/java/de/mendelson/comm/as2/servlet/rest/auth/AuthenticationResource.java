@@ -21,14 +21,19 @@
 
 package de.mendelson.comm.as2.servlet.rest.auth;
 
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.security.LoginRateLimiter;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.security.PBKDF2;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import java.sql.Connection;
 import java.util.logging.Logger;
 
 /**
@@ -70,18 +75,47 @@ public class AuthenticationResource {
     @Path("/login")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response login(LoginRequest loginRequest) {
+    public Response login(LoginRequest loginRequest, @Context HttpServletRequest httpRequest) {
+        String remoteAddr = httpRequest.getRemoteAddr();
+        Connection connection = null;
+
         try {
-            UserManagementAccessDB userMgmt = getUserManagementAccess();
-            if (userMgmt == null) {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("Authentication service not available"))
                         .build();
             }
 
+            // Get database connection for rate limiting
+            connection = processing.getDBDriverManager().getConnectionWithoutErrorHandling(
+                    IDBDriverManager.DB_RUNTIME);
+            PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
+
+            // Check if IP is blocked due to rate limiting
+            if (LoginRateLimiter.isBlocked(remoteAddr)) {
+                long remainingSeconds = LoginRateLimiter.getBlockRemainingSeconds(remoteAddr);
+                logger.warning("Blocked WebUI login attempt from " + remoteAddr +
+                              " - " + remainingSeconds + "s remaining");
+                return Response.status(Response.Status.TOO_MANY_REQUESTS)
+                        .entity(new ErrorResponse("Too many failed login attempts. Access temporarily blocked for " +
+                                remainingSeconds + " seconds."))
+                        .build();
+            }
+
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                    processing.getDBDriverManager(), logger);
+
             // Validate credentials - get user from new user management system
             WebUIUser user = userMgmt.getUserByUsername(loginRequest.getUsername());
             if (user == null) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, loginRequest.getUsername(),
+                        LoginRateLimiter.SOURCE_WEB_UI, httpRequest.getHeader("User-Agent"), connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(new ErrorResponse("Invalid username or password"))
                         .build();
@@ -89,6 +123,13 @@ public class AuthenticationResource {
 
             // Check if user is enabled
             if (!user.isEnabled()) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, loginRequest.getUsername(),
+                        LoginRateLimiter.SOURCE_WEB_UI, httpRequest.getHeader("User-Agent"), connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(new ErrorResponse("User account is disabled"))
                         .build();
@@ -101,18 +142,28 @@ public class AuthenticationResource {
             );
 
             if (!passwordValid) {
+                // Record failed attempt
+                LoginRateLimiter.recordAuthFailure(remoteAddr, loginRequest.getUsername(),
+                        LoginRateLimiter.SOURCE_WEB_UI, httpRequest.getHeader("User-Agent"), connection);
+
+                // Check if should block after this failure
+                LoginRateLimiter.checkAndBlock(remoteAddr, connection, prefs);
+
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity(new ErrorResponse("Invalid username or password"))
                         .build();
             }
 
-            // Update last login timestamp
+            // Successful login - update last login timestamp
             try {
                 userMgmt.updateLastLogin(loginRequest.getUsername());
             } catch (Exception e) {
                 logger.warning("Failed to update last login time: " + e.getMessage());
                 // Don't fail login if timestamp update fails
             }
+
+            logger.info("Successful WebUI login: user=" + loginRequest.getUsername() +
+                       ", ip=" + remoteAddr);
 
             // Generate tokens
             String accessToken = jwtTokenProvider.generateAccessToken(loginRequest.getUsername());
@@ -150,6 +201,14 @@ public class AuthenticationResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse("Authentication error"))
                     .build();
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (Exception e) {
+                    logger.warning("Failed to close database connection: " + e.getMessage());
+                }
+            }
         }
     }
 

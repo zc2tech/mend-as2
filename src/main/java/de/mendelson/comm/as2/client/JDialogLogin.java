@@ -189,6 +189,25 @@ public class JDialogLogin extends JDialog {
     }
 
     /**
+     * Set username (pre-fill the username field)
+     * Note: For SwingUI, this will always be "admin" since only admin is allowed
+     * @param username Username to set
+     */
+    public void setUsername(String username) {
+        if (textUsername != null) {
+            textUsername.setText(username);
+        }
+    }
+
+    /**
+     * Check if login was canceled (user closed dialog without logging in)
+     * @return true if canceled, false if login was successful
+     */
+    public boolean isCanceled() {
+        return !loginSuccessful;
+    }
+
+    /**
      * Clear password from memory for security
      */
     public void clearPassword() {
