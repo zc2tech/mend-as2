@@ -26,6 +26,8 @@ import de.mendelson.comm.as2.usermanagement.clientserver.UserPasswordChangeReque
 import de.mendelson.comm.as2.usermanagement.clientserver.UserPasswordChangeResponse;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
+import de.mendelson.util.WindowTitleUtil;
+import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -47,12 +49,12 @@ public class JDialogChangePassword extends JDialog {
     private JButton buttonCancel;
 
     public JDialogChangePassword(JDialog parent, GUIClient guiClient, WebUIUser user) {
-        super(parent, "Change Password - " + user.getUsername(), true);
+        super(parent, WindowTitleUtil.buildTitle("Change Password - " + user.getUsername()), true);
         this.guiClient = guiClient;
         this.user = user;
         this.initComponents();
         this.setupKeyboardShortcuts();
-        this.setSize(400, 200);
+        this.setSize(400, 250);  // Increased height to accommodate logo
         this.setLocationRelativeTo(parent);
     }
 
@@ -88,6 +90,30 @@ public class JDialogChangePassword extends JDialog {
 
     private void initComponents() {
         this.setLayout(new BorderLayout(10, 10));
+
+        // Logo panel at the top (similar to login dialog)
+        JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        logoPanel.setBackground(Color.WHITE);
+
+        String logoPath = WindowTitleUtil.isTestMode()
+            ? "/de/mendelson/comm/as2/client/logo_open_source_with_text_test.svg"
+            : "/de/mendelson/comm/as2/client/logo_open_source_with_text.svg";
+
+        try {
+            MendelsonMultiResolutionImage logoImage = MendelsonMultiResolutionImage.fromSVG(
+                logoPath,
+                64,
+                MendelsonMultiResolutionImage.SVGScalingOption.KEEP_HEIGHT
+            );
+            ImageIcon icon = new ImageIcon(logoImage.toMinResolution(64));
+            JLabel logoLabel = new JLabel(icon);
+            logoPanel.add(logoLabel);
+        } catch (Exception e) {
+            // If logo can't be loaded, continue without it
+            System.err.println("Could not load logo: " + e.getMessage());
+        }
+
+        this.add(logoPanel, BorderLayout.NORTH);
 
         // Form panel
         JPanel formPanel = new JPanel(new GridBagLayout());

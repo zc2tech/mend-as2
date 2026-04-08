@@ -86,6 +86,9 @@ public class AS2Config {
         if (envTestMode != null) {
             properties.setProperty(PROP_TEST_MODE, envTestMode);
         }
+
+        // Set system property so WindowTitleUtil can access test mode setting
+        System.setProperty(PROP_TEST_MODE, properties.getProperty(PROP_TEST_MODE, "false"));
     }
 
     /**

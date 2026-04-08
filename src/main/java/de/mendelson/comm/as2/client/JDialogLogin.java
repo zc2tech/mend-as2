@@ -2,6 +2,7 @@ package de.mendelson.comm.as2.client;
 
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.util.MendelsonMultiResolutionImage;
+import de.mendelson.util.WindowTitleUtil;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -31,7 +32,7 @@ public class JDialogLogin extends JDialog {
     private char[] password = null;
 
     public JDialogLogin(JFrame parent, String displayMode) {
-        super(parent, "Login - " + AS2ServerVersion.getProductName(), true);
+        super(parent, WindowTitleUtil.buildTitle("Login - " + AS2ServerVersion.getProductName()), true);
         this.initComponents(displayMode);
         this.setLocationRelativeTo(parent);
     }
@@ -47,9 +48,12 @@ public class JDialogLogin extends JDialog {
         // Logo panel
         JPanel logoPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         try {
-            // Load AS2 logo - use the open source logo
+            // Load AS2 logo - use test mode logo if in test mode
+            String logoPath = WindowTitleUtil.isTestMode()
+                ? "/de/mendelson/comm/as2/client/logo_open_source_with_text_test.svg"
+                : "/de/mendelson/comm/as2/client/logo_open_source_with_text.svg";
             MendelsonMultiResolutionImage logoImage = MendelsonMultiResolutionImage.fromSVG(
-                "/de/mendelson/comm/as2/client/logo_open_source_with_text.svg",
+                logoPath,
                 64,
                 MendelsonMultiResolutionImage.SVGScalingOption.KEEP_HEIGHT
             );

@@ -917,14 +917,14 @@ For testing configurations, development, or running test and production instance
 
 **Windows:**
 ```batch
-start.bat -Dmend.as2.testmode=true
-start-headless.bat -Dmend.as2.testmode=true
+start.bat -Das2.test.mode=true
+start-headless.bat -Das2.test.mode=true
 ```
 
 **Linux/Mac:**
 ```bash
-./start.sh -Dmend.as2.testmode=true
-./start-headless.sh -Dmend.as2.testmode=true
+./start.sh -Das2.test.mode=true
+./start-headless.sh -Das2.test.mode=true
 ```
 
 ### Using Environment Variable

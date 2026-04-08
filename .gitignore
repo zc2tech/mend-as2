@@ -13,6 +13,7 @@ messages/
 *.key
 temp/
 *.lock
+testpod/
 
 # Frontend
 src/main/webapp/admin/node_modules/

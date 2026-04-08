@@ -8,6 +8,7 @@ import de.mendelson.comm.as2.server.ServerAlreadyRunningException;
 import de.mendelson.util.DisplayMode;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.Splash;
+import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.font.FontUtil;
 import de.mendelson.util.security.BCCryptoHelper;
 import de.mendelson.util.systemevents.SystemEvent;
@@ -185,7 +186,11 @@ public class AS2 {
         // Create splash screen only in GUI mode
         Splash splash = null;
         if (startGUI) {
-            splash = new Splash("/de/mendelson/comm/as2/client/splash_mend_as2.svg", 330);
+            // Use test mode splash if in test mode
+            String splashImage = WindowTitleUtil.isTestMode()
+                ? "/de/mendelson/comm/as2/client/splash_mend_as2_test.svg"
+                : "/de/mendelson/comm/as2/client/splash_mend_as2.svg";
+            splash = new Splash(splashImage, 330);
             splash.setTextAntiAliasing(false);
             //dark grey
             Color textColor = FontUtil.getFontColor(FontUtil.PRODUCT_OFTP2_COMMUNITY);

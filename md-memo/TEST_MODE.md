@@ -26,15 +26,15 @@ Pass the system property directly when starting:
 
 ```bash
 # Linux/Mac
-./start.sh -Dmend.as2.testmode=true
-./start-headless.sh -Dmend.as2.testmode=true
+./start.sh -Das2.test.mode=true
+./start-headless.sh -Das2.test.mode=true
 
 # Windows
-start.bat -Dmend.as2.testmode=true
-start-headless.bat -Dmend.as2.testmode=true
+start.bat -Das2.test.mode=true
+start-headless.bat -Das2.test.mode=true
 
 # Or with java directly:
-java -Dmend.as2.testmode=true -jar mend-as2-1.1.0.jar
+java -Das2.test.mode=true -jar mend-as2-1.1.0.jar
 ```
 
 This method is ideal for quick testing and doesn't require editing configuration files.
