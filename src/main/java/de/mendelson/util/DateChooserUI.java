@@ -55,7 +55,7 @@ public class DateChooserUI extends PanelUI {
             panelBackgroundColor = Color.LIGHT_GRAY;
         }
         JDateChooser datechooser = (JDateChooser) component;
-        datechooser.setPreferredSize(new Dimension(110, datechooser.getPreferredSize().height));
+        datechooser.setPreferredSize(new Dimension(120, datechooser.getPreferredSize().height));
         JButton selectionButton = datechooser.getCalendarButton();
         selectionButton.setIcon(new ImageIcon(IMAGE_CALENDAR.toMinResolution(IMAGE_HEIGHT)));
         JCalendar calendar = datechooser.getJCalendar();
