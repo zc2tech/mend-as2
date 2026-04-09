@@ -1,6 +1,5 @@
 package de.mendelson.util.clientserver.clients.preferences;
 
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *

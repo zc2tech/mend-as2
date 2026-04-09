@@ -96,9 +96,9 @@ public class KeystoreStorageImplPKCS11 implements KeystoreStorage {
         for (KeystoreCertificate oldEntry : oldList) {
             boolean oldKeyShouldBeDeleted = true;
             if (oldEntry.getIsKeyPair()) {
-                Key oldKey = oldEntry.getKey();
+                Key oldKey = oldEntry.getPrivateKey();
                 for (KeystoreCertificate newEntry : newList) {
-                    if (newEntry.getKey() == oldKey) {
+                    if (newEntry.getPrivateKey() == oldKey) {
                         oldKeyShouldBeDeleted = false;
                         //is there a rename?
                         if (!oldEntry.getAlias().equals(newEntry.getAlias())) {
@@ -127,8 +127,8 @@ public class KeystoreStorageImplPKCS11 implements KeystoreStorage {
                     this.keystore.setCertificateEntry(certificate.getAlias(), certificate.getX509Certificate());
                 } else {
                     //do import a new key. All keys are new that are no PKCS#11 keys
-                    if (!certificate.getKey().getClass().getName().contains("P11PrivateKey")) {
-                        this.keystore.setKeyEntry(certificate.getAlias(), certificate.getKey(), null,
+                    if (!certificate.getPrivateKey().getClass().getName().contains("P11PrivateKey")) {
+                        this.keystore.setKeyEntry(certificate.getAlias(), certificate.getPrivateKey(), null,
                                 certificate.getCertificateChain());
                     }
                 }

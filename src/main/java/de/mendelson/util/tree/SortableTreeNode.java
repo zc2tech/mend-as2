@@ -34,6 +34,7 @@ public class SortableTreeNode extends DefaultMutableTreeNode {
     /**Add a new child to the node
      *@param newChild Child to add to this node
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void add(SortableTreeNode newChild) {
         int count = this.getChildCount();
         Comparable newObject = (Comparable) newChild.getUserObject();

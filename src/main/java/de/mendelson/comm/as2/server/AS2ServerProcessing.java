@@ -2852,7 +2852,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      */
     private long computeRawHeaderSize(Properties header) {
         long size = 0;
-        Enumeration enumeration = header.propertyNames();
+        Enumeration<?> enumeration = header.propertyNames();
         while (enumeration.hasMoreElements()) {
             String key = (String) enumeration.nextElement();
             //key + "="
@@ -3352,8 +3352,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(this.dbDriverManager, this.logger);
 
             // Get all partners
-            PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
-            List<Partner> allPartners = partnerDB.getAllPartner();
+            // PartnerAccessDB partnerDB = new PartnerAccessDB(this.dbDriverManager);
+            // List<Partner> allPartners = partnerDB.getAllPartner();
 
             // Get existing preferences for user
             List<UserHttpAuthPreference> existingPrefs = prefDB.getPreferencesForUser(request.getUserId());

@@ -112,7 +112,7 @@ public class KeystoreStorageImplFile implements KeystoreStorage {
                     if (this.getKeystoreStorageType().equals(KeystoreStorageImplFile.KEYSTORE_STORAGE_TYPE_JKS)) {
                         keyPass = this.keystorePass;
                     }
-                    this.keystore.setKeyEntry(certificate.getAlias(), certificate.getKey(), keyPass,
+                    this.keystore.setKeyEntry(certificate.getAlias(), certificate.getPrivateKey(), keyPass,
                             certificate.getCertificateChain());
                 } else {
                     this.keystore.setCertificateEntry(certificate.getAlias(), certificate.getX509Certificate());

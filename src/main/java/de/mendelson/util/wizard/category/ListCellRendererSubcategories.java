@@ -14,7 +14,7 @@ import javax.swing.border.EmptyBorder;
  * @author S.Heller
  * @version $Revision: 8 $
  */
-public class ListCellRendererSubcategories extends JLabel implements ListCellRenderer {
+public class ListCellRendererSubcategories extends JLabel implements ListCellRenderer<Subcategory> {
 
     /**
      * Constructs a default renderer object for an item
@@ -167,7 +167,7 @@ public class ListCellRendererSubcategories extends JLabel implements ListCellRen
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<? extends Subcategory> list, Subcategory value, int index, boolean isSelected, boolean cellHasFocus) {
         if (isSelected) {
             this.setBackground(list.getSelectionBackground());
             this.setForeground(list.getSelectionForeground());
@@ -178,10 +178,9 @@ public class ListCellRendererSubcategories extends JLabel implements ListCellRen
         this.setEnabled(list.isEnabled());
         this.setFont(list.getFont());
 
-        Subcategory subcategory = (Subcategory) value;
         //show label, allow multiline labels
-        this.setText(this.title2HTML(subcategory.getTitle()));
-        this.setIcon(subcategory.getIcon());
+        this.setText(this.title2HTML(value.getTitle()));
+        this.setIcon(value.getIcon());
         //Set the position of its text, relative to its icon:
         this.setVerticalTextPosition(JLabel.BOTTOM);
         this.setHorizontalTextPosition(JLabel.CENTER);

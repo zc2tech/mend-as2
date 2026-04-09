@@ -176,7 +176,7 @@ public class LogConsolePanel extends JPanel implements ClipboardOwner {
         jTextPane = new javax.swing.JTextPane();
 
         jMenuItemClear.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/log/panel/missing_image16x16.gif"))); // NOI18N
-        jMenuItemClear.setText(this.rb.getResourceString( "label.clear" ));
+        jMenuItemClear.setText(LogConsolePanel.rb.getResourceString( "label.clear" ));
         jMenuItemClear.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemClearActionPerformed(evt);
@@ -186,7 +186,7 @@ public class LogConsolePanel extends JPanel implements ClipboardOwner {
         jPopupMenu.add(jSeparator1);
 
         jMenuItemCopyToClipBoard.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/log/panel/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCopyToClipBoard.setText(this.rb.getResourceString( "label.toclipboard" ));
+        jMenuItemCopyToClipBoard.setText(LogConsolePanel.rb.getResourceString( "label.toclipboard" ));
         jMenuItemCopyToClipBoard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCopyToClipBoardActionPerformed(evt);

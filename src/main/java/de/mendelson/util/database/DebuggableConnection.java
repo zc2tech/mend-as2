@@ -145,7 +145,7 @@ public class DebuggableConnection implements Connection {
     }
 
     @Override
-    public Map getTypeMap() throws SQLException {
+    public Map<String, Class<?>> getTypeMap() throws SQLException {
         return (this.connection.getTypeMap());
     }
 
@@ -301,7 +301,7 @@ public class DebuggableConnection implements Connection {
     }
 
     @Override
-    public void setTypeMap(Map map) throws SQLException {
+    public void setTypeMap(Map<String, Class<?>> map) throws SQLException {
         this.connection.setTypeMap(map);
     }
 

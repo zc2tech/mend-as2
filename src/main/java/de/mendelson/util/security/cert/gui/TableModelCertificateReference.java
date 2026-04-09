@@ -1,13 +1,10 @@
 package de.mendelson.util.security.cert.gui;
 
-import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.security.cert.CertificateInUseInfo;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 import javax.swing.ImageIcon;
 import javax.swing.table.AbstractTableModel;
 
@@ -125,8 +122,8 @@ public class TableModelCertificateReference extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
-        return (new Class[]{
+    public Class<?> getColumnClass(int col) {
+        return (new Class<?>[]{
             ImageIcon.class,
             String.class,
             String.class,}[col]);

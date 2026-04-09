@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;

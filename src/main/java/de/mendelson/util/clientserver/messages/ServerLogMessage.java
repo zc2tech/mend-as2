@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.messages;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.logging.Level;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -17,7 +16,7 @@ import java.util.logging.Level;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class ServerLogMessage extends ClientServerMessage implements Serializable{
+public class ServerLogMessage extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     private Level level = Level.INFO;

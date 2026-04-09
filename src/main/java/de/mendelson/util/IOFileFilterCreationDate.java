@@ -21,7 +21,7 @@ import java.time.Instant;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class IOFileFilterCreationDate implements DirectoryStream.Filter {
+public class IOFileFilterCreationDate implements DirectoryStream.Filter<Path> {
 
     public static final int MODE_OLDER_THAN = 1;
     public static final int MODE_NOT_OLDER_THAN = 2;
@@ -45,30 +45,29 @@ public class IOFileFilterCreationDate implements DirectoryStream.Filter {
      * Returns if this file filer accepts the passed file
      */
     @Override
-    public boolean accept(Object entry) {
-        if (entry == null || !(entry instanceof Path)) {
+    public boolean accept(Path entry) {
+        if (entry == null) {
             return (false);
         }
-        Path path = (Path) entry;
-        if( path.getFileName().toString().equals( ".")
-                || path.getFileName().toString().equals( "..")){
+        if( entry.getFileName().toString().equals( ".")
+                || entry.getFileName().toString().equals( "..")){
             return( false );
         }
         if (!this.includeDirecories) {
-            if (Files.isDirectory(path)) {
+            if (Files.isDirectory(entry)) {
                 return (false);
             }
         }
         if( !this.includeFiles){
-            if (!Files.isDirectory(path)) {
+            if (!Files.isDirectory(entry)) {
                 return (false);
             }
         }
         try {
-            BasicFileAttributes view = Files.getFileAttributeView(path, BasicFileAttributeView.class).readAttributes();
+            BasicFileAttributes view = Files.getFileAttributeView(entry, BasicFileAttributeView.class).readAttributes();
             FileTime fileTime = view.creationTime();
             boolean acceptEntry = false;
-            if (this.mode == MODE_OLDER_THAN) {                
+            if (this.mode == MODE_OLDER_THAN) {
                 acceptEntry = fileTime.toInstant().isBefore(this.instantToCompare);
             } else {
                 acceptEntry = fileTime.toInstant().isAfter(this.instantToCompare);

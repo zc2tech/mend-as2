@@ -352,7 +352,7 @@ public class PartnerResource {
                 // Extract user IDs
                 Object userIdsObj = visibilityData.get("userIds");
                 if (userIdsObj instanceof List) {
-                    for (Object id : (List) userIdsObj) {
+                    for (Object id : (List<?>) userIdsObj) {
                         if (id instanceof Number) {
                             userIds.add(((Number) id).intValue());
                         }

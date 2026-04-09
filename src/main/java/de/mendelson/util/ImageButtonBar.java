@@ -229,9 +229,6 @@ public class ImageButtonBar extends JPanel {
             return initialSelected;
         }
 
-        public void setInitialSelected(boolean initialSelected) {
-            this.initialSelected = initialSelected;
-        }
 
         public void setVisible(boolean flag) {
             for (JComponent component : this.components) {

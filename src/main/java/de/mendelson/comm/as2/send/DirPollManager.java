@@ -180,7 +180,7 @@ public class DirPollManager {
                                 this.mapPollThread.remove(id);
                                 //restart the poll thread with the new values
                                 if (receiver.isEnableDirPoll()) {
-                                    DirPollThread restartPoll = this.addPartnerPollThread(sender, receiver);
+                                    this.addPartnerPollThread(sender, receiver);
                                 } else {
                                     //no restart - means it has been stopped/deleted
                                     pollStopLines.add(thread.getLogLine());
@@ -289,7 +289,7 @@ public class DirPollManager {
         synchronized (this.mapPollThread) {
             this.mapPollThread.put(localStation.getDBId() + "_" + partner.getDBId(), thread);
             thread.initializeThread();
-            ScheduledFuture future = this.scheduledExecutor.scheduleWithFixedDelay(thread, 5000,
+            ScheduledFuture<?> future = this.scheduledExecutor.scheduleWithFixedDelay(thread, 5000,
                     thread.getPollIntervalInMS(), TimeUnit.MILLISECONDS);
             //set the future to the thread to have the possibility to cancel it later and 
             //remove it from the schedulers internal queue

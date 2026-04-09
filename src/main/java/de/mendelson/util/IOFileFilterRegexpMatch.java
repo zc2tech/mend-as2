@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class IOFileFilterRegexpMatch implements DirectoryStream.Filter {
+public class IOFileFilterRegexpMatch implements DirectoryStream.Filter<Path> {
 
     /**
      * List of matching conditions, the file will go through if it matches any
@@ -71,12 +71,11 @@ public class IOFileFilterRegexpMatch implements DirectoryStream.Filter {
      * Returns if this file filer accepts the passed file
      */
     @Override
-    public boolean accept(Object entry) {
-        if( entry == null || !(entry instanceof Path) ){
+    public boolean accept(Path entry) {
+        if( entry == null ){
             return( false );
         }
-        Path path = (Path) entry;
-        String filename = path.getFileName().toString();
+        String filename = entry.getFileName().toString();
         boolean accepted = this.matchingList.isEmpty();
         //check for matching patterns
         for (int i = 0; i < this.matchingList.size(); i++) {

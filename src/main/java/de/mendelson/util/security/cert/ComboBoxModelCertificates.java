@@ -17,7 +17,7 @@ import javax.swing.DefaultComboBoxModel;
  * @author S.Heller
  * @version $Revision: 1 $
  */
-public class ComboBoxModelCertificates extends DefaultComboBoxModel{
+public class ComboBoxModelCertificates extends DefaultComboBoxModel<Object>{
 
     public static final int TYPE_CERTIFICATES = 1;
     public static final int TYPE_KEYS = 2;

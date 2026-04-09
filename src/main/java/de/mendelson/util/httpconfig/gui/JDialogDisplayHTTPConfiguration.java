@@ -1,7 +1,6 @@
 package de.mendelson.util.httpconfig.gui;
 
 import de.mendelson.util.IStatusBar;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -199,7 +198,7 @@ public class JDialogDisplayHTTPConfiguration extends JDialog {
         jTextAreaMisc.setRows(5);
         jScrollPaneConfigMisc.setViewportView(jTextAreaMisc);
 
-        jTabbedPaneConfig.addTab(this.rb.getResourceString( "tab.misc")
+        jTabbedPaneConfig.addTab(JDialogDisplayHTTPConfiguration.rb.getResourceString( "tab.misc")
             , jScrollPaneConfigMisc);
 
         jTextAreaCipher.setEditable(false);
@@ -207,14 +206,14 @@ public class JDialogDisplayHTTPConfiguration extends JDialog {
         jTextAreaCipher.setRows(5);
         jScrollPaneCipher.setViewportView(jTextAreaCipher);
 
-        jTabbedPaneConfig.addTab(this.rb.getResourceString( "tab.cipher"), jScrollPaneCipher);
+        jTabbedPaneConfig.addTab(JDialogDisplayHTTPConfiguration.rb.getResourceString( "tab.cipher"), jScrollPaneCipher);
 
         jTextAreaProtocols.setEditable(false);
         jTextAreaProtocols.setColumns(20);
         jTextAreaProtocols.setRows(5);
         jScrollPaneProtocols.setViewportView(jTextAreaProtocols);
 
-        jTabbedPaneConfig.addTab(this.rb.getResourceString( "tab.protocols"), jScrollPaneProtocols);
+        jTabbedPaneConfig.addTab(JDialogDisplayHTTPConfiguration.rb.getResourceString( "tab.protocols"), jScrollPaneProtocols);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
@@ -262,7 +261,7 @@ public class JDialogDisplayHTTPConfiguration extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogDisplayHTTPConfiguration.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);

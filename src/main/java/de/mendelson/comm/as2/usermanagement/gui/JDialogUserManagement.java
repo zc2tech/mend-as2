@@ -24,7 +24,6 @@ package de.mendelson.comm.as2.usermanagement.gui;
 import de.mendelson.comm.as2.usermanagement.Role;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.comm.as2.usermanagement.clientserver.*;
-import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import java.awt.*;
@@ -33,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.swing.*;
@@ -308,18 +305,6 @@ public class JDialogUserManagement extends JDialog {
             logger.warning("Could not load roles for user " + userId);
         }
         return "";
-    }
-
-    private void setButtonsEnabled(boolean enabled) {
-        buttonCreate.setEnabled(enabled);
-        buttonRefresh.setEnabled(enabled);
-        buttonClose.setEnabled(enabled);
-        // Edit, Delete, ChangePassword remain controlled by selection
-        if (!enabled) {
-            buttonEdit.setEnabled(false);
-            buttonDelete.setEnabled(false);
-            buttonChangePassword.setEnabled(false);
-        }
     }
 
     private void createUser() {

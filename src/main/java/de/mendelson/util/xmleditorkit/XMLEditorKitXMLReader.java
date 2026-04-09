@@ -14,7 +14,6 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -301,46 +300,4 @@ public class XMLEditorKitXMLReader {
         return offs - pos;
     }
 
-    private static void debugPrintNode(Node node, String indent) {
-        switch (node.getNodeType()) {
-            case Node.DOCUMENT_NODE:
-                System.out.println("<xml version=\"1.0\">\n");
-                // recurse on each child
-                NodeList nodes = node.getChildNodes();
-                if (nodes != null) {
-                    for (int i = 0; i < nodes.getLength(); i++) {
-                        debugPrintNode(nodes.item(i), "");
-                    }
-                }
-                break;
-            case Node.ELEMENT_NODE:
-                String name = node.getNodeName();
-                System.out.print(indent + "<" + name);
-                NamedNodeMap attributes = node.getAttributes();
-                for (int i = 0; i < attributes.getLength(); i++) {
-                    Node current = attributes.item(i);
-                    System.out.print(
-                            " " + current.getNodeName()
-                            + "=\"" + current.getNodeValue()
-                            + "\"");
-                }
-                System.out.print(">");
-                // recurse on each child
-                NodeList children = node.getChildNodes();
-                if (children != null) {
-                    for (int i = 0; i < children.getLength(); i++) {
-                        debugPrintNode(children.item(i), indent + "  ");
-                    }
-                }
-                System.out.print("</" + name + ">");
-                break;
-            case Node.TEXT_NODE:
-                System.out.print(node.getNodeValue());
-                break;
-            default:
-                System.out.print(node.getNodeValue());
-                break;
-        }
-
-    }
 }

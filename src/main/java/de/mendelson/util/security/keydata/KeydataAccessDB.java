@@ -204,14 +204,6 @@ public class KeydataAccessDB {
         }
     }
 
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder builder = new StringBuilder();
-        for (byte singleByte : bytes) {
-            builder.append(String.format("%02x", singleByte));
-        }
-        return builder.toString();
-    }
-
     /**
      * Updates an existing key store in the database. The update will only
      * happen if the keystoreData is different to the keystore data of this

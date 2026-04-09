@@ -1460,7 +1460,7 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
      * Once this consumer is set it will deal with the client side output -
      * product related
      */
-    public void setClientsideOutputConsumer(Consumer clientsideOutputConsumer) {
+    public void setClientsideOutputConsumer(Consumer<String> clientsideOutputConsumer) {
         this.panelCertificates.setClientsideOutputConsumer(clientsideOutputConsumer);
     }
 }

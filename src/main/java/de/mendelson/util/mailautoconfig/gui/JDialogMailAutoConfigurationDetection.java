@@ -13,7 +13,6 @@ import de.mendelson.util.mailautoconfig.clientserver.MailAutoConfigDetectRespons
 import de.mendelson.util.uinotification.UINotification;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.concurrent.Executors;
 import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 import javax.swing.ImageIcon;

@@ -21,7 +21,6 @@
 
 package de.mendelson.comm.as2.servlet.rest.resources;
 
-import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.statistic.StatisticExportRequest;
 import de.mendelson.comm.as2.statistic.StatisticExportResponse;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;

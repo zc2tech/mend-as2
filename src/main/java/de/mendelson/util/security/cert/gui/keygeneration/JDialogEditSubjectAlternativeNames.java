@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui.keygeneration;
 
 import de.mendelson.util.KeyboardShortcutUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.util.ArrayList;

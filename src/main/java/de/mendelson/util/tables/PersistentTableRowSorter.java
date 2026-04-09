@@ -3,6 +3,7 @@ package de.mendelson.util.tables;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.swing.RowSorter;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -21,9 +22,9 @@ import javax.swing.table.TableRowSorter;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class PersistentTableRowSorter<M extends TableModel> extends TableRowSorter {
+public class PersistentTableRowSorter<M extends TableModel> extends TableRowSorter<M> {
 
-    private final static Map<String, List> KEY_MAP = new ConcurrentHashMap<String, List>();
+    private final static Map<String, List<? extends RowSorter.SortKey>> KEY_MAP = new ConcurrentHashMap<String, List<? extends RowSorter.SortKey>>();
     private final String uniqueId;
 
     /**
@@ -43,7 +44,7 @@ public class PersistentTableRowSorter<M extends TableModel> extends TableRowSort
     }
 
     @Override
-    public void setSortKeys(List sortKeys) {
+    public void setSortKeys(List<? extends RowSorter.SortKey> sortKeys) {
         if (this.uniqueId != null) {
             KEY_MAP.put(this.uniqueId, sortKeys);
         }
@@ -51,7 +52,7 @@ public class PersistentTableRowSorter<M extends TableModel> extends TableRowSort
     }
 
     @Override
-    public List getSortKeys() {
+    public List<? extends RowSorter.SortKey> getSortKeys() {
         if (this.uniqueId != null && KEY_MAP.containsKey(this.uniqueId)) {
             return (KEY_MAP.get(this.uniqueId));
         }

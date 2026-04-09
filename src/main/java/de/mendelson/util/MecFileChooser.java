@@ -223,7 +223,9 @@ public class MecFileChooser extends JFileChooser {
                 ((JTextComponent) component).setText(file.getAbsolutePath());
             }
             if (component instanceof JComboBox) {
-                this.setItem((JComboBox) component, file.getAbsolutePath());
+                @SuppressWarnings("rawtypes")
+                JComboBox comboBox = (JComboBox) component;
+                this.setItem(comboBox, file.getAbsolutePath());
             }
         }
         return (file.getAbsolutePath());
@@ -281,6 +283,7 @@ public class MecFileChooser extends JFileChooser {
      * @param comboBox Component to set the item
      * @param item Object to write into the ComboBox
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void setItem(JComboBox comboBox, Object item) {
         //Check if element exists. if the item exists, set it and return
         for (int i = 0; i < comboBox.getItemCount(); i++) {

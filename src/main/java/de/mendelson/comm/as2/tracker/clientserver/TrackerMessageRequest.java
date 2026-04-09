@@ -22,7 +22,6 @@ package de.mendelson.comm.as2.tracker.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 
-import java.io.Serializable;
 import java.util.Date;
 
 /**

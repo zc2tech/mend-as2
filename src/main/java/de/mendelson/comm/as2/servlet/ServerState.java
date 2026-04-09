@@ -21,7 +21,6 @@ import de.mendelson.util.clientserver.AnonymousTextClient;
 import de.mendelson.util.clientserver.BaseClient;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.text.DateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;

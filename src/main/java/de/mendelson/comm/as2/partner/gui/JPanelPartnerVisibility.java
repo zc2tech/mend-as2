@@ -17,7 +17,6 @@ import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserListRequest;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserListResponse;
 import de.mendelson.util.clientserver.BaseClient;
-import de.mendelson.util.clientserver.clients.datatransfer.TransferClient;
 import java.awt.*;
 import java.util.*;
 import java.util.List;

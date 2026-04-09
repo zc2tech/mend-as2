@@ -74,13 +74,12 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
                 message.setLevel(Level.SEVERE);
                 message.setMessage(this.rb.getResourceString("only.localhost.clients"));
                 session.write(message);
-                boolean immediately = false;
-                session.close(immediately);
+                session.closeNow();
             } else {
                 super.sessionOpened(session);
             }
         } catch (Exception e) {
-            session.close(true);
+            session.closeNow();
         }
     }
 
@@ -113,7 +112,7 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
         if (authenticated == null || !authenticated) {
             // Not authenticated - reject message
             this.log(Level.SEVERE, "Rejecting unauthenticated message: " + message.getClass().getSimpleName());
-            session.close(false);
+            session.closeNow();
             return;
         }
 

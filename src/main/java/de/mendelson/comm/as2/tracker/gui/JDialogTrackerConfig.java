@@ -40,7 +40,6 @@ import java.util.ResourceBundle;
 public class JDialogTrackerConfig extends JDialog {
 
     private MecResourceBundle rb;
-    private BaseClient baseClient;
     private PreferencesAS2 preferences;
 
     // UI Components
@@ -55,7 +54,6 @@ public class JDialogTrackerConfig extends JDialog {
 
     public JDialogTrackerConfig(JFrame parent, BaseClient baseClient) {
         super(parent, true);
-        this.baseClient = baseClient;
 
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(

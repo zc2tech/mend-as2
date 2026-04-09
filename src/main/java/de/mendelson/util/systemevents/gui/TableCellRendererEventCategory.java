@@ -4,10 +4,8 @@ import de.mendelson.util.systemevents.SystemEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Rectangle;
-import javax.swing.ImageIcon;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -22,7 +20,7 @@ import javax.swing.table.TableCellRenderer;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class TableCellRendererEventCategory extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererEventCategory extends DefaultTableCellRenderer  {
 
     public static final int ROW_HEIGHT = TableModelSystemEvents.ROW_HEIGHT;
     protected static final int IMAGE_HEIGHT = ROW_HEIGHT - 3;

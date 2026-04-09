@@ -93,7 +93,7 @@ public class JPanelCategory extends JPanel implements ListSelectionListener{
         java.awt.GridBagConstraints gridBagConstraints;
 
         jScrollPane = new javax.swing.JScrollPane();
-        jListSubcategories = new javax.swing.JList();
+        jListSubcategories = new javax.swing.JList<Subcategory>();
         jTextFieldInfo = new javax.swing.JTextField();
 
         setLayout(new java.awt.GridBagLayout());
@@ -122,7 +122,7 @@ public class JPanelCategory extends JPanel implements ListSelectionListener{
     
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JList jListSubcategories;
+    private javax.swing.JList<Subcategory> jListSubcategories;
     private javax.swing.JScrollPane jScrollPane;
     private javax.swing.JTextField jTextFieldInfo;
     // End of variables declaration//GEN-END:variables

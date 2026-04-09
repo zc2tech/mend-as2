@@ -21,7 +21,6 @@
 
 package de.mendelson.util;
 
-import de.mendelson.comm.as2.AS2ServerVersion;
 import java.awt.Color;
 import javax.swing.JDialog;
 import javax.swing.JFrame;

@@ -29,9 +29,6 @@ import javax.swing.table.TableCellEditor;
 public class TableCellEditorSubjectAlternativeNames
         extends AbstractCellEditor implements TableCellEditor {
 
-    /**Table component the editor allows changes in
-     */
-    private JTable table = null;
     /** The Swing component being edited. */
     private JComponent editorComponent;
     /**
@@ -46,7 +43,7 @@ public class TableCellEditorSubjectAlternativeNames
      */
     private int clickCountToStart = 1;
     private final List<String> allValuesList;
-    private final JComboBox comboBox = new JComboBox();
+    private final JComboBox<String> comboBox = new JComboBox<>();
 
 
     public TableCellEditorSubjectAlternativeNames(List<String> allValuesList) {
@@ -60,15 +57,15 @@ public class TableCellEditorSubjectAlternativeNames
      *
      * @param comboBox  a <code>JComboBox</code> object
      */
-    public void setEditorComponent(final JComboBox comboBox) {
+    public void setEditorComponent(final JComboBox<String> comboBox) {
         editorComponent = comboBox;
         this.clickCountToStart = 1;
         comboBox.putClientProperty("JComboBox.isTableCellEditor", Boolean.TRUE);
         delegate = new EditorDelegate() {
 
-            public void setValue(Object value) {
-                comboBox.setSelectedItem(value);
-            }
+            // public void setValue(Object value) {
+            //     comboBox.setSelectedItem(value);
+            // }
 
             @Override
             public String getCellEditorValue() {
@@ -181,7 +178,6 @@ public class TableCellEditorSubjectAlternativeNames
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value,
             boolean isSelected, int row, int column) {
-        this.table = table;
         if (value instanceof String) {
             String selectionValue = (String) value;
             JComboBox<String> comboBoxCellEditor = new JComboBox<String>();

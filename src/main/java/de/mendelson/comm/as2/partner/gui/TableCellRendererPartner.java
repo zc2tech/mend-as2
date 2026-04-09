@@ -12,14 +12,13 @@ import java.util.List;
 import javax.swing.ImageIcon;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 /** 
  * Renders a partner in a JTable column
  * @author S.Heller
  * @version $Revision: 8 $
  */
-public class TableCellRendererPartner extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererPartner extends DefaultTableCellRenderer  {
 
     private static final ImageIcon ICON_LOCAL
             = new ImageIcon(MendelsonMultiResolutionImage.fromSVG(

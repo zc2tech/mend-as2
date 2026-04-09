@@ -11,7 +11,6 @@
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.util.ColorUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.DisplayMode;
 import de.mendelson.util.ImageButtonBar;
 import de.mendelson.util.ImageButtonBarUI;
@@ -310,16 +309,12 @@ public class JDialogPreferences extends JDialog {
         return (builder.toString());
     }
 
-    private boolean preferencesAreModified() {
-        return (!this.preferencesStrAtLoadTime.equals(this.captureSettingsToStr()));
-    }
-
     /**
      * Fills in the available countries of the system into the list
      */
     private void setupCountrySelection() {
         Set<String> countryCodes = Locale.getISOCountries(Locale.IsoCountryCode.PART1_ALPHA2);
-        DefaultListModel listModel = (DefaultListModel) this.jListCountry.getModel();
+        DefaultListModel<DisplayCountry> listModel = (DefaultListModel<DisplayCountry>) this.jListCountry.getModel();
         listModel.clear();
         List<DisplayCountry> displayList = new ArrayList<DisplayCountry>();
         for (String countryCode : countryCodes) {

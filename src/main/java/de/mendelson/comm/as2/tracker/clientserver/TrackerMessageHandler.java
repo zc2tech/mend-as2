@@ -25,11 +25,8 @@ import de.mendelson.comm.as2.tracker.TrackerMessageAccessDB;
 import de.mendelson.comm.as2.tracker.TrackerMessageInfo;
 import de.mendelson.comm.as2.tracker.TrackerMessageStoreHandler;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.database.IDBDriverManager;
-import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;

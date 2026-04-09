@@ -38,7 +38,6 @@ import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.clientserver.log.ClientServerLoggingHandler;
-import de.mendelson.util.clientserver.user.DefaultPermissionDescription;
 import de.mendelson.util.log.DailySubdirFileLoggingHandler;
 import de.mendelson.util.log.LogFormatter;
 import de.mendelson.util.log.LogFormatterAS2;
@@ -47,7 +46,6 @@ import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreStorage;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
-import de.mendelson.util.systemevents.notification.SystemEventNotificationController;
 import de.mendelson.util.systemevents.notification.SystemEventNotificationControllerImplAS2;
 import java.io.IOException;
 import java.io.Writer;
@@ -160,7 +158,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private MessageDeleteController logDeleteController = null;
     private MDNReceiptController receiptController = null;
     private StatisticDeleteController statsDeleteController = null;
-    private SystemEventNotificationController notificationController = null;
     private final Handler loggingHandlerSystemOut = new ConsoleHandlerStdout();
     public final static CryptoProvider CRYPTO_PROVIDER = new CryptoProvider();
     private final AS2Config config;
@@ -479,7 +476,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             this.cemController = new CertificateCEMController(
                     this.clientserver, this.dbDriverManager, this.certificateManagerEncSign);
             this.cemController.start();
-            this.notificationController = new SystemEventNotificationControllerImplAS2(
+            new SystemEventNotificationControllerImplAS2(
                     this.getLogger(),
                     this.dbDriverManager);
             Runtime.getRuntime().addShutdownHook(new AS2ShutdownThread(this.dbServer));
@@ -602,8 +599,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.clientServerSessionHandler.setAnonymousProcessing(new AnonymousProcessingAS2());
         this.clientserver.setSessionHandler(this.clientServerSessionHandler);
         this.clientServerSessionHandler.setProductName(AS2ServerVersion.getProductName());
-        this.clientServerSessionHandler.setServerHelloMessageGenerator(this);
-        this.clientServerSessionHandler.setPermissionDescription(new DefaultPermissionDescription());
     }
 
     @Override

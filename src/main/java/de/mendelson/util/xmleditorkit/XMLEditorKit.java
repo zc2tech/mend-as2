@@ -24,7 +24,6 @@ import javax.swing.JEditorPane;
 import javax.swing.UIManager;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.BoxView;
-import javax.swing.text.DefaultEditorKit.CopyAction;
 import javax.swing.text.Document;
 import javax.swing.text.Element;
 import javax.swing.text.JTextComponent;
@@ -191,7 +190,7 @@ public class XMLEditorKit extends StyledEditorKit {
         public void mouseClicked(MouseEvent evt) {
             JEditorPane src = (JEditorPane) evt.getSource();
 
-            int pos = src.viewToModel(evt.getPoint());
+            int pos = src.viewToModel2D(evt.getPoint());
             View v = src.getUI().getRootView(src);
             while (v != null && !(v instanceof XMLTagView)) {
                 int i = v.getViewIndex(pos, Position.Bias.Forward);
@@ -240,7 +239,7 @@ public class XMLEditorKit extends StyledEditorKit {
                 oldCursor = src.getCursor();
             }
 
-            int pos = src.viewToModel(evt.getPoint());
+            int pos = src.viewToModel2D(evt.getPoint());
             View v = src.getUI().getRootView(src);
             while (v != null && !(v instanceof XMLTagView)) {
                 int i = v.getViewIndex(pos, Position.Bias.Forward);

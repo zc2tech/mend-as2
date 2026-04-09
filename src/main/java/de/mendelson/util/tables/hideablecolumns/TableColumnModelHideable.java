@@ -77,7 +77,7 @@ public class TableColumnModelHideable implements TableColumnModel{
     }
     
     @Override
-    public Enumeration getColumns(){
+    public Enumeration<TableColumn> getColumns(){
         return( this.model.getColumns());
     }
     

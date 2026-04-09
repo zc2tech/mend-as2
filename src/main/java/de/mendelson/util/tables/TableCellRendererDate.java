@@ -18,7 +18,7 @@ import javax.swing.table.*;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class TableCellRendererDate extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererDate extends DefaultTableCellRenderer  {
 
     private final DateFormat format;
 

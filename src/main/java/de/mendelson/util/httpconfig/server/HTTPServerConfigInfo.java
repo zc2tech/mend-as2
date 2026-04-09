@@ -1,7 +1,7 @@
 package de.mendelson.util.httpconfig.server;
 
 import java.net.InetAddress;
-import java.net.URL;
+import java.net.URI;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -179,13 +179,13 @@ public class HTTPServerConfigInfo {
         HTTPServerConfigInfo httpServerConfigInfo = new HTTPServerConfigInfo();
         //try to find out the HTTP server version, look at it in the jetty server jar MANIFEST file
         try {
-            Class serverClazz = jettyHTTPServerInstance.getClass();
+            Class<?> serverClazz = jettyHTTPServerInstance.getClass();
             String serverClassName = serverClazz.getSimpleName() + ".class";
             String jettyServerJar = serverClazz.getResource(serverClassName).toString();
             //ensure that this is a jar
             if (jettyServerJar.startsWith("jar")) {
                 String manifestPath = jettyServerJar.substring(0, jettyServerJar.lastIndexOf("!") + 1) + "/META-INF/MANIFEST.MF";
-                Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+                Manifest manifest = new Manifest(URI.create(manifestPath).toURL().openStream());
                 Attributes jarAttributes = manifest.getMainAttributes();
                 String versionValue = jarAttributes.getValue("Implementation-Version");
                 httpServerConfigInfo.setJettyHTTPServerVersion(versionValue);
@@ -223,6 +223,8 @@ public class HTTPServerConfigInfo {
                         listener.setAdapter(address.getHostAddress());
                     }
                     if (connector instanceof ServerConnector) {
+                        // ServerConnector is managed by Jetty server, not a resource we need to close
+                        @SuppressWarnings("resource")
                         ServerConnector serverConnector = (ServerConnector) connector;
                         listener.setProtocol(serverConnector.getDefaultProtocol());
                         listener.setPort(serverConnector.getPort());

@@ -94,7 +94,7 @@ public abstract class SystemEventNotificationController {
             }
         }
         if (!foundSystemEvents.isEmpty()) {
-            Comparator comparator = new Comparator<SystemEvent>() {
+            Comparator<SystemEvent> comparator = new Comparator<SystemEvent>() {
                 @Override
                 public int compare(SystemEvent evt1, SystemEvent evt2) {
                     if (evt1.getTimestamp() == evt2.getTimestamp()) {

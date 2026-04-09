@@ -23,10 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.MissingResourceException;
-import java.util.Random;
 import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -520,7 +518,7 @@ public class ToggleSwitch extends JPanel implements ItemSelectable {
         double additionalWidthForPressedMouse = 0d;
         double leftShiftForPressedMouse = 0d;
         if (this.inMouseOver && this.isEnabled()) {
-            spaceSize = this.borderSize + this.SPACE;
+            spaceSize = this.borderSize + ToggleSwitch.SPACE;
             if (this.inMousePressed) {
                 additionalWidthForPressedMouse = 2;
                 if (this.isSelected()) {
@@ -528,7 +526,7 @@ public class ToggleSwitch extends JPanel implements ItemSelectable {
                 }
             }
         } else {
-            spaceSize = this.borderSize + this.SPACE_MOUSE_OVER;
+            spaceSize = this.borderSize + ToggleSwitch.SPACE_MOUSE_OVER;
         }
         double radius;
         if (this.shape == SHAPE_ROUND) {
@@ -561,7 +559,6 @@ public class ToggleSwitch extends JPanel implements ItemSelectable {
         g2.fill(area);
     }
 
-    @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;

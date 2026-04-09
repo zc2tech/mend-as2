@@ -23,7 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.MissingResourceException;
-import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -117,7 +116,7 @@ public class SendOrderReceiver {
                 @Override
                 protected void afterExecute(Runnable runnable, Throwable exception) {
                     super.afterExecute(runnable, exception);
-                    int activeConnectionCount = activeConnections.decrementAndGet();
+                    activeConnections.decrementAndGet();
                 }
             };
         }
@@ -282,7 +281,7 @@ public class SendOrderReceiver {
                     connectionParameter.setHttpProtocolVersion(order.getReceiver().getHttpProtocolVersion());
                     connectionParameter.setProxy(messageUploader.createProxyObjectFromPreferences());
                     connectionParameter.setUseExpectContinue(true);
-                    Properties requestHeader = messageUploader.upload(connectionParameter,
+                    messageUploader.upload(connectionParameter,
                             order.getMessage(), order.getSender(), order.getReceiver());
                     //set error or finish state, remember that this send order could be
                     //also an MDN if async MDN is requested

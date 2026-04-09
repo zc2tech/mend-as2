@@ -136,9 +136,9 @@ public class TableModelSystemEvents extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col
+    public Class<?> getColumnClass(int col
     ) {
-        return (new Class[]{
+        return (new Class<?>[]{
             ImageIcon.class,
             ImageIcon.class,
             Date.class,

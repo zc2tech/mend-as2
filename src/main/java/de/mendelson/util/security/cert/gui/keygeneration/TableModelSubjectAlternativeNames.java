@@ -141,8 +141,8 @@ public class TableModelSubjectAlternativeNames extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
-        return (new Class[]{
+    public Class<?> getColumnClass(int col) {
+        return (new Class<?>[]{
             String.class,
             String.class
         }[col]);

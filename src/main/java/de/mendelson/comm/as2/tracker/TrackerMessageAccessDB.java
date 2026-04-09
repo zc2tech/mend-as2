@@ -33,7 +33,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.logging.Logger;
 
 /**
  * Database access layer for tracker messages
@@ -42,7 +41,7 @@ import java.util.logging.Logger;
  */
 public class TrackerMessageAccessDB {
 
-    private static final Logger LOGGER = Logger.getLogger("de.mendelson.as2.server");
+    // private static final Logger LOGGER = Logger.getLogger("de.mendelson.as2.server");
     private final Calendar calendarUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     private final IDBDriverManager dbDriverManager;
 

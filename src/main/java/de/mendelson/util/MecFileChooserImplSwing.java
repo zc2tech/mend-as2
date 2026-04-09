@@ -92,22 +92,23 @@ public class MecFileChooserImplSwing extends JFileChooser{
         //user pressed select button
         if( file == null )
             return( null );
-        
+
         if( component != null ){
             if( component instanceof JTextComponent )
                 ((JTextComponent)component).setText( file.getAbsolutePath());
             if( component instanceof JComboBox )
-                this.setItem( (JComboBox)component,
+                this.setItem( (JComboBox<?>)component,
                         file.getAbsolutePath() );
         }
         return( file.getAbsolutePath() );
     }
-    
+
     /**Adds an item to a comboBox. If the item already exists,
      * it is set as selected
      * @param comboBox Component to set the item
      * @param item Object to write into the ComboBox
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     protected void setItem( JComboBox comboBox, Object item ){
         //Check if element exists. if the item exists, set it and return
         for( int i = 0; i < comboBox.getItemCount(); i++ )

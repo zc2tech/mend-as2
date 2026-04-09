@@ -60,7 +60,6 @@ public class JDialogUserPreferences extends JDialog {
         }
     }
 
-    private String preferencesStrAtLoadTime = "";
     /**
      * stores all available panels
      */
@@ -134,20 +133,10 @@ public class JDialogUserPreferences extends JDialog {
             this.jPanelButtonBar.setVisible(false);
         }
 
-        this.preferencesStrAtLoadTime = this.captureSettingsToStr();
         this.getRootPane().setDefaultButton(this.jButtonOk);
     }
 
-    /**
-     * Captures the current preference settings to a string for comparison
-     */
-    private String captureSettingsToStr() {
-        StringBuilder buffer = new StringBuilder();
-        for (PreferencesPanel panel : this.panelList) {
-            buffer.append(panel.toString());
-        }
-        return buffer.toString();
-    }
+ 
 
     /**
      * This method is called from within the constructor to initialize the form.

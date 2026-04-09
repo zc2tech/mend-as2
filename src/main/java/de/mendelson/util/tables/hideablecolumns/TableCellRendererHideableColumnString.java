@@ -8,7 +8,6 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 /**
  * Renders a partner in a JTable column
@@ -16,8 +15,7 @@ import javax.swing.table.TableCellRenderer;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class TableCellRendererHideableColumnString extends DefaultTableCellRenderer implements TableCellRenderer {
-
+public class TableCellRendererHideableColumnString extends DefaultTableCellRenderer {
     /**
      * Localize your GUI!
      */

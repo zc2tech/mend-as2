@@ -26,7 +26,6 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.util.ByteArrayDataSource;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

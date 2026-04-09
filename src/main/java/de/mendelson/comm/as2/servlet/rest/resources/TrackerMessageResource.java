@@ -31,13 +31,11 @@ import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.database.IDBDriverManager;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
-import jakarta.ws.rs.core.StreamingOutput;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;

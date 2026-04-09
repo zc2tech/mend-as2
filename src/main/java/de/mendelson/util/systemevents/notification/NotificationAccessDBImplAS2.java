@@ -2,7 +2,6 @@ package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.oauth2.OAuth2AccessDB;
-import de.mendelson.util.oauth2.OAuth2Config;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import java.sql.Connection;

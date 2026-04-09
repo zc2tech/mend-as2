@@ -4,11 +4,9 @@ import de.mendelson.util.security.cert.gui.JDialogCertificates;
 import java.awt.Component;
 import java.awt.Color;
 import java.awt.Rectangle;
-import java.security.PrivateKey;
 import javax.swing.ImageIcon;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 /**
  * Renders a certificate in a JTable column
@@ -16,7 +14,7 @@ import javax.swing.table.TableCellRenderer;
  * @author S.Heller
  * @version $Revision: 11 $
  */
-public class TableCellRendererCertificates extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererCertificates extends DefaultTableCellRenderer  {
 
     public static final int ROW_HEIGHT = JDialogCertificates.IMAGE_SIZE_TABLE + 3;
     protected static final int IMAGE_HEIGHT = JDialogCertificates.IMAGE_SIZE_TABLE;

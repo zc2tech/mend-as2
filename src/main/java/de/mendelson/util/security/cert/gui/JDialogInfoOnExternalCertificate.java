@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.ColorUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.security.KeyStoreUtil;
 import de.mendelson.util.security.cert.CertificateManager;
@@ -11,7 +10,6 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +55,7 @@ public class JDialogInfoOnExternalCertificate extends JDialog {
     /**
      * ResourceBundle to localize the GUI
      */
-    private final static MecResourceBundle rb;
+    final static MecResourceBundle rb;
 
     static {
         try {
@@ -332,7 +330,7 @@ public class JDialogInfoOnExternalCertificate extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonImport.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonImport.setText(JDialogInfoOnExternalCertificate.rb.getResourceString( "button.ok" ));
         jButtonImport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonImportActionPerformed(evt);
@@ -342,7 +340,7 @@ public class JDialogInfoOnExternalCertificate extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonImport, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogInfoOnExternalCertificate.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

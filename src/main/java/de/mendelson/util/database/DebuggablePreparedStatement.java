@@ -333,7 +333,7 @@ public class DebuggablePreparedStatement extends DebuggableStatement implements 
         builder.append(className);
         if (obj instanceof List) {
             builder.append(" size=");
-            builder.append(((List) obj).size());
+            builder.append(((List<?>) obj).size());
         } else if (obj instanceof String) {
             String strValue = obj.toString();
             if (strValue != null) {
@@ -364,7 +364,7 @@ public class DebuggablePreparedStatement extends DebuggableStatement implements 
         builder.append(className);
         if (obj instanceof List) {
             builder.append(" size=");
-            builder.append(((List) obj).size());
+            builder.append(((List<?>) obj).size());
         } else if (obj instanceof String) {
             String strValue = obj.toString();
             if (strValue != null) {
@@ -395,7 +395,7 @@ public class DebuggablePreparedStatement extends DebuggableStatement implements 
         builder.append(className);
         if (obj instanceof List) {
             builder.append(" size=");
-            builder.append(((List) obj).size());
+            builder.append(((List<?>) obj).size());
         } else if (obj instanceof String) {
             String strValue = obj.toString();
             if (strValue != null) {
@@ -463,7 +463,11 @@ public class DebuggablePreparedStatement extends DebuggableStatement implements 
         this.statement.setURL(param, uRL);
     }
 
+    /**
+     * @deprecated Use setCharacterStream instead
+     */
     @Override
+    @Deprecated
     public void setUnicodeStream(int param, InputStream inputStream, int param2) throws SQLException {
         this.map.put(Integer.valueOf(param), "<unicode_stream>");
         this.statement.setUnicodeStream(param, inputStream, param2);

@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.KeyboardShortcutUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -169,7 +168,7 @@ public class JDialogImport extends JDialog {
         jPanelEdit.add(jRadioButtonImportKeyFromKeystore, gridBagConstraints);
 
         jLabelWhatToImport.setFont(new java.awt.Font("Dialog", 0, 13)); // NOI18N
-        jLabelWhatToImport.setText(this.rb.getResourceString( "info.whattoimport")
+        jLabelWhatToImport.setText(JDialogImport.rb.getResourceString( "info.whattoimport")
         );
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -202,7 +201,7 @@ public class JDialogImport extends JDialog {
         jPanelEdit.add(jLabelImageKey, gridBagConstraints);
 
         jLabelImportCertificate.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelImportCertificate.setText(this.rbCertificates.getResourceString( "label.cert.import"));
+        jLabelImportCertificate.setText(JDialogImport.rbCertificates.getResourceString( "label.cert.import"));
         jLabelImportCertificate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelImportCertificateMouseClicked(evt);
@@ -216,7 +215,7 @@ public class JDialogImport extends JDialog {
         jPanelEdit.add(jLabelImportCertificate, gridBagConstraints);
 
         jLabelImportKeyFromKeystore.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelImportKeyFromKeystore.setText(this.rbCertificates.getResourceString( "label.key.import"));
+        jLabelImportKeyFromKeystore.setText(JDialogImport.rbCertificates.getResourceString( "label.key.import"));
         jLabelImportKeyFromKeystore.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelImportKeyFromKeystoreMouseClicked(evt);
@@ -246,7 +245,7 @@ public class JDialogImport extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogInfoOnExternalCertificate.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -256,7 +255,7 @@ public class JDialogImport extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogImport.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

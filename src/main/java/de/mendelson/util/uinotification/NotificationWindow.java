@@ -28,7 +28,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import javax.swing.event.MouseInputListener;
 
 /*

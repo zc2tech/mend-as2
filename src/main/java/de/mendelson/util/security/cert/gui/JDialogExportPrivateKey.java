@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.security.cert.CertificateManager;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
@@ -234,7 +233,7 @@ public class JDialogExportPrivateKey extends JDialog {
         jButtonBrowseExportFile = new javax.swing.JButton();
         jLabelPassphrase = new javax.swing.JLabel();
         jPasswordFieldPassphrase = new javax.swing.JPasswordField();
-        jComboBoxKeys = new javax.swing.JComboBox();
+        jComboBoxKeys = new javax.swing.JComboBox<>();
         jLabelAlias = new javax.swing.JLabel();
         jPanelSpace2 = new javax.swing.JPanel();
         jPanelSpace1 = new javax.swing.JPanel();
@@ -473,7 +472,7 @@ public class JDialogExportPrivateKey extends JDialog {
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOk;
     private javax.swing.JComboBox<String> jComboBoxExportFormat;
-    private javax.swing.JComboBox jComboBoxKeys;
+    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxKeys;
     private javax.swing.JLabel jLabelAlias;
     private javax.swing.JLabel jLabelIcon;
     private javax.swing.JLabel jLabelPassphrase;

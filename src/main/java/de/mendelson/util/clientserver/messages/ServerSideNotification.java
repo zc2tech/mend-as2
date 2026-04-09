@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.messages;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -17,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ServerSideNotification extends ClientServerMessage implements Serializable{
+public class ServerSideNotification extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     public ServerSideNotification(){

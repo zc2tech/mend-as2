@@ -1,6 +1,5 @@
 package de.mendelson.comm.as2.server;
 
-import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import java.util.logging.Logger;
 
 /*
@@ -17,11 +16,11 @@ import java.util.logging.Logger;
  */
 public class ServerStartupSequence {
 
-    private Logger logger;
-    private PreferencesAS2 preferences = new PreferencesAS2();
+    // private Logger logger;
+    // private PreferencesAS2 preferences = new PreferencesAS2();
 
     public ServerStartupSequence(Logger logger) {
-        this.logger = logger;
+        // this.logger = logger;
     }
 
     /**Starts conditional processes for the server startup process*/

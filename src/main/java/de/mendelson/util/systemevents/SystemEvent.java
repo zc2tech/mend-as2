@@ -352,7 +352,7 @@ public class SystemEvent implements Serializable {
      * @return The replaced string
      */
     private String replaceAllVars(String source, Properties replacement) {
-        Iterator iterator = replacement.keySet().iterator();
+        Iterator<?> iterator = replacement.keySet().iterator();
         while (iterator.hasNext()) {
             String key = (String) iterator.next();
             String value = replacement.getProperty(key);

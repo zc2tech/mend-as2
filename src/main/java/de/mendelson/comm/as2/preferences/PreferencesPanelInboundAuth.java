@@ -70,7 +70,6 @@ public class PreferencesPanelInboundAuth extends PreferencesPanel {
     private PreferencesClient preferences;
     private BaseClient baseClient;
     private CertificateManager certificateManager;
-    private IDBDriverManager dbDriverManager;
     private Logger logger;
     private InboundAuthCredentialAccessDB credentialDB;
     private String preferencesStrAtLoadTime = "";
@@ -102,7 +101,6 @@ public class PreferencesPanelInboundAuth extends PreferencesPanel {
         this.baseClient = baseClient;
         this.preferences = new PreferencesClient(baseClient);
         this.certificateManager = certManager;
-        this.dbDriverManager = dbDriverManager;
         this.logger = logger;
         // Only create DB access if dbDriverManager is available (server-side)
         if (dbDriverManager != null) {

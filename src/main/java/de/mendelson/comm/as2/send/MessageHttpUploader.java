@@ -33,6 +33,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -74,14 +75,10 @@ import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
 import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.auth.BasicScheme;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.client5.http.impl.io.ManagedHttpClientConnectionFactory;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.impl.routing.DefaultProxyRoutePlanner;
-import org.apache.hc.client5.http.io.ManagedHttpClientConnection;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
@@ -89,11 +86,9 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpConnection;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpVersion;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
-import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
@@ -508,9 +503,9 @@ public class MessageHttpUploader {
                     MessageAccessDB messageAccess = new MessageAccessDB(this.dbDriverManager);
                     AS2MessageInfo relatedMessageInfo = messageAccess.getLastMessageEntry(
                             ((AS2MDNInfo) message.getAS2Info()).getRelatedMessageId());
-                    receiptURL = new URL(relatedMessageInfo.getAsyncMDNURL());
+                    receiptURL = URI.create(relatedMessageInfo.getAsyncMDNURL()).toURL();
                 } else {
-                    receiptURL = new URL(receiver.getURL());
+                    receiptURL = URI.create(receiver.getURL()).toURL();
                 }
             }
             //create the http client
@@ -526,7 +521,6 @@ public class MessageHttpUploader {
             }
             // In HttpClient 5.x, connection reuse strategy is replaced with a lambda
             clientBuilder.setConnectionReuseStrategy((request, response, context) -> false);
-            HttpHost targetHost = new HttpHost(receiptURL.getProtocol(), receiptURL.getHost(), receiptURL.getPort());
             ProxyObject proxy = connectionParameter.getProxy();
             if (proxy != null && proxy.getHost() != null) {
                 CredentialsProvider proxyCredentialsProvider = new BasicCredentialsProvider();
@@ -794,15 +788,20 @@ public class MessageHttpUploader {
             }
             this.updateUploadHTTPHeaderWithUserDefinedHeaders(filePost, receiver);
             //Execute request
-            try (CloseableHttpResponse httpResponse = httpClient.execute(filePost)) {
-                if (httpResponse != null) {
-                    this.responseData = this.readEntityData(httpResponse);
-                    this.responseStatusCode = httpResponse.getCode();
-                    this.responseReasonPhrase = httpResponse.getReasonPhrase();
-                    statusCode = this.responseStatusCode;
-                    this.responseHeader = httpResponse.getHeaders();
+            httpClient.execute(filePost, response -> {
+                try {
+                    if (response != null) {
+                        this.responseData = this.readEntityData(response);
+                        this.responseStatusCode = response.getCode();
+                        this.responseReasonPhrase = response.getReasonPhrase();
+                        this.responseHeader = response.getHeaders();
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-            }
+                return null;
+            });
+            statusCode = this.responseStatusCode;
             for (Header singleHeader : filePost.getHeaders()) {
                 if (singleHeader.getValue() != null) {
                     this.requestHeader.setProperty(singleHeader.getName(), singleHeader.getValue());

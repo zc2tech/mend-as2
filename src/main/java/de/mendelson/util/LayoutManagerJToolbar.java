@@ -83,7 +83,7 @@ public class LayoutManagerJToolbar implements LayoutManager, SwingConstants {
                             maxHeight);
                     currentX += width;
                 } else if (children[i] instanceof JComboBox) {
-                    JComboBox comboBox = (JComboBox)children[i];
+                    JComboBox<?> comboBox = (JComboBox<?>)children[i];
                     comboBox.setFocusable(false);
                     children[i].setBounds(
                             currentX,

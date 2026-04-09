@@ -268,10 +268,10 @@ public abstract class BaseTextClient implements ClientSessionHandlerCallback {
     }
 
     /**
-     * checks if the client is connected and the user logged in
+     * checks if the client is connected
      */
     public boolean isConnectedAndLoggedIn() {
-        return (this.baseClient.isConnectedAndLoggedIn());
+        return (this.baseClient.isConnected());
     }
 
     /**

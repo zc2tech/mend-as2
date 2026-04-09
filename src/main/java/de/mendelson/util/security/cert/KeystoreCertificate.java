@@ -1101,7 +1101,7 @@ public class KeystoreCertificate implements Comparable<KeystoreCertificate>, Ser
         ECParameterSpec params = publicKey.getParams();
         //convert to BC spec
         org.bouncycastle.jce.spec.ECParameterSpec spec = EC5Util.convertSpec(params);
-        Enumeration ecNamedCurveTable = ECNamedCurveTable.getNames();
+        Enumeration<?> ecNamedCurveTable = ECNamedCurveTable.getNames();
         while (ecNamedCurveTable.hasMoreElements()) {
             String name = ecNamedCurveTable.nextElement().toString();
             X9ECParameters possibleMatch = ECNamedCurveTable.getByName(name);
@@ -1114,7 +1114,7 @@ public class KeystoreCertificate implements Comparable<KeystoreCertificate>, Ser
                 }
             }
         }
-        Enumeration ecCustomNamedCurveTable = CustomNamedCurves.getNames();
+        Enumeration<?> ecCustomNamedCurveTable = CustomNamedCurves.getNames();
         while (ecCustomNamedCurveTable.hasMoreElements()) {
             String name = ecCustomNamedCurveTable.nextElement().toString();
             X9ECParameters possibleMatch = CustomNamedCurves.getByName(name);

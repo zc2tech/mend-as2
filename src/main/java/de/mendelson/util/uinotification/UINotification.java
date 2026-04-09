@@ -1,6 +1,5 @@
 package de.mendelson.util.uinotification;
 
-import de.mendelson.util.ColorUtil;
 import de.mendelson.util.ImageUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;

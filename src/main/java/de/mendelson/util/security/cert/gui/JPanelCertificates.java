@@ -929,7 +929,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jPanelSpace776 = new javax.swing.JPanel();
 
         jMenuItemPopupExport.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/security/cert/gui/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupExport.setText(this.rb.getResourceString("button.export"));
+        jMenuItemPopupExport.setText(JPanelCertificates.rb.getResourceString("button.export"));
         jMenuItemPopupExport.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupExportActionPerformed(evt);
@@ -938,7 +938,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jPopupMenu.add(jMenuItemPopupExport);
 
         jMenuItemPopupRenameAlias.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/security/cert/gui/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupRenameAlias.setText(this.rb.getResourceString("button.edit"));
+        jMenuItemPopupRenameAlias.setText(JPanelCertificates.rb.getResourceString("button.edit"));
         jMenuItemPopupRenameAlias.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupRenameAliasActionPerformed(evt);
@@ -947,7 +947,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jPopupMenu.add(jMenuItemPopupRenameAlias);
 
         jMenuItemPopupReference.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/security/cert/gui/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupReference.setText(this.rb.getResourceString("button.reference"));
+        jMenuItemPopupReference.setText(JPanelCertificates.rb.getResourceString("button.reference"));
         jMenuItemPopupReference.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupReferenceActionPerformed(evt);
@@ -956,7 +956,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jPopupMenu.add(jMenuItemPopupReference);
 
         jMenuItemPopupKeyCopy.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/security/cert/gui/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupKeyCopy.setText(this.rb.getResourceString("button.keycopy"));
+        jMenuItemPopupKeyCopy.setText(JPanelCertificates.rb.getResourceString("button.keycopy"));
         jMenuItemPopupKeyCopy.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupKeyCopyActionPerformed(evt);
@@ -966,7 +966,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jPopupMenu.add(jSeparator1);
 
         jMenuItemPopupDeleteEntry.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/util/security/cert/gui/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPopupDeleteEntry.setText(this.rb.getResourceString( "button.delete"));
+        jMenuItemPopupDeleteEntry.setText(JPanelCertificates.rb.getResourceString( "button.delete"));
         jMenuItemPopupDeleteEntry.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPopupDeleteEntryActionPerformed(evt);
@@ -998,7 +998,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jEditorPaneInfo.setDoubleBuffered(true);
         jScrollPaneInfo.setViewportView(jEditorPaneInfo);
 
-        jTabbedPaneInfo.addTab(this.rb.getResourceString( "tab.info.basic" ), jScrollPaneInfo);
+        jTabbedPaneInfo.addTab(JPanelCertificates.rb.getResourceString( "tab.info.basic" ), jScrollPaneInfo);
 
         jTextAreaInfoExtension.setEditable(false);
         jTextAreaInfoExtension.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
@@ -1008,12 +1008,12 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jTextAreaInfoExtension.setDoubleBuffered(true);
         jScrollPaneInfoExtension.setViewportView(jTextAreaInfoExtension);
 
-        jTabbedPaneInfo.addTab(this.rb.getResourceString( "tab.info.extension" ), jScrollPaneInfoExtension);
+        jTabbedPaneInfo.addTab(JPanelCertificates.rb.getResourceString( "tab.info.extension" ), jScrollPaneInfoExtension);
 
         jTreeTrustChain.setDoubleBuffered(true);
         jScrollPaneTrustchain.setViewportView(jTreeTrustChain);
 
-        jTabbedPaneInfo.addTab(this.rb.getResourceString( "tab.info.trustchain" ), jScrollPaneTrustchain);
+        jTabbedPaneInfo.addTab(JPanelCertificates.rb.getResourceString( "tab.info.trustchain" ), jScrollPaneTrustchain);
 
         jSplitPane.setRightComponent(jTabbedPaneInfo);
 
@@ -1026,7 +1026,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         gridBagConstraints.weighty = 1.0;
         add(jSplitPane, gridBagConstraints);
 
-        jLabelTrustAnchor.setText(this.rb.getResourceString( "label.trustanchor"));
+        jLabelTrustAnchor.setText(JPanelCertificates.rb.getResourceString( "label.trustanchor"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;

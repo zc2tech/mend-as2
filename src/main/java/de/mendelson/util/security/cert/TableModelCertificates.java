@@ -9,10 +9,8 @@ import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.security.cert.gui.JDialogCertificates;
 import de.mendelson.util.security.keygeneration.KeyGenerator;
-import java.security.cert.CertPath;
 import java.security.cert.Certificate;
 import java.security.cert.PKIXCertPathBuilderResult;
-import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,7 +84,7 @@ public class TableModelCertificates extends AbstractTableModel {
     private final List<CertificateInUseChecker> inUseCheckerList
             = Collections.synchronizedList(new ArrayList<CertificateInUseChecker>());
 
-    private static final Class[] COLUMN_CLASSES = new Class[]{
+    private static final Class<?>[] COLUMN_CLASSES = new Class<?>[]{
         ImageIcon.class,
         ImageIcon.class,
         String.class,
@@ -312,7 +310,7 @@ public class TableModelCertificates extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
+    public Class<?> getColumnClass(int col) {
         return (COLUMN_CLASSES[col]);
     }
 

@@ -1,7 +1,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.KeyboardShortcutUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.util.MissingResourceException;
@@ -185,7 +184,7 @@ public class JDialogExport extends JDialog {
         jPanelEdit.add(jRadioButtonExportKey, gridBagConstraints);
 
         jLabelWhatToExport.setFont(new java.awt.Font("Dialog", 0, 13)); // NOI18N
-        jLabelWhatToExport.setText(this.rb.getResourceString( "info.whattoexport")
+        jLabelWhatToExport.setText(JDialogExport.rb.getResourceString( "info.whattoexport")
         );
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -295,7 +294,7 @@ public class JDialogExport extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogExport.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -305,7 +304,7 @@ public class JDialogExport extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogExport.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

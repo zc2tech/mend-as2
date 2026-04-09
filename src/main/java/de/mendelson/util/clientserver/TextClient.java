@@ -27,9 +27,7 @@ import java.util.logging.Level;
 public class TextClient extends BaseTextClient implements ClientsideMessageProcessor, AutoCloseable {
 
     private String user = null;
-    private char[] password = null;
     private ConnectThread connectionThread = null;
-    private String clientId = "undefined";
 
     /**
      *
@@ -48,8 +46,6 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
             String user, char[] password, long timeout,
             String connectionThreadNamePrefix) throws Throwable {
         this.user = user;
-        this.password = password;
-        this.clientId = clientId;
         this.connectionThread = new ConnectThread(host, clientServerCommPort, timeout);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(this.connectionThread);
@@ -76,20 +72,6 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
             }
         }
         return (true);
-    }
-
-    /**
-     * Login method simplified - TextClient no longer requires authentication
-     * @deprecated Authentication removed for client-server protocol
-     */
-    @Deprecated
-    private void performLogin(String user, char[] passwd, String clientId) {
-        // No authentication needed for client-server protocol
-        // Create a dummy user object for compatibility
-        User dummyUser = new User();
-        dummyUser.setName(user != null ? user : "text_client");
-        this.getBaseClient().setUser(dummyUser);
-        this.connectionThread.signalSuccess();
     }
 
     @Override

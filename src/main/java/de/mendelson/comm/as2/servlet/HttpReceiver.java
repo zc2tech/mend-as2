@@ -5,8 +5,6 @@ import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageResponse;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
-import de.mendelson.comm.as2.preferences.InboundAuthCredential;
-import de.mendelson.comm.as2.preferences.InboundAuthCredentialAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.clientserver.AnonymousTextClient;
@@ -25,7 +23,6 @@ import java.util.Base64;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLSession;
@@ -120,7 +117,7 @@ public class HttpReceiver extends HttpServlet {
             Files.copy(inStream, dataFile, StandardCopyOption.REPLACE_EXISTING);
             //extract header
             LinkedHashMap<String, String> headerMap = new LinkedHashMap<String, String>();
-            Enumeration enumeration = request.getHeaderNames();
+            Enumeration<String> enumeration = request.getHeaderNames();
             while (enumeration.hasMoreElements()) {
                 String key = (String) enumeration.nextElement();
                 headerMap.put(key.toLowerCase(), request.getHeader(key));
@@ -222,7 +219,7 @@ public class HttpReceiver extends HttpServlet {
                 //add MDN data
                 if (messageResponse.getMDNData() != null) {
                     Properties header = messageResponse.getHeader();
-                    Iterator iterator = header.keySet().iterator();
+                    Iterator<Object> iterator = header.keySet().iterator();
                     while (iterator.hasNext()) {
                         String key = (String) iterator.next();
                         response.setHeader(key, header.getProperty(key));
@@ -288,7 +285,7 @@ public class HttpReceiver extends HttpServlet {
                     }
 
                     String username = parts[0];
-                    String password = parts[1];
+                    // String password = parts[1];
 
                     // Check against database - we need to query server-side credentials
                     // For now, log and accept (TODO: implement server-side credential query)

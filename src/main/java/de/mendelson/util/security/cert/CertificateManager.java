@@ -138,7 +138,7 @@ public class CertificateManager {
         if (entry == null) {
             throw new Exception(rb.getResourceString("alias.notfound", alias));
         }
-        PrivateKey privateKey = (PrivateKey) entry.getKey();
+        PrivateKey privateKey = (PrivateKey) entry.getPrivateKey();
         if (privateKey == null) {
             throw new Exception(rb.getResourceString("alias.hasno.privatekey", alias));
         }

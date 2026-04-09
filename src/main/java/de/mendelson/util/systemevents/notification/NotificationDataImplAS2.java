@@ -1,7 +1,6 @@
 package de.mendelson.util.systemevents.notification;
 
 import de.mendelson.util.oauth2.OAuth2Config;
-import java.io.Serializable;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -18,7 +17,7 @@ import org.w3c.dom.NodeList;
  * @author S.Heller
  * @version $Revision: 14 $
  */
-public class NotificationDataImplAS2 extends NotificationData implements Serializable{
+public class NotificationDataImplAS2 extends NotificationData {
    
     private static final long serialVersionUID = 1L;
     

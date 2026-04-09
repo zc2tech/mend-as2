@@ -188,7 +188,7 @@ public class JDialogExportCertificate extends JDialog {
         jTextFieldExportFile = new javax.swing.JTextField();
         jLabelExportEncoding = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
-        jComboBoxExportFormat = new javax.swing.JComboBox();
+        jComboBoxExportFormat = new javax.swing.JComboBox<>();
         jLabelAlias = new javax.swing.JLabel();
         jComboBoxCertificates = new javax.swing.JComboBox<>();
         jButtonBrowse = new javax.swing.JButton();
@@ -369,7 +369,7 @@ public class JDialogExportCertificate extends JDialog {
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOk;
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxCertificates;
-    private javax.swing.JComboBox jComboBoxExportFormat;
+    private javax.swing.JComboBox<ExportFormat> jComboBoxExportFormat;
     private javax.swing.JLabel jLabelAlias;
     private javax.swing.JLabel jLabelExportEncoding;
     private javax.swing.JLabel jLabelExportFile;

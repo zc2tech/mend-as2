@@ -283,7 +283,7 @@ public class FileSystemViewProcessorServer {
     /**
      * Non blocking file directory list with a user defined filter
      */
-    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter fileFilter) throws Exception {        
+    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter<Path> fileFilter) throws Exception {        
         List<Path> result = new ArrayList<Path>();
         //do not follow symbolic links - if the user requests this just return an empty list
         if (Files.isSymbolicLink(dir)) {

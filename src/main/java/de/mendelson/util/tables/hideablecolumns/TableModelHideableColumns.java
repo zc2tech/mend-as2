@@ -113,9 +113,9 @@ public class TableModelHideableColumns extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
-        Class[] classes
-                = new Class[]{
+    public Class<?> getColumnClass(int col) {
+        Class<?>[] classes
+                = new Class<?>[]{
                     Object.class,
                     Boolean.class,};
         return (classes[col]);

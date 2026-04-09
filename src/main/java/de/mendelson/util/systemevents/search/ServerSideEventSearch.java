@@ -164,7 +164,7 @@ public class ServerSideEventSearch {
                 TopDocs hits = searcher.search(query, filter.getMaxResults(), sortByTimestamp);
                 if (hits.totalHits.value > 0) {
                     for (ScoreDoc scoreDoc : hits.scoreDocs) {
-                        Document doc = multiReader.document(scoreDoc.doc);
+                        Document doc = searcher.storedFields().document(scoreDoc.doc);
                         try {
                             resultList.add(this.generateEventFromSingleSearchResult(doc));
                         } catch (Throwable e) {

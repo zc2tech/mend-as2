@@ -21,9 +21,6 @@
 
 package de.mendelson.comm.as2.servlet.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.auth.AuthenticationResource;
 import de.mendelson.comm.as2.servlet.rest.auth.JwtAuthenticationFilter;

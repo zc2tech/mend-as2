@@ -1,7 +1,6 @@
 package de.mendelson.util.modulelock;
 
 import de.mendelson.util.modulelock.message.ModuleLockRequest;
-import de.mendelson.util.modulelock.message.ModuleLockResponse;
 import de.mendelson.util.clientserver.BaseClient;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +37,7 @@ public class LockRefreshThread implements Runnable {
     public void run() {
         while (!this.stop) {            
             ModuleLockRequest request = new ModuleLockRequest(this.moduleName, ModuleLockRequest.TYPE_REFRESH);
-            ModuleLockResponse response = (ModuleLockResponse) this.baseClient.sendSync(request);
+            this.baseClient.sendSync(request);
             try {
                 Thread.sleep(TimeUnit.SECONDS.toMillis(15));
             } catch (Exception e) {

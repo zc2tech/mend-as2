@@ -4,17 +4,12 @@ import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.QuitRequest;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.messages.ServerLogMessage;
-import de.mendelson.util.clientserver.user.PermissionDescription;
-import de.mendelson.util.clientserver.user.User;
-import de.mendelson.util.clientserver.user.UserAccess;
 import de.mendelson.util.systemevents.SystemEventManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.SSLSession;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
@@ -42,12 +37,7 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
     public static final String SESSION_ATTRIB_CLIENT_IP = "ip";
     public static final String SESSION_ATTRIB_CLIENT_TYPE = "clienttype";
 
-    /**
-     * User readable description of user permissions
-     */
-    private PermissionDescription permissionDescription = null;
     private Logger logger = Logger.getAnonymousLogger();
-    private final UserAccess userAccess = new UserAccess(this.logger);
     /**
      * Synchronized structure to perform user defined processing on the server
      * depending on the incoming message object type
@@ -65,13 +55,7 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
      * Allows to access the server for special messages without a required login
      */
     private AnonymousProcessing anonymousProcessing = null;
-    /**
-     * Generate a server hello message for a client once it is connected to the
-     * server
-     */
-    private ServerHelloMessageGenerator serverHelloMessageGenerator = null;
     private ClientServerSessionHandlerCallback callback = null;
-    private String[] validClientIds = null;
     private final int maxClients;
     private final SystemEventManager eventManager;
 
@@ -81,7 +65,6 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
         }
         this.eventManager = eventManager;
         this.maxClients = maxClients;
-        this.validClientIds = validClientIds;
     }
 
     public void setCallback(ClientServerSessionHandlerCallback callback) {
@@ -104,14 +87,6 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
      */
     public void setAnonymousProcessing(AnonymousProcessing anonymousProcessing) {
         this.anonymousProcessing = anonymousProcessing;
-    }
-
-    /**
-     * Add a implementation that generates a server hello message for a client
-     * once it is connected to the server
-     */
-    public void setServerHelloMessageGenerator(ServerHelloMessageGenerator serverHelloMessageGenerator) {
-        this.serverHelloMessageGenerator = serverHelloMessageGenerator;
     }
 
     /**
@@ -162,13 +137,9 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
      * incoming connection from a client
      */
     public void sessionOpened(IoSession session) {
-        //store immediatly the remote IP address in the session - if the session is closed it is no longer 
+        //store immediatly the remote IP address in the session - if the session is closed it is no longer
         //available and it might be required later even if the session goes into the closed state
         session.setAttribute(SESSION_ATTRIB_CLIENT_IP, session.getRemoteAddress().toString());
-    }
-
-    public void setPermissionDescription(PermissionDescription permissionDescription) {
-        this.permissionDescription = permissionDescription;
     }
 
     /**

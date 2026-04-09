@@ -15,6 +15,7 @@ import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
+import java.net.URI;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -53,7 +54,7 @@ public class PartnerTLSCertificateChangedController {
             new NamedThreadFactory("partner-tls-cert-changed-check"));
     private final IDBDriverManager dbDriverManager;
     private final CertificateManager certificateManagerTLS;
-    private ScheduledFuture future = null;
+    private ScheduledFuture<?> future = null;
     private final static MecResourceBundle rb;
     private final static String MODULE_NAME;
     private final static String MODULE_EVENT_SUBJECT_NAME;
@@ -140,7 +141,7 @@ public class PartnerTLSCertificateChangedController {
                         if (proxy != null) {
                             connectionTest.setProxy(proxy);
                         }
-                        URL url = new URL(partner.getURL());
+                        URL url = URI.create(partner.getURL()).toURL();
                         String host = url.getHost();
                         int port = url.getPort();
                         ConnectionTestResult result = connectionTest.checkConnectionTLS(host, port,

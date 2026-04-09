@@ -74,7 +74,7 @@ public class DirPollThread implements Runnable {
     private final static Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
     private final ClientServer clientserver;
     private final CertificateManager certificateManagerEncSign;
-    private ScheduledFuture future = null;
+    private ScheduledFuture<?> future = null;
     private final ExecutorService sendingTheadExecutor
             = Executors.newFixedThreadPool(3,
                     new NamedThreadFactory("dirpoll-send"));
@@ -167,7 +167,7 @@ public class DirPollThread implements Runnable {
     /**
      * Sets the necessary information to this thread to be canceled
      */
-    public void setFuture(ScheduledFuture future) {
+    public void setFuture(ScheduledFuture<?> future) {
         this.future = future;
     }
 
@@ -301,7 +301,7 @@ public class DirPollThread implements Runnable {
     /**
      * Non blocking file directory polling
      */
-    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter fileFilter) throws Exception {
+    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter<Path> fileFilter) throws Exception {
         List<Path> result = new ArrayList<Path>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, fileFilter)) {
             for (Path entry : stream) {

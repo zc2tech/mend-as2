@@ -11,7 +11,6 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.MecResourceBundle;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.security.cert.CertificateInUseInfo;
 import de.mendelson.util.security.cert.KeystoreCertificate;
@@ -170,7 +169,7 @@ public class JDialogCertificateReference extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogCertificateReference.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);

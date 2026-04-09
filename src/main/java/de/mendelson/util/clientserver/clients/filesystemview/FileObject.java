@@ -17,7 +17,7 @@ import java.nio.file.Paths;
  * @author S.Heller
  * @version $Revision: 9 $
  */
-public abstract class FileObject implements Serializable, Comparable {
+public abstract class FileObject implements Serializable, Comparable<FileObject> {
 
     private static final long serialVersionUID = 1L;
     private final URI fileURI;
@@ -27,7 +27,7 @@ public abstract class FileObject implements Serializable, Comparable {
         this.fileURI = fileURI;
         this.absolutePathDisplayOnServerSide = Paths.get(fileURI).toAbsolutePath().toString();
     }
-    
+
     /**
      * @return the file
      */
@@ -37,14 +37,10 @@ public abstract class FileObject implements Serializable, Comparable {
 
 
     @Override
-    public int compareTo(Object otherObject) {
-        if (otherObject == null || this.fileURI == null) {
+    public int compareTo(FileObject otherFileObject) {
+        if (otherFileObject == null || this.fileURI == null) {
             return (0);
         }
-        if (!(otherObject instanceof FileObject)) {
-            return (0);
-        }
-        FileObject otherFileObject = (FileObject) otherObject;
         return (Paths.get(this.fileURI).getFileName().toString()
                 .compareTo(Paths.get(otherFileObject.getFileURI()).getFileName().toString()));
     }

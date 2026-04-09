@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  */
 public class RawMessageSender {
 
-    private final Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
+    // private final Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
 
     /**
      * Creates new raw message sender
@@ -57,22 +57,22 @@ public class RawMessageSender {
                 headerStream.close();
             }
         }
-        AnonymousTextClient client = null;
-        client = new AnonymousTextClient(BaseClient.CLIENT_UNSPECIFIED);
-        // Use test mode port if enabled
-        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
-        int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
-        client.connect("localhost", port, 30000);        
-        IncomingMessageRequest messageRequest = new IncomingMessageRequest();
-        messageRequest.setMessageDataFilename(rawDataFile.toAbsolutePath().toString());
-        messageRequest.setHeader(header);
-        messageRequest.setContentType(header.getProperty("content-type"));
-        messageRequest.setRemoteHost("localhost");
-        IncomingMessageResponse response = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
-        if (response.getException() != null) {
-            throw (response.getException());
+        try (AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_UNSPECIFIED)) {
+            // Use test mode port if enabled
+            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
+            client.connect("localhost", port, 30000);
+            IncomingMessageRequest messageRequest = new IncomingMessageRequest();
+            messageRequest.setMessageDataFilename(rawDataFile.toAbsolutePath().toString());
+            messageRequest.setHeader(header);
+            messageRequest.setContentType(header.getProperty("content-type"));
+            messageRequest.setRemoteHost("localhost");
+            IncomingMessageResponse response = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
+            if (response.getException() != null) {
+                throw (response.getException());
+            }
+            return (response);
         }
-        return (response);
     }
 
     /**

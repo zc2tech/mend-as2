@@ -21,7 +21,6 @@
 
 package de.mendelson.comm.as2.servlet.rest.resources;
 
-import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.clientserver.clients.preferences.PreferencesRequest;
 import de.mendelson.util.clientserver.clients.preferences.PreferencesResponse;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;

@@ -41,7 +41,7 @@ public class JDialogOAuth2Config extends JDialog {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        buttonGroupAuthorizationCallback = new javax.swing.ButtonGroup();
+        // buttonGroupAuthorizationCallback = new javax.swing.ButtonGroup();
         jPanelEdit = new javax.swing.JPanel();
         jPanelSpace = new javax.swing.JPanel();
         jLabelInfo = new javax.swing.JLabel();
@@ -130,7 +130,7 @@ public class JDialogOAuth2Config extends JDialog {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.ButtonGroup buttonGroupAuthorizationCallback;
+    // private javax.swing.ButtonGroup buttonGroupAuthorizationCallback;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOk;
     private javax.swing.JLabel jLabelInfo;

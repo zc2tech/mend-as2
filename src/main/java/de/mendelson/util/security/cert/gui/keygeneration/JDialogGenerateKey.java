@@ -11,7 +11,6 @@
 package de.mendelson.util.security.cert.gui.keygeneration;
 
 import de.mendelson.util.KeyboardShortcutUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.balloontip.BalloonToolTip;
@@ -108,7 +107,7 @@ public class JDialogGenerateKey extends JDialog {
         this.jComboBoxKeyType.addItem(KeyGenerator.KEYALGORITHM_SPHINCSPLUS);
         this.jComboBoxKeyType.setSelectedItem(KeyGenerator.KEYALGORITHM_RSA);
         this.displayValues();
-        Enumeration enumeration = ECNamedCurveTable.getNames();
+        Enumeration<?> enumeration = ECNamedCurveTable.getNames();
         List<String> curveNames = new ArrayList<String>();
         while (enumeration.hasMoreElements()) {
             String curveName = enumeration.nextElement().toString();
@@ -337,6 +336,7 @@ public class JDialogGenerateKey extends JDialog {
         String mail = this.jTextFieldMailAddress.getText();
         //check if domain exists
         try {
+            @SuppressWarnings("unused")
             InetAddress address = InetAddress.getByName(domain);
         } catch (UnknownHostException e) {
             if (warning.length() > 0) {
