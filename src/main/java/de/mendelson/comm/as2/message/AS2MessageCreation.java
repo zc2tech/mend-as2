@@ -774,22 +774,19 @@ public class AS2MessageCreation {
         X509Certificate certificate = this.encryptionCertManager.getX509Certificate(receiverCryptAlias);
         //define key transport scheme
         AlgorithmIdentifier keyTransportScheme = null;
-        if (encryptionType == AS2Message.ENCRYPTION_AES_128_RSAES_AOEP
-                || encryptionType == AS2Message.ENCRYPTION_AES_128_CBC_RSAES_AOEP
+        if (encryptionType == AS2Message.ENCRYPTION_AES_128_CBC_RSAES_AOEP
                 || encryptionType == AS2Message.ENCRYPTION_AES_128_GCM_RSAES_AOEP) {
             //generate algorithm identifier for RSA-OAEP pkcs#1 v2.1 with SHA-256
             JcaAlgorithmParametersConverter paramsConverter = new JcaAlgorithmParametersConverter();
             OAEPParameterSpec oaepSpec = new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
             keyTransportScheme = paramsConverter.getAlgorithmIdentifier(PKCSObjectIdentifiers.id_RSAES_OAEP, oaepSpec);
-        } else if (encryptionType == AS2Message.ENCRYPTION_AES_192_RSAES_AOEP
-                || encryptionType == AS2Message.ENCRYPTION_AES_192_CBC_RSAES_AOEP
+        } else if (encryptionType == AS2Message.ENCRYPTION_AES_192_CBC_RSAES_AOEP
                 || encryptionType == AS2Message.ENCRYPTION_AES_192_GCM_RSAES_AOEP) {
             //generate algorithm identifier for RSA-OAEP pkcs#1 v2.1 with SHA-256
             JcaAlgorithmParametersConverter paramsConverter = new JcaAlgorithmParametersConverter();
             OAEPParameterSpec oaepSpec = new OAEPParameterSpec("SHA-256", "MGF1", new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
             keyTransportScheme = paramsConverter.getAlgorithmIdentifier(PKCSObjectIdentifiers.id_RSAES_OAEP, oaepSpec);
-        } else if (encryptionType == AS2Message.ENCRYPTION_AES_256_RSAES_AOEP
-                || encryptionType == AS2Message.ENCRYPTION_AES_256_CBC_RSAES_AOEP
+        } else if (encryptionType == AS2Message.ENCRYPTION_AES_256_CBC_RSAES_AOEP
                 || encryptionType == AS2Message.ENCRYPTION_AES_256_GCM_RSAES_AOEP) {
             //generate algorithm identifier for RSA-OAEP pkcs#1 v2.1 with SHA-256
             JcaAlgorithmParametersConverter paramsConverter = new JcaAlgorithmParametersConverter();
@@ -825,13 +822,13 @@ public class AS2MessageCreation {
             } else if (encryptionType == AS2Message.ENCRYPTION_RC2_196) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.RC2_CBC, 196)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_128) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_128_CBC) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES128_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_192) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_192_CBC) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES192_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_256) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_256_CBC) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
             } else if (encryptionType == AS2Message.ENCRYPTION_RC4_40) {
@@ -846,16 +843,13 @@ public class AS2MessageCreation {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(
                         new ASN1ObjectIdentifier(cryptoHelper.convertAlgorithmNameToOID(BCCryptoHelper.ALGORITHM_RC4)), 128)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_128_RSAES_AOEP
-                    || encryptionType == AS2Message.ENCRYPTION_AES_128_CBC_RSAES_AOEP) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_128_CBC_RSAES_AOEP) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES128_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_192_RSAES_AOEP
-                    || encryptionType == AS2Message.ENCRYPTION_AES_192_CBC_RSAES_AOEP) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_192_CBC_RSAES_AOEP) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES192_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
-            } else if (encryptionType == AS2Message.ENCRYPTION_AES_256_RSAES_AOEP
-                    || encryptionType == AS2Message.ENCRYPTION_AES_256_CBC_RSAES_AOEP) {
+            } else if (encryptionType == AS2Message.ENCRYPTION_AES_256_CBC_RSAES_AOEP) {
                 out = dataGenerator.open(encryptedOutput, new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC)
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build());
             } else if (encryptionType == AS2Message.ENCRYPTION_AES_128_GCM

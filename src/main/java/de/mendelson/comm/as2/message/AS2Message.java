@@ -42,21 +42,6 @@ public class AS2Message implements Serializable {
     public static final int ENCRYPTION_RC2_128 = EncryptionConstantsAS2.ENCRYPTION_RC2_128;
     public static final int ENCRYPTION_RC2_196 = EncryptionConstantsAS2.ENCRYPTION_RC2_196;
     public static final int ENCRYPTION_RC2_UNKNOWN = EncryptionConstantsAS2.ENCRYPTION_RC2_UNKNOWN;
-    /**
-     * @deprecated by CBC
-     */
-    @Deprecated(since = "08/2024")
-    public static final int ENCRYPTION_AES_128 = EncryptionConstantsAS2.ENCRYPTION_AES_128;
-    /**
-     * @deprecated by CBC
-     */
-    @Deprecated(since = "08/2024")
-    public static final int ENCRYPTION_AES_192 = EncryptionConstantsAS2.ENCRYPTION_AES_192;
-    /**
-     * @deprecated by CBC
-     */
-    @Deprecated(since = "08/2024")
-    public static final int ENCRYPTION_AES_256 = EncryptionConstantsAS2.ENCRYPTION_AES_256;
     public static final int ENCRYPTION_AES_128_CBC = EncryptionConstantsAS2.ENCRYPTION_AES_128_CBC;
     public static final int ENCRYPTION_AES_192_CBC = EncryptionConstantsAS2.ENCRYPTION_AES_192_CBC;
     public static final int ENCRYPTION_AES_256_CBC = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC;
@@ -65,25 +50,10 @@ public class AS2Message implements Serializable {
     public static final int ENCRYPTION_RC4_128 = EncryptionConstantsAS2.ENCRYPTION_RC4_128;
     public static final int ENCRYPTION_RC4_UNKNOWN = EncryptionConstantsAS2.ENCRYPTION_RC4_UNKNOWN;
     public static final int ENCRYPTION_DES = EncryptionConstantsAS2.ENCRYPTION_DES;
-    /**
-     * @deprecated by CBC
-     */
-    @Deprecated(since = "09/2024")
-    public static final int ENCRYPTION_AES_128_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_128_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_128_CBC_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_128_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_128_GCM_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_128_GCM_RSAES_AOEP;
-    /**
-     * @deprecated by CBC
-     */
-    @Deprecated(since = "09/2024")
-    public static final int ENCRYPTION_AES_192_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_192_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_192_CBC_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_192_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_192_GCM_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_192_GCM_RSAES_AOEP;
-    /**
-     * @deprecated by CBC
-     */
-    // @Deprecated(since = "09/2024")
-    public static final int ENCRYPTION_AES_256_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_CBC_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_CBC_RSAES_AOEP;
     public static final int ENCRYPTION_AES_256_GCM_RSAES_AOEP = EncryptionConstantsAS2.ENCRYPTION_AES_256_GCM_RSAES_AOEP;
     public static final int ENCRYPTION_AES_128_GCM = EncryptionConstantsAS2.ENCRYPTION_AES_128_GCM;

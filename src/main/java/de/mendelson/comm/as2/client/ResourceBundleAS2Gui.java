@@ -35,7 +35,6 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"menu.file", "File"},
         {"menu.file.exit", "Exit"},
         {"menu.file.partner", "Partner"},
-        {"menu.file.datasheet", "Create communication datasheet"},
         {"menu.file.certificates", "Certificates"},
         {"menu.file.certificate", "Certificates"},
         {"menu.file.certificate.signcrypt", "Sign/Crypt"},

@@ -10,7 +10,6 @@ import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientCEMDisplay;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;
 import de.mendelson.comm.as2.clientserver.message.RefreshTablePartnerData;
-import de.mendelson.comm.as2.datasheet.gui.JDialogCreateDataSheet;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.comm.as2.message.AS2Payload;
@@ -644,7 +643,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jButtonUserManagement.setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jMenuItemUserManagement
                 .setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemDatasheet.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemSearchInServerLog.setIcon(new ImageIcon(IMAGE_LOG_SEARCH.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jToggleButtonStopRefresh.setIcon(new ImageIcon(IMAGE_STOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
         this.jButtonConfigureColumns.setIcon(new ImageIcon(IMAGE_COLUMN.toMinResolution(IMAGE_SIZE_TOOLBAR)));
@@ -1051,28 +1049,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         if (this.jComboBoxFilterLocalStation.getSelectedItem() == null) {
             this.jComboBoxFilterLocalStation.setSelectedIndex(0);
-        }
-    }
-
-    private void createDatasheet() {
-        try {
-            KeystoreStorage storageEncSign = new KeystoreStorageImplClientServer(
-                    this.getBaseClient(),
-                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
-            KeystoreStorage storageSSL = new KeystoreStorageImplClientServer(
-                    this.getBaseClient(),
-                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
-            CertificateManager certificateManagerEncSign = new CertificateManager(this.getLogger());
-            certificateManagerEncSign.loadKeystoreCertificates(storageEncSign);
-            CertificateManager certificateManagerSSL = new CertificateManager(this.getLogger());
-            certificateManagerSSL.loadKeystoreCertificates(storageSSL);
-            JDialogCreateDataSheet dialog = new JDialogCreateDataSheet(this, this.getBaseClient(), this.as2StatusBar,
-                    certificateManagerEncSign, certificateManagerSSL);
-            dialog.setVisible(true);
-        } catch (Throwable e) {
-            UINotification.instance().addNotification(e);
         }
     }
 
@@ -1773,7 +1749,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jSeparator2 = new javax.swing.JSeparator();
         jMenuItemFilePreferences = new javax.swing.JMenuItem();
         jMenuItemPartner = new javax.swing.JMenuItem();
-        jMenuItemDatasheet = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JSeparator();
         jMenuFileCertificates = new javax.swing.JMenu();
         jMenuItemCertificatesSignCrypt = new javax.swing.JMenuItem();
@@ -2326,18 +2301,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jMenuFile.add(jMenuItemPartner);
-
-        jMenuItemDatasheet.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemDatasheet.setText(this.rb.getResourceString("menu.file.datasheet"));
-        jMenuItemDatasheet.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_D,
-                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemDatasheet.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemDatasheetActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemDatasheet);
         jMenuFile.add(jSeparator6);
 
         jMenuItemUserManagement = new javax.swing.JMenuItem();
@@ -2693,10 +2656,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.resendTransactions();
     }// GEN-LAST:event_jMenuItemPopupSendAgainActionPerformed
 
-    private void jMenuItemDatasheetActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemDatasheetActionPerformed
-        this.createDatasheet();
-    }// GEN-LAST:event_jMenuItemDatasheetActionPerformed
-
     private void jButtonConfigureColumnsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jButtonConfigureColumnsActionPerformed
         JDialogColumnConfig dialog = new JDialogColumnConfig(this,
                 (TableColumnModelHideable) this.jTableMessageOverview.getColumnModel(), this);
@@ -2779,7 +2738,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;
     private javax.swing.JMenuItem jMenuItemCertificatesSignCrypt;
-    private javax.swing.JMenuItem jMenuItemDatasheet;
     private javax.swing.JMenuItem jMenuItemFileExit;
     private javax.swing.JMenuItem jMenuItemFilePreferences;
     private javax.swing.JMenuItem jMenuItemFileSend;

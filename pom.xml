@@ -196,6 +196,9 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- Suppress warnings about overlapping classes and module-info -->
+                            <createSourcesJar>false</createSourcesJar>
+                            <shadeSourcesContent>false</shadeSourcesContent>
                             <transformers>
                                 <!-- Add Main-Class to manifest -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -221,6 +224,31 @@
                                         <exclude>META-INF/LICENSE.txt</exclude>
                                         <exclude>META-INF/NOTICE</exclude>
                                         <exclude>META-INF/NOTICE.txt</exclude>
+                                        <!-- Exclude module-info to suppress warnings -->
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <!-- Exclude other overlapping resources that cause warnings -->
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/LICENSE.md</exclude>
+                                        <exclude>META-INF/NOTICE.md</exclude>
+                                        <exclude>META-INF/NOTICE.markdown</exclude>
+                                        <exclude>META-INF/AL2.0</exclude>
+                                        <exclude>META-INF/LGPL2.1</exclude>
+                                        <exclude>META-INF/versions/9/OSGI-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/PROJECTS.MF</exclude>
+                                        <exclude>META-INF/mailcap</exclude>
+                                        <exclude>license/*</exclude>
+                                        <!-- Exclude Maven metadata to reduce overlapping warnings -->
+                                        <exclude>META-INF/maven/**/pom.xml</exclude>
+                                        <exclude>META-INF/maven/**/pom.properties</exclude>
+                                    </excludes>
+                                </filter>
+                                <!-- Keep angus-mail classes, exclude ALL from angus-core to avoid duplicates -->
+                                <!-- angus-mail contains all classes from angus-core, so we exclude everything from angus-core -->
+                                <filter>
+                                    <artifact>org.eclipse.angus:angus-core</artifact>
+                                    <excludes>
+                                        <exclude>**/*</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
@@ -588,61 +616,6 @@
         <!-- Oracle JavaHelp dependencies removed - incompatible with JDK 17+ -->
         <!-- Help system replaced with simple GitHub link dialog in AS2Gui.java -->
 
-        <!-- Intarsys iscwt and isrt removed - provided as transitive dependencies via jPod and isfreetype -->
-
-        <!-- Intarsys FreeType wrapper (required by renderer) -->
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>isfreetype</artifactId>
-            <version>5.6</version>
-        </dependency>
-
-        <!-- Intarsys CWT + SWT bridge - Testing removal -->
-        <!--
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>iscwt</artifactId>
-            <version>5.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.swt</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.platform</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
-
-        <!-- Intarsys jPod (PDF model, PDAcroForm, PDPage in de.intarsys.pdf.pd.*) -->
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>jPod</artifactId>
-            <version>5.3</version>
-        </dependency>
-
-        <!-- Intarsys jPodRenderer (content/rendering; classes like CSCreator) -->
-        <dependency>
-            <groupId>de.intarsys.opensource</groupId>
-            <artifactId>jPodRenderer</artifactId>
-            <version>5.3</version>
-
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.swt</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.platform</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-
-        </dependency>
-
-
         <!-- JAX-RS (Jersey) for REST API -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
@@ -828,8 +801,7 @@
                                 <configuration>
                                     <outputDirectory>${project.build.directory}/lib-prepackaged</outputDirectory>
                                     <includeArtifactIds>
-                                        jcalendar,jfreechart,jcommon,l2fprod-common-buttonbar,l2fprod-common-shared,
-                                        isfreetype,isrt,isnativec,jPod,iscwt,jai-core,jai-codec,jbig2,jPodRenderer,jPodFonts
+                                        jcalendar,jfreechart,jcommon,l2fprod-common-buttonbar,l2fprod-common-shared
                                     </includeArtifactIds>
                                 </configuration>
                             </execution>
