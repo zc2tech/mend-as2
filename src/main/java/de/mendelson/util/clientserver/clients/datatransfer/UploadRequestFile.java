@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class UploadRequestFile extends ClientServerMessage implements Serializable {
+public class UploadRequestFile extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private String targetFilename = null;

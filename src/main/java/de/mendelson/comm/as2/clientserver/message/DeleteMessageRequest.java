@@ -4,7 +4,6 @@ import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /*
@@ -19,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class DeleteMessageRequest extends ClientServerMessage implements Serializable{
+public class DeleteMessageRequest extends ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private final List<AS2MessageInfo> deleteList = new ArrayList<AS2MessageInfo>();

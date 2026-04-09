@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Message to request HTTP authentication preferences for a user
  *
  */
-public class UserHttpAuthPreferenceRequest extends ClientServerMessage implements Serializable {
+public class UserHttpAuthPreferenceRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class ServerInstanceHAListRequest extends ClientServerMessage implements Serializable {
+public class ServerInstanceHAListRequest extends ClientServerMessage{
     private static final long serialVersionUID = 1L;
             
     public ServerInstanceHAListRequest() {

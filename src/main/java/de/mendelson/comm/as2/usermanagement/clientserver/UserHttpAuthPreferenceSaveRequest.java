@@ -30,7 +30,7 @@ import java.util.Map;
  * Message to save HTTP authentication preferences for a user
  * Structure: partnerId -> type (message/mdn) -> field (username/password) -> value
  */
-public class UserHttpAuthPreferenceSaveRequest extends ClientServerMessage implements Serializable {
+public class UserHttpAuthPreferenceSaveRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

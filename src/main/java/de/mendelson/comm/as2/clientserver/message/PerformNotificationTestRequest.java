@@ -4,7 +4,6 @@ import de.mendelson.util.systemevents.notification.NotificationData;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -17,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class PerformNotificationTestRequest extends ClientServerMessage implements Serializable{
+public class PerformNotificationTestRequest extends  ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private final NotificationData notificationData;

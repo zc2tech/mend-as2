@@ -161,7 +161,7 @@ public class JDialogIssuesList extends JDialog implements FocusListener, MouseMo
                 }
                 listData.add(entry.toString());
             }
-            this.jList.setListData(listData.toArray());
+            this.jList.setListData(listData.toArray(new String[0]));
             synchronized (this.issues) {
                 this.issues.clear();
                 this.issues.addAll(responseIssues);
@@ -288,7 +288,7 @@ public class JDialogIssuesList extends JDialog implements FocusListener, MouseMo
         java.awt.GridBagConstraints gridBagConstraints;
 
         jScrollPaneList = new javax.swing.JScrollPane();
-        jList = new javax.swing.JList();
+        jList = new javax.swing.JList<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setUndecorated(true);
@@ -299,10 +299,10 @@ public class JDialogIssuesList extends JDialog implements FocusListener, MouseMo
         jScrollPaneList.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         jScrollPaneList.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
 
-        jList.setModel(new javax.swing.AbstractListModel() {
+        jList.setModel(new javax.swing.AbstractListModel<String>() {
             final String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
             public int getSize() { return strings.length; }
-            public Object getElementAt(int i) { return strings[i]; }
+            public String getElementAt(int i) { return strings[i]; }
         });
         jList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -323,7 +323,7 @@ public class JDialogIssuesList extends JDialog implements FocusListener, MouseMo
         displayIssueDetailsDialog();
     }//GEN-LAST:event_jListMouseClicked
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JList jList;
+    private javax.swing.JList<String> jList;
     private javax.swing.JScrollPane jScrollPaneList;
     // End of variables declaration//GEN-END:variables
 }

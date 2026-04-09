@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class PreferencesRequest extends ClientServerMessage implements Serializable{
+public class PreferencesRequest extends  ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     public static final int TYPE_SET = 1;

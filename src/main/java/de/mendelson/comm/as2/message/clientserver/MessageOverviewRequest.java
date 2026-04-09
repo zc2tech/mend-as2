@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class MessageOverviewRequest extends ClientServerMessage implements Serializable {
+public class MessageOverviewRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private MessageOverviewFilter filter = null;

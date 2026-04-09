@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class QuotaResetRequest extends ClientServerMessage implements Serializable {
+public class QuotaResetRequest extends ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private final String localStationId;

@@ -36,16 +36,21 @@ public class SortableTreeNode extends DefaultMutableTreeNode {
      */
     public void add(SortableTreeNode newChild) {
         int count = this.getChildCount();
-        Comparable newObject = (Comparable) newChild.getUserObject();
+        Object newObjectRaw = newChild.getUserObject();
         for (int i = 0; i < count; i++) {
             SortableTreeNode child = (SortableTreeNode) getChildAt(i);
-            Comparable childObject = (Comparable) child.getUserObject();
-            if (newObject.compareTo(childObject) < 0) {
+            Object childObjectRaw = child.getUserObject();
+            if (compareObjects(newObjectRaw, childObjectRaw) < 0) {
                 super.insert(newChild, i);
                 return;
             }
         }
         super.add(newChild);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private int compareObjects(Object o1, Object o2) {
+        return ((Comparable) o1).compareTo(o2);
     }
 
     /**Insert a node below this one, the index is ignored because this is

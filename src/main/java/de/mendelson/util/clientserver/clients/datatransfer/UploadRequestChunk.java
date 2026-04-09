@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class UploadRequestChunk extends ClientServerMessage implements Serializable {
+public class UploadRequestChunk extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private byte[] data = null;

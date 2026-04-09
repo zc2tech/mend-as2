@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Message to request roles for a specific user
  */
-public class UserRolesRequest extends ClientServerMessage implements Serializable {
+public class UserRolesRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private int userId;

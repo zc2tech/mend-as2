@@ -24,7 +24,6 @@ package de.mendelson.comm.as2.clientserver.message;
 import de.mendelson.comm.as2.preferences.InboundAuthCredential;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**

@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.database;
 
 import de.mendelson.util.database.AbstractDBDriverManagerMySQL;
-import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.database.ISQLQueryModifier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,7 +19,7 @@ import java.sql.SQLException;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implements IDBDriverManager, ISQLQueryModifier {
+public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implements ISQLQueryModifier {
 
     /**
      * keeps this as singleton for the whole server instance

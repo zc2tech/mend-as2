@@ -94,17 +94,6 @@ public class ConfigurationCheckController {
         return (clientIssueList);
     }
 
-    /**
-     * Checks if client and server run in one process as this is not recommended
-     * in production
-     */
-    private void checkClientAndServerRunInOneProcess(List<ConfigurationIssue> clientIssueList,
-            String clientProcessId, String serverProcessId) {
-        if (clientProcessId.equals(serverProcessId)) {
-            ConfigurationIssue issue = new ConfigurationIssue(ConfigurationIssue.CLIENT_SERVER_IN_ONE_PROCESS);
-            clientIssueList.add(issue);
-        }
-    }
 
     /**
      * Starts the embedded task that guards the log

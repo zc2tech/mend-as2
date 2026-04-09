@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public abstract class DownloadRequest extends ClientServerMessage implements Serializable{
+public abstract class DownloadRequest extends  ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     

@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class MessageRequestLastMessage extends ClientServerMessage implements Serializable{
+public class MessageRequestLastMessage extends  ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private String messageId = null;

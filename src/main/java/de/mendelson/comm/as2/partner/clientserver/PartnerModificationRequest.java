@@ -21,7 +21,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class PartnerModificationRequest extends ClientServerMessage implements Serializable {
+public class PartnerModificationRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private final List<Partner> data = new ArrayList<Partner>();

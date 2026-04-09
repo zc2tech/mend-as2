@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class ConfigurationChangedOnServer extends ClientServerMessage implements Serializable{
+public class ConfigurationChangedOnServer extends  ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

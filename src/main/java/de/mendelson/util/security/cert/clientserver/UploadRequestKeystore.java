@@ -22,7 +22,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 10 $
  */
-public class UploadRequestKeystore extends ClientServerMessage implements Serializable {
+public class UploadRequestKeystore extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     

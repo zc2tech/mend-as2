@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.client.manualsend;
 
 import de.mendelson.util.clientserver.clients.datatransfer.UploadRequestFile;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +17,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 14 $
  */
-public class ManualSendRequest extends UploadRequestFile implements Serializable {
+public class ManualSendRequest extends UploadRequestFile {
 
     
     private static final long serialVersionUID = 1L;

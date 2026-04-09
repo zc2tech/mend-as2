@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class KeyCopyRequest extends ClientServerMessage implements Serializable {
+public class KeyCopyRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

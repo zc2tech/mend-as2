@@ -30,7 +30,7 @@ import java.util.Date;
  *
  * @author Julian Xu
  */
-public class TrackerMessageRequest extends ClientServerMessage implements Serializable {
+public class TrackerMessageRequest extends ClientServerMessage{
 
     public static final long serialVersionUID = 1L;
 

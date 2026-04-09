@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class StatisticOverviewRequest extends ClientServerMessage implements Serializable {
+public class StatisticOverviewRequest extends ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private final String as2Identification;

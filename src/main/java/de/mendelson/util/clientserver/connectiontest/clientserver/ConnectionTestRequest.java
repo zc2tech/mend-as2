@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * @author S.Heller
  * @version $Revision: 8 $
  */
-public class ConnectionTestRequest extends ClientServerMessage implements Serializable {
+public class ConnectionTestRequest extends ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private String[] protocols = ConnectionTest.DEFAULT_TLS_PROTOCOL_LIST;

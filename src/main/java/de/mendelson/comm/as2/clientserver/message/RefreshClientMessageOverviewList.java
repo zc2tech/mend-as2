@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.clientserver.message;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -16,7 +15,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class RefreshClientMessageOverviewList extends ClientServerMessage implements Serializable{
+public class RefreshClientMessageOverviewList extends  ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     

@@ -29,7 +29,7 @@ import java.io.Serializable;
  * Message to create a new user
  *
  */
-public class UserCreateRequest extends ClientServerMessage implements Serializable {
+public class UserCreateRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private WebUIUser user;

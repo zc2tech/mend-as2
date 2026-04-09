@@ -24,7 +24,6 @@ package de.mendelson.comm.as2.clientserver.message;
 import de.mendelson.comm.as2.preferences.InboundAuthCredential;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -32,7 +31,7 @@ import java.util.List;
  *
  * @author Julian Xu
  */
-public class InboundAuthCredentialRequest extends ClientServerMessage implements Serializable {
+public class InboundAuthCredentialRequest extends ClientServerMessage{
 
     public static final int OPERATION_GET = 1;
     public static final int OPERATION_SAVE = 2;

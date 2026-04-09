@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ModuleLockRequest extends ClientServerMessage implements Serializable{
+public class ModuleLockRequest extends  ClientServerMessage{
         
     private static final long serialVersionUID = 1L;
     public static final int TYPE_SET = 1;

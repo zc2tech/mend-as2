@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class NotificationGetRequest extends ClientServerMessage implements Serializable {
+public class NotificationGetRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     

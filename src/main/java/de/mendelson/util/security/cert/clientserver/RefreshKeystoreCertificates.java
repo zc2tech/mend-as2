@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class RefreshKeystoreCertificates extends ClientServerMessage implements Serializable{
+public class RefreshKeystoreCertificates extends  ClientServerMessage{
     private static final long serialVersionUID = 1L;
     
     @Override

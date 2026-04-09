@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Message to request list of all users
  *
  */
-public class UserListRequest extends ClientServerMessage implements Serializable {
+public class UserListRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

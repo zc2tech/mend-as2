@@ -20,7 +20,7 @@ import java.lang.management.RuntimeMXBean;
  * @author S.Heller
  * @version $Revision: 15 $
  */
-public class ServerInfoRequest extends ClientServerMessage implements Serializable {
+public class ServerInfoRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     public static final String SERVER_FULL_PRODUCT_NAME = "full_product_name";

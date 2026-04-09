@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 1 $
  */
-public class ExportRequestPrivateKey extends ClientServerMessage implements Serializable {
+public class ExportRequestPrivateKey extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class FileSystemViewRequest extends ClientServerMessage implements Serializable {
+public class FileSystemViewRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     public static final int TYPE_LIST_ROOTS = 1;

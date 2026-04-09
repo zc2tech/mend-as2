@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.client.manualsend;
 
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.util.clientserver.clients.datatransfer.UploadResponseFile;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -16,7 +15,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class ManualSendResponse extends UploadResponseFile implements Serializable {
+public class ManualSendResponse extends UploadResponseFile {
 
     private static final long serialVersionUID = 1L;
     private AS2MessageInfo as2Info = null;

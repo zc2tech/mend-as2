@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 10 $
  */
-public class PartnerListRequest extends ClientServerMessage implements Serializable {
+public class PartnerListRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     public static final int LIST_ALL = 1;

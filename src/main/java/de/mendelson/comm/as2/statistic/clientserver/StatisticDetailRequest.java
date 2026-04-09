@@ -21,7 +21,7 @@ import org.jfree.data.time.SimpleTimePeriod;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class StatisticDetailRequest extends ClientServerMessage implements Serializable {
+public class StatisticDetailRequest extends ClientServerMessage{
     
     private static final long serialVersionUID = 1L;
     private String as2IdentificationLocal;

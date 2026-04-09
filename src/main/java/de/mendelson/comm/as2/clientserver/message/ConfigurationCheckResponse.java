@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.clientserver.message;
 
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /*

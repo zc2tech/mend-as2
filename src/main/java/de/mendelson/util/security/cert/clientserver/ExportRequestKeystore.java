@@ -19,7 +19,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ExportRequestKeystore extends ClientServerMessage implements Serializable {
+public class ExportRequestKeystore extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 

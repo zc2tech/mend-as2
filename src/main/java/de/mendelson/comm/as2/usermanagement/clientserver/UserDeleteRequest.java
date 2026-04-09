@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Message to delete a user
  *
  */
-public class UserDeleteRequest extends ClientServerMessage implements Serializable {
+public class UserDeleteRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private int userId;

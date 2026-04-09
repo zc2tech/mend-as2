@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.clientserver.message;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.Properties;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -19,7 +18,7 @@ import java.util.Properties;
  * @author S.Heller
  * @version $Revision: 8 $
  */
-public class IncomingMessageRequest extends ClientServerMessage implements Serializable {
+public class IncomingMessageRequest extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     private String contentType = null;
@@ -31,7 +30,9 @@ public class IncomingMessageRequest extends ClientServerMessage implements Seria
     private int localPort = -1;
     private String tlsProtocol = null;
     private String cipherSuite = null;
-    /**Indicates if this is a sync MDN. In this case there is no additional connection information as this came in on the back channel
+    /**
+     * Indicates if this is a sync MDN. In this case there is no additional
+     * connection information as this came in on the back channel
      * of the outbound connection
      */
     private boolean isSyncMDN = false;
@@ -103,8 +104,8 @@ public class IncomingMessageRequest extends ClientServerMessage implements Seria
         this.usesTLS = usesTLS;
     }
 
-    /**Prevent an overwrite of the readObject method for de-serialization*/
-    private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException{
+    /** Prevent an overwrite of the readObject method for de-serialization */
+    private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException {
         inStream.defaultReadObject();
     }
 
@@ -165,8 +166,10 @@ public class IncomingMessageRequest extends ClientServerMessage implements Seria
     }
 
     /**
-     * Indicates if this is a sync MDN. In this case there is no additional connection information as this came in on the back channel
+     * Indicates if this is a sync MDN. In this case there is no additional
+     * connection information as this came in on the back channel
      * of the outbound connection
+     * 
      * @return the isSyncMDN
      */
     public boolean isSyncMDN() {
@@ -174,12 +177,14 @@ public class IncomingMessageRequest extends ClientServerMessage implements Seria
     }
 
     /**
-     * Indicates if this is a sync MDN. In this case there is no additional connection information as this came in on the back channel
+     * Indicates if this is a sync MDN. In this case there is no additional
+     * connection information as this came in on the back channel
      * of the outbound connection
+     * 
      * @param isSyncMDN the isSyncMDN to set
      */
     public void setSyncMDN(boolean isSyncMDN) {
         this.isSyncMDN = isSyncMDN;
     }
-    
+
 }

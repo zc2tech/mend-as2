@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.clientserver.message;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.Properties;
 import jakarta.servlet.http.HttpServletResponse;
 /*

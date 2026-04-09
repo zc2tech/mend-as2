@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Request to change a user's password
  *
  */
-public class UserPasswordChangeRequest extends ClientServerMessage implements Serializable {
+public class UserPasswordChangeRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
 
