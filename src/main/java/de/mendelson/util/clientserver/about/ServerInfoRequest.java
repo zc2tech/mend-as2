@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.about;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 /*

@@ -1,7 +1,6 @@
 package de.mendelson.util.clientserver.clients.filesystemview;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.nio.file.FileSystems;
 import java.util.List;
 /*

@@ -1,6 +1,5 @@
 package de.mendelson.util.clientserver.clients.datatransfer;
 
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -13,7 +12,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class DownloadRequestFile extends DownloadRequest implements Serializable{
+public class DownloadRequestFile extends DownloadRequest {
 
     private static final long serialVersionUID = 1L;
     private String filename = null;

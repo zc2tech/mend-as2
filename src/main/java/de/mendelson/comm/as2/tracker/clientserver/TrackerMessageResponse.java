@@ -23,7 +23,6 @@ package de.mendelson.comm.as2.tracker.clientserver;
 import de.mendelson.comm.as2.tracker.TrackerMessageInfo;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**

@@ -2,7 +2,7 @@ package de.mendelson.util.systemevents.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.systemevents.SystemEvent;
-import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.List;
 /*

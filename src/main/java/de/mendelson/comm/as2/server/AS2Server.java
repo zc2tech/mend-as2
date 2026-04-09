@@ -20,12 +20,8 @@ import de.mendelson.comm.as2.cem.CertificateCEMController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
-import de.mendelson.comm.as2.database.DBDriverManagerMySQL;
 import de.mendelson.comm.as2.database.DBDriverManagerPostgreSQL;
-import de.mendelson.comm.as2.database.DBDriverManagerOracleDB;
 import de.mendelson.util.database.DBServerInformation;
-import de.mendelson.comm.as2.database.DBServerMySQL;
-import de.mendelson.comm.as2.database.DBServerOracle;
 import de.mendelson.comm.as2.database.DBServerPostgreSQL;
 import de.mendelson.comm.as2.log.DBLoggingHandler;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
@@ -69,9 +65,6 @@ import java.util.logging.Logger;
 import java.util.logging.Handler;
 import java.util.logging.ConsoleHandler;
 import org.eclipse.jetty.server.Server;
-import de.mendelson.comm.as2.ha.ClientLogRefreshController;
-import de.mendelson.comm.as2.ha.HAInstanceController;
-import de.mendelson.comm.as2.ha.ServerCertificateRefreshControllerHA;
 import de.mendelson.util.LibVersion;
 import de.mendelson.util.ha.ServerInstanceHA;
 import de.mendelson.util.clientserver.ClientServerTLSImplDefault;
@@ -163,8 +156,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private ModuleLockReleaseController lockReleaseController = null;
     private CertificateExpireController expireController = null;
     private PostProcessingEventController eventController = null;
-    private HAInstanceController haInstanceController = null;
-    private ClientLogRefreshController clientLogRefreshController = null;
     private FileDeleteController fileDeleteController = null;
     private MessageDeleteController logDeleteController = null;
     private MDNReceiptController receiptController = null;
@@ -172,7 +163,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private SystemEventNotificationController notificationController = null;
     private final Handler loggingHandlerSystemOut = new ConsoleHandlerStdout();
     public final static CryptoProvider CRYPTO_PROVIDER = new CryptoProvider();
-    private ServerCertificateRefreshControllerHA serverCertificateRefreshController = null;
     private final AS2Config config;
 
     // Static reference for REST API access
@@ -189,7 +179,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * @param startPlugins    Starts the plugins if there are any in the system
      * @param startMinaServer Start the Mina client-server for SwingUI. Should be
      *                        disabled in headless mode for security
-     * @param config          AS2 configuration object for test mode and other settings
+     * @param config          AS2 configuration object for test mode and other
+     *                        settings
      *
      */
     public AS2Server(boolean startHTTPServer, boolean allowAllClients, boolean startPlugins,
@@ -206,7 +197,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.startTime = Instant.now().toEpochMilli();
         this.skipStartupConfigCheck = skipStartupConfigCheck;
         this.config = config;
-        staticServerReference = this;  // Set static reference for REST API access
+        staticServerReference = this; // Set static reference for REST API access
         this.initializeLogger();
         this.logger.info(rb.getResourceString("server.willstart", AS2ServerVersion.getFullProductName()));
         this.logger.info(Copyright.getCopyrightMessage());
@@ -214,7 +205,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         // Log test mode status
         int clientServerPort = config.getClientServerPort();
         if (config.isTestMode()) {
-            this.logger.info("*** TEST MODE ENABLED - Using alternative port " + clientServerPort + " for client-server communication ***");
+            this.logger.info("*** TEST MODE ENABLED - Using alternative port " + clientServerPort
+                    + " for client-server communication ***");
         }
 
         System.setProperty("mendelson.as2.embeddedhttpserver", startHTTPServer ? "TRUE" : "FALSE");
@@ -449,30 +441,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             this.fileDeleteController.startAutoDeleteControl();
             this.statsDeleteController = new StatisticDeleteController(this.dbDriverManager);
             this.statsDeleteController.startAutoDeleteControl();
-            // if there is any process that may modify log entries from outside there has to
-            // be a log poll to ensure
-            // all displayed data is synchronized. In HA any other node may add entries, in
-            // REST API any call may modify the log, too
-            // Note: In headless mode (clientserver==null), only REST API log refresh is needed
-            if ((PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)
-                    || PLUGINS.isActivated(ServerPlugins.PLUGIN_REST_API))
-                    && this.clientserver != null) {
-                // In HA mode the server process should check if there is a change in the number
-                // of transactions
-                // and then inform all clients to refresh
-                this.clientLogRefreshController = new ClientLogRefreshController(
-                        this.dbDriverManager,
-                        this.clientserver);
-                this.clientLogRefreshController.startHALogRefreshControl();
-            }
-            if (PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)) {
-                this.serverCertificateRefreshController = new ServerCertificateRefreshControllerHA(this.dbDriverManager,
-                        SystemEventManagerImplAS2.instance());
-                this.serverCertificateRefreshController.startRefreshControl(
-                        this.certificateManagerEncSign, this.certificateManagerTLS);
-            }
-            this.haInstanceController = new HAInstanceController(this, this.dbDriverManager);
-            this.haInstanceController.start();
             this.eventController = new PostProcessingEventController(this.clientserver,
                     this.certificateManagerEncSign,
                     this.dbDriverManager);
@@ -493,7 +461,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                 this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
             }
             // Make serverProcessing available to REST API
-            de.mendelson.comm.as2.servlet.rest.RestApplication.ServerProcessingHolder.setInstance(this.serverProcessing);
+            de.mendelson.comm.as2.servlet.rest.RestApplication.ServerProcessingHolder
+                    .setInstance(this.serverProcessing);
             this.expireController = new CertificateExpireController(this.certificateManagerEncSign,
                     this.certificateManagerTLS);
             this.expireController.startCertExpireControl();
@@ -609,7 +578,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * log to the existing logger
      */
     private void initializeAdditionalLogger() {
-        // send the log info to the attached clients of the client-server framework (only if Mina enabled)
+        // send the log info to the attached clients of the client-server framework
+        // (only if Mina enabled)
         if (this.clientServerSessionHandler != null) {
             logger.addHandler(new ClientServerLoggingHandler(this.clientServerSessionHandler));
         }
@@ -710,7 +680,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private Server startHTTPServer(KeystoreStorage tlsStorage) throws Exception {
         // start the HTTP server if this is requested
         if (System.getProperty("mendelson.as2.embeddedhttpserver", "TRUE").equalsIgnoreCase("TRUE")) {
-            JettyStarter starter = new JettyStarter(this.logger, tlsStorage, this.dbDriverManager, this.certificateManagerTLS);
+            JettyStarter starter = new JettyStarter(this.logger, tlsStorage, this.dbDriverManager,
+                    this.certificateManagerTLS);
             starter.startWebserver();
             this.httpServerConfigInfo = starter.getHttpServerConfigInfo();
         } else {

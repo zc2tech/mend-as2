@@ -1,7 +1,6 @@
 package de.mendelson.util.httpconfig.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

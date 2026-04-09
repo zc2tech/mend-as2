@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.connectiontest.clientserver;
 import de.mendelson.util.clientserver.connectiontest.ConnectionTestResult;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.log.LoggingHandlerLogEntryArray;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

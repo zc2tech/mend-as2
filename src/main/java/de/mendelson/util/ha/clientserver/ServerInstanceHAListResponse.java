@@ -2,7 +2,6 @@ package de.mendelson.util.ha.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.ha.ServerInstanceHA;
-import java.io.Serializable;
 import java.util.List;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

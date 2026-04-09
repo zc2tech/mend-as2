@@ -22,7 +22,6 @@
 package de.mendelson.comm.as2.usermanagement.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import java.io.Serializable;
 
 /**
  * Message to request roles for a specific user

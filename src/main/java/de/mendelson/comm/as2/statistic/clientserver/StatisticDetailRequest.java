@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.statistic.clientserver;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.jfree.data.time.SimpleTimePeriod;

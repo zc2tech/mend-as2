@@ -4,7 +4,7 @@ import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.systemevents.search.ServerSideEventFilter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
+
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *

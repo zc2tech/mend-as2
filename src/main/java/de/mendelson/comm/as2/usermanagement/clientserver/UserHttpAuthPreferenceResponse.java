@@ -22,7 +22,6 @@
 package de.mendelson.comm.as2.usermanagement.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 

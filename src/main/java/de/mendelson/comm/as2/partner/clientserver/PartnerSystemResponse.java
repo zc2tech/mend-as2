@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.partner.clientserver;
 
 import de.mendelson.comm.as2.partner.PartnerSystem;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

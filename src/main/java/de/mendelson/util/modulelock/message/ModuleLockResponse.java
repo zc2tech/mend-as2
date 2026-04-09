@@ -2,7 +2,6 @@ package de.mendelson.util.modulelock.message;
 
 import de.mendelson.util.modulelock.LockClientInformation;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *

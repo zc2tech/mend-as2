@@ -3,7 +3,7 @@ package de.mendelson.util.security.cert.clientserver;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
+
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *

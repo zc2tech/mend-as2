@@ -13,7 +13,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ConfigurationChangedOnServerNotification extends ConfigurationChangedOnServer implements Serializable{
+public class ConfigurationChangedOnServerNotification extends ConfigurationChangedOnServer {
     
     private static final long serialVersionUID = 1L;
 

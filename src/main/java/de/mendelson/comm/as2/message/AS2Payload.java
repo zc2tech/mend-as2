@@ -1,6 +1,5 @@
 package de.mendelson.comm.as2.message;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;

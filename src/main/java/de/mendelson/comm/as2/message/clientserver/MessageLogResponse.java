@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.message.clientserver;
 
 import de.mendelson.comm.as2.log.LogEntry;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.List;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

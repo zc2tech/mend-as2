@@ -1,7 +1,6 @@
 package de.mendelson.util.clientserver.about;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.Properties;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

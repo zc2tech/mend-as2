@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.statistic;
 
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.clientserver.clients.datatransfer.DownloadRequest;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -15,7 +14,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class StatisticExportRequest extends DownloadRequest implements Serializable{
+public class StatisticExportRequest extends DownloadRequest {
 
     private static final long serialVersionUID = 1L;
     private long startDate = 0;

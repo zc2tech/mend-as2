@@ -5,7 +5,6 @@ import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.security.cert.KeystoreStorageImplFile;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

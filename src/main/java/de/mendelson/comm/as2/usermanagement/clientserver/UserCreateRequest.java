@@ -23,7 +23,6 @@ package de.mendelson.comm.as2.usermanagement.clientserver;
 
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import java.io.Serializable;
 
 /**
  * Message to create a new user

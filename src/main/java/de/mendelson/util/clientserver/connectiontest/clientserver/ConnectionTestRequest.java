@@ -4,7 +4,6 @@ import de.mendelson.util.clientserver.connectiontest.ConnectionTest;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

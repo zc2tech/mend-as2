@@ -47,11 +47,7 @@ import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
 import de.mendelson.util.database.DBServerInformation;
-import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBMigrationRequest;
-import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBMigrationResponse;
-import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBMigrationVersionMismatchException;
-import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBPartnerRequest;
-import de.mendelson.comm.as2.database.migration.clientserver.HSQLDBPartnerResponse;
+
 import de.mendelson.util.ha.ServerInstanceHA;
 import de.mendelson.util.ha.clientserver.ServerInstanceHAListRequest;
 import de.mendelson.util.ha.clientserver.ServerInstanceHAListResponse;
@@ -129,7 +125,6 @@ import de.mendelson.comm.as2.statistic.clientserver.StatisticOverviewRequest;
 import de.mendelson.comm.as2.statistic.clientserver.StatisticOverviewResponse;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
 import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageRequest;
-import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageResponse;
 import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageHandler;
 import de.mendelson.comm.as2.timing.PartnerTLSCertificateChangedController;
 import de.mendelson.comm.as2.timing.ResourceBundleMessageDeleteController;
@@ -215,8 +210,6 @@ import de.mendelson.util.security.crl.CRLRevocationInformation;
 import de.mendelson.util.security.crl.CRLRevocationState;
 import de.mendelson.util.security.crl.CRLVerification;
 import de.mendelson.util.security.csr.CSRUtil;
-import de.mendelson.util.security.keydata.KeydataAccessDB;
-import de.mendelson.util.security.keydata.KeystoreData;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import de.mendelson.util.systemevents.clientserver.SystemEventSearchRequest;
@@ -253,7 +246,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.DateFormat;
@@ -551,8 +543,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             } else if (message instanceof ServerlogfileSearchRequest msg) {
                 this.processServerlogfileSearchRequest(session, msg);
                 return (true);
-            } else if (message instanceof HSQLDBPartnerRequest msg) {
-                return (false);
             } else if (message instanceof CommandRequest msg) {
                 this.processCommandRequest(session, msg);
                 return (true);
@@ -592,9 +582,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             } else if (message instanceof KeyCopyRequest) {
                 this.processKeyCopyRequest(session, (KeyCopyRequest) message);
                 return (true);
-            } else if (message instanceof HSQLDBMigrationRequest) {
-                return (false);
-            } else if (message instanceof CRLVerificationRequest) {
+            }  else if (message instanceof CRLVerificationRequest) {
                 this.processCRLVerificationRequest(session, (CRLVerificationRequest) message);
                 return (true);
             } else if (message instanceof SinglePartnerDeleteRequest) {
@@ -1286,23 +1274,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
         String originStr = "[" + userName + "@" + remoteAddress + "]";
         this.logger.log(request.getLevel(), originStr + " " + request.getMessage());
-    }
-
-    /**
-     * Returns the version of the found database
-     */
-    private int getActualDBVersionHSQLDBMigration(Connection connection) throws Exception {
-        int foundVersion = -1;
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet result = statement.executeQuery(
-                    "SELECT MAX(actualversion) AS maxversion FROM version")) {
-                if (result.next()) {
-                    //value is always in the first column
-                    foundVersion = result.getInt("maxversion");
-                }
-            }
-        }
-        return (foundVersion);
     }
 
     /**

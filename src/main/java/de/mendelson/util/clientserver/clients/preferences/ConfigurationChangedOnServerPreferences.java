@@ -1,6 +1,5 @@
 package de.mendelson.util.clientserver.clients.preferences;
 
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -13,7 +12,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class ConfigurationChangedOnServerPreferences extends ConfigurationChangedOnServer implements Serializable{
+public class ConfigurationChangedOnServerPreferences extends ConfigurationChangedOnServer {
 
     private static final long serialVersionUID = 1L;
     

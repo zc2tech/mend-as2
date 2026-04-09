@@ -2,7 +2,6 @@ package de.mendelson.util.mailautoconfig.clientserver;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.mailautoconfig.MailServiceConfiguration;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 

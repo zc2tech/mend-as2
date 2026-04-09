@@ -4,7 +4,6 @@ import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
