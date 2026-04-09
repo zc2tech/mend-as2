@@ -484,6 +484,50 @@ public class SystemResource {
         }
     }
 
+    @GET
+    @Path("/tracker/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getTrackerConfig() {
+        try {
+            PreferencesAS2 preferences = new PreferencesAS2();
+
+            TrackerConfig config = new TrackerConfig();
+            config.setEnabled("true".equals(preferences.get(PreferencesAS2.TRACKER_ENABLED)));
+            config.setAuthRequired("true".equals(preferences.get(PreferencesAS2.TRACKER_AUTH_REQUIRED)));
+            config.setMaxSizeMB(preferences.getInt(PreferencesAS2.TRACKER_MAX_SIZE_MB));
+            config.setRateLimitFailures(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES));
+            config.setRateLimitWindowHours(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
+            config.setRateLimitBlockMinutes(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES));
+
+            return Response.ok(config).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @POST
+    @Path("/tracker/config")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response saveTrackerConfig(TrackerConfig config) {
+        try {
+            PreferencesAS2 preferences = new PreferencesAS2();
+
+            preferences.put(PreferencesAS2.TRACKER_ENABLED, config.isEnabled() ? "true" : "false");
+            preferences.put(PreferencesAS2.TRACKER_AUTH_REQUIRED, config.isAuthRequired() ? "true" : "false");
+            preferences.putInt(PreferencesAS2.TRACKER_MAX_SIZE_MB, config.getMaxSizeMB());
+            preferences.putInt(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES, config.getRateLimitFailures());
+            preferences.putInt(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS, config.getRateLimitWindowHours());
+            preferences.putInt(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES, config.getRateLimitBlockMinutes());
+
+            return Response.ok("{\"success\":true}").build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
     public static class SystemInfo {
         private String productName;
         private String version;
@@ -650,5 +694,27 @@ public class SystemResource {
 
         public int getAuthMode() { return authMode; }
         public void setAuthMode(int authMode) { this.authMode = authMode; }
+    }
+
+    public static class TrackerConfig {
+        private boolean enabled;
+        private boolean authRequired;
+        private int maxSizeMB;
+        private int rateLimitFailures;
+        private int rateLimitWindowHours;
+        private int rateLimitBlockMinutes;
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public boolean isAuthRequired() { return authRequired; }
+        public void setAuthRequired(boolean authRequired) { this.authRequired = authRequired; }
+        public int getMaxSizeMB() { return maxSizeMB; }
+        public void setMaxSizeMB(int maxSizeMB) { this.maxSizeMB = maxSizeMB; }
+        public int getRateLimitFailures() { return rateLimitFailures; }
+        public void setRateLimitFailures(int rateLimitFailures) { this.rateLimitFailures = rateLimitFailures; }
+        public int getRateLimitWindowHours() { return rateLimitWindowHours; }
+        public void setRateLimitWindowHours(int rateLimitWindowHours) { this.rateLimitWindowHours = rateLimitWindowHours; }
+        public int getRateLimitBlockMinutes() { return rateLimitBlockMinutes; }
+        public void setRateLimitBlockMinutes(int rateLimitBlockMinutes) { this.rateLimitBlockMinutes = rateLimitBlockMinutes; }
     }
 }

@@ -49,6 +49,10 @@ public class TrackerMessageInfo implements Serializable {
     private String authUser;
     private String rawFilename;
     private String requestHeaders;
+    private int payloadCount = 0;
+    private String payloadFormat; // cXML, X12, EDIFACT, Unknown
+    private String payloadDocType; // Purchase Order, Invoice, 810, DESADV, etc.
+    private String payloadDetails; // Additional details
 
     public TrackerMessageInfo() {
     }
@@ -149,6 +153,38 @@ public class TrackerMessageInfo implements Serializable {
 
     public void setRequestHeaders(String requestHeaders) {
         this.requestHeaders = requestHeaders;
+    }
+
+    public int getPayloadCount() {
+        return payloadCount;
+    }
+
+    public void setPayloadCount(int payloadCount) {
+        this.payloadCount = payloadCount;
+    }
+
+    public String getPayloadFormat() {
+        return payloadFormat;
+    }
+
+    public void setPayloadFormat(String payloadFormat) {
+        this.payloadFormat = payloadFormat;
+    }
+
+    public String getPayloadDocType() {
+        return payloadDocType;
+    }
+
+    public void setPayloadDocType(String payloadDocType) {
+        this.payloadDocType = payloadDocType;
+    }
+
+    public String getPayloadDetails() {
+        return payloadDetails;
+    }
+
+    public void setPayloadDetails(String payloadDetails) {
+        this.payloadDetails = payloadDetails;
     }
 
     /**

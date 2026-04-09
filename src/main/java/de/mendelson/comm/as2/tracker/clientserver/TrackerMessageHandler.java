@@ -71,13 +71,15 @@ public class TrackerMessageHandler {
                         messages = dao.getTrackerMessagesByTrackerId(
                                 trackerRequest.getTrackerIdFilter().trim());
                     } else {
-                        // Use date/auth filters
+                        // Use date/auth/user filters
                         messages = dao.getTrackerMessages(
                                 trackerRequest.getStartDate(),
                                 trackerRequest.getEndDate(),
                                 trackerRequest.isShowAuthNone(),
                                 trackerRequest.isShowAuthSuccess(),
-                                trackerRequest.isShowAuthFailed()
+                                trackerRequest.isShowAuthFailed(),
+                                trackerRequest.getUserFilter(),
+                                trackerRequest.getFormatFilter()
                         );
                     }
 

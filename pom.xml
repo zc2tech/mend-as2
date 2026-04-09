@@ -687,11 +687,11 @@
     </dependencies>
 
     <profiles>
-        <!-- Release profile: Supports both GUI and headless modes -->
+        <!-- Full profile: Supports both GUI and headless modes -->
         <profile>
-            <id>release</id>
+            <id>full</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
                 <build.profile>full</build.profile>
@@ -778,6 +778,9 @@
         <!-- Profile: thin - Creates thin JAR with dependencies downloaded on first run -->
         <profile>
             <id>thin</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <finalName>${project.artifactId}-${project.version}-thin</finalName>
                 <plugins>

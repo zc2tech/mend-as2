@@ -42,6 +42,7 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     try {
       // Try to get system info - if it works, we're authenticated
+      // The axios interceptor will automatically handle token refresh on 401
       await api.get('/system/info');
 
       // Fetch current user info
@@ -54,8 +55,12 @@ export function AuthProvider({ children }) {
 
       setPermissions(userPermissions);
     } catch (error) {
-      setUser(null);
-      setPermissions([]);
+      // Only clear user state if it's truly an auth error after refresh attempts
+      // The axios interceptor will redirect to login if refresh fails
+      if (error.response?.status === 401) {
+        setUser(null);
+        setPermissions([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,9 +69,6 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await api.post('/auth/login', { username, password });
-
-      console.log('Login response:', response.data);
-      console.log('mustChangePassword:', response.data.mustChangePassword);
 
       // Check if user must change password
       if (response.data.mustChangePassword) {
@@ -113,7 +115,7 @@ export function AuthProvider({ children }) {
       const permissionsResponse = await api.get('/users/current/permissions');
       setPermissions(permissionsResponse.data);
     } catch (error) {
-      console.error('Failed to refresh permissions:', error);
+      // Silently fail - user will be logged out if session expired
     }
   };
 

@@ -32,6 +32,7 @@ import Dashboard from './components/Dashboard';
 import PartnerList from './features/partners/PartnerList';
 import CertificateList from './features/certificates/CertificateList';
 import MessageList from './features/messages/MessageList';
+import TrackerMessageList from './features/tracker/TrackerMessageList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
 import UserPreferences from './features/preferences/UserPreferences';
@@ -89,6 +90,14 @@ function App() {
                 element={
                   <PermissionRoute requiredPermissions={['MESSAGE_READ', 'MESSAGE_WRITE']}>
                     <MessageList />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="tracker-messages"
+                element={
+                  <PermissionRoute requiredPermissions={['MESSAGE_READ', 'MESSAGE_WRITE']}>
+                    <TrackerMessageList />
                   </PermissionRoute>
                 }
               />

@@ -45,6 +45,8 @@ public class TrackerMessageRequest extends ClientServerMessage implements Serial
     private boolean showAuthFailed = true;
     private String trackerId; // For TYPE_GET_MESSAGE_DETAILS
     private String trackerIdFilter; // For filtering by partial tracker ID match
+    private String userFilter; // For filtering by user
+    private String formatFilter; // For filtering by payload format (cXML, X12, EDIFACT)
 
     public TrackerMessageRequest(int requestType) {
         this.requestType = requestType;
@@ -112,6 +114,22 @@ public class TrackerMessageRequest extends ClientServerMessage implements Serial
 
     public void setTrackerIdFilter(String trackerIdFilter) {
         this.trackerIdFilter = trackerIdFilter;
+    }
+
+    public String getUserFilter() {
+        return userFilter;
+    }
+
+    public void setUserFilter(String userFilter) {
+        this.userFilter = userFilter;
+    }
+
+    public String getFormatFilter() {
+        return formatFilter;
+    }
+
+    public void setFormatFilter(String formatFilter) {
+        this.formatFilter = formatFilter;
     }
 
     @Override

@@ -286,7 +286,7 @@ INSERT INTO notification (mailhost, mailhostport, notificationemailaddress, noti
   notifycem, notifysystemfailure, notifypostprocessing, replyto,
   usesmtpauth, smtpauthuser, smtpauthpass, notifyresend, security,
   maxnotificationspermin, notifyconnectionproblem, notifyclientserver, usesmtpoauth2, smtpoauth2id)
-VALUES ('smtp.office365.com', 587, 'julian.xu@aliyun.com', 1, 1, 0, 1, 1, 'julian.xu@aliyun.com', 1, 'julian.xu@aliyun.com', 'password!', 1, 1, 2, 1, 0, 0, 0);
+VALUES ('smtp.office365.com', 587, 'julian.xu@aliyun.com', 1, 1, 0, 1, 1, 'julian.xu@aliyun.com', 1, 'julian.xu@aliyun.com', 'password!', 1, 2, 2, 1, 0, 0, 0);
 
 -- INSERT INTO BLOCKS VALUES(0, 2147483647, 0)
 INSERT INTO VERSION
@@ -306,7 +306,8 @@ INSERT INTO webui_roles (name, description) VALUES
 ('ADMIN', 'Full system access - can manage all resources and users'),
 ('PARTNER_MANAGER', 'Can manage trading partners and their configurations'),
 ('CERTIFICATE_MANAGER', 'Can manage certificates, keystores, and key generation'),
-('MESSAGE_OPERATOR', 'Can view and send AS2 messages'),
+('MESSAGE_OPERATOR', 'Can view and send messages'),
+('MESSAGE_VIEWER', 'Can view messages'),
 ('SYSTEM_MANAGER', 'Can manage/view system settings/logs/events'),
 ('VIEWER', 'Read-only access - can only view data');
 
@@ -365,6 +366,15 @@ FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'MESSAGE_OPERATOR'
   AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE');
+
+-- Grant message read permission to MESSAGE_VIEWER role
+-- MESSAGE_VIEWER also needs PARTNER_READ to see partner info in message lists
+INSERT INTO webui_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM webui_roles r
+CROSS JOIN webui_permissions p
+WHERE r.name = 'MESSAGE_VIEWER'
+  AND p.name IN ('MESSAGE_READ', 'PARTNER_READ');
 
 -- Grant system monitoring permissions to SYSTEM_MANAGER role
 INSERT INTO webui_role_permissions (role_id, permission_id)

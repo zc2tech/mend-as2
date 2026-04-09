@@ -59,8 +59,9 @@ public class TrackerMessageAccessDB {
             try (PreparedStatement stmt = conn.prepareStatement(
                     "INSERT INTO tracker_message"
                     + "(messageid, tracker_id, remote_addr, user_agent, content_type, "
-                    + "content_size, initdateutc, auth_status, auth_user, rawfilename, request_headers) "
-                    + "VALUES(?,?,?,?,?,?,?,?,?,?,?)")) {
+                    + "content_size, initdateutc, auth_status, auth_user, rawfilename, request_headers, payload_count, "
+                    + "payload_format, payload_doctype, payload_details) "
+                    + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
 
                 stmt.setString(1, info.getMessageId());
                 stmt.setString(2, info.getTrackerId());
@@ -73,6 +74,10 @@ public class TrackerMessageAccessDB {
                 stmt.setString(9, info.getAuthUser());
                 stmt.setString(10, info.getRawFilename());
                 this.dbDriverManager.setTextParameterAsJavaObject(stmt, 11, info.getRequestHeaders());
+                stmt.setInt(12, info.getPayloadCount());
+                stmt.setString(13, info.getPayloadFormat());
+                stmt.setString(14, info.getPayloadDocType());
+                stmt.setString(15, info.getPayloadDetails());
                 stmt.executeUpdate();
             }
         } catch (Exception e) {
@@ -131,6 +136,22 @@ public class TrackerMessageAccessDB {
      */
     public List<TrackerMessageInfo> getTrackerMessages(Date startDate, Date endDate,
             boolean includeNone, boolean includeSuccess, boolean includeFailed) {
+        return getTrackerMessages(startDate, endDate, includeNone, includeSuccess, includeFailed, null, null);
+    }
+
+    /**
+     * Get tracker messages by date range, auth status, and user filter
+     */
+    public List<TrackerMessageInfo> getTrackerMessages(Date startDate, Date endDate,
+            boolean includeNone, boolean includeSuccess, boolean includeFailed, String userFilter) {
+        return getTrackerMessages(startDate, endDate, includeNone, includeSuccess, includeFailed, userFilter, null);
+    }
+
+    /**
+     * Get tracker messages by date range, auth status, user filter, and format filter
+     */
+    public List<TrackerMessageInfo> getTrackerMessages(Date startDate, Date endDate,
+            boolean includeNone, boolean includeSuccess, boolean includeFailed, String userFilter, String formatFilter) {
         List<TrackerMessageInfo> list = new ArrayList<>();
 
         // Build status filter
@@ -147,13 +168,35 @@ public class TrackerMessageAccessDB {
 
         try (Connection conn = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
-            String sql = "SELECT * FROM tracker_message "
-                    + "WHERE initdateutc >= ? AND initdateutc <= ? "
-                    + "AND (" + statusCondition + ") "
-                    + "ORDER BY initdateutc DESC";
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                stmt.setTimestamp(1, new Timestamp(startDate.getTime()), calendarUTC);
-                stmt.setTimestamp(2, new Timestamp(endDate.getTime()), calendarUTC);
+            StringBuilder sql = new StringBuilder("SELECT * FROM tracker_message ");
+            sql.append("WHERE initdateutc >= ? AND initdateutc <= ? ");
+            sql.append("AND (").append(statusCondition).append(") ");
+
+            // Add user filter if provided
+            if (userFilter != null && !userFilter.trim().isEmpty()) {
+                sql.append("AND auth_user LIKE ? ");
+            }
+
+            // Add format filter if provided
+            if (formatFilter != null && !formatFilter.trim().isEmpty()) {
+                sql.append("AND payload_format = ? ");
+            }
+
+            sql.append("ORDER BY initdateutc DESC");
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                int paramIndex = 1;
+                stmt.setTimestamp(paramIndex++, new Timestamp(startDate.getTime()), calendarUTC);
+                stmt.setTimestamp(paramIndex++, new Timestamp(endDate.getTime()), calendarUTC);
+
+                if (userFilter != null && !userFilter.trim().isEmpty()) {
+                    stmt.setString(paramIndex++, "%" + userFilter.trim() + "%");
+                }
+
+                if (formatFilter != null && !formatFilter.trim().isEmpty()) {
+                    stmt.setString(paramIndex++, formatFilter.trim());
+                }
+
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         list.add(this.buildTrackerMessageFromResultSet(rs));
@@ -328,6 +371,10 @@ public class TrackerMessageAccessDB {
         info.setAuthUser(rs.getString("auth_user"));
         info.setRawFilename(rs.getString("rawfilename"));
         info.setRequestHeaders(this.dbDriverManager.readTextStoredAsJavaObject(rs, "request_headers"));
+        info.setPayloadCount(rs.getInt("payload_count"));
+        info.setPayloadFormat(rs.getString("payload_format"));
+        info.setPayloadDocType(rs.getString("payload_doctype"));
+        info.setPayloadDetails(rs.getString("payload_details"));
         return info;
     }
 }

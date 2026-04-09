@@ -226,7 +226,20 @@ public class TrackerServlet extends HttpServlet {
             return;
         }
 
-        // 8. Store to database
+        // 8. Parse MIME and extract payloads
+        int payloadCount = 0;
+        PayloadAnalyzer.PayloadAnalysis firstPayloadAnalysis = null;
+        try {
+            TrackerMimeParser mimeParser = new TrackerMimeParser(prefs);
+            payloadCount = mimeParser.parseAndExtractPayloads(
+                    data, request.getContentType(), trackerId, rawFilename);
+            firstPayloadAnalysis = mimeParser.getFirstPayloadAnalysis();
+        } catch (Exception e) {
+            LOGGER.warning("Failed to parse MIME payloads for tracker " + trackerId + ": " + e.getMessage());
+            // Continue - this is not a critical failure
+        }
+
+        // 9. Store to database
         TrackerMessageInfo info = new TrackerMessageInfo();
         info.setMessageId(messageId);
         info.setTrackerId(trackerId);
@@ -240,6 +253,14 @@ public class TrackerServlet extends HttpServlet {
         info.setAuthUser(authenticatedUser);
         info.setRawFilename(rawFilename);
         info.setRequestHeaders(serializeHeaders(request));
+        info.setPayloadCount(payloadCount);
+
+        // Store payload analysis if available
+        if (firstPayloadAnalysis != null) {
+            info.setPayloadFormat(firstPayloadAnalysis.getFormat());
+            info.setPayloadDocType(firstPayloadAnalysis.getDocumentType());
+            info.setPayloadDetails(firstPayloadAnalysis.getDetails());
+        }
 
         try {
             dao.insertTrackerMessage(info);
@@ -260,7 +281,8 @@ public class TrackerServlet extends HttpServlet {
         // 9. Return success (plain text response)
         LOGGER.info("Tracker message received: trackerId=" + trackerId +
                 ", size=" + data.length + ", ip=" + remoteAddr +
-                (authenticatedUser != null ? ", user=" + authenticatedUser : ""));
+                (authenticatedUser != null ? ", user=" + authenticatedUser : "") +
+                ", payloads=" + payloadCount);
 
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("text/plain");
@@ -268,6 +290,9 @@ public class TrackerServlet extends HttpServlet {
         out.println("Tracker ID: " + trackerId);
         out.println("Size: " + data.length + " bytes");
         out.println("Timestamp: " + new Date());
+        if (payloadCount > 0) {
+            out.println("Payloads extracted: " + payloadCount);
+        }
     }
 
     /**

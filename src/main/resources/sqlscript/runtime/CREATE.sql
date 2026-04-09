@@ -107,7 +107,11 @@ CREATE TABLE tracker_message (
   auth_status INTEGER DEFAULT 0,
   auth_user VARCHAR(255),
   rawfilename VARCHAR(512) NOT NULL,
-  request_headers TEXT
+  request_headers TEXT,
+  payload_count INTEGER DEFAULT 0,
+  payload_format VARCHAR(50),
+  payload_doctype VARCHAR(255),
+  payload_details VARCHAR(512)
 );
 
 CREATE INDEX idx_tracker_message_id ON tracker_message(messageid);

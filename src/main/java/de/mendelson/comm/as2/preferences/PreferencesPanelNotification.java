@@ -96,6 +96,8 @@ public class PreferencesPanelNotification extends PreferencesPanel {
         this.jComboBoxSecurity.addItem(new SecurityEntry(NotificationData.SECURITY_PLAIN));
         this.jComboBoxSecurity.addItem(new SecurityEntry(NotificationData.SECURITY_START_TLS));
         this.jComboBoxSecurity.addItem(new SecurityEntry(NotificationData.SECURITY_TLS));
+        // Set combo box font to match text fields
+        this.jComboBoxSecurity.setFont(this.jTextFieldHost.getFont());
         this.jTextFieldPort.setDocument(new JTextFieldLimitDocument(5));
         this.initializeHelp();
     }
@@ -117,6 +119,16 @@ public class PreferencesPanelNotification extends PreferencesPanel {
      */
     @Override
     public void loadPreferences() {
+        // Hide OAuth2 components completely
+        this.jRadioButtonOAuth2AuthorizationCode.setVisible(false);
+        this.jButtonOAuth2AuthorizationCode.setVisible(false);
+        this.jTextFieldOAuth2AuthorizationCode.setVisible(false);
+        this.jPanelOAuth2AuthorizationCode.setVisible(false);
+        this.jRadioButtonOAuth2ClientCredentials.setVisible(false);
+        this.jButtonOAuth2ClientCredentials.setVisible(false);
+        this.jTextFieldOAuth2ClientCredentials.setVisible(false);
+        this.jPanelOAuth2AuthorizationCode1.setVisible(false);
+
         if (!this.isPluginActivated(ServerPlugins.PLUGIN_OAUTH2)) {
             this.jRadioButtonOAuth2AuthorizationCode.setEnabled(false);
             this.jButtonOAuth2AuthorizationCode.setEnabled(false);
@@ -629,7 +641,7 @@ public class PreferencesPanelNotification extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
         jPanelMargin.add(jLabelSecurity, gridBagConstraints);
 
-        jComboBoxSecurity.setPreferredSize(new java.awt.Dimension(100, 24));
+        jComboBoxSecurity.setPreferredSize(new java.awt.Dimension(180, 22));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 7;

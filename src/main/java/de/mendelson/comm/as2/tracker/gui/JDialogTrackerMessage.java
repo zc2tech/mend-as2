@@ -59,16 +59,20 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
     private JDateChooser jDateChooserStartDate;
     private JDateChooser jDateChooserEndDate;
     private JTextField jTextFieldTrackerIdFilter;
+    private JTextField jTextFieldUserFilter;
+    private JComboBox<String> jComboBoxFormatFilter;
     private ToggleSwitch switchAuthNone;
     private ToggleSwitch switchAuthSuccess;
-    private JButton jButtonSearch;
+    private ToggleSwitch switchAutoRefresh;
     private JButton jButtonReset;
     private JButton jButtonRefresh;
     private JTable jTableMessages;
     private JTextArea jTextAreaDetails;
     private JScrollPane jScrollPaneDetails;
     private JButton jButtonDownload;
+    private JButton jButtonDownloadPayloads;
     private TrackerMessageInfo currentSelectedMessage;
+    private javax.swing.Timer autoRefreshTimer;
 
     public JDialogTrackerMessage(JFrame parent, BaseClient baseClient, IStatusBar statusBar) {
         super(parent, false);  // Non-modal
@@ -84,7 +88,35 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
 
         initComponents();
         initializeDefaultDates();
+        initializeAutoRefreshTimer();
         performSearch();
+    }
+
+    private void initializeAutoRefreshTimer() {
+        // Create timer for auto-refresh (10 seconds interval)
+        autoRefreshTimer = new javax.swing.Timer(10000, evt -> {
+            if (switchAutoRefresh != null && switchAutoRefresh.isSelected()) {
+                performSearch();
+            }
+        });
+        autoRefreshTimer.setRepeats(true);
+    }
+
+    private void toggleAutoRefresh() {
+        if (switchAutoRefresh.isSelected()) {
+            autoRefreshTimer.start();
+        } else {
+            autoRefreshTimer.stop();
+        }
+    }
+
+    @Override
+    public void dispose() {
+        // Stop timer on dialog close
+        if (autoRefreshTimer != null) {
+            autoRefreshTimer.stop();
+        }
+        super.dispose();
     }
 
     private void initializeDefaultDates() {
@@ -176,58 +208,93 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        int col = 0;
+        int row = 0;
 
-        // Start date
-        gbc.gridx = col++;
-        gbc.gridy = 0;
+        // ===== ROW 1: Date Range and Tracker ID =====
+        gbc.gridx = 0;
+        gbc.gridy = row;
         panel.add(new JLabel(rb.getResourceString("label.startdate")), gbc);
 
         jDateChooserStartDate = new JDateChooser();
         jDateChooserStartDate.setDateFormatString("yyyy-MM-dd");
         jDateChooserStartDate.setUI(new DateChooserUI());
-        jDateChooserStartDate.setPreferredSize(new Dimension(
-                (int)(jDateChooserStartDate.getPreferredSize().width * 1.02),
-                jDateChooserStartDate.getPreferredSize().height));
+        jDateChooserStartDate.setPreferredSize(new Dimension(140, jDateChooserStartDate.getPreferredSize().height));
         jDateChooserStartDate.addPropertyChangeListener("date", evt -> performSearch());
-        gbc.gridx = col++;
+        gbc.gridx = 1;
         panel.add(jDateChooserStartDate, gbc);
 
-        // End date
-        gbc.gridx = col++;
+        gbc.gridx = 2;
+        gbc.insets = new Insets(5, 15, 5, 5);
         panel.add(new JLabel(rb.getResourceString("label.enddate")), gbc);
 
         jDateChooserEndDate = new JDateChooser();
         jDateChooserEndDate.setDateFormatString("yyyy-MM-dd");
         jDateChooserEndDate.setUI(new DateChooserUI());
-        jDateChooserEndDate.setPreferredSize(new Dimension(
-                (int)(jDateChooserEndDate.getPreferredSize().width * 1.02),
-                jDateChooserEndDate.getPreferredSize().height));
+        jDateChooserEndDate.setPreferredSize(new Dimension(140, jDateChooserEndDate.getPreferredSize().height));
         jDateChooserEndDate.addPropertyChangeListener("date", evt -> performSearch());
-        gbc.gridx = col++;
+        gbc.gridx = 3;
+        gbc.insets = new Insets(5, 5, 5, 5);
         panel.add(jDateChooserEndDate, gbc);
 
         // Tracker ID filter
-        gbc.gridx = col++;
+        gbc.gridx = 4;
+        gbc.insets = new Insets(5, 20, 5, 5);
         panel.add(new JLabel(rb.getResourceString("label.trackerid.filter")), gbc);
 
-        jTextFieldTrackerIdFilter = new JTextField(15);
+        jTextFieldTrackerIdFilter = new JTextField();
+        jTextFieldTrackerIdFilter.setPreferredSize(new Dimension(200, jTextFieldTrackerIdFilter.getPreferredSize().height));
         jTextFieldTrackerIdFilter.setToolTipText(rb.getResourceString("label.trackerid.filter.tooltip"));
         jTextFieldTrackerIdFilter.addActionListener(evt -> performSearch());
-        gbc.gridx = col++;
+        gbc.gridx = 5;
+        gbc.insets = new Insets(5, 5, 5, 5);
         panel.add(jTextFieldTrackerIdFilter, gbc);
 
+        // User filter
+        gbc.gridx = 6;
+        gbc.insets = new Insets(5, 20, 5, 5);
+        panel.add(new JLabel(rb.getResourceString("label.user.filter")), gbc);
+
+        jTextFieldUserFilter = new JTextField();
+        jTextFieldUserFilter.setPreferredSize(new Dimension(80, jTextFieldUserFilter.getPreferredSize().height));
+        jTextFieldUserFilter.setToolTipText(rb.getResourceString("label.user.filter.tooltip"));
+        jTextFieldUserFilter.addActionListener(evt -> performSearch());
+        gbc.gridx = 7;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        panel.add(jTextFieldUserFilter, gbc);
+
+        // Format filter
+        gbc.gridx = 8;
+        gbc.insets = new Insets(5, 20, 5, 5);
+        panel.add(new JLabel(rb.getResourceString("label.format.filter")), gbc);
+
+        jComboBoxFormatFilter = new JComboBox<>(new String[]{
+                rb.getResourceString("label.format.all"),
+                "cXML",
+                "X12",
+                "EDIFACT"
+        });
+        jComboBoxFormatFilter.setPreferredSize(new Dimension(135, jComboBoxFormatFilter.getPreferredSize().height));
+        jComboBoxFormatFilter.setToolTipText(rb.getResourceString("label.format.filter.tooltip"));
+        jComboBoxFormatFilter.addActionListener(evt -> performSearch());
+        gbc.gridx = 9;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        panel.add(jComboBoxFormatFilter, gbc);
+
+        // ===== ROW 2: Auth Status, Auto-refresh, Action Buttons =====
+        row = 1;
+
         // Auth status filters
-        gbc.gridx = col++;
+        gbc.gridx = 0;
+        gbc.gridy = row;
         panel.add(new JLabel(rb.getResourceString("label.auth.title")), gbc);
 
-        JPanel panelAuthToggles = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel panelAuthToggles = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 
         switchAuthNone = new ToggleSwitch();
         switchAuthNone.setSelected(true);
         switchAuthNone.addActionListener(evt -> performSearch());
         JLabel labelAuthNone = new JLabel(rb.getResourceString("label.auth.none"));
-        labelAuthNone.setForeground(new Color(128, 128, 128)); // Gray color
+        labelAuthNone.setForeground(new Color(128, 128, 128));
         panelAuthToggles.add(switchAuthNone);
         panelAuthToggles.add(labelAuthNone);
 
@@ -235,41 +302,47 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
         switchAuthSuccess.setSelected(true);
         switchAuthSuccess.addActionListener(evt -> performSearch());
         JLabel labelAuthSuccess = new JLabel(rb.getResourceString("label.auth.success"));
-        labelAuthSuccess.setForeground(new Color(34, 139, 34)); // Forest green color
+        labelAuthSuccess.setForeground(new Color(34, 139, 34));
         panelAuthToggles.add(switchAuthSuccess);
         panelAuthToggles.add(labelAuthSuccess);
 
-        gbc.gridx = col++;
-        gbc.gridwidth = 2;
+        gbc.gridx = 1;
+        gbc.gridwidth = 3;
         panel.add(panelAuthToggles, gbc);
 
-        // Buttons
-        gbc.gridx = col++;
-        gbc.gridwidth = 1;
-        gbc.fill = GridBagConstraints.NONE;
+        // Auto-refresh toggle
+        gbc.gridx = 4;
+        gbc.gridwidth = 2;
+        switchAutoRefresh = new ToggleSwitch();
+        switchAutoRefresh.setSelected(false);
+        switchAutoRefresh.addActionListener(evt -> toggleAutoRefresh());
+        JLabel labelAutoRefresh = new JLabel(rb.getResourceString("label.autorefresh"));
+        labelAutoRefresh.setForeground(new Color(70, 130, 180));
 
-        jButtonSearch = new JButton(rb.getResourceString("button.search"));
-        jButtonSearch.addActionListener(evt -> performSearch());
-        panel.add(jButtonSearch, gbc);
+        JPanel panelAutoRefresh = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        panelAutoRefresh.add(switchAutoRefresh);
+        panelAutoRefresh.add(labelAutoRefresh);
+        panel.add(panelAutoRefresh, gbc);
 
-        gbc.gridx = col++;
+        // Action Buttons
+        JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+
         jButtonRefresh = new JButton(rb.getResourceString("button.refresh"));
-        jButtonRefresh.setBackground(new Color(70, 130, 180)); // Steel blue color
-        jButtonRefresh.setForeground(Color.WHITE);
-        jButtonRefresh.setOpaque(true);
-        jButtonRefresh.setBorderPainted(false);
-        jButtonRefresh.setFocusPainted(false);
         jButtonRefresh.addActionListener(evt -> performSearch());
-        // Add tooltip with keyboard shortcuts
         boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
         String shortcutHint = isMac ? "⌘R or F5" : "Ctrl+R or F5";
         jButtonRefresh.setToolTipText(shortcutHint);
-        panel.add(jButtonRefresh, gbc);
+        panelButtons.add(jButtonRefresh);
 
-        gbc.gridx = col++;
         jButtonReset = new JButton(rb.getResourceString("button.reset"));
         jButtonReset.addActionListener(evt -> resetFilter());
-        panel.add(jButtonReset, gbc);
+        panelButtons.add(jButtonReset);
+
+        gbc.gridx = 6;
+        gbc.gridwidth = 4;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.EAST;
+        panel.add(panelButtons, gbc);
 
         return panel;
     }
@@ -292,6 +365,9 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
         jTableMessages.getColumnModel().getColumn(4).setPreferredWidth(80);  // Size
         jTableMessages.getColumnModel().getColumn(5).setPreferredWidth(100); // Auth Status
         jTableMessages.getColumnModel().getColumn(6).setPreferredWidth(100); // Auth User
+        jTableMessages.getColumnModel().getColumn(7).setPreferredWidth(80);  // Payloads
+        jTableMessages.getColumnModel().getColumn(8).setPreferredWidth(80);  // Format
+        jTableMessages.getColumnModel().getColumn(9).setPreferredWidth(100); // Doc Type
 
         JScrollPane scrollPane = new JScrollPane(jTableMessages);
         scrollPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -312,7 +388,10 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
-        // Download button on the right
+        // Buttons panel on the right
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+
+        // Download content button
         jButtonDownload = new JButton("⬇"); // Unicode download arrow
         jButtonDownload.setFont(new Font("Dialog", Font.BOLD, 16));
         jButtonDownload.setPreferredSize(new Dimension(32, 28));
@@ -321,7 +400,20 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
         jButtonDownload.setEnabled(false);
         jButtonDownload.setFocusPainted(false);
         jButtonDownload.addActionListener(evt -> downloadMessageContent());
-        headerPanel.add(jButtonDownload, BorderLayout.EAST);
+        buttonsPanel.add(jButtonDownload);
+
+        // Download payloads button
+        jButtonDownloadPayloads = new JButton("📦"); // Unicode package/box icon
+        jButtonDownloadPayloads.setFont(new Font("Dialog", Font.BOLD, 14));
+        jButtonDownloadPayloads.setPreferredSize(new Dimension(32, 28));
+        jButtonDownloadPayloads.setMargin(new Insets(2, 2, 2, 2));
+        jButtonDownloadPayloads.setToolTipText(rb.getResourceString("button.download.payloads.tooltip"));
+        jButtonDownloadPayloads.setEnabled(false);
+        jButtonDownloadPayloads.setFocusPainted(false);
+        jButtonDownloadPayloads.addActionListener(evt -> downloadPayloads());
+        buttonsPanel.add(jButtonDownloadPayloads);
+
+        headerPanel.add(buttonsPanel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
 
@@ -340,6 +432,8 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
     private void resetFilter() {
         initializeDefaultDates();
         jTextFieldTrackerIdFilter.setText("");
+        jTextFieldUserFilter.setText("");
+        jComboBoxFormatFilter.setSelectedIndex(0); // Select "All"
         switchAuthNone.setSelected(true);
         switchAuthSuccess.setSelected(true);
         performSearch();
@@ -419,6 +513,8 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
 
         final boolean includeNone = switchAuthNone.isSelected();
         final boolean includeSuccess = switchAuthSuccess.isSelected();
+        final String userFilterValue = jTextFieldUserFilter.getText();
+        final String formatFilterValue = getSelectedFormat();
 
         Runnable runnable = new Runnable() {
             @Override
@@ -436,6 +532,8 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
                     request.setShowAuthNone(includeNone);
                     request.setShowAuthSuccess(includeSuccess);
                     request.setShowAuthFailed(false); // Always false - failed option removed
+                    request.setUserFilter(userFilterValue);
+                    request.setFormatFilter(formatFilterValue);
 
                     de.mendelson.comm.as2.tracker.clientserver.TrackerMessageResponse response =
                             (de.mendelson.comm.as2.tracker.clientserver.TrackerMessageResponse) baseClient.sendSync(request);
@@ -542,11 +640,13 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
             if (info != null) {
                 currentSelectedMessage = info;
                 jButtonDownload.setEnabled(true);
+                jButtonDownloadPayloads.setEnabled(info.getPayloadCount() > 0);
                 displayMessageDetails(info);
             }
         } else {
             currentSelectedMessage = null;
             jButtonDownload.setEnabled(false);
+            jButtonDownloadPayloads.setEnabled(false);
             jTextAreaDetails.setText(rb.getResourceString("details.noselection"));
         }
     }
@@ -572,6 +672,21 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
             details.append("Auth User:      ").append(info.getAuthUser()).append("\n");
         }
         details.append("\n");
+
+        // Display payload analysis if available
+        if (info.getPayloadFormat() != null && !info.getPayloadFormat().equals("Unknown")) {
+            details.append("───────────────────────────────────────────────────────\n");
+            details.append("  PAYLOAD ANALYSIS\n");
+            details.append("───────────────────────────────────────────────────────\n");
+            details.append("Format:         ").append(info.getPayloadFormat()).append("\n");
+            if (info.getPayloadDocType() != null && !info.getPayloadDocType().isEmpty()) {
+                details.append("Document Type:  ").append(info.getPayloadDocType()).append("\n");
+            }
+            if (info.getPayloadDetails() != null && !info.getPayloadDetails().isEmpty()) {
+                details.append("Details:        ").append(info.getPayloadDetails()).append("\n");
+            }
+            details.append("\n");
+        }
 
         details.append("File Location:  ").append(info.getRawFilename()).append("\n\n");
 
@@ -617,6 +732,14 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
 
         jTextAreaDetails.setText(details.toString());
         jTextAreaDetails.setCaretPosition(0);
+    }
+
+    private String getSelectedFormat() {
+        int selectedIndex = jComboBoxFormatFilter.getSelectedIndex();
+        if (selectedIndex == 0) {
+            return null; // "All" selected
+        }
+        return (String) jComboBoxFormatFilter.getSelectedItem();
     }
 
     private String formatSize(int bytes) {
@@ -715,6 +838,121 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
                                     UINotification.TYPE_ERROR,
                                     "Download failed",
                                     rb.getResourceString("error.download") + ": " + e.getMessage());
+                        });
+                    } finally {
+                        statusBar.stopProgressIfExists(uniqueId);
+                    }
+                }
+            };
+
+            GUIClient.submit(runnable);
+        }
+    }
+
+    private void downloadPayloads() {
+        if (currentSelectedMessage == null) {
+            UINotification.instance().addNotification(
+                    null,
+                    UINotification.TYPE_WARNING,
+                    "No selection",
+                    rb.getResourceString("error.noselection"));
+            return;
+        }
+
+        if (currentSelectedMessage.getPayloadCount() == 0) {
+            UINotification.instance().addNotification(
+                    null,
+                    UINotification.TYPE_WARNING,
+                    "No payloads",
+                    "This message has no extracted payloads");
+            return;
+        }
+
+        // Show file chooser
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Payloads ZIP");
+
+        // Generate default filename: payloads_<trackerId>_<timestamp>.zip
+        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(currentSelectedMessage.getInitDate());
+        String defaultFilename = "payloads_" +
+                currentSelectedMessage.getTrackerId().substring(0, 8) +
+                "_" + timestamp + ".zip";
+        fileChooser.setSelectedFile(new java.io.File(defaultFilename));
+
+        int result = fileChooser.showSaveDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            final java.io.File targetFile = fileChooser.getSelectedFile();
+            final TrackerMessageInfo info = currentSelectedMessage;
+
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    final String uniqueId = JDialogTrackerMessage.class.getName() +
+                            ".download.payloads." + System.currentTimeMillis();
+                    try {
+                        statusBar.startProgressIndeterminate(
+                                "Downloading payloads...", uniqueId);
+
+                        // Calculate payload directory path
+                        String rawFilename = info.getRawFilename();
+                        java.nio.file.Path rawPath = java.nio.file.Paths.get(rawFilename);
+                        String dateFolder = rawPath.getParent().getFileName().toString();
+                        String payloadDirName = "payloads_" + info.getTrackerId();
+
+                        // Create ZIP file
+                        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(
+                                new java.io.FileOutputStream(targetFile))) {
+
+                            // Get payloads directory from server (via filesystem access)
+                            // Note: This assumes we have local filesystem access
+                            // In a true client-server setup, we'd need a dedicated request type
+                            de.mendelson.comm.as2.preferences.PreferencesAS2 prefs =
+                                    new de.mendelson.comm.as2.preferences.PreferencesAS2(null);
+
+                            java.nio.file.Path payloadDir = java.nio.file.Paths.get(
+                                    prefs.get(de.mendelson.comm.as2.preferences.PreferencesAS2.DIR_MSG),
+                                    "tracker",
+                                    dateFolder,
+                                    payloadDirName
+                            );
+
+                            if (!java.nio.file.Files.exists(payloadDir)) {
+                                throw new Exception("Payload directory not found: " + payloadDir);
+                            }
+
+                            // Add all files from payload directory to ZIP
+                            java.nio.file.Files.walk(payloadDir)
+                                    .filter(java.nio.file.Files::isRegularFile)
+                                    .forEach(file -> {
+                                        try {
+                                            String zipEntryName = payloadDir.relativize(file).toString();
+                                            java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(zipEntryName);
+                                            zos.putNextEntry(zipEntry);
+                                            java.nio.file.Files.copy(file, zos);
+                                            zos.closeEntry();
+                                        } catch (Exception e) {
+                                            throw new RuntimeException(e);
+                                        }
+                                    });
+
+                            SwingUtilities.invokeLater(() -> {
+                                UINotification.instance().addNotification(
+                                        null,
+                                        UINotification.TYPE_SUCCESS,
+                                        "Download complete",
+                                        "Payloads saved to: " + targetFile.getAbsolutePath());
+                            });
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        SwingUtilities.invokeLater(() -> {
+                            UINotification.instance().addNotification(
+                                    null,
+                                    UINotification.TYPE_ERROR,
+                                    "Download failed",
+                                    "Failed to download payloads: " + e.getMessage());
                         });
                     } finally {
                         statusBar.stopProgressIfExists(uniqueId);

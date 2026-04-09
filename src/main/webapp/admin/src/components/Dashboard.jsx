@@ -42,7 +42,9 @@ export default function Dashboard() {
     boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
   };
 
-  const showPartners = hasAnyPermission('PARTNER_READ', 'PARTNER_WRITE');
+  const showPartners = hasAnyPermission('PARTNER_WRITE') ||
+                       (hasAnyPermission('PARTNER_READ') &&
+                        !hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE'));
   const showCertificates = hasAnyPermission('CERT_READ', 'CERT_WRITE');
   const showMessages = hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE');
   const showSystem = hasAnyPermission('SYSTEM_READ', 'SYSTEM_WRITE');
@@ -107,8 +109,26 @@ export default function Dashboard() {
               e.currentTarget.style.boxShadow = cardStyle.boxShadow;
             }}
           >
-            <h3 style={{ marginTop: 0, color: '#17a2b8' }}>Messages</h3>
-            <p style={{ color: '#666', marginBottom: 0 }}>Monitor AS2 message transactions and logs</p>
+            <h3 style={{ marginTop: 0, color: '#17a2b8' }}>AS2 Messages</h3>
+            <p style={{ color: '#666', marginBottom: 0 }}>Monitor AS2 message transactions and MDNs</p>
+          </Link>
+        )}
+
+        {showMessages && (
+          <Link
+            to="/tracker-messages"
+            style={cardStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = cardHoverStyle.transform;
+              e.currentTarget.style.boxShadow = cardHoverStyle.boxShadow;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = '';
+              e.currentTarget.style.boxShadow = cardStyle.boxShadow;
+            }}
+          >
+            <h3 style={{ marginTop: 0, color: '#20c997' }}>Tracker Messages</h3>
+            <p style={{ color: '#666', marginBottom: 0 }}>View HTTP POST tracker messages and payloads</p>
           </Link>
         )}
 

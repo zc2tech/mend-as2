@@ -138,12 +138,12 @@ export default function Layout() {
   };
 
   // Menu visibility based on permissions
-  console.log('User permissions:', permissions);
-  const showPartners = hasAnyPermission('PARTNER_READ', 'PARTNER_WRITE');
+  const showPartners = hasAnyPermission('PARTNER_WRITE') ||
+                       (hasAnyPermission('PARTNER_READ') &&
+                        !hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE'));
   const showCertificates = hasAnyPermission('CERT_READ', 'CERT_WRITE');
   const showMessages = hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE');
   const showSystem = hasAnyPermission('SYSTEM_READ', 'SYSTEM_WRITE');
-  console.log('showSystem:', showSystem);
   const showUsers = hasAnyPermission('USER_MANAGE');
 
   return (
@@ -154,7 +154,8 @@ export default function Layout() {
           <Link to="/" style={linkStyle}>Dashboard</Link>
           {showPartners && <Link to="/partners" style={linkStyle}>Partners</Link>}
           {showCertificates && <Link to="/certificates" style={linkStyle}>Certificates</Link>}
-          {showMessages && <Link to="/messages" style={linkStyle}>Messages</Link>}
+          {showMessages && <Link to="/messages" style={linkStyle}>AS2 Messages</Link>}
+          {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
           {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
           {showUsers && <Link to="/users" style={linkStyle}>Users</Link>}
         </div>

@@ -30,8 +30,8 @@ public class ProgressPanel extends JPanel {
      */
     public ProgressPanel() {
         this.initComponents();
-        this.disableProgressDisplay();
         this.progressModel = this.jProgressBar.getModel();
+        this.disableProgressDisplay();
     }
 
     private void disableProgressDisplay() {

@@ -64,20 +64,12 @@ public class JDialogEditUser extends JDialog {
         this.guiClient = guiClient;
         this.editingUser = user;
 
-        logger.info("=== JDialogEditUser constructor starting ===");
-        logger.info("Creating dialog for: " + (user == null ? "NEW USER" : "EDIT USER: " + user.getUsername()));
-
         this.loadAvailableRoles();
-
-        logger.info("After loadAvailableRoles: availableRoles=" +
-            (availableRoles == null ? "NULL" : availableRoles.size() + " roles"));
 
         this.initComponents();
         this.setupKeyboardShortcuts();
         this.setSize(600, 650); // Increased width and height for role section
         this.setLocationRelativeTo(parent);
-
-        logger.info("=== JDialogEditUser constructor complete ===");
     }
 
     private void setupKeyboardShortcuts() {
@@ -492,7 +484,6 @@ public class JDialogEditUser extends JDialog {
                 ClientServerResponse response = guiClient.sendSync(request);
                 if (response instanceof RoleListResponse) {
                     availableRoles = ((RoleListResponse) response).getRoles();
-                    logger.info("Loaded " + (availableRoles != null ? availableRoles.size() : 0) + " roles");
                 } else {
                     logger.warning("Unexpected response type for RoleListRequest: " +
                         (response != null ? response.getClass().getName() : "null"));

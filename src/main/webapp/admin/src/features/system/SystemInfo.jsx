@@ -22,6 +22,7 @@
 import { useState } from 'react';
 import HTTPServerConfig from './HTTPServerConfig';
 import InboundAuth from './InboundAuth';
+import TrackerConfig from './TrackerConfig';
 import SystemEvents from './SystemEvents';
 import ServerLogSearch from './ServerLogSearch';
 import MaintenanceSettings from './MaintenanceSettings';
@@ -68,6 +69,12 @@ export default function SystemInfo() {
           Inb. Auth
         </button>
         <button
+          style={tabButtonStyle(activeTab === 'tracker')}
+          onClick={() => setActiveTab('tracker')}
+        >
+          Tracker
+        </button>
+        <button
           style={tabButtonStyle(activeTab === 'events')}
           onClick={() => setActiveTab('events')}
         >
@@ -95,6 +102,7 @@ export default function SystemInfo() {
 
       {activeTab === 'httpConfig' && <HTTPServerConfig />}
       {activeTab === 'inboundAuth' && <InboundAuth />}
+      {activeTab === 'tracker' && <TrackerConfig />}
       {activeTab === 'events' && <SystemEvents />}
       {activeTab === 'serverlog' && <ServerLogSearch />}
       {activeTab === 'maintenance' && <MaintenanceSettings />}

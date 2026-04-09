@@ -50,6 +50,9 @@ public class TableModelTrackerMessage extends AbstractTableModel {
         } catch (MissingResourceException e) {
             throw new RuntimeException("Resource bundle not found: " + e.getClassName());
         }
+
+        // Set timezone for date format to system default
+        dateFormat.setTimeZone(java.util.TimeZone.getDefault());
     }
 
     @Override
@@ -59,7 +62,7 @@ public class TableModelTrackerMessage extends AbstractTableModel {
 
     @Override
     public int getColumnCount() {
-        return 7;
+        return 10;
     }
 
     @Override
@@ -68,7 +71,12 @@ public class TableModelTrackerMessage extends AbstractTableModel {
             case 0:
                 return rb.getResourceString("column.trackerid");
             case 1:
-                return rb.getResourceString("column.timestamp");
+                // Add timezone info to timestamp column
+                java.util.TimeZone tz = java.util.TimeZone.getDefault();
+                int offsetMillis = tz.getRawOffset();
+                int offsetHours = offsetMillis / (1000 * 60 * 60);
+                String tzInfo = String.format(" (UTC%+d)", offsetHours);
+                return rb.getResourceString("column.timestamp") + tzInfo;
             case 2:
                 return rb.getResourceString("column.remoteip");
             case 3:
@@ -79,6 +87,12 @@ public class TableModelTrackerMessage extends AbstractTableModel {
                 return rb.getResourceString("column.authstatus");
             case 6:
                 return rb.getResourceString("column.authuser");
+            case 7:
+                return rb.getResourceString("column.payloads");
+            case 8:
+                return rb.getResourceString("column.format");
+            case 9:
+                return rb.getResourceString("column.doctype");
             default:
                 return "";
         }
@@ -96,6 +110,7 @@ public class TableModelTrackerMessage extends AbstractTableModel {
             case 1:
                 return String.class; // Formatted date string
             case 4:
+            case 7:
                 return Integer.class;
             default:
                 return String.class;
@@ -126,6 +141,12 @@ public class TableModelTrackerMessage extends AbstractTableModel {
                 return info.getAuthStatusText();
             case 6:
                 return info.getAuthUser() != null ? info.getAuthUser() : "";
+            case 7:
+                return info.getPayloadCount();
+            case 8:
+                return info.getPayloadFormat() != null ? info.getPayloadFormat() : "";
+            case 9:
+                return abbreviateDocType(info.getPayloadDocType());
             default:
                 return "";
         }
@@ -168,5 +189,35 @@ public class TableModelTrackerMessage extends AbstractTableModel {
         } else {
             return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
         }
+    }
+
+    /**
+     * Abbreviate document type for display in table
+     */
+    private String abbreviateDocType(String docType) {
+        if (docType == null || docType.isEmpty()) {
+            return "";
+        }
+
+        // Extract codes in parentheses (e.g., "850", "INVOIC", "DESADV")
+        if (docType.contains("(") && docType.contains(")")) {
+            int start = docType.lastIndexOf("(");
+            int end = docType.lastIndexOf(")");
+            return docType.substring(start + 1, end);
+        }
+
+        // For cXML without parentheses, abbreviate common types
+        if (docType.contains("Purchase Order")) return "PO";
+        if (docType.contains("Invoice")) return "INV";
+        if (docType.contains("Order Confirmation")) return "ORCONF";
+        if (docType.contains("Ship Notice") || docType.contains("ASN")) return "ASN";
+        if (docType.contains("Status Update")) return "STATUS";
+
+        // If too long, truncate
+        if (docType.length() > 15) {
+            return docType.substring(0, 12) + "...";
+        }
+
+        return docType;
     }
 }

@@ -67,7 +67,7 @@ export default function Login() {
         width: '100%',
         maxWidth: '400px'
       }}>
-        <h1 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>AS2 Server Admin</h1>
+        <h1 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>AS2 Server Login</h1>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
