@@ -6,7 +6,6 @@ import de.mendelson.comm.as2.cem.messages.TrustRequest;
 import de.mendelson.comm.as2.cem.messages.TrustResponse;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.comm.as2.partner.Partner;
-import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
@@ -17,7 +16,6 @@ import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

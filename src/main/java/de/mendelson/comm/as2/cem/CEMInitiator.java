@@ -11,7 +11,6 @@ import de.mendelson.comm.as2.message.AS2Payload;
 import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.message.UniqueId;
 import de.mendelson.comm.as2.partner.Partner;
-import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.partner.PartnerSystem;
 import de.mendelson.comm.as2.partner.PartnerSystemAccessDB;
 import de.mendelson.comm.as2.sendorder.SendOrder;

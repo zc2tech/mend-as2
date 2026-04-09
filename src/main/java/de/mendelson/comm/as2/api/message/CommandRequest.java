@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.api.message;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -16,7 +15,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class CommandRequest extends ClientServerMessage implements Serializable{
+public class CommandRequest extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     private String uploadHash = null;
