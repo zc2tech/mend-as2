@@ -28,11 +28,17 @@ import { useToast } from '../../components/Toast';
 const partnerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255, 'Name too long'),
   as2Identification: z.string().min(1, 'AS2 ID is required').max(255, 'AS2 ID too long'),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  mdnURL: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  email: z.string().email('Must be a valid email').optional().or(z.literal('')),
-  subject: z.string().max(255, 'Subject too long').optional().or(z.literal('')),
-  contentType: z.string().optional().or(z.literal('')),
+  url: z.string().refine((val) => !val || z.string().url().safeParse(val).success, {
+    message: 'Must be a valid URL'
+  }),
+  mdnURL: z.string().refine((val) => !val || z.string().url().safeParse(val).success, {
+    message: 'Must be a valid URL'
+  }),
+  email: z.string().refine((val) => !val || z.string().email().safeParse(val).success, {
+    message: 'Must be a valid email'
+  }),
+  subject: z.string().max(255, 'Subject too long').optional(),
+  contentType: z.string().optional(),
   localStation: z.boolean().default(false)
 });
 
@@ -63,7 +69,7 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
   const onSubmit = async (data) => {
     try {
       if (isEdit) {
-        await updatePartner.mutateAsync({ id: partner.id, partner: data });
+        await updatePartner.mutateAsync({ as2id: partner.as2Identification, partner: data });
         toast.success('Partner updated successfully');
       } else {
         await createPartner.mutateAsync(data);
@@ -124,7 +130,21 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
         maxHeight: '90vh',
         overflow: 'auto'
       }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ marginTop: 0 }}>{isEdit ? 'Edit Partner' : 'Add Partner'}</h2>
+        <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {isEdit ? (
+            <>
+              <span>Edit Partner</span>
+              <span style={{ fontSize: '1.5rem' }} title={partner.localStation ? 'Local Station' : 'Remote Partner'}>
+                {partner.localStation ? '🏠' : '🌐'}
+              </span>
+              <span style={{ fontSize: '0.875rem', color: '#666', fontWeight: 'normal' }}>
+                {partner.localStation ? '(Local Station)' : '(Remote Partner)'}
+              </span>
+            </>
+          ) : (
+            'Add Partner'
+          )}
+        </h2>
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div style={formGroupStyle}>
@@ -208,18 +228,21 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
             />
           </div>
 
-          <div style={{ ...formGroupStyle, display: 'flex', alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              {...register('localStation')}
-              id="localStation"
-              style={{ marginRight: '0.5rem' }}
-              disabled={isSubmitting}
-            />
-            <label htmlFor="localStation" style={{ fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}>
-              Local Station
-            </label>
-          </div>
+          {/* Only show Local Station checkbox when creating new partner */}
+          {!isEdit && (
+            <div style={{ ...formGroupStyle, display: 'flex', alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                {...register('localStation')}
+                id="localStation"
+                style={{ marginRight: '0.5rem' }}
+                disabled={isSubmitting}
+              />
+              <label htmlFor="localStation" style={{ fontWeight: '600', fontSize: '0.875rem', cursor: 'pointer' }}>
+                Local Station
+              </label>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
             <button

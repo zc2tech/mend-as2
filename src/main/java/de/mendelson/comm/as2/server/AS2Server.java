@@ -425,6 +425,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS);
             this.certificateManagerTLS.loadKeystoreCertificates(tlsStorage);
+            // Time costing process:
             this.startHTTPServer(tlsStorage);
             this.startSendOrderReceiver();
             this.initializeAdditionalLogger();

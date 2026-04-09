@@ -50,8 +50,8 @@ export function useUpdatePartner() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, partner }) => {
-      const response = await api.put(`/partners/${id}`, partner);
+    mutationFn: async ({ as2id, partner }) => {
+      const response = await api.put(`/partners/${as2id}`, partner);
       return response.data;
     },
     onSuccess: () => {
@@ -64,8 +64,8 @@ export function useDeletePartner() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id) => {
-      const response = await api.delete(`/partners/${id}`);
+    mutationFn: async (as2id) => {
+      const response = await api.delete(`/partners/${as2id}`);
       return response.data;
     },
     onSuccess: () => {

@@ -45,6 +45,7 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -504,6 +505,208 @@ public class CertificateResource {
         }
     }
 
+    /**
+     * Import certificate or keystore file via multipart form-data upload
+     * Form parameters:
+     *   file: Certificate/keystore file
+     *   keystoreType: sign|tls
+     *   importType: certificate|keystore
+     *   password: (optional, required for keystore import)
+     *   alias: (optional) Alias for the imported certificate/key
+     */
+    @POST
+    @Path("/import-file")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response importCertificateFile(
+            @Context SecurityContext securityContext,
+            @FormDataParam("file") java.io.InputStream fileInputStream,
+            @FormDataParam("file") org.glassfish.jersey.media.multipart.FormDataContentDisposition fileDetail,
+            @FormDataParam("keystoreType") String keystoreType,
+            @FormDataParam("importType") @DefaultValue("keystore") String importType,
+            @FormDataParam("password") String password,
+            @FormDataParam("alias") String alias) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Server processing not available"))
+                        .build();
+            }
+
+            if (fileInputStream == null || fileDetail == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("File is required"))
+                        .build();
+            }
+
+            CertificateManager certManager = "tls".equals(keystoreType)
+                    ? processing.getCertificateManagerTLS()
+                    : processing.getCertificateManagerSignEncrypt();
+
+            String fileName = fileDetail.getFileName();
+
+            if ("certificate".equalsIgnoreCase(importType)) {
+                // Import standalone certificate (from trading partner)
+                return importStandaloneCertificate(fileInputStream, fileName, alias, certManager);
+            } else {
+                // Import keystore with private key
+                return importKeystoreFile(fileInputStream, fileName, password, alias, certManager);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Failed to import: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * Import a standalone certificate file (.cer, .crt, .pem) without private key
+     */
+    private Response importStandaloneCertificate(
+            java.io.InputStream fileInputStream,
+            String fileName,
+            String alias,
+            CertificateManager certManager) {
+        try {
+            // Read certificate file
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            byte[] certBytes = baos.toByteArray();
+
+            // Parse certificate
+            java.security.cert.CertificateFactory certFactory =
+                java.security.cert.CertificateFactory.getInstance("X.509");
+            java.security.cert.X509Certificate x509Cert;
+
+            try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(certBytes)) {
+                x509Cert = (java.security.cert.X509Certificate) certFactory.generateCertificate(bis);
+            }
+
+            if (x509Cert == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Unable to parse certificate file"))
+                        .build();
+            }
+
+            // Generate alias if not provided
+            if (alias == null || alias.trim().isEmpty()) {
+                alias = x509Cert.getSubjectX500Principal().getName();
+                // Simplify alias - extract CN if present
+                if (alias.contains("CN=")) {
+                    String cn = alias.substring(alias.indexOf("CN=") + 3);
+                    if (cn.contains(",")) {
+                        cn = cn.substring(0, cn.indexOf(","));
+                    }
+                    alias = cn.trim();
+                }
+            }
+
+            // Add certificate to keystore
+            certManager.addCertificate(alias, x509Cert);
+
+            ImportCertificateResponseDTO response = new ImportCertificateResponseDTO();
+            response.setAlias(alias);
+            response.setSubjectDN(x509Cert.getSubjectX500Principal().getName());
+            response.setIssuerDN(x509Cert.getIssuerX500Principal().getName());
+            response.setMessage("Certificate imported successfully");
+
+            return Response.ok(response).build();
+
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse("Failed to import certificate: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * Import a keystore file (.p12, .pfx, .jks) with private key
+     */
+    private Response importKeystoreFile(
+            java.io.InputStream fileInputStream,
+            String fileName,
+            String password,
+            String alias,
+            CertificateManager certManager) {
+        try {
+            if (password == null || password.isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Password is required for keystore import"))
+                        .build();
+            }
+
+            // Read keystore file
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            byte[] keystoreBytes = baos.toByteArray();
+
+            // Determine keystore type from file extension
+            String keystoreType = "PKCS12"; // default
+            if (fileName.toLowerCase().endsWith(".jks")) {
+                keystoreType = "JKS";
+            }
+
+            // Load keystore
+            java.security.KeyStore keystore = java.security.KeyStore.getInstance(keystoreType);
+            try (java.io.ByteArrayInputStream bis = new java.io.ByteArrayInputStream(keystoreBytes)) {
+                keystore.load(bis, password.toCharArray());
+            }
+
+            // Import all entries from keystore
+            List<String> importedAliases = new ArrayList<>();
+            java.util.Enumeration<String> aliases = keystore.aliases();
+
+            while (aliases.hasMoreElements()) {
+                String entryAlias = aliases.nextElement();
+
+                if (keystore.isKeyEntry(entryAlias)) {
+                    // Import key pair with certificate chain
+                    java.security.Key key = keystore.getKey(entryAlias, password.toCharArray());
+                    java.security.cert.Certificate[] chain = keystore.getCertificateChain(entryAlias);
+
+                    String targetAlias = (alias != null && !alias.isEmpty()) ? alias : entryAlias;
+                    certManager.getKeystore().setKeyEntry(targetAlias, key,
+                        certManager.getKeystorePass(), chain);
+                    importedAliases.add(targetAlias);
+                } else if (keystore.isCertificateEntry(entryAlias)) {
+                    // Import certificate only
+                    java.security.cert.Certificate cert = keystore.getCertificate(entryAlias);
+                    if (cert instanceof java.security.cert.X509Certificate) {
+                        String targetAlias = (alias != null && !alias.isEmpty()) ? alias : entryAlias;
+                        certManager.addCertificate(targetAlias, (java.security.cert.X509Certificate) cert);
+                        importedAliases.add(targetAlias);
+                    }
+                }
+            }
+
+            certManager.saveKeystore();
+
+            ImportCertificateResponseDTO response = new ImportCertificateResponseDTO();
+            response.setMessage("Keystore imported successfully. Imported " + importedAliases.size() + " entries");
+            response.setImportedAliases(importedAliases);
+
+            return Response.ok(response).build();
+
+        } catch (Throwable e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse("Failed to import keystore: " + e.getMessage()))
+                    .build();
+        }
+    }
+
     // Helper methods
 
     private String mapExportFormat(String format) {
@@ -931,6 +1134,57 @@ public class CertificateResource {
 
         public void setPartnersUsing(List<String> partnersUsing) {
             this.partnersUsing = partnersUsing;
+        }
+    }
+
+    public static class ImportCertificateResponseDTO {
+        private String message;
+        private String alias;
+        private String subjectDN;
+        private String issuerDN;
+        private List<String> importedAliases;
+
+        public ImportCertificateResponseDTO() {
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public void setMessage(String message) {
+            this.message = message;
+        }
+
+        public String getAlias() {
+            return alias;
+        }
+
+        public void setAlias(String alias) {
+            this.alias = alias;
+        }
+
+        public String getSubjectDN() {
+            return subjectDN;
+        }
+
+        public void setSubjectDN(String subjectDN) {
+            this.subjectDN = subjectDN;
+        }
+
+        public String getIssuerDN() {
+            return issuerDN;
+        }
+
+        public void setIssuerDN(String issuerDN) {
+            this.issuerDN = issuerDN;
+        }
+
+        public List<String> getImportedAliases() {
+            return importedAliases;
+        }
+
+        public void setImportedAliases(List<String> importedAliases) {
+            this.importedAliases = importedAliases;
         }
     }
 }

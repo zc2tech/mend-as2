@@ -24,7 +24,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../components/Toast';
 import api from '../../api/client';
 
-export default function CertificateImport({ keystoreType, onClose }) {
+export default function CertificateImport({ keystoreType, importType, onClose }) {
   const [file, setFile] = useState(null);
   const [password, setPassword] = useState('');
   const [alias, setAlias] = useState('');
@@ -32,6 +32,9 @@ export default function CertificateImport({ keystoreType, onClose }) {
   const [dragActive, setDragActive] = useState(false);
   const queryClient = useQueryClient();
   const toast = useToast();
+
+  const isCertificateImport = importType === 'certificate';
+  const isKeystoreImport = importType === 'keystore';
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -61,11 +64,11 @@ export default function CertificateImport({ keystoreType, onClose }) {
 
   const handleImport = async () => {
     if (!file) {
-      toast.warning('Please select a certificate file');
+      toast.warning('Please select a file');
       return;
     }
 
-    if (!password) {
+    if (isKeystoreImport && !password) {
       toast.warning('Please enter the keystore password');
       return;
     }
@@ -74,23 +77,28 @@ export default function CertificateImport({ keystoreType, onClose }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('password', password);
       formData.append('keystoreType', keystoreType);
+      formData.append('importType', importType);
+      if (password) {
+        formData.append('password', password);
+      }
       if (alias) {
         formData.append('alias', alias);
       }
 
-      await api.post('/certificates/import', formData, {
+      const response = await api.post('/certificates/import-file', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      toast.success('Certificate imported successfully');
+      const message = response.data.message ||
+        (isCertificateImport ? 'Certificate imported successfully' : 'Keystore imported successfully');
+      toast.success(message);
       queryClient.invalidateQueries(['certificates', keystoreType]);
       onClose();
     } catch (error) {
-      toast.error('Failed to import certificate: ' + (error.response?.data?.error || error.message));
+      toast.error('Failed to import: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -104,6 +112,20 @@ export default function CertificateImport({ keystoreType, onClose }) {
     backgroundColor: dragActive ? '#f0f8ff' : '#fafafa',
     cursor: 'pointer',
     transition: 'all 0.3s'
+  };
+
+  const getAcceptedFileTypes = () => {
+    if (isCertificateImport) {
+      return '.cer,.crt,.pem';
+    }
+    return '.p12,.pfx,.jks';
+  };
+
+  const getSupportedFileTypesText = () => {
+    if (isCertificateImport) {
+      return 'Supports .cer, .crt, .pem';
+    }
+    return 'Supports .p12, .pfx, .jks';
   };
 
   return (
@@ -127,9 +149,15 @@ export default function CertificateImport({ keystoreType, onClose }) {
         maxWidth: '500px',
         width: '100%'
       }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ marginTop: 0 }}>Import Certificate</h2>
+        <h2 style={{ marginTop: 0 }}>
+          {isCertificateImport ? 'Import Certificate' : 'Import Keystore'}
+        </h2>
         <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-          Importing to: {keystoreType === 'sign' ? 'Sign/Encrypt Keystore' : 'TLS Keystore'}
+          {isCertificateImport
+            ? 'Import a certificate from your trading partner'
+            : 'Import your own private key from a keystore file'}
+          <br />
+          <strong>Target: {keystoreType === 'sign' ? 'Sign/Encrypt Keystore' : 'TLS Keystore'}</strong>
         </p>
 
         <div
@@ -143,7 +171,7 @@ export default function CertificateImport({ keystoreType, onClose }) {
           <input
             id="fileInput"
             type="file"
-            accept=".p12,.pfx,.jks,.cer,.crt,.pem"
+            accept={getAcceptedFileTypes()}
             onChange={handleFileChange}
             style={{ display: 'none' }}
           />
@@ -157,38 +185,44 @@ export default function CertificateImport({ keystoreType, onClose }) {
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📁</div>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                {isCertificateImport ? '📜' : '🔑'}
+              </div>
               <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
-                Drop certificate file here
+                Drop {isCertificateImport ? 'certificate' : 'keystore'} file here
               </div>
               <div style={{ color: '#666', fontSize: '0.875rem' }}>
                 or click to browse
               </div>
               <div style={{ color: '#999', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                Supports .p12, .pfx, .jks, .cer, .crt, .pem
+                {getSupportedFileTypesText()}
               </div>
             </div>
           )}
         </div>
 
         <div style={{ marginTop: '1.5rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-            Keystore Password *
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter keystore password"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              marginBottom: '1rem'
-            }}
-          />
+          {isKeystoreImport && (
+            <>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
+                Keystore Password *
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter keystore password"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  marginBottom: '1rem'
+                }}
+              />
+            </>
+          )}
 
           <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
             Alias (optional)
@@ -197,7 +231,7 @@ export default function CertificateImport({ keystoreType, onClose }) {
             type="text"
             value={alias}
             onChange={(e) => setAlias(e.target.value)}
-            placeholder="Certificate alias"
+            placeholder={isCertificateImport ? 'Certificate alias' : 'Key alias'}
             disabled={loading}
             style={{
               width: '100%',
@@ -206,23 +240,28 @@ export default function CertificateImport({ keystoreType, onClose }) {
               borderRadius: '4px'
             }}
           />
+          {isCertificateImport && (
+            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+              If not specified, the Common Name (CN) from the certificate will be used
+            </p>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
           <button
             onClick={handleImport}
-            disabled={loading || !file}
+            disabled={loading || !file || (isKeystoreImport && !password)}
             style={{
               padding: '0.75rem 1.5rem',
-              backgroundColor: loading || !file ? '#6c757d' : '#28a745',
+              backgroundColor: loading || !file || (isKeystoreImport && !password) ? '#6c757d' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: loading || !file ? 'not-allowed' : 'pointer',
+              cursor: loading || !file || (isKeystoreImport && !password) ? 'not-allowed' : 'pointer',
               fontSize: '1rem'
             }}
           >
-            {loading ? 'Importing...' : 'Import Certificate'}
+            {loading ? 'Importing...' : 'Import'}
           </button>
           <button
             onClick={onClose}

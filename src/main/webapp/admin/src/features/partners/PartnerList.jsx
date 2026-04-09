@@ -46,10 +46,10 @@ export default function PartnerList() {
     partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleDelete = async (id, name) => {
+  const handleDelete = async (as2id, name) => {
     if (window.confirm(`Are you sure you want to delete partner "${name}"?`)) {
       try {
-        await deletePartner.mutateAsync(id);
+        await deletePartner.mutateAsync(as2id);
         toast.success(`Partner "${name}" deleted successfully`);
       } catch (error) {
         toast.error('Failed to delete partner: ' + (error.response?.data?.error || error.message));
@@ -185,7 +185,7 @@ export default function PartnerList() {
                       backgroundColor: '#dc3545',
                       color: 'white'
                     }}
-                    onClick={() => handleDelete(partner.id, partner.name)}
+                    onClick={() => handleDelete(partner.as2Identification, partner.name)}
                     disabled={deletePartner.isPending}
                   >
                     {deletePartner.isPending ? 'Deleting...' : 'Delete'}

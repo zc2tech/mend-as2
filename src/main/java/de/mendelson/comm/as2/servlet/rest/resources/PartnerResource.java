@@ -166,14 +166,34 @@ public class PartnerResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createPartner(Partner partner, @jakarta.ws.rs.core.Context jakarta.ws.rs.core.SecurityContext securityContext) {
+    public Response createPartner(PartnerDTO partnerDTO, @jakarta.ws.rs.core.Context jakarta.ws.rs.core.SecurityContext securityContext) {
         try {
+            logger.info("Received createPartner request");
+
+            // Validate DTO
+            if (partnerDTO == null) {
+                logger.warning("PartnerDTO is null");
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Partner data is required"))
+                        .build();
+            }
+
+            logger.info("PartnerDTO: name=" + partnerDTO.getName() +
+                       ", as2Id=" + partnerDTO.getAs2Identification() +
+                       ", isLocal=" + partnerDTO.isLocalStation());
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
             }
+
+            // Convert DTO to Partner object with proper defaults
+            Partner partner = partnerDTO.toPartner();
+
+            // Log the received partner data
+            logger.info("Creating partner: name=" + partner.getName() + ", as2Id=" + partner.getAS2Identification() + ", isLocal=" + partner.isLocalStation());
 
             // Set the creator user ID from the security context
             String username = securityContext.getUserPrincipal().getName();
@@ -187,6 +207,7 @@ public class PartnerResource {
             SinglePartnerAddResponse response = processing.processPartnerAddRequest(request);
 
             if (response.getException() != null) {
+                logger.warning("Partner creation failed: " + response.getException().getMessage());
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new ErrorResponse(response.getException().getMessage()))
                         .build();
@@ -196,8 +217,10 @@ public class PartnerResource {
                     .entity(new SuccessResponse("Partner created successfully"))
                     .build();
         } catch (Exception e) {
+            logger.severe("Partner creation error: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(e.getMessage()))
+                    .entity(new ErrorResponse(e.getMessage() != null ? e.getMessage() : e.getClass().getName()))
                     .build();
         }
     }
@@ -209,7 +232,7 @@ public class PartnerResource {
     @Path("/{as2id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePartner(@PathParam("as2id") String as2id, Partner partner) {
+    public Response updatePartner(@PathParam("as2id") String as2id, PartnerDTO partnerDTO) {
         try {
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
@@ -217,6 +240,9 @@ public class PartnerResource {
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
             }
+
+            // Convert DTO to Partner object
+            Partner partner = partnerDTO.toPartner();
 
             // Ensure the AS2 ID in the path matches the partner object
             partner.setAS2Identification(as2id);

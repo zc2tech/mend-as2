@@ -291,14 +291,27 @@ public class AS2 {
             gui.setVisible(true);
         } else {
             // Headless mode - server keeps running without GUI or authentication
-            System.out.println("Running in headless mode - GUI disabled");
-            System.out.println("Server is now running. Press Ctrl+C to stop.");
+            logWithTimestamp("Running in headless mode - GUI disabled");
+            logWithTimestamp("Server is now running. Press Ctrl+C to stop.");
             // Keep the main thread alive - server runs in background threads
             try {
                 Thread.currentThread().join();
             } catch (InterruptedException e) {
-                System.out.println("Server shutdown requested");
+                logWithTimestamp("Server shutdown requested");
             }
         }
+    }
+
+    /**
+     * Log message with timestamp prefix (for headless mode)
+     */
+    private static void logWithTimestamp(String message) {
+        java.time.LocalTime now = java.time.LocalTime.now();
+        String timestamp = String.format("[%02d:%02d:%02d %s]",
+                now.getHour() > 12 ? now.getHour() - 12 : (now.getHour() == 0 ? 12 : now.getHour()),
+                now.getMinute(),
+                now.getSecond(),
+                now.getHour() >= 12 ? "PM" : "AM");
+        System.out.println(timestamp + " " + message);
     }
 }

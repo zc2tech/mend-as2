@@ -24,11 +24,14 @@ import { useCertificates, useExportCertificate, useDeleteCertificate, useExportK
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
 import CertificateImport from './CertificateImport';
+import CertificateImportTypeSelector from './CertificateImportTypeSelector';
 import GenerateKeyDialog from './GenerateKeyDialog';
 
 export default function CertificateList() {
   const [keystoreType, setKeystoreType] = useState('sign');
+  const [showImportTypeSelector, setShowImportTypeSelector] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importType, setImportType] = useState('keystore');
   const [showGenerateKey, setShowGenerateKey] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
@@ -39,6 +42,21 @@ export default function CertificateList() {
   const verifyCRL = useVerifyCRL();
   const deleteCertificate = useDeleteCertificate();
   const toast = useToast();
+
+  const handleImportClick = () => {
+    setShowImportTypeSelector(true);
+  };
+
+  const handleImportTypeSelected = (type) => {
+    setImportType(type);
+    setShowImportTypeSelector(false);
+    setShowImport(true);
+  };
+
+  const handleImportClose = () => {
+    setShowImport(false);
+    setImportType('keystore');
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -408,7 +426,7 @@ export default function CertificateList() {
               color: 'white',
               padding: '0.5rem 1rem'
             }}
-            onClick={() => setShowImport(true)}
+            onClick={handleImportClick}
           >
             Import Certificate
           </button>
@@ -567,10 +585,19 @@ export default function CertificateList() {
         </tbody>
       </table>
 
+      {showImportTypeSelector && (
+        <CertificateImportTypeSelector
+          keystoreType={keystoreType}
+          onClose={() => setShowImportTypeSelector(false)}
+          onTypeSelected={handleImportTypeSelected}
+        />
+      )}
+
       {showImport && (
         <CertificateImport
           keystoreType={keystoreType}
-          onClose={() => setShowImport(false)}
+          importType={importType}
+          onClose={handleImportClose}
         />
       )}
 
