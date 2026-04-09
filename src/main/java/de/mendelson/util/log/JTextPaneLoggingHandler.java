@@ -217,14 +217,14 @@ public class JTextPaneLoggingHandler extends Handler {
         synchronized (document) {
             try {
                 long documentLength = document.getLength();
-                long oversize = (documentLength + buffer.length()) - this.MAX_BUFFER_SIZE;
+                long oversize = (documentLength + buffer.length()) - JTextPaneLoggingHandler.MAX_BUFFER_SIZE;
                 if (oversize > 0) {
                     if (documentLength >= oversize) {
                         document.remove(0, (int) oversize);
                     } else {
                         document.remove(0, (int) documentLength);
-                        if (buffer.length() > this.MAX_BUFFER_SIZE) {
-                            buffer.delete(0, (int) (buffer.length() - this.MAX_BUFFER_SIZE));
+                        if (buffer.length() > JTextPaneLoggingHandler.MAX_BUFFER_SIZE) {
+                            buffer.delete(0, (int) (buffer.length() - JTextPaneLoggingHandler.MAX_BUFFER_SIZE));
                         }
                     }
                 }

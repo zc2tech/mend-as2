@@ -17,7 +17,7 @@ import javax.swing.border.EmptyBorder;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ListCellRendererEventCategory extends JLabel implements ListCellRenderer {
+public class ListCellRendererEventCategory extends JLabel implements ListCellRenderer<Object> {
     
     public static final int IMAGE_HEIGHT = 18;
     public static final int ROW_HEIGHT = IMAGE_HEIGHT+2;
@@ -159,7 +159,7 @@ public class ListCellRendererEventCategory extends JLabel implements ListCellRen
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
         setComponentOrientation(list.getComponentOrientation());
         setBorder(new EmptyBorder(0,2,0,0));
         if (isSelected) {

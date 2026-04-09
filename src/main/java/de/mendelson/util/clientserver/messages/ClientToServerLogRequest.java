@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.messages;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.logging.Level;
 
 /*
@@ -21,7 +20,7 @@ import java.util.logging.Level;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ClientToServerLogRequest extends ClientServerMessage implements Serializable {
+public class ClientToServerLogRequest extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     private String message = null;

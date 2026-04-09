@@ -22,8 +22,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -71,6 +69,11 @@ public class BaseClient {
     private IoSession session = null;
     private final NioSocketConnector connector = new NioSocketConnector();
     private ExecutorFilter executorFilter = null;
+    /**
+     * Shared thread pool executor for all client connections.
+     * This is intentionally not closed as it's shared across all client instances
+     * and remains alive for the application lifetime.
+     */
     private final static UnorderedThreadPoolExecutor THREAD_POOL_EXECUTOR
             = new UnorderedThreadPoolExecutor(2, 16, 30, TimeUnit.SECONDS,
                     new NamedThreadFactory("client-server-clientside-exec"));
@@ -262,7 +265,7 @@ public class BaseClient {
             throw new IllegalStateException("[Client-Server communication] BaseClient.sendAsync: "
                     + "Not connected to a server. Please connect first.");
         }
-        WriteFuture future = this.session.write(message);
+        this.session.write(message);
     }
 
     /**
@@ -376,7 +379,7 @@ public class BaseClient {
                     this.user = null;
                 }
             }
-            this.session.close(false);
+            this.session.closeNow();
         }
     }
 

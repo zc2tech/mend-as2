@@ -1,11 +1,5 @@
 package de.mendelson.util.security;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
 /**
  * This class provides encode/decode for RFC 2045 Base64 as defined by RFC 2045,
  * N. Freed and N. Borenstein. RFC 2045: Multipurpose Internet Mail Extensions
@@ -24,7 +18,6 @@ public final class Base64 {
     static private final int TWENTYFOURBITGROUP = 24;
     static private final int EIGHTBIT = 8;
     static private final int SIXTEENBIT = 16;
-    static private final int SIXBIT = 6;
     static private final int FOURBYTE = 4;
     static private final int SIGN = -128;
     static private final char PAD = '=';

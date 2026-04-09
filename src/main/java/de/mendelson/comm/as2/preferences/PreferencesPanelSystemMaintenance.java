@@ -218,7 +218,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
         jPanelMargin.add(jTextFieldDeleteStatsOlderThan, gridBagConstraints);
 
-        jLabelDays2.setText(this.rb.getResourceString( "label.days" ));
+        jLabelDays2.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.days" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 6;
@@ -243,7 +243,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
         jPanelMargin.add(jTextFieldDeleteLogDirOlderThan, gridBagConstraints);
 
-        jLabelDays1.setText(this.rb.getResourceString( "label.days" ));
+        jLabelDays1.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.days" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 9;
@@ -304,7 +304,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(switchDeleteLogDirOlderThan, gridBagConstraints);
 
-        jLabelDeleteMsgOlderThan.setText(this.rb.getResourceString( "label.deletemsgolderthan"));
+        jLabelDeleteMsgOlderThan.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.deletemsgolderthan"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -312,7 +312,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jLabelDeleteMsgOlderThan, gridBagConstraints);
 
-        jLabelDeleteStatsOlderThan.setText(this.rb.getResourceString( "label.deletestatsolderthan"));
+        jLabelDeleteStatsOlderThan.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.deletestatsolderthan"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
@@ -320,7 +320,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jLabelDeleteStatsOlderThan, gridBagConstraints);
 
-        jLabelDeleteLogDirOlderThan.setText(this.rb.getResourceString( "label.deletelogdirolderthan"));
+        jLabelDeleteLogDirOlderThan.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.deletelogdirolderthan"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
@@ -335,7 +335,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 50, 10, 10);
         jPanelMargin.add(jPanelSpace76346, gridBagConstraints);
 
-        jLabelAutoDelete.setText(this.rb.getResourceString( "label.autodelete"));
+        jLabelAutoDelete.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.autodelete"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;

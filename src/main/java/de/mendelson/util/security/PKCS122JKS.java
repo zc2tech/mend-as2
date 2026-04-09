@@ -13,7 +13,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.logging.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.PasswordFinder;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -29,7 +28,7 @@ import org.bouncycastle.openssl.PasswordFinder;
  * @author S.Heller
  * @version $Revision: 8 $
  */
-public class PKCS122JKS implements PasswordFinder {
+public class PKCS122JKS {
 
     /**
      * Keystore to use, if this is not set a new one will be created
@@ -134,13 +133,5 @@ public class PKCS122JKS implements PasswordFinder {
         try (OutputStream out = Files.newOutputStream(file)) {
             keystore.store(out, keystorePass);
         }
-    }
-
-    /**
-     * makes this a PasswordFinder
-     */
-    @Override
-    public char[] getPassword() {
-        return (this.keystorePass);
     }
 }

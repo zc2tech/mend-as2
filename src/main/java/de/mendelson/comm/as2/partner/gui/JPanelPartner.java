@@ -375,7 +375,7 @@ public class JPanelPartner extends JPanel {
      *
      * @param combobox to set the item in
      */
-    private void setUIValueWithoutEvent(JComboBox combobox, Object item) {
+    private void setUIValueWithoutEvent(JComboBox<?> combobox, Object item) {
         ActionListener[] actionListener = combobox.getActionListeners();
         for (ActionListener listener : actionListener) {
             combobox.removeActionListener(listener);
@@ -453,7 +453,7 @@ public class JPanelPartner extends JPanel {
                     JPanelPartner.this.statusbar.startProgressIndeterminate(
                             JPanelPartner.rb.getResourceString("label.test.connection"), uniqueId);
                     String urlStr = JPanelPartner.this.jTextFieldReceiptURL.getText();
-                    URL url = new URL(urlStr);
+                    URL url = java.net.URI.create(urlStr).toURL();
                     int port = 80;
                     if (url.getPort() > 0) {
                         //will be -1 by default if no specified...
@@ -657,7 +657,7 @@ public class JPanelPartner extends JPanel {
             } else {
                 this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMessage, true);
             }
-        } else if (this.partner.getAuthenticationCredentialsMessage().isEnabled()) {
+        } else if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
@@ -669,7 +669,7 @@ public class JPanelPartner extends JPanel {
             } else {
                 this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMDN, true);
             }
-        } else if (this.partner.getAuthenticationCredentialsMessage().isEnabled()) {
+        } else if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMDN, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
@@ -1199,9 +1199,9 @@ public class JPanelPartner extends JPanel {
         jTextFieldContentType = new javax.swing.JTextField();
         jPanelSpace14 = new javax.swing.JPanel();
         jPanelSep = new javax.swing.JPanel();
-        jComboBoxContentTransferEncoding = new javax.swing.JComboBox();
+        jComboBoxContentTransferEncoding = new javax.swing.JComboBox<>();
         jLabelContentTransferEncoding = new javax.swing.JLabel();
-        jComboBoxHTTPProtocolVersion = new javax.swing.JComboBox();
+        jComboBoxHTTPProtocolVersion = new javax.swing.JComboBox<>();
         jButtonTestConnection = new javax.swing.JButton();
         jPanelUIHelpLabelURL = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
         jPanelUIHelpLabelSubject = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
@@ -1376,11 +1376,11 @@ public class JPanelPartner extends JPanel {
         jPanelSpace874 = new javax.swing.JPanel();
         jPanelSecurity = new javax.swing.JPanel();
         jPanelSecurityMain = new javax.swing.JPanel();
-        jComboBoxSignCert = new javax.swing.JComboBox();
+        jComboBoxSignCert = new javax.swing.JComboBox<>();
         jPanelSpace2 = new javax.swing.JPanel();
         jComboBoxSignType = new javax.swing.JComboBox<>();
         jComboBoxEncryptionType = new javax.swing.JComboBox<>();
-        jComboBoxCryptCert = new javax.swing.JComboBox();
+        jComboBoxCryptCert = new javax.swing.JComboBox<>();
         jPanelUIHelpLabelCryptAlias = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
         jPanelSpaceSecurity = new javax.swing.JPanel();
         jPanelUIHelpLabelSignAlias = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
@@ -1388,9 +1388,9 @@ public class JPanelPartner extends JPanel {
         jPanelUIHelpLabelEncryptionType = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
         jPanelOverwriteLocalStationSecurity = new javax.swing.JPanel();
         jPanelUIHelpLabelOverwriteCryptAliasLocalStation = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
-        jComboBoxOverwriteLocalStationCryptKey = new javax.swing.JComboBox();
+        jComboBoxOverwriteLocalStationCryptKey = new javax.swing.JComboBox<>();
         jPanelUIHelpLabelOverwriteLocalstationSignAlias = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
-        jComboBoxOverwriteLocalstationSignKey = new javax.swing.JComboBox();
+        jComboBoxOverwriteLocalstationSignKey = new javax.swing.JComboBox<>();
         jRadioButtonOverwriteLocalstationSecurity = new javax.swing.JRadioButton();
         jRadioButtonKeepLocalstationSecurity = new javax.swing.JRadioButton();
         jPanelSpace585 = new javax.swing.JPanel();
@@ -1504,7 +1504,7 @@ public class JPanelPartner extends JPanel {
         jPanelSendMain.add(jComboBoxHTTPProtocolVersion, gridBagConstraints);
 
         jButtonTestConnection.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonTestConnection.setText(this.rb.getResourceString("label.test.connection"));
+        jButtonTestConnection.setText(JPanelPartner.rb.getResourceString("label.test.connection"));
         jButtonTestConnection.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonTestConnection.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonTestConnection.addActionListener(new java.awt.event.ActionListener() {
@@ -1520,8 +1520,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 5, 5);
         jPanelSendMain.add(jButtonTestConnection, gridBagConstraints);
 
-        jPanelUIHelpLabelURL.setToolTipText(this.rb.getResourceString( "label.url.help"));
-        jPanelUIHelpLabelURL.setText(this.rb.getResourceString( "label.url"));
+        jPanelUIHelpLabelURL.setToolTipText(JPanelPartner.rb.getResourceString( "label.url.help"));
+        jPanelUIHelpLabelURL.setText(JPanelPartner.rb.getResourceString( "label.url"));
         jPanelUIHelpLabelURL.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1530,16 +1530,16 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 0, 0, 0);
         jPanelSendMain.add(jPanelUIHelpLabelURL, gridBagConstraints);
 
-        jPanelUIHelpLabelSubject.setToolTipText(this.rb.getResourceString( "label.subject.help"));
-        jPanelUIHelpLabelSubject.setText(this.rb.getResourceString( "label.subject"));
+        jPanelUIHelpLabelSubject.setToolTipText(JPanelPartner.rb.getResourceString( "label.subject.help"));
+        jPanelUIHelpLabelSubject.setText(JPanelPartner.rb.getResourceString( "label.subject"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 10;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         jPanelSendMain.add(jPanelUIHelpLabelSubject, gridBagConstraints);
 
-        jPanelUIHelpLabelContentType.setToolTipText(this.rb.getResourceString( "label.contenttype.help"));
-        jPanelUIHelpLabelContentType.setText(this.rb.getResourceString( "label.contenttype"));
+        jPanelUIHelpLabelContentType.setToolTipText(JPanelPartner.rb.getResourceString( "label.contenttype.help"));
+        jPanelUIHelpLabelContentType.setText(JPanelPartner.rb.getResourceString( "label.contenttype"));
         jPanelUIHelpLabelContentType.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1554,8 +1554,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 0, 5);
         jPanelSendMain.add(jPanelSpace42, gridBagConstraints);
 
-        jPanelUIHelpLabelProtocolVersion.setToolTipText(this.rb.getResourceString("label.httpversion.help"));
-        jPanelUIHelpLabelProtocolVersion.setText(this.rb.getResourceString("label.httpversion"));
+        jPanelUIHelpLabelProtocolVersion.setToolTipText(JPanelPartner.rb.getResourceString("label.httpversion.help"));
+        jPanelUIHelpLabelProtocolVersion.setText(JPanelPartner.rb.getResourceString("label.httpversion"));
         jPanelUIHelpLabelProtocolVersion.setTriangleAlignment(JPanelUIHelpLabel.TRIANGLE_ALIGNMENT_CENTER);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1590,8 +1590,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelSendMain.add(switchCompress, gridBagConstraints);
 
-        jPanelUIHelpLabelCompress.setToolTipText(this.rb.getResourceString( "label.compression.help"));
-        jPanelUIHelpLabelCompress.setText(this.rb.getResourceString( "label.compression"));
+        jPanelUIHelpLabelCompress.setToolTipText(JPanelPartner.rb.getResourceString( "label.compression.help"));
+        jPanelUIHelpLabelCompress.setText(JPanelPartner.rb.getResourceString( "label.compression"));
         jPanelUIHelpLabelCompress.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1623,7 +1623,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 5, 5, 5);
         jPanelSend.add(jPanelSendMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.send"), jPanelSend);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.send"), jPanelSend);
 
         jPanelMDN.setLayout(new java.awt.GridBagLayout());
 
@@ -1669,7 +1669,7 @@ public class JPanelPartner extends JPanel {
         jPanelMDNMain.add(jLabelIconAsyncMDN, gridBagConstraints);
 
         jLabelMDNDescription.setFont(new java.awt.Font("Dialog", 0, 14)); // NOI18N
-        jLabelMDNDescription.setText(this.rb.getResourceString( "label.mdn.description"));
+        jLabelMDNDescription.setText(JPanelPartner.rb.getResourceString( "label.mdn.description"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -1686,8 +1686,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(1, 20, 1, 20);
         jPanelMDNMain.add(jPanelSpacherMDN, gridBagConstraints);
 
-        jPanelUIHelpLabelMDNURL.setToolTipText(this.rb.getResourceString( "label.mdnurl.help"));
-        jPanelUIHelpLabelMDNURL.setText(this.rb.getResourceString( "label.mdnurl"));
+        jPanelUIHelpLabelMDNURL.setToolTipText(JPanelPartner.rb.getResourceString( "label.mdnurl.help"));
+        jPanelUIHelpLabelMDNURL.setText(JPanelPartner.rb.getResourceString( "label.mdnurl"));
         jPanelUIHelpLabelMDNURL.setTooltipWidth(400);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1698,7 +1698,7 @@ public class JPanelPartner extends JPanel {
 
         buttonGroupSyncAsyncMDN.add(jRadioButtonSyncMDN);
         jRadioButtonSyncMDN.setSelected(true);
-        jRadioButtonSyncMDN.setText(this.rb.getResourceString( "label.syncmdn"));
+        jRadioButtonSyncMDN.setText(JPanelPartner.rb.getResourceString( "label.syncmdn"));
         jRadioButtonSyncMDN.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButtonSyncMDNActionPerformed(evt);
@@ -1712,7 +1712,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 0);
         jPanelSyncMDN.add(jRadioButtonSyncMDN, gridBagConstraints);
 
-        jPanelUIHelpSyncMDN.setToolTipText(this.rb.getResourceString( "label.syncmdn.help" ));
+        jPanelUIHelpSyncMDN.setToolTipText(JPanelPartner.rb.getResourceString( "label.syncmdn.help" ));
         jPanelUIHelpSyncMDN.setPreferredSize(new java.awt.Dimension(20, 20));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
@@ -1744,7 +1744,7 @@ public class JPanelPartner extends JPanel {
         jPanelAsyncMDN.setLayout(new java.awt.GridBagLayout());
 
         buttonGroupSyncAsyncMDN.add(jRadioButtonAsyncMDN);
-        jRadioButtonAsyncMDN.setText(this.rb.getResourceString( "label.asyncmdn"));
+        jRadioButtonAsyncMDN.setText(JPanelPartner.rb.getResourceString( "label.asyncmdn"));
         jRadioButtonAsyncMDN.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButtonAsyncMDNActionPerformed(evt);
@@ -1758,7 +1758,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 0);
         jPanelAsyncMDN.add(jRadioButtonAsyncMDN, gridBagConstraints);
 
-        jPanelUIHelpAsyncMDN.setToolTipText(this.rb.getResourceString( "label.asyncmdn.help"));
+        jPanelUIHelpAsyncMDN.setToolTipText(JPanelPartner.rb.getResourceString( "label.asyncmdn.help"));
         jPanelUIHelpAsyncMDN.setPreferredSize(new java.awt.Dimension(20, 20));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
@@ -1789,8 +1789,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(2, 2, 2, 2);
         jPanelMDNMain.add(jPanelSpace34333, gridBagConstraints);
 
-        jPanelUIHelpLabelSignedMDN.setToolTipText(this.rb.getResourceString( "label.signedmdn.help"));
-        jPanelUIHelpLabelSignedMDN.setText(this.rb.getResourceString( "label.signedmdn"));
+        jPanelUIHelpLabelSignedMDN.setToolTipText(JPanelPartner.rb.getResourceString( "label.signedmdn.help"));
+        jPanelUIHelpLabelSignedMDN.setText(JPanelPartner.rb.getResourceString( "label.signedmdn"));
         jPanelUIHelpLabelSignedMDN.setTooltipWidth(350);
         jPanelUIHelpLabelSignedMDN.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_CENTER
         );
@@ -1820,13 +1820,13 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 5, 5, 5);
         jPanelMDN.add(jPanelMDNMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.mdn"), jPanelMDN);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.mdn"), jPanelMDN);
 
         jPanelDirPoll.setLayout(new java.awt.GridBagLayout());
 
         jPanelPollOptions.setLayout(new java.awt.GridBagLayout());
 
-        jLabelPollDir.setText(this.rb.getResourceString( "label.polldir"));
+        jLabelPollDir.setText(JPanelPartner.rb.getResourceString( "label.polldir"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
@@ -1845,7 +1845,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelPollOptions.add(jTextFieldPollDir, gridBagConstraints);
 
-        jLabelPollInterval.setText(this.rb.getResourceString( "label.pollinterval"));
+        jLabelPollInterval.setText(JPanelPartner.rb.getResourceString( "label.pollinterval"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
@@ -1897,7 +1897,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelPollOptions.add(jTextFieldIgnorePollFilterList, gridBagConstraints);
 
-        jLabelPollMaxFiles.setText(this.rb.getResourceString( "label.maxpollfiles"));
+        jLabelPollMaxFiles.setText(JPanelPartner.rb.getResourceString( "label.maxpollfiles"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 11;
@@ -1928,8 +1928,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelPollOptions.add(jPanelSpace111, gridBagConstraints);
 
-        jPanelUIHelpLabelPollIgnoreList.setToolTipText(this.rb.getResourceString( "label.pollignore.help"));
-        jPanelUIHelpLabelPollIgnoreList.setText(this.rb.getResourceString( "label.pollignore"));
+        jPanelUIHelpLabelPollIgnoreList.setToolTipText(JPanelPartner.rb.getResourceString( "label.pollignore.help"));
+        jPanelUIHelpLabelPollIgnoreList.setText(JPanelPartner.rb.getResourceString( "label.pollignore"));
         jPanelUIHelpLabelPollIgnoreList.setTooltipWidth(400);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1938,8 +1938,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelPollOptions.add(jPanelUIHelpLabelPollIgnoreList, gridBagConstraints);
 
-        jPanelUIHelpLabelEnableDirPoll.setToolTipText(this.rb.getResourceString( "label.enabledirpoll.help" ));
-        jPanelUIHelpLabelEnableDirPoll.setText(this.rb.getResourceString( "label.enabledirpoll" ));
+        jPanelUIHelpLabelEnableDirPoll.setToolTipText(JPanelPartner.rb.getResourceString( "label.enabledirpoll.help" ));
+        jPanelUIHelpLabelEnableDirPoll.setText(JPanelPartner.rb.getResourceString( "label.enabledirpoll" ));
         jPanelUIHelpLabelEnableDirPoll.setTooltipWidth(400);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -1969,7 +1969,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelDirPoll.add(jPanelPollOptions, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.dirpoll"), jPanelDirPoll);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.dirpoll"), jPanelDirPoll);
 
         jPanelReceipt.setLayout(new java.awt.GridBagLayout());
 
@@ -1984,8 +1984,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(3, 3, 3, 3);
         jPanelReceiptOptions.add(jPanelSpace456, gridBagConstraints);
 
-        jPanelUIHelpLabelKeepFilenameOnReceipt.setToolTipText(this.rb.getResourceString( "label.keepfilenameonreceipt.help"));
-        jPanelUIHelpLabelKeepFilenameOnReceipt.setText(this.rb.getResourceString( "label.keepfilenameonreceipt"));
+        jPanelUIHelpLabelKeepFilenameOnReceipt.setToolTipText(JPanelPartner.rb.getResourceString( "label.keepfilenameonreceipt.help"));
+        jPanelUIHelpLabelKeepFilenameOnReceipt.setText(JPanelPartner.rb.getResourceString( "label.keepfilenameonreceipt"));
         jPanelUIHelpLabelKeepFilenameOnReceipt.setTooltipWidth(350);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -2013,7 +2013,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 5, 5, 5);
         jPanelReceipt.add(jPanelReceiptOptions, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.receipt"), jPanelReceipt);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.receipt"), jPanelReceipt);
 
         jPanelHTTPAuth.setLayout(new java.awt.GridBagLayout());
 
@@ -2027,7 +2027,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
         jPanelHttpAuthData.add(jPanelSpace199, gridBagConstraints);
 
-        jPanelUIHelpAuthCredentialsMessage.setToolTipText(this.rb.getResourceString( "label.httpauthentication.credentials.help" ));
+        jPanelUIHelpAuthCredentialsMessage.setToolTipText(JPanelPartner.rb.getResourceString( "label.httpauthentication.credentials.help" ));
         jPanelUIHelpAuthCredentialsMessage.setPreferredSize(new java.awt.Dimension(20, 20));
         jPanelUIHelpAuthCredentialsMessage.setTooltipWidth(350);
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -2036,7 +2036,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanelHttpAuthData.add(jPanelUIHelpAuthCredentialsMessage, gridBagConstraints);
 
-        jPanelUIHelpAuthCredentialsMDN.setToolTipText(this.rb.getResourceString( "label.httpauthentication.credentials.help" ));
+        jPanelUIHelpAuthCredentialsMDN.setToolTipText(JPanelPartner.rb.getResourceString( "label.httpauthentication.credentials.help" ));
         jPanelUIHelpAuthCredentialsMDN.setPreferredSize(new java.awt.Dimension(20, 20));
         jPanelUIHelpAuthCredentialsMDN.setTooltipWidth(350);
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -2055,7 +2055,7 @@ public class JPanelPartner extends JPanel {
 
         buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthNoneMessage);
         jRadioButtonHttpAuthNoneMessage.setSelected(true);
-        jRadioButtonHttpAuthNoneMessage.setText(this.rb.getResourceString("label.httpauth.none"));
+        jRadioButtonHttpAuthNoneMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.none"));
         jRadioButtonHttpAuthNoneMessage.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthNoneMessageItemStateChanged(evt);
@@ -2069,7 +2069,7 @@ public class JPanelPartner extends JPanel {
         jPanelHttpAuthData.add(jRadioButtonHttpAuthNoneMessage, gridBagConstraints);
 
         buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthCredentialsMessage);
-        jRadioButtonHttpAuthCredentialsMessage.setText(this.rb.getResourceString( "label.httpauth.credentials.message" ));
+        jRadioButtonHttpAuthCredentialsMessage.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.message" ));
         jRadioButtonHttpAuthCredentialsMessage.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthCredentialsMessageItemStateChanged(evt);
@@ -2083,7 +2083,7 @@ public class JPanelPartner extends JPanel {
         jPanelHttpAuthData.add(jRadioButtonHttpAuthCredentialsMessage, gridBagConstraints);
 
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthCredentialsMDN);
-        jRadioButtonHttpAuthCredentialsMDN.setText(this.rb.getResourceString( "label.httpauth.credentials.asyncmdn" ));
+        jRadioButtonHttpAuthCredentialsMDN.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.asyncmdn" ));
         jRadioButtonHttpAuthCredentialsMDN.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthCredentialsMDNItemStateChanged(evt);
@@ -2098,7 +2098,7 @@ public class JPanelPartner extends JPanel {
 
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthNoneMDN);
         jRadioButtonHttpAuthNoneMDN.setSelected(true);
-        jRadioButtonHttpAuthNoneMDN.setText(this.rb.getResourceString("label.httpauth.none"));
+        jRadioButtonHttpAuthNoneMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.none"));
         jRadioButtonHttpAuthNoneMDN.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthNoneMDNItemStateChanged(evt);
@@ -2115,7 +2115,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPAuthCredentialsMessage.setPreferredSize(new java.awt.Dimension(430, 60));
         jPanelHTTPAuthCredentialsMessage.setLayout(new java.awt.GridBagLayout());
 
-        jLabelHttpAuth.setText(this.rb.getResourceString( "label.httpauth.credentials.message.user" ));
+        jLabelHttpAuth.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.message.user" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -2140,7 +2140,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHTTPAuthCredentialsMessage.add(jTextFieldHttpAuthMessageUser, gridBagConstraints);
 
-        jLabelHttpPass.setText(this.rb.getResourceString( "label.httpauth.credentials.message.pass" ));
+        jLabelHttpPass.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.message.pass" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -2178,7 +2178,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPAuthCredentialsMDN.setPreferredSize(new java.awt.Dimension(430, 60));
         jPanelHTTPAuthCredentialsMDN.setLayout(new java.awt.GridBagLayout());
 
-        jLabelHttpAuthAsyncMDN.setText(this.rb.getResourceString( "label.httpauth.credentials.asyncmdn.user" ));
+        jLabelHttpAuthAsyncMDN.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.asyncmdn.user" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -2203,7 +2203,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHTTPAuthCredentialsMDN.add(jTextFieldHttpAuthAsyncMDNUser, gridBagConstraints);
 
-        jLabelHttpPassAsyncMDN.setText(this.rb.getResourceString( "label.httpauth.credentials.asyncmdn.pass" ));
+        jLabelHttpPassAsyncMDN.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.asyncmdn.pass" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -2238,7 +2238,7 @@ public class JPanelPartner extends JPanel {
         jPanelHttpAuthData.add(jPanelHTTPAuthCredentialsMDN, gridBagConstraints);
 
         jLabelHttpAuthMessage.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        jLabelHttpAuthMessage.setText(this.rb.getResourceString("label.httpauth.message"));
+        jLabelHttpAuthMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.message"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -2248,7 +2248,7 @@ public class JPanelPartner extends JPanel {
         jPanelHttpAuthData.add(jLabelHttpAuthMessage, gridBagConstraints);
 
         HttpAuthNoneMDN.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        HttpAuthNoneMDN.setText(this.rb.getResourceString("label.httpauth.asyncmdn"));
+        HttpAuthNoneMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.asyncmdn"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 13;
@@ -2310,7 +2310,7 @@ public class JPanelPartner extends JPanel {
         jPanelOAuth2AuthorizationCodeMDN.add(jPanelSpaceX11, gridBagConstraints);
 
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN);
-        jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.setText(this.rb.getResourceString("label.httpauth.oauth2.authorizationcode.asyncmdn"));
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.authorizationcode.asyncmdn"));
         jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthOAuth2AuthorizationCodeMDNItemStateChanged(evt);
@@ -2324,7 +2324,7 @@ public class JPanelPartner extends JPanel {
         jPanelOAuth2AuthorizationCodeMDN.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN, gridBagConstraints);
 
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMDN);
-        jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.setText(this.rb.getResourceString("label.httpauth.oauth2.clientcredentials.asyncmdn"));
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.clientcredentials.asyncmdn"));
         jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthOAuth2ClientCredentialsMDNItemStateChanged(evt);
@@ -2415,7 +2415,7 @@ public class JPanelPartner extends JPanel {
         jPanelOAuth2AuthorizationCodeMessage.add(jPanelSpaceX12, gridBagConstraints);
 
         buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage);
-        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.setText(this.rb.getResourceString("label.httpauth.oauth2.authorizationcode.message"));
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.authorizationcode.message"));
         jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageItemStateChanged(evt);
@@ -2434,7 +2434,7 @@ public class JPanelPartner extends JPanel {
         jPanelOAuth2AuthorizationCodeMessage.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage, gridBagConstraints);
 
         buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMessage);
-        jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.setText(this.rb.getResourceString("label.httpauth.oauth2.clientcredentials.message"));
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.clientcredentials.message"));
         jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
                 jRadioButtonHttpAuthOAuth2ClientCredentialsMessageItemStateChanged(evt);
@@ -2495,7 +2495,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(15, 5, 5, 5);
         jPanelHTTPAuth.add(jPanelHttpAuthData, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.httpauth"), jPanelHTTPAuth);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.httpauth"), jPanelHTTPAuth);
 
         jPanelHTTPHeader.setLayout(new java.awt.GridBagLayout());
 
@@ -2511,7 +2511,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPHeader.add(jScrollPaneHttpHeader, gridBagConstraints);
 
         jButtonHttpHeaderAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonHttpHeaderAdd.setText(this.rb.getResourceString( "httpheader.add"));
+        jButtonHttpHeaderAdd.setText(JPanelPartner.rb.getResourceString( "httpheader.add"));
         jButtonHttpHeaderAdd.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonHttpHeaderAdd.setMargin(new java.awt.Insets(2, 5, 2, 5));
         jButtonHttpHeaderAdd.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -2527,7 +2527,7 @@ public class JPanelPartner extends JPanel {
         jPanelHTTPHeader.add(jButtonHttpHeaderAdd, gridBagConstraints);
 
         jButtonHttpHeaderRemove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonHttpHeaderRemove.setText(this.rb.getResourceString( "httpheader.delete"));
+        jButtonHttpHeaderRemove.setText(JPanelPartner.rb.getResourceString( "httpheader.delete"));
         jButtonHttpHeaderRemove.setEnabled(false);
         jButtonHttpHeaderRemove.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonHttpHeaderRemove.setMargin(new java.awt.Insets(2, 5, 2, 5));
@@ -2545,13 +2545,13 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHTTPHeader.add(jButtonHttpHeaderRemove, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.httpheader"), jPanelHTTPHeader);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.httpheader"), jPanelHTTPHeader);
 
         jPanelNotification.setLayout(new java.awt.GridBagLayout());
 
         jPanelNotificationMain.setLayout(new java.awt.GridBagLayout());
 
-        jCheckBoxNotifySend.setText(this.rb.getResourceString("label.notify.send"));
+        jCheckBoxNotifySend.setText(JPanelPartner.rb.getResourceString("label.notify.send"));
         jCheckBoxNotifySend.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jCheckBoxNotifySendActionPerformed(evt);
@@ -2562,7 +2562,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelNotificationMain.add(jCheckBoxNotifySend, gridBagConstraints);
 
-        jCheckBoxNotifyReceive.setText(this.rb.getResourceString("label.notify.receive"));
+        jCheckBoxNotifyReceive.setText(JPanelPartner.rb.getResourceString("label.notify.receive"));
         jCheckBoxNotifyReceive.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jCheckBoxNotifyReceiveActionPerformed(evt);
@@ -2575,7 +2575,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelNotificationMain.add(jCheckBoxNotifyReceive, gridBagConstraints);
 
-        jCheckBoxNotifySendReceive.setText(this.rb.getResourceString("label.notify.sendreceive"));
+        jCheckBoxNotifySendReceive.setText(JPanelPartner.rb.getResourceString("label.notify.sendreceive"));
         jCheckBoxNotifySendReceive.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jCheckBoxNotifySendReceiveActionPerformed(evt);
@@ -2648,7 +2648,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(15, 5, 5, 5);
         jPanelNotification.add(jPanelNotificationMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.notification"), jPanelNotification);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.notification"), jPanelNotification);
 
         jPanelEvents.setLayout(new java.awt.GridBagLayout());
 
@@ -2688,7 +2688,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostprocessingSend.add(jTextFieldEventInfoOnReceipt, gridBagConstraints);
 
         jButtonEditEventOnReceipt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonEditEventOnReceipt.setToolTipText(this.rb.getResourceString("tooltip.button.editevent"));
+        jButtonEditEventOnReceipt.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.editevent"));
         jButtonEditEventOnReceipt.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonEditEventOnReceipt.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2702,7 +2702,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostprocessingSend.add(jButtonEditEventOnReceipt, gridBagConstraints);
 
         jButtonAddEventOnReceipt.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonAddEventOnReceipt.setToolTipText(this.rb.getResourceString("tooltip.button.addevent"));
+        jButtonAddEventOnReceipt.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.addevent"));
         jButtonAddEventOnReceipt.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonAddEventOnReceipt.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2745,7 +2745,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostprocessingReceivedFailure.add(jTextFieldEventInfoOnSendError, gridBagConstraints);
 
         jButtonEditEventOnSendError.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonEditEventOnSendError.setToolTipText(this.rb.getResourceString("tooltip.button.editevent"));
+        jButtonEditEventOnSendError.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.editevent"));
         jButtonEditEventOnSendError.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonEditEventOnSendError.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2759,7 +2759,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostprocessingReceivedFailure.add(jButtonEditEventOnSendError, gridBagConstraints);
 
         jButtonAddEventOnSendError.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonAddEventOnSendError.setToolTipText(this.rb.getResourceString("tooltip.button.addevent"));
+        jButtonAddEventOnSendError.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.addevent"));
         jButtonAddEventOnSendError.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonAddEventOnSendError.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2802,7 +2802,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostProcessingReceiptSuccess.add(jTextFieldEventInfoOnSendSuccess, gridBagConstraints);
 
         jButtonEditEventOnSendSuccess.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonEditEventOnSendSuccess.setToolTipText(this.rb.getResourceString("tooltip.button.editevent"));
+        jButtonEditEventOnSendSuccess.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.editevent"));
         jButtonEditEventOnSendSuccess.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonEditEventOnSendSuccess.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2816,7 +2816,7 @@ public class JPanelPartner extends JPanel {
         jPanelPostProcessingReceiptSuccess.add(jButtonEditEventOnSendSuccess, gridBagConstraints);
 
         jButtonAddEventOnSendSuccess.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonAddEventOnSendSuccess.setToolTipText(this.rb.getResourceString("tooltip.button.addevent"));
+        jButtonAddEventOnSendSuccess.setToolTipText(JPanelPartner.rb.getResourceString("tooltip.button.addevent"));
         jButtonAddEventOnSendSuccess.setMargin(new java.awt.Insets(5, 5, 5, 5));
         jButtonAddEventOnSendSuccess.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2840,7 +2840,7 @@ public class JPanelPartner extends JPanel {
         jPanelEventsMain.add(jPanelPostProcessingReceiptSuccess, gridBagConstraints);
 
         jLabelUseEventOnReceipt.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelUseEventOnReceipt.setText(this.rb.getResourceString( "label.usecommandonreceipt"));
+        jLabelUseEventOnReceipt.setText(JPanelPartner.rb.getResourceString( "label.usecommandonreceipt"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -2875,7 +2875,7 @@ public class JPanelPartner extends JPanel {
         jPanelEventsMain.add(switchUseEventOnSendSuccess, gridBagConstraints);
 
         jLabelUseEventOnSendSuccess.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelUseEventOnSendSuccess.setText(this.rb.getResourceString( "label.usecommandonsendsuccess"));
+        jLabelUseEventOnSendSuccess.setText(JPanelPartner.rb.getResourceString( "label.usecommandonsendsuccess"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 13;
@@ -2884,7 +2884,7 @@ public class JPanelPartner extends JPanel {
         jPanelEventsMain.add(jLabelUseEventOnSendSuccess, gridBagConstraints);
 
         jLabelUseEventOnSendError.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelUseEventOnSendError.setText(this.rb.getResourceString( "label.usecommandonsenderror"));
+        jLabelUseEventOnSendError.setText(JPanelPartner.rb.getResourceString( "label.usecommandonsenderror"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
@@ -2946,13 +2946,13 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(15, 5, 5, 10);
         jPanelEvents.add(jPanelEventsMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.events"), jPanelEvents);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.events"), jPanelEvents);
 
         jPanelPartnerSystem.setLayout(new java.awt.GridBagLayout());
 
         jPanelPartnerSystemMain.setLayout(new java.awt.GridBagLayout());
 
-        jLabelAS2Version.setText(this.rb.getResourceString( "label.as2version"));
+        jLabelAS2Version.setText(JPanelPartner.rb.getResourceString( "label.as2version"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -2960,7 +2960,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelPartnerSystemMain.add(jLabelAS2Version, gridBagConstraints);
 
-        jLabelProductName.setText(this.rb.getResourceString( "label.productname"));
+        jLabelProductName.setText(JPanelPartner.rb.getResourceString( "label.productname"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
@@ -2968,7 +2968,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelPartnerSystemMain.add(jLabelProductName, gridBagConstraints);
 
-        jLabelFeatures.setText(this.rb.getResourceString( "label.features"));
+        jLabelFeatures.setText(JPanelPartner.rb.getResourceString( "label.features"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
@@ -2976,7 +2976,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(20, 5, 10, 5);
         jPanelPartnerSystemMain.add(jLabelFeatures, gridBagConstraints);
 
-        jCheckBoxEdiintFeaturesCompression.setText(this.rb.getResourceString( "label.features.compression"));
+        jCheckBoxEdiintFeaturesCompression.setText(JPanelPartner.rb.getResourceString( "label.features.compression"));
         jCheckBoxEdiintFeaturesCompression.setEnabled(false);
         jCheckBoxEdiintFeaturesCompression.setFocusable(false);
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -2987,7 +2987,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelPartnerSystemMain.add(jCheckBoxEdiintFeaturesCompression, gridBagConstraints);
 
-        jCheckBoxEdiintFeaturesMA.setText(this.rb.getResourceString( "label.features.ma"));
+        jCheckBoxEdiintFeaturesMA.setText(JPanelPartner.rb.getResourceString( "label.features.ma"));
         jCheckBoxEdiintFeaturesMA.setEnabled(false);
         jCheckBoxEdiintFeaturesMA.setFocusable(false);
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -2998,7 +2998,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelPartnerSystemMain.add(jCheckBoxEdiintFeaturesMA, gridBagConstraints);
 
-        jCheckBoxEdiintFeaturesCEM.setText(this.rb.getResourceString( "label.features.cem"));
+        jCheckBoxEdiintFeaturesCEM.setText(JPanelPartner.rb.getResourceString( "label.features.cem"));
         jCheckBoxEdiintFeaturesCEM.setEnabled(false);
         jCheckBoxEdiintFeaturesCEM.setFocusable(false);
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -3062,7 +3062,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 5, 5, 5);
         jPanelPartnerSystem.add(jPanelPartnerSystemMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.partnersystem"), jPanelPartnerSystem);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.partnersystem"), jPanelPartnerSystem);
 
         jPanelMisc.setLayout(new java.awt.GridBagLayout());
 
@@ -3152,8 +3152,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 10, 10);
         jPanelMiscMain.add(jScrollPanePartnerContact, gridBagConstraints);
 
-        jPanelUIHelpLabelName.setToolTipText(this.rb.getResourceString("label.name.help"));
-        jPanelUIHelpLabelName.setText(this.rb.getResourceString("label.name"));
+        jPanelUIHelpLabelName.setToolTipText(JPanelPartner.rb.getResourceString("label.name.help"));
+        jPanelUIHelpLabelName.setText(JPanelPartner.rb.getResourceString("label.name"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -3162,8 +3162,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelName, gridBagConstraints);
 
-        jPanelUIHelpLabelAS2Id.setToolTipText(this.rb.getResourceString("label.id.help"));
-        jPanelUIHelpLabelAS2Id.setText(this.rb.getResourceString("label.id"));
+        jPanelUIHelpLabelAS2Id.setToolTipText(JPanelPartner.rb.getResourceString("label.id.help"));
+        jPanelUIHelpLabelAS2Id.setText(JPanelPartner.rb.getResourceString("label.id"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -3172,8 +3172,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelAS2Id, gridBagConstraints);
 
-        jPanelUIHelpLabelEMail.setToolTipText(this.rb.getResourceString("label.email.help"));
-        jPanelUIHelpLabelEMail.setText(this.rb.getResourceString("label.email"));
+        jPanelUIHelpLabelEMail.setToolTipText(JPanelPartner.rb.getResourceString("label.email.help"));
+        jPanelUIHelpLabelEMail.setText(JPanelPartner.rb.getResourceString("label.email"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -3182,9 +3182,9 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelEMail, gridBagConstraints);
 
-        jPanelUIHelpLabelAddress.setToolTipText(this.rb.getResourceString("label.notes.help"));
+        jPanelUIHelpLabelAddress.setToolTipText(JPanelPartner.rb.getResourceString("label.notes.help"));
         jPanelUIHelpLabelAddress.setHelpEnabled(false);
-        jPanelUIHelpLabelAddress.setText(this.rb.getResourceString("label.address"));
+        jPanelUIHelpLabelAddress.setText(JPanelPartner.rb.getResourceString("label.address"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
@@ -3193,9 +3193,9 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelAddress, gridBagConstraints);
 
-        jPanelUIHelpLabelComment.setToolTipText(this.rb.getResourceString("label.notes.help"));
+        jPanelUIHelpLabelComment.setToolTipText(JPanelPartner.rb.getResourceString("label.notes.help"));
         jPanelUIHelpLabelComment.setHelpEnabled(false);
-        jPanelUIHelpLabelComment.setText(this.rb.getResourceString("label.partnercomment"));
+        jPanelUIHelpLabelComment.setText(JPanelPartner.rb.getResourceString("label.partnercomment"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
@@ -3204,9 +3204,9 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelComment, gridBagConstraints);
 
-        jPanelUIHelpLabelContact.setToolTipText(this.rb.getResourceString("label.notes.help"));
+        jPanelUIHelpLabelContact.setToolTipText(JPanelPartner.rb.getResourceString("label.notes.help"));
         jPanelUIHelpLabelContact.setHelpEnabled(false);
-        jPanelUIHelpLabelContact.setText(this.rb.getResourceString("label.contact"));
+        jPanelUIHelpLabelContact.setText(JPanelPartner.rb.getResourceString("label.contact"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
@@ -3215,8 +3215,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelMiscMain.add(jPanelUIHelpLabelContact, gridBagConstraints);
 
-        jPanelUIHelpLabelName1.setToolTipText(this.rb.getResourceString( "label.localstation.help"));
-        jPanelUIHelpLabelName1.setText(this.rb.getResourceString( "label.localstation"));
+        jPanelUIHelpLabelName1.setToolTipText(JPanelPartner.rb.getResourceString( "label.localstation.help"));
+        jPanelUIHelpLabelName1.setText(JPanelPartner.rb.getResourceString( "label.localstation"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -3254,7 +3254,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMisc.add(jPanelMiscMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.misc"), jPanelMisc);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.misc"), jPanelMisc);
 
         jPanelSecurity.setLayout(new java.awt.GridBagLayout());
 
@@ -3327,8 +3327,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelSecurityMain.add(jComboBoxCryptCert, gridBagConstraints);
 
-        jPanelUIHelpLabelCryptAlias.setToolTipText(this.rb.getResourceString( "label.mdnurl.help"));
-        jPanelUIHelpLabelCryptAlias.setText(this.rb.getResourceString( "label.mdnurl"));
+        jPanelUIHelpLabelCryptAlias.setToolTipText(JPanelPartner.rb.getResourceString( "label.mdnurl.help"));
+        jPanelUIHelpLabelCryptAlias.setText(JPanelPartner.rb.getResourceString( "label.mdnurl"));
         jPanelUIHelpLabelCryptAlias.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -3344,8 +3344,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelSecurityMain.add(jPanelSpaceSecurity, gridBagConstraints);
 
-        jPanelUIHelpLabelSignAlias.setToolTipText(this.rb.getResourceString( "label.mdnurl.help"));
-        jPanelUIHelpLabelSignAlias.setText(this.rb.getResourceString( "label.mdnurl"));
+        jPanelUIHelpLabelSignAlias.setToolTipText(JPanelPartner.rb.getResourceString( "label.mdnurl.help"));
+        jPanelUIHelpLabelSignAlias.setText(JPanelPartner.rb.getResourceString( "label.mdnurl"));
         jPanelUIHelpLabelSignAlias.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -3354,8 +3354,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelSecurityMain.add(jPanelUIHelpLabelSignAlias, gridBagConstraints);
 
-        jPanelUIHelpLabelSignType.setToolTipText(this.rb.getResourceString( "label.signtype.help"));
-        jPanelUIHelpLabelSignType.setText(this.rb.getResourceString( "label.signtype"));
+        jPanelUIHelpLabelSignType.setToolTipText(JPanelPartner.rb.getResourceString( "label.signtype.help"));
+        jPanelUIHelpLabelSignType.setText(JPanelPartner.rb.getResourceString( "label.signtype"));
         jPanelUIHelpLabelSignType.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -3364,8 +3364,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 0);
         jPanelSecurityMain.add(jPanelUIHelpLabelSignType, gridBagConstraints);
 
-        jPanelUIHelpLabelEncryptionType.setToolTipText(this.rb.getResourceString( "label.encryptiontype.help"));
-        jPanelUIHelpLabelEncryptionType.setText(this.rb.getResourceString( "label.encryptiontype"));
+        jPanelUIHelpLabelEncryptionType.setToolTipText(JPanelPartner.rb.getResourceString( "label.encryptiontype.help"));
+        jPanelUIHelpLabelEncryptionType.setText(JPanelPartner.rb.getResourceString( "label.encryptiontype"));
         jPanelUIHelpLabelEncryptionType.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -3377,8 +3377,8 @@ public class JPanelPartner extends JPanel {
         jPanelOverwriteLocalStationSecurity.setBorder(javax.swing.BorderFactory.createTitledBorder(""));
         jPanelOverwriteLocalStationSecurity.setLayout(new java.awt.GridBagLayout());
 
-        jPanelUIHelpLabelOverwriteCryptAliasLocalStation.setToolTipText(this.rb.getResourceString( "label.overwrite.crypt.help"));
-        jPanelUIHelpLabelOverwriteCryptAliasLocalStation.setText(this.rb.getResourceString( "label.overwrite.crypt"));
+        jPanelUIHelpLabelOverwriteCryptAliasLocalStation.setToolTipText(JPanelPartner.rb.getResourceString( "label.overwrite.crypt.help"));
+        jPanelUIHelpLabelOverwriteCryptAliasLocalStation.setText(JPanelPartner.rb.getResourceString( "label.overwrite.crypt"));
         jPanelUIHelpLabelOverwriteCryptAliasLocalStation.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
@@ -3401,8 +3401,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelOverwriteLocalStationSecurity.add(jComboBoxOverwriteLocalStationCryptKey, gridBagConstraints);
 
-        jPanelUIHelpLabelOverwriteLocalstationSignAlias.setToolTipText(this.rb.getResourceString( "label.overwrite.sign.help"));
-        jPanelUIHelpLabelOverwriteLocalstationSignAlias.setText(this.rb.getResourceString( "label.overwrite.sign"));
+        jPanelUIHelpLabelOverwriteLocalstationSignAlias.setToolTipText(JPanelPartner.rb.getResourceString( "label.overwrite.sign.help"));
+        jPanelUIHelpLabelOverwriteLocalstationSignAlias.setText(JPanelPartner.rb.getResourceString( "label.overwrite.sign"));
         jPanelUIHelpLabelOverwriteLocalstationSignAlias.setTooltipWidth(250);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
@@ -3426,7 +3426,7 @@ public class JPanelPartner extends JPanel {
         jPanelOverwriteLocalStationSecurity.add(jComboBoxOverwriteLocalstationSignKey, gridBagConstraints);
 
         buttonGroupOverwriteLocalStationSecurity.add(jRadioButtonOverwriteLocalstationSecurity);
-        jRadioButtonOverwriteLocalstationSecurity.setText(this.rb.getResourceString("label.overwrite.security"));
+        jRadioButtonOverwriteLocalstationSecurity.setText(JPanelPartner.rb.getResourceString("label.overwrite.security"));
         jRadioButtonOverwriteLocalstationSecurity.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButtonOverwriteLocalstationSecurityActionPerformed(evt);
@@ -3442,7 +3442,7 @@ public class JPanelPartner extends JPanel {
 
         buttonGroupOverwriteLocalStationSecurity.add(jRadioButtonKeepLocalstationSecurity);
         jRadioButtonKeepLocalstationSecurity.setSelected(true);
-        jRadioButtonKeepLocalstationSecurity.setText(this.rb.getResourceString("label.keep.security"));
+        jRadioButtonKeepLocalstationSecurity.setText(JPanelPartner.rb.getResourceString("label.keep.security"));
         jRadioButtonKeepLocalstationSecurity.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jRadioButtonKeepLocalstationSecurityActionPerformed(evt);
@@ -3497,8 +3497,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelSecurityMain.add(switchUseAlgorithmIdentifierProtectionAttribute, gridBagConstraints);
 
-        jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute.setToolTipText(this.rb.getResourceString( "label.algorithmidentifierprotection.help"));
-        jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute.setText(this.rb.getResourceString( "label.algorithmidentifierprotection"));
+        jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute.setToolTipText(JPanelPartner.rb.getResourceString( "label.algorithmidentifierprotection.help"));
+        jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute.setText(JPanelPartner.rb.getResourceString( "label.algorithmidentifierprotection"));
         jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute.setTooltipWidth(350);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -3515,7 +3515,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(15, 5, 5, 5);
         jPanelSecurity.add(jPanelSecurityMain, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.security"), jPanelSecurity);
+        jTabbedPane.addTab(JPanelPartner.rb.getResourceString( "tab.security"), jPanelSecurity);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
@@ -4117,13 +4117,13 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JCheckBox jCheckBoxNotifyReceive;
     private javax.swing.JCheckBox jCheckBoxNotifySend;
     private javax.swing.JCheckBox jCheckBoxNotifySendReceive;
-    private javax.swing.JComboBox jComboBoxContentTransferEncoding;
-    private javax.swing.JComboBox jComboBoxCryptCert;
+    private javax.swing.JComboBox<String> jComboBoxContentTransferEncoding;
+    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxCryptCert;
     private javax.swing.JComboBox<EncryptionDisplayImplAS2> jComboBoxEncryptionType;
-    private javax.swing.JComboBox jComboBoxHTTPProtocolVersion;
-    private javax.swing.JComboBox jComboBoxOverwriteLocalStationCryptKey;
-    private javax.swing.JComboBox jComboBoxOverwriteLocalstationSignKey;
-    private javax.swing.JComboBox jComboBoxSignCert;
+    private javax.swing.JComboBox<String> jComboBoxHTTPProtocolVersion;
+    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxOverwriteLocalStationCryptKey;
+    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxOverwriteLocalstationSignKey;
+    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxSignCert;
     private javax.swing.JComboBox<SignatureDisplayImplAS2> jComboBoxSignType;
     private javax.swing.JLabel jLabelAS2Version;
     private javax.swing.JLabel jLabelContentTransferEncoding;

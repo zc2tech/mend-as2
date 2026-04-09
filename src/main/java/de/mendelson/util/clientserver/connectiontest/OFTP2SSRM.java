@@ -13,7 +13,7 @@ package de.mendelson.util.clientserver.connectiontest;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class OFTP2SSRM extends OFTP2AbstractCommand implements OFTP2Command {
+public class OFTP2SSRM extends OFTP2AbstractCommand  {
 
     public static final String SSRMCMD = "SSRMCMD";
     public static final String SSRMMSG = "SSRMMSG";

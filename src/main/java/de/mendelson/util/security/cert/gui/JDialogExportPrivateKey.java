@@ -281,7 +281,7 @@ public class JDialogExportPrivateKey extends JDialog {
         jPanelEdit.add(jPanel3, gridBagConstraints);
 
         jButtonBrowseExportFile.setText("..");
-        jButtonBrowseExportFile.setToolTipText(this.rb.getResourceString( "button.browse"));
+        jButtonBrowseExportFile.setToolTipText(JDialogExportPrivateKey.rb.getResourceString( "button.browse"));
         jButtonBrowseExportFile.setMargin(new java.awt.Insets(2, 8, 2, 8));
         jButtonBrowseExportFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -294,7 +294,7 @@ public class JDialogExportPrivateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelEdit.add(jButtonBrowseExportFile, gridBagConstraints);
 
-        jLabelPassphrase.setText(this.rb.getResourceString( "label.keypass"));
+        jLabelPassphrase.setText(JDialogExportPrivateKey.rb.getResourceString( "label.keypass"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 11;
@@ -328,7 +328,7 @@ public class JDialogExportPrivateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(1, 5, 1, 5);
         jPanelEdit.add(jComboBoxKeys, gridBagConstraints);
 
-        jLabelAlias.setText(this.rb.getResourceString( "label.alias" ));
+        jLabelAlias.setText(JDialogExportPrivateKey.rb.getResourceString( "label.alias" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
@@ -350,8 +350,8 @@ public class JDialogExportPrivateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
         jPanelEdit.add(jPanelSpace1, gridBagConstraints);
 
-        jPanelUIHelpLabelURL.setToolTipText(this.rb.getResourceString( "label.exportdir.help"));
-        jPanelUIHelpLabelURL.setText(this.rb.getResourceString( "label.exportdir"));
+        jPanelUIHelpLabelURL.setToolTipText(JDialogExportPrivateKey.rb.getResourceString( "label.exportdir.help"));
+        jPanelUIHelpLabelURL.setText(JDialogExportPrivateKey.rb.getResourceString( "label.exportdir"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -387,8 +387,8 @@ public class JDialogExportPrivateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
         jPanelEdit.add(jPanelSpace4, gridBagConstraints);
 
-        jPanelUIHelpLabelExportFormat.setToolTipText(this.rb.getResourceString( "label.exportformat.help"));
-        jPanelUIHelpLabelExportFormat.setText(this.rb.getResourceString( "label.exportformat"));
+        jPanelUIHelpLabelExportFormat.setToolTipText(JDialogExportPrivateKey.rb.getResourceString( "label.exportformat.help"));
+        jPanelUIHelpLabelExportFormat.setText(JDialogExportPrivateKey.rb.getResourceString( "label.exportformat"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
@@ -406,7 +406,7 @@ public class JDialogExportPrivateKey extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogExportPrivateKey.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -416,7 +416,7 @@ public class JDialogExportPrivateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogExportPrivateKey.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

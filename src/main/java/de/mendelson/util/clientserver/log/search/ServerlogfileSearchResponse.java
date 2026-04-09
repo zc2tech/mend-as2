@@ -2,7 +2,6 @@
 package de.mendelson.util.clientserver.log.search;
 
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /*
@@ -19,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ServerlogfileSearchResponse extends ClientServerResponse implements Serializable {
+public class ServerlogfileSearchResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<Logline> resultList = new ArrayList<Logline>();

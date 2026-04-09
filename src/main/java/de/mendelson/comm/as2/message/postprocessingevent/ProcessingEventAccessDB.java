@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.message.postprocessingevent;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
-import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.security.Base64;
 import de.mendelson.util.systemevents.SystemEvent;
@@ -14,7 +13,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 
 /*

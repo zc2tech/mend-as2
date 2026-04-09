@@ -102,7 +102,7 @@ public class JPanelFileDisplay extends JPanel {
         this.jScrollPaneTextEditor.setVisible(true);
         if (filename == null) {
             this.jTextFieldFilename.setText("");
-            this.jEditorPaneRawText.setText(this.rb.getResourceString("no.file"));
+            this.jEditorPaneRawText.setText(JPanelFileDisplay.rb.getResourceString("no.file"));
             return;
         }
         TransferClient transferClient = new TransferClient(this.baseClient);
@@ -146,7 +146,7 @@ public class JPanelFileDisplay extends JPanel {
             }
         } catch (Throwable e) {
             if (e instanceof FileNotFoundException) {
-                this.jEditorPaneRawText.setText(this.rb.getResourceString("file.notfound",
+                this.jEditorPaneRawText.setText(JPanelFileDisplay.rb.getResourceString("file.notfound",
                         filename));
             } else {
                 this.jEditorPaneRawText.setText(e.getMessage());

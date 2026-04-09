@@ -162,18 +162,6 @@ public class AS2MessageParser {
     }
 
     /**
-     * Displays a bundle of byte arrays as hex string, for debug purpose only
-     */
-    private String toHexDisplay(byte[] data) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < data.length; i++) {
-            result.append(Integer.toString((data[i] & 0xff) + 0x100, 16).substring(1));
-            result.append(" ");
-        }
-        return result.toString();
-    }
-
-    /**
      * Decompresses message data
      */
     public byte[] decompressData(AS2MessageInfo info, byte[] data, String contentType) throws Exception {

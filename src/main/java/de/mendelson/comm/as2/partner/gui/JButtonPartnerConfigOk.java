@@ -65,60 +65,6 @@ public class JButtonPartnerConfigOk extends JButton {
     }
 
     /**
-     * Checks if the passed URLs point to localhost
-     *
-     */
-    private boolean checkLocalhostAsURL(Partner checkPartner) {
-        String receiverURL = checkPartner.getURL();
-        String mdnURL = checkPartner.getMdnURL();
-        boolean error = false;
-        if (!checkPartner.isLocalStation()) {
-            //no local station - check receipt URL
-            if (receiverURL == null 
-                    || receiverURL.toLowerCase().startsWith("http://localhost")
-                    || receiverURL.toLowerCase().startsWith("https://localhost")
-                    || receiverURL.toLowerCase().startsWith("https://127.0.0.1")
-                    || receiverURL.toLowerCase().startsWith("http://127.0.0.1")
-                    ) {
-                //graphical modifications for current displayed partner only!
-                if (this.remotePartner.equals(checkPartner)) {
-                    this.markErrorInTextField(this.jTextFieldReceiptURL);
-                }
-                error = true;
-            } 
-            if (!error) {
-                //graphical modifications for current displayed partner only!
-                if (this.remotePartner.equals(checkPartner)) {
-                    this.markNoErrorInTextField(this.jTextFieldReceiptURL);
-                }
-            }
-        } else {
-            //local station - check MDN URL
-            if (mdnURL == null
-                    || mdnURL.toLowerCase().startsWith("http://localhost")
-                    || mdnURL.toLowerCase().startsWith("https://localhost")
-                    || mdnURL.toLowerCase().startsWith("https://127.0.0.1")
-                    || mdnURL.toLowerCase().startsWith("http://127.0.0.1")
-                    ){
-                //graphical modifications for current displayed partner only!
-                if (this.remotePartner.equals(checkPartner)) {
-                    this.markErrorInTextField(this.jTextFieldMDNURL);
-                }
-                error = true;
-            } 
-            if (!error) {
-                //graphical modifications for current displayed partner only!
-                if (this.remotePartner.equals(checkPartner)) {
-                    this.markNoErrorInTextField(this.jTextFieldMDNURL);
-                }
-            }
-        }
-        return (error);
-    }
-    
-    
-    
-    /**
      * Checks if the passed URLs contain a leading protocol entry
      *
      */
@@ -137,7 +83,7 @@ public class JButtonPartnerConfigOk extends JButton {
                 error = true;
             } else {
                 try {
-                    URL testURL = new URL(receiverURL);
+                    URL testURL = java.net.URI.create(receiverURL).toURL();
                     // Port validation: Accept explicit port OR default port (80 for HTTP, 443 for HTTPS)
                     int port = testURL.getPort();
                     int defaultPort = testURL.getDefaultPort();
@@ -174,7 +120,7 @@ public class JButtonPartnerConfigOk extends JButton {
                 error = true;
             } else {
                 try {
-                    URL testURL = new URL(mdnURL);
+                    URL testURL = java.net.URI.create(mdnURL).toURL();
                     // Port validation: Accept explicit port OR default port (80 for HTTP, 443 for HTTPS)
                     int port = testURL.getPort();
                     int defaultPort = testURL.getDefaultPort();

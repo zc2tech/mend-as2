@@ -120,7 +120,7 @@ public class MessageStoreHandler {
         //write header
         Path headerFile = Paths.get(rawDataFile.toAbsolutePath().toString() + ".header");
         StringBuilder headerStrBuilder = new StringBuilder();
-        Enumeration enumeration = header.keys();
+        Enumeration<?> enumeration = header.keys();
         while (enumeration.hasMoreElements()) {
             String key = (String) enumeration.nextElement();
             headerStrBuilder.append(key)
@@ -402,7 +402,7 @@ public class MessageStoreHandler {
                 .append(".as2");
         Path headerFile = Paths.get(rawFilename.toString() + ".header");
         StringBuilder headerStrBuilder = new StringBuilder();
-        Enumeration keyEnumeration = header.keys();
+        Enumeration<?> keyEnumeration = header.keys();
         while (keyEnumeration.hasMoreElements()) {
             String key = (String) keyEnumeration.nextElement();
             headerStrBuilder.append(key)

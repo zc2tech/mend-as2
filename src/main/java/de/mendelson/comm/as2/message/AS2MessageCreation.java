@@ -1,6 +1,5 @@
 package de.mendelson.comm.as2.message;
 
-import java.io.BufferedWriter;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.server.AS2Server;
@@ -148,18 +147,6 @@ public class AS2MessageCreation {
     }
 
     /**
-     * Displays a bundle of byte arrays as hex string, for debug purpose only
-     */
-    private String toHexDisplay(byte[] data) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < data.length; i++) {
-            result.append(Integer.toString((data[i] & 0xff) + 0x100, 16).substring(1));
-            result.append(" ");
-        }
-        return result.toString();
-    }
-
-    /**
      * Prepares the message if it contains no MIME structure
      */
     public AS2Message createMessageNoMIME(AS2Message message, Partner receiver) throws Exception {
@@ -290,10 +277,10 @@ public class AS2MessageCreation {
         try (ByteArrayOutputStream signedOut = new ByteArrayOutputStream()) {
             //normally the content type header is folded (which is correct but some products are not able to parse this properly)
             //Now take the content-type, unfold it and write it
-            Enumeration headerLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
+            Enumeration<String> headerLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
             while (headerLines.hasMoreElements()) {
                 //requires java mail API >= 1.4
-                String nextHeaderLine = MimeUtility.unfold((String) headerLines.nextElement());
+                String nextHeaderLine = MimeUtility.unfold(headerLines.nextElement());
                 //write the line only if the as2 message is encrypted. If the as2 message is unencrypted this header is added later
                 //in the class MessageHttpUploader
                 if (info.getEncryptionType() != AS2Message.ENCRYPTION_NONE) {

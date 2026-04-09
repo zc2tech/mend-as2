@@ -312,7 +312,7 @@ public class JDialogImportKeyFromKeystore extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
         jPanelEdit.add(jLabelImage, gridBagConstraints);
 
-        jLabelImportKeystoreFile.setText(this.rb.getResourceString( "label.importkey"));
+        jLabelImportKeystoreFile.setText(JDialogImportKeyFromKeystore.rb.getResourceString( "label.importkey"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -341,7 +341,7 @@ public class JDialogImportKeyFromKeystore extends JDialog {
         jPanelEdit.add(jPanel3, gridBagConstraints);
 
         jButtonBrowseImportFile.setText("..");
-        jButtonBrowseImportFile.setToolTipText(this.rb.getResourceString( "button.browse"));
+        jButtonBrowseImportFile.setToolTipText(JDialogImportKeyFromKeystore.rb.getResourceString( "button.browse"));
         jButtonBrowseImportFile.setMargin(new java.awt.Insets(2, 8, 2, 8));
         jButtonBrowseImportFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -354,7 +354,7 @@ public class JDialogImportKeyFromKeystore extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelEdit.add(jButtonBrowseImportFile, gridBagConstraints);
 
-        jLabelKeystorePassphrase.setText(this.rb.getResourceString( "label.keypass"));
+        jLabelKeystorePassphrase.setText(JDialogImportKeyFromKeystore.rb.getResourceString( "label.keypass"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
@@ -393,7 +393,7 @@ public class JDialogImportKeyFromKeystore extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogImportKeyFromKeystore.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -403,7 +403,7 @@ public class JDialogImportKeyFromKeystore extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogImportKeyFromKeystore.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -234,7 +233,7 @@ public class XPathHelper {
     /**
      * Returns a list of nodes of the passed xpath expression
      */
-    public List getNodes(String nodePath) throws Exception {
+    public List<?> getNodes(String nodePath) throws Exception {
         XPath xPath = null;
         try {
             xPath = new DOMXPath(nodePath);
@@ -247,12 +246,12 @@ public class XPathHelper {
         synchronized (this.document) {
             Object object = xPath.evaluate(this.document);
             if (object == null) {
-                return (new ArrayList());
+                return (new ArrayList<>());
             }
             if (object instanceof List) {
-                return ((List) object);
+                return ((List<?>) object);
             }
-            List returnList = new ArrayList();
+            List<Object> returnList = new ArrayList<>();
             returnList.add(object);
             return (returnList);
         }
@@ -264,7 +263,7 @@ public class XPathHelper {
     public Map<String, String> extractNamespaces() throws Exception {
         Map<String, String> nsMap = new HashMap<String, String>();
         //get all namespace nodes
-        List list = this.getNodes("//namespace::*");
+        List<?> list = this.getNodes("//namespace::*");
         for (int i = 0; i < list.size(); i++) {
             if (list.get(i) instanceof NamespaceNode) {
                 NamespaceNode nsNode = (NamespaceNode) list.get(i);

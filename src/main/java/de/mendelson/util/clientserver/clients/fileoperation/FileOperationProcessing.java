@@ -26,7 +26,7 @@ public class FileOperationProcessing {
     /**
      * Non blocking file directory list
      */
-    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter fileFilter) throws Exception {
+    private List<Path> listFilesNIO(Path dir, DirectoryStream.Filter<Path> fileFilter) throws Exception {
         List<Path> result = new ArrayList<Path>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, fileFilter)) {
             for (Path entry : stream) {

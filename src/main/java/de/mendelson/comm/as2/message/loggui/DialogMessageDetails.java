@@ -17,7 +17,6 @@ import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
@@ -761,7 +760,7 @@ public class DialogMessageDetails extends JDialog implements ListSelectionListen
         gridBagConstraints.weighty = 1.0;
         jPanelProcessLog.add(jScrollPaneLog, gridBagConstraints);
 
-        jTabbedPane.addTab(this.rb.getResourceString( "tab.log"), jPanelProcessLog);
+        jTabbedPane.addTab(DialogMessageDetails.rb.getResourceString( "tab.log"), jPanelProcessLog);
 
         jSplitPane.setRightComponent(jTabbedPane);
 
@@ -783,7 +782,7 @@ public class DialogMessageDetails extends JDialog implements ListSelectionListen
         jPanelButton.setLayout(new java.awt.GridBagLayout());
 
         jButtonOk.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(DialogMessageDetails.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);

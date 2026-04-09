@@ -122,7 +122,7 @@ public class CSRUtil {
         if (parsedNamesList == null) {
             return (namesList);
         }
-        for (List list : parsedNamesList) {
+        for (List<?> list : parsedNamesList) {
             if (list.size() == 2) {
                 int tagNo = ((Integer) list.get(0)).intValue();
                 if (list.get(1) instanceof byte[]) {
@@ -220,7 +220,7 @@ public class CSRUtil {
         x509Certchain = KeyStoreUtil.orderX509CertChain(x509Certchain);
         //get the subject alternate names
         X509Certificate endCert = x509Certchain[0];
-        PKCS10CertificationRequest csr = this.createCSRPKCS10(endCert.getSubjectDN().toString(), key, endCert);
+        PKCS10CertificationRequest csr = this.createCSRPKCS10(endCert.getSubjectX500Principal().getName(), key, endCert);
         return (csr);
     }
 
@@ -553,18 +553,18 @@ public class CSRUtil {
     public List<X509Certificate> validateReply(List<X509Certificate> replyCerts) throws Exception {
         // order the certs in the reply (bottom-up).
         X509Certificate tmpCert = null;
-        Principal issuer = replyCerts.get(0).getIssuerDN();
+        Principal issuer = replyCerts.get(0).getIssuerX500Principal();
         for (int i = 1; i < replyCerts.size(); i++) {
             // find a cert in the reply whose "subject" is the same as the
             // given "issuer"
             int j;
             for (j = i; j < replyCerts.size(); j++) {
-                Principal subject = replyCerts.get(j).getSubjectDN();
+                Principal subject = replyCerts.get(j).getSubjectX500Principal();
                 if (subject.equals(issuer)) {
                     tmpCert = replyCerts.get(i);
                     replyCerts.set(i, replyCerts.get(j));
                     replyCerts.set(j, tmpCert);
-                    issuer = replyCerts.get(i).getIssuerDN();
+                    issuer = replyCerts.get(i).getIssuerX500Principal();
                     break;
                 }
             }

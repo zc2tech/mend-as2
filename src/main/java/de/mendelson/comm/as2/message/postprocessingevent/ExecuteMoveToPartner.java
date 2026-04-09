@@ -3,7 +3,6 @@ package de.mendelson.comm.as2.message.postprocessingevent;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.comm.as2.message.AS2Payload;
-import de.mendelson.comm.as2.message.MDNAccessDB;
 import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;

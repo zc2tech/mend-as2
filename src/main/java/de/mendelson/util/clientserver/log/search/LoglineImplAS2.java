@@ -1,7 +1,6 @@
 //$Header: /as2/de/mendelson/util/clientserver/log/search/LoglineImplAS2.java 2     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.log.search;
 
-import java.io.Serializable;
 import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -21,7 +20,7 @@ import org.apache.lucene.document.StringField;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class LoglineImplAS2 extends Logline implements Serializable {
+public class LoglineImplAS2 extends Logline {
 
     private static final long serialVersionUID = 1L;
 

@@ -3,7 +3,6 @@ package de.mendelson.util.clientserver.messages;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -19,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 9 $
  */
-public class ClientServerResponse extends ClientServerMessage implements Serializable {
+public class ClientServerResponse extends ClientServerMessage {
 
     private static final long serialVersionUID = 1L;
     private Throwable exception = null;

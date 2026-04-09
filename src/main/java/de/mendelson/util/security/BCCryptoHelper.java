@@ -270,7 +270,7 @@ public class BCCryptoHelper {
     public static final String KEYSTORE_JKS = "JKS";
     public static final String KEYSTORE_PKCS11 = "PKCS11";
 
-    private final static Map SMIME_3_1_MICALGS;
+    private final static Map<ASN1ObjectIdentifier, String> SMIME_3_1_MICALGS;
 
     static {
         Map<ASN1ObjectIdentifier, String> smime31MicAlgs = new HashMap<ASN1ObjectIdentifier, String>();
@@ -408,18 +408,6 @@ public class BCCryptoHelper {
         } catch (Exception e) {
             return (false);
         }
-    }
-
-    /**
-     * Displays a bundle of byte arrays as hex string, for debug purpose only
-     */
-    private String toHexDisplay(byte[] data) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < data.length; i++) {
-            result.append(Integer.toString((data[i] & 0xff) + 0x100, 16).substring(1));
-            result.append(" ");
-        }
-        return result.toString();
     }
 
     /**
@@ -567,7 +555,8 @@ public class BCCryptoHelper {
         );
         //add cert store
         List<Certificate> certList = Arrays.asList(chain);
-        Store certStore = new JcaCertStore(certList);
+        @SuppressWarnings("unchecked")
+        Store<X509CertificateHolder> certStore = new JcaCertStore(certList);
         signedDataGenerator.addCertificates(certStore);
         if (content == null) {
             throw new Exception("sign: content is absent");
@@ -754,7 +743,8 @@ public class BCCryptoHelper {
         );
         //add cert store
         List<Certificate> certList = Arrays.asList(chain);
-        Store certStore = new JcaCertStore(certList);
+        @SuppressWarnings("unchecked")
+        Store<X509CertificateHolder> certStore = new JcaCertStore(certList);
         signedDataGenerator.addCertificates(certStore);
         MimeMultipart signedPart = signedDataGenerator.generate(body);
         return (signedPart);
@@ -786,6 +776,7 @@ public class BCCryptoHelper {
             final CMSAttributeTableGenerator tableGenerator = signatureGenerator.getSignedAttributeTableGenerator();
             signatureGenerator = new SignerInfoGenerator(signatureGenerator, new DefaultSignedAttributeTableGenerator() {
                 @Override
+                @SuppressWarnings({"rawtypes"})
                 public AttributeTable getAttributes(Map parameters) {
                     AttributeTable attributeTable = tableGenerator.getAttributes(parameters);
                     //debug: display the used IODs for the signature attributes       
@@ -836,7 +827,8 @@ public class BCCryptoHelper {
         );
         //add cert store
         List<Certificate> certList = Arrays.asList(chain);
-        Store certStore = new JcaCertStore(certList);
+        @SuppressWarnings("unchecked")
+        Store<X509CertificateHolder> certStore = new JcaCertStore(certList);
         signedDataGenerator.addCertificates(certStore);
         MimeMultipart multipart = signedDataGenerator.generate(message);
         return (multipart);
@@ -1552,8 +1544,8 @@ public class BCCryptoHelper {
                         .setProvider(BouncyCastleProvider.PROVIDER_NAME).build(), signed);
         parser.getSignedContent().drain();
         SignerInformationStore signers = parser.getSignerInfos();
-        Collection signerCollection = signers.getSigners();
-        Iterator it = signerCollection.iterator();
+        Collection<?> signerCollection = signers.getSigners();
+        Iterator<?> it = signerCollection.iterator();
         boolean verified = false;
         X509CertificateHolder certHolder = new X509CertificateHolder(cert.getEncoded());
         SignerInformationVerifier verifier = new JcaSimpleSignerInfoVerifierBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(certHolder);

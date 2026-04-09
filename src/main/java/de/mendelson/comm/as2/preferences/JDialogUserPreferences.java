@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -148,14 +147,6 @@ public class JDialogUserPreferences extends JDialog {
             buffer.append(panel.toString());
         }
         return buffer.toString();
-    }
-
-    /**
-     * Check if any preferences have been modified
-     */
-    private boolean preferencesModified() {
-        String currentSettingsStr = this.captureSettingsToStr();
-        return !this.preferencesStrAtLoadTime.equals(currentSettingsStr);
     }
 
     /**

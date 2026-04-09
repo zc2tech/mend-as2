@@ -1,8 +1,6 @@
 package de.mendelson.util.clientserver.clients.datatransfer;
 
-import java.io.Serializable;
-/*
- * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
+/** Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
  * This software is subject to the license agreement set forth in the license.
  * Please read and agree to all terms before using this software.
@@ -14,7 +12,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class DownloadResponseFileLimited extends DownloadResponseFile implements Serializable {
+public class DownloadResponseFileLimited extends DownloadResponseFile  {
 
     private static final long serialVersionUID = 1L;
     private boolean sizeExceeded = false;

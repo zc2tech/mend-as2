@@ -11,12 +11,10 @@
 package de.mendelson.util.security.cert.gui;
 
 import de.mendelson.util.KeyboardShortcutUtil;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.MecFileChooser;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.TextOverlay;
 import de.mendelson.util.clientserver.BaseClient;
-import de.mendelson.util.security.KeyStoreUtil;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.security.cert.ListCellRendererCertificates;
@@ -28,10 +26,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.cert.CertPath;
-import java.security.cert.PKIXCertPathBuilderResult;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -216,7 +210,7 @@ public class JDialogExportCertificate extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
         jPanelEdit.add(jLabelIcon, gridBagConstraints);
 
-        jLabelExportFile.setText(this.rb.getResourceString( "label.exportfile"));
+        jLabelExportFile.setText(JDialogExportCertificate.rb.getResourceString( "label.exportfile"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -238,7 +232,7 @@ public class JDialogExportCertificate extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelEdit.add(jTextFieldExportFile, gridBagConstraints);
 
-        jLabelExportEncoding.setText(this.rb.getResourceString( "label.exportformat"));
+        jLabelExportEncoding.setText(JDialogExportCertificate.rb.getResourceString( "label.exportformat"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
@@ -264,7 +258,7 @@ public class JDialogExportCertificate extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelEdit.add(jComboBoxExportFormat, gridBagConstraints);
 
-        jLabelAlias.setText(this.rb.getResourceString( "label.alias"));
+        jLabelAlias.setText(JDialogExportCertificate.rb.getResourceString( "label.alias"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -281,7 +275,7 @@ public class JDialogExportCertificate extends JDialog {
         jPanelEdit.add(jComboBoxCertificates, gridBagConstraints);
 
         jButtonBrowse.setText("..");
-        jButtonBrowse.setToolTipText(this.rb.getResourceString( "button.browse"));
+        jButtonBrowse.setToolTipText(JDialogExportCertificate.rb.getResourceString( "button.browse"));
         jButtonBrowse.setMargin(new java.awt.Insets(2, 8, 2, 8));
         jButtonBrowse.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -318,7 +312,7 @@ public class JDialogExportCertificate extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogExportCertificate.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -328,7 +322,7 @@ public class JDialogExportCertificate extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogExportCertificate.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);

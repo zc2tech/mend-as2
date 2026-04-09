@@ -52,12 +52,7 @@ public class PEMKeys2Keystore {
      * Keystore to use, if this is not set a new one will be created
      */
     private KeyStore keystore = null;
-    /**
-     * Default pass for a new created keystore, overwrite this by using the
-     * setKeyStore() method
-     */
-    private char[] keystorePass = "test".toCharArray();
-
+   
     private final String targetKeystoreType;
 
     /**
@@ -173,7 +168,7 @@ public class PEMKeys2Keystore {
      */
     public void setTargetKeyStore(KeyStore keystore, char[] keystorePass) {
         this.keystore = keystore;
-        this.keystorePass = keystorePass;
+        // this.keystorePass = keystorePass;
     }
 
     /**

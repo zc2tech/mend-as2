@@ -218,7 +218,7 @@ public class JDialogExport extends JDialog {
         jPanelEdit.add(jLabelImageKey, gridBagConstraints);
 
         jLabelExportCertificate.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelExportCertificate.setText(this.rbCertificates.getResourceString( "label.cert.export"));
+        jLabelExportCertificate.setText(JDialogExport.rbCertificates.getResourceString( "label.cert.export"));
         jLabelExportCertificate.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelExportCertificateMouseClicked(evt);
@@ -232,7 +232,7 @@ public class JDialogExport extends JDialog {
         jPanelEdit.add(jLabelExportCertificate, gridBagConstraints);
 
         jLabelExportKey.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelExportKey.setText(this.rbCertificates.getResourceString( "label.key.export.pkcs12"));
+        jLabelExportKey.setText(JDialogExport.rbCertificates.getResourceString( "label.key.export.pkcs12"));
         jLabelExportKey.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelExportKeyMouseClicked(evt);
@@ -264,7 +264,7 @@ public class JDialogExport extends JDialog {
         jPanelEdit.add(jLabelImageKeystore, gridBagConstraints);
 
         jLabelExportKeyStore.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jLabelExportKeyStore.setText(this.rbCertificates.getResourceString( "label.keystore.export"));
+        jLabelExportKeyStore.setText(JDialogExport.rbCertificates.getResourceString( "label.keystore.export"));
         jLabelExportKeyStore.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelExportKeyStoreMouseClicked(evt);

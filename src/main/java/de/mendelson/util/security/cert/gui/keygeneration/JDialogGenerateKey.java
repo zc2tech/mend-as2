@@ -505,7 +505,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 5, 10, 10);
         jPanelEditInner.add(jLabelIcon, gridBagConstraints);
 
-        jLabelOrganisationUnit.setText(this.rb.getResourceString( "label.organisationunit"));
+        jLabelOrganisationUnit.setText(JDialogGenerateKey.rb.getResourceString( "label.organisationunit"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
@@ -621,7 +621,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jTextFieldOrganisationUnit, gridBagConstraints);
 
-        jLabelOrganisationName.setText(this.rb.getResourceString( "label.organisationname"));
+        jLabelOrganisationName.setText(JDialogGenerateKey.rb.getResourceString( "label.organisationname"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
@@ -630,7 +630,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jLabelOrganisationName, gridBagConstraints);
 
-        jLabelLocality.setText(this.rb.getResourceString( "label.locality"));
+        jLabelLocality.setText(JDialogGenerateKey.rb.getResourceString( "label.locality"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
@@ -639,7 +639,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jLabelLocality, gridBagConstraints);
 
-        jLabelState.setText(this.rb.getResourceString( "label.state"));
+        jLabelState.setText(JDialogGenerateKey.rb.getResourceString( "label.state"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 9;
@@ -648,7 +648,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jLabelState, gridBagConstraints);
 
-        jLabelCountryCode.setText(this.rb.getResourceString( "label.countrycode"));
+        jLabelCountryCode.setText(JDialogGenerateKey.rb.getResourceString( "label.countrycode"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 10;
@@ -657,7 +657,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jLabelCountryCode, gridBagConstraints);
 
-        jCheckBoxExtensionSignEncrypt.setText(this.rb.getResourceString( "label.purpose.encsign"));
+        jCheckBoxExtensionSignEncrypt.setText(JDialogGenerateKey.rb.getResourceString( "label.purpose.encsign"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 15;
@@ -666,7 +666,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 5);
         jPanelEditInner.add(jCheckBoxExtensionSignEncrypt, gridBagConstraints);
 
-        jCheckBoxExtensionTLS.setText(this.rb.getResourceString( "label.purpose.ssl"));
+        jCheckBoxExtensionTLS.setText(JDialogGenerateKey.rb.getResourceString( "label.purpose.ssl"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 14;
@@ -676,7 +676,7 @@ public class JDialogGenerateKey extends JDialog {
         jPanelEditInner.add(jCheckBoxExtensionTLS, gridBagConstraints);
 
         jLabelPurpose.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
-        jLabelPurpose.setText(this.rb.getResourceString( "label.purpose"));
+        jLabelPurpose.setText(JDialogGenerateKey.rb.getResourceString( "label.purpose"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 13;
@@ -704,7 +704,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelLocality.add(jTextFieldLocality, gridBagConstraints);
 
-        jLabelLocalityHint.setText(this.rb.getResourceString("label.locality.hint"));
+        jLabelLocalityHint.setText(JDialogGenerateKey.rb.getResourceString("label.locality.hint"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
@@ -737,7 +737,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelCommonName.add(jTextFieldCommonName, gridBagConstraints);
 
-        jLabelCommonNameHint.setText(this.rb.getResourceString("label.commonname.hint"));
+        jLabelCommonNameHint.setText(JDialogGenerateKey.rb.getResourceString("label.commonname.hint"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 0;
@@ -757,7 +757,7 @@ public class JDialogGenerateKey extends JDialog {
 
         jPanelCountryCode.setLayout(new java.awt.GridBagLayout());
 
-        jLabelCountryCodeHint.setText(this.rb.getResourceString("label.countrycode.hint"));
+        jLabelCountryCodeHint.setText(JDialogGenerateKey.rb.getResourceString("label.countrycode.hint"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 5;
         gridBagConstraints.gridy = 0;
@@ -824,7 +824,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.weightx = 1.0;
         jPanelEditInner.add(jPanelSAN, gridBagConstraints);
 
-        jLabelSubjectAlternativeNames.setText(this.rb.getResourceString( "label.subjectalternativenames"));
+        jLabelSubjectAlternativeNames.setText(JDialogGenerateKey.rb.getResourceString( "label.subjectalternativenames"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 18;
@@ -833,8 +833,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jLabelSubjectAlternativeNames, gridBagConstraints);
 
-        jPanelUIHelpLabelKeyType.setToolTipText(this.rb.getResourceString( "label.keytype.help"));
-        jPanelUIHelpLabelKeyType.setText(this.rb.getResourceString( "label.keytype"));
+        jPanelUIHelpLabelKeyType.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.keytype.help"));
+        jPanelUIHelpLabelKeyType.setText(JDialogGenerateKey.rb.getResourceString( "label.keytype"));
         jPanelUIHelpLabelKeyType.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -844,8 +844,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
         jPanelEditInner.add(jPanelUIHelpLabelKeyType, gridBagConstraints);
 
-        jPanelUIHelpLabelKeySignature.setToolTipText(this.rb.getResourceString( "label.signature.help"));
-        jPanelUIHelpLabelKeySignature.setText(this.rb.getResourceString( "label.signature"));
+        jPanelUIHelpLabelKeySignature.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.signature.help"));
+        jPanelUIHelpLabelKeySignature.setText(JDialogGenerateKey.rb.getResourceString( "label.signature"));
         jPanelUIHelpLabelKeySignature.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -855,8 +855,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
         jPanelEditInner.add(jPanelUIHelpLabelKeySignature, gridBagConstraints);
 
-        jPanelUIHelpLabelKeySize.setToolTipText(this.rb.getResourceString( "label.size.help"));
-        jPanelUIHelpLabelKeySize.setText(this.rb.getResourceString( "label.size"));
+        jPanelUIHelpLabelKeySize.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.size.help"));
+        jPanelUIHelpLabelKeySize.setText(JDialogGenerateKey.rb.getResourceString( "label.size"));
         jPanelUIHelpLabelKeySize.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -866,8 +866,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
         jPanelEditInner.add(jPanelUIHelpLabelKeySize, gridBagConstraints);
 
-        jPanelUIHelpLabelCommonName.setToolTipText(this.rb.getResourceString( "label.commonname.help"));
-        jPanelUIHelpLabelCommonName.setText(this.rb.getResourceString( "label.commonname"));
+        jPanelUIHelpLabelCommonName.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.commonname.help"));
+        jPanelUIHelpLabelCommonName.setText(JDialogGenerateKey.rb.getResourceString( "label.commonname"));
         jPanelUIHelpLabelCommonName.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -877,8 +877,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
         jPanelEditInner.add(jPanelUIHelpLabelCommonName, gridBagConstraints);
 
-        jPanelUIHelpLabelMailaddress.setToolTipText(this.rb.getResourceString( "label.mailaddress.help"));
-        jPanelUIHelpLabelMailaddress.setText(this.rb.getResourceString( "label.mailaddress"));
+        jPanelUIHelpLabelMailaddress.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.mailaddress.help"));
+        jPanelUIHelpLabelMailaddress.setText(JDialogGenerateKey.rb.getResourceString( "label.mailaddress"));
         jPanelUIHelpLabelMailaddress.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -888,8 +888,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(0, 0, 0, 5);
         jPanelEditInner.add(jPanelUIHelpLabelMailaddress, gridBagConstraints);
 
-        jPanelUIHelpLabelValidity.setToolTipText(this.rb.getResourceString( "label.validity.help"));
-        jPanelUIHelpLabelValidity.setText(this.rb.getResourceString( "label.validity"));
+        jPanelUIHelpLabelValidity.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.validity.help"));
+        jPanelUIHelpLabelValidity.setText(JDialogGenerateKey.rb.getResourceString( "label.validity"));
         jPanelUIHelpLabelValidity.setTooltipWidth(300);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -908,8 +908,8 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelEditInner.add(jComboBoxECCurve, gridBagConstraints);
 
-        jPanelUIHelpLabelECCurve.setToolTipText(this.rb.getResourceString( "label.namedeccurve.help"));
-        jPanelUIHelpLabelECCurve.setText(this.rb.getResourceString( "label.namedeccurve"));
+        jPanelUIHelpLabelECCurve.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.namedeccurve.help"));
+        jPanelUIHelpLabelECCurve.setText(JDialogGenerateKey.rb.getResourceString( "label.namedeccurve"));
         jPanelUIHelpLabelECCurve.setTooltipWidth(175);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 8;
@@ -921,7 +921,7 @@ public class JDialogGenerateKey extends JDialog {
 
         jPanelSKI.setLayout(new java.awt.GridBagLayout());
 
-        jCheckBoxExtensionSKI.setText(this.rb.getResourceString( "label.extension.ski"));
+        jCheckBoxExtensionSKI.setText(JDialogGenerateKey.rb.getResourceString( "label.extension.ski"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 14;
@@ -930,7 +930,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 5);
         jPanelSKI.add(jCheckBoxExtensionSKI, gridBagConstraints);
 
-        jPanelUIHelpExtensionSKI.setToolTipText(this.rb.getResourceString( "label.extension.ski.help" ));
+        jPanelUIHelpExtensionSKI.setToolTipText(JDialogGenerateKey.rb.getResourceString( "label.extension.ski.help" ));
         jPanelUIHelpExtensionSKI.setPreferredSize(new java.awt.Dimension(20, 20));
         jPanelUIHelpExtensionSKI.setTooltipWidth(250);
         jPanelUIHelpExtensionSKI.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM);
@@ -965,7 +965,7 @@ public class JDialogGenerateKey extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogGenerateKey.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -975,7 +975,7 @@ public class JDialogGenerateKey extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 10, 10);
         jPanelButtons.add(jButtonOk, gridBagConstraints);
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogGenerateKey.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
@@ -996,7 +996,7 @@ public class JDialogGenerateKey extends JDialog {
         jToolBar.setRollover(true);
 
         jToggleButtonBasic.setSelected(true);
-        jToggleButtonBasic.setText(this.rb.getResourceString( "view.basic"));
+        jToggleButtonBasic.setText(JDialogGenerateKey.rb.getResourceString( "view.basic"));
         jToggleButtonBasic.setFocusable(false);
         jToggleButtonBasic.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jToggleButtonBasic.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1007,7 +1007,7 @@ public class JDialogGenerateKey extends JDialog {
         });
         jToolBar.add(jToggleButtonBasic);
 
-        jToggleButtonExpert.setText(this.rb.getResourceString( "view.expert"));
+        jToggleButtonExpert.setText(JDialogGenerateKey.rb.getResourceString( "view.expert"));
         jToggleButtonExpert.setFocusable(false);
         jToggleButtonExpert.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jToggleButtonExpert.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);

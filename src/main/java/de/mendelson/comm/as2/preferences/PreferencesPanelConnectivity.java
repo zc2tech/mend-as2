@@ -226,8 +226,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jPanelTrustAllHostNames, gridBagConstraints);
 
-        jPanelUIHelpLabelConnectionRetryTime.setToolTipText(this.rb.getResourceString( "label.retry.waittime.help"));
-        jPanelUIHelpLabelConnectionRetryTime.setText(this.rb.getResourceString( "label.retry.waittime"));
+        jPanelUIHelpLabelConnectionRetryTime.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString( "label.retry.waittime.help"));
+        jPanelUIHelpLabelConnectionRetryTime.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.retry.waittime"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 8;
@@ -235,8 +235,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanelMargin.add(jPanelUIHelpLabelConnectionRetryTime, gridBagConstraints);
 
-        jPanelUIHelpLabelConnectionRetryCount.setToolTipText(this.rb.getResourceString( "label.retry.max.help"));
-        jPanelUIHelpLabelConnectionRetryCount.setText(this.rb.getResourceString( "label.retry.max"));
+        jPanelUIHelpLabelConnectionRetryCount.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString( "label.retry.max.help"));
+        jPanelUIHelpLabelConnectionRetryCount.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.retry.max"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 7;
@@ -244,8 +244,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanelMargin.add(jPanelUIHelpLabelConnectionRetryCount, gridBagConstraints);
 
-        jPanelUIHelpLabelMaxOutboundConnections.setToolTipText(this.rb.getResourceString("label.max.outboundconnections.help"));
-        jPanelUIHelpLabelMaxOutboundConnections.setText(this.rb.getResourceString("label.max.outboundconnections"));
+        jPanelUIHelpLabelMaxOutboundConnections.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("label.max.outboundconnections.help"));
+        jPanelUIHelpLabelMaxOutboundConnections.setText(PreferencesPanelConnectivity.rb.getResourceString("label.max.outboundconnections"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -253,8 +253,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanelMargin.add(jPanelUIHelpLabelMaxOutboundConnections, gridBagConstraints);
 
-        jPanelUIHelpLabelSendTimeout.setToolTipText(this.rb.getResourceString( "label.httpsend.timeout.help"));
-        jPanelUIHelpLabelSendTimeout.setText(this.rb.getResourceString( "label.httpsend.timeout"));
+        jPanelUIHelpLabelSendTimeout.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString( "label.httpsend.timeout.help"));
+        jPanelUIHelpLabelSendTimeout.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.httpsend.timeout"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -271,7 +271,7 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jTextFieldRetryWaittime, gridBagConstraints);
 
-        jLabelSeconds.setText(this.rb.getResourceString( "label.sec"));
+        jLabelSeconds.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.sec"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 8;
@@ -316,8 +316,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 5);
         jPanelMargin.add(jLabelMilliseconds, gridBagConstraints);
 
-        jPanelUIHelpLabelHTTPPort.setToolTipText(this.rb.getResourceString("label.httpport.help"));
-        jPanelUIHelpLabelHTTPPort.setText(this.rb.getResourceString("label.httpport"));
+        jPanelUIHelpLabelHTTPPort.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("label.httpport.help"));
+        jPanelUIHelpLabelHTTPPort.setText(PreferencesPanelConnectivity.rb.getResourceString("label.httpport"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -334,8 +334,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jTextFieldHTTPSPort, gridBagConstraints);
 
-        jPanelUIHelpLabelHTTPSPort.setToolTipText(this.rb.getResourceString("label.httpsport.help"));
-        jPanelUIHelpLabelHTTPSPort.setText(this.rb.getResourceString("label.httpsport"));
+        jPanelUIHelpLabelHTTPSPort.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("label.httpsport.help"));
+        jPanelUIHelpLabelHTTPSPort.setText(PreferencesPanelConnectivity.rb.getResourceString("label.httpsport"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -353,7 +353,7 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         jPanelMargin.add(jTextFieldHTTPPort, gridBagConstraints);
 
         jLabelWarningJettyConfigAccess1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image16x16.gif"))); // NOI18N
-        jLabelWarningJettyConfigAccess1.setToolTipText(this.rb.getResourceString("embedded.httpconfig.not.available"));
+        jLabelWarningJettyConfigAccess1.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("embedded.httpconfig.not.available"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 0;
@@ -364,7 +364,7 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         jPanelMargin.add(jLabelWarningJettyConfigAccess1, gridBagConstraints);
 
         jLabelWarningJettyConfigAccess2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image16x16.gif"))); // NOI18N
-        jLabelWarningJettyConfigAccess2.setToolTipText(this.rb.getResourceString("embedded.httpconfig.not.available"));
+        jLabelWarningJettyConfigAccess2.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("embedded.httpconfig.not.available"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 1;
@@ -374,8 +374,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
         jPanelMargin.add(jLabelWarningJettyConfigAccess2, gridBagConstraints);
 
-        jPanelUIHelpLabelMaxInboundConnections.setToolTipText(this.rb.getResourceString("label.max.inboundconnections.help"));
-        jPanelUIHelpLabelMaxInboundConnections.setText(this.rb.getResourceString("label.max.inboundconnections"));
+        jPanelUIHelpLabelMaxInboundConnections.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("label.max.inboundconnections.help"));
+        jPanelUIHelpLabelMaxInboundConnections.setText(PreferencesPanelConnectivity.rb.getResourceString("label.max.inboundconnections"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
@@ -393,7 +393,7 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         jPanelMargin.add(jTextFieldInboundConnections, gridBagConstraints);
 
         jLabelWarningJettyConfigAccess3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image16x16.gif"))); // NOI18N
-        jLabelWarningJettyConfigAccess3.setToolTipText(this.rb.getResourceString("embedded.httpconfig.not.available"));
+        jLabelWarningJettyConfigAccess3.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString("embedded.httpconfig.not.available"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 9;
         gridBagConstraints.gridy = 5;
@@ -413,8 +413,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(switchTrustAllServerCerts, gridBagConstraints);
 
-        jPanelUIHelpLabelTrustAllServerCerts.setToolTipText(this.rb.getResourceString( "label.trustallservercerts.help" ));
-        jPanelUIHelpLabelTrustAllServerCerts.setText(this.rb.getResourceString( "label.trustallservercerts" ));
+        jPanelUIHelpLabelTrustAllServerCerts.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString( "label.trustallservercerts.help" ));
+        jPanelUIHelpLabelTrustAllServerCerts.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.trustallservercerts" ));
         jPanelUIHelpLabelTrustAllServerCerts.setTooltipWidth(350);
         jPanelUIHelpLabelTrustAllServerCerts.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM
         );
@@ -425,8 +425,8 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
         jPanelMargin.add(jPanelUIHelpLabelTrustAllServerCerts, gridBagConstraints);
 
-        jPanelUIHelpLabelStrictHostnameCheck.setToolTipText(this.rb.getResourceString( "label.stricthostcheck.help" ));
-        jPanelUIHelpLabelStrictHostnameCheck.setText(this.rb.getResourceString( "label.stricthostcheck" ));
+        jPanelUIHelpLabelStrictHostnameCheck.setToolTipText(PreferencesPanelConnectivity.rb.getResourceString( "label.stricthostcheck.help" ));
+        jPanelUIHelpLabelStrictHostnameCheck.setText(PreferencesPanelConnectivity.rb.getResourceString( "label.stricthostcheck" ));
         jPanelUIHelpLabelStrictHostnameCheck.setTooltipWidth(350);
         jPanelUIHelpLabelStrictHostnameCheck.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM
         );

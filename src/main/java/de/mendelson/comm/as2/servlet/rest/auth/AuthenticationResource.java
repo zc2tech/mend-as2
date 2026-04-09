@@ -57,17 +57,6 @@ public class AuthenticationResource {
     }
 
     /**
-     * Get UserManagementAccessDB instance
-     */
-    private UserManagementAccessDB getUserManagementAccess() {
-        AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
-        if (processing == null) {
-            return null;
-        }
-        return new UserManagementAccessDB(processing.getDBDriverManager(), logger);
-    }
-
-    /**
      * Login with username and password
      * Returns JWT tokens in HttpOnly cookies
      */
@@ -170,27 +159,21 @@ public class AuthenticationResource {
             String refreshToken = jwtTokenProvider.generateRefreshToken(loginRequest.getUsername());
 
             // Set tokens in HttpOnly cookies
-            NewCookie accessCookie = new NewCookie(
-                    ACCESS_TOKEN_COOKIE,
-                    accessToken,
-                    "/",
-                    null,
-                    null,
-                    ACCESS_TOKEN_MAX_AGE,
-                    false, // secure (set to true in production with HTTPS)
-                    true   // httpOnly
-            );
+            NewCookie accessCookie = new NewCookie.Builder(ACCESS_TOKEN_COOKIE)
+                    .value(accessToken)
+                    .path("/")
+                    .maxAge(ACCESS_TOKEN_MAX_AGE)
+                    .secure(false) // set to true in production with HTTPS
+                    .httpOnly(true)
+                    .build();
 
-            NewCookie refreshCookie = new NewCookie(
-                    REFRESH_TOKEN_COOKIE,
-                    refreshToken,
-                    "/",
-                    null,
-                    null,
-                    REFRESH_TOKEN_MAX_AGE,
-                    false, // secure
-                    true   // httpOnly
-            );
+            NewCookie refreshCookie = new NewCookie.Builder(REFRESH_TOKEN_COOKIE)
+                    .value(refreshToken)
+                    .path("/")
+                    .maxAge(REFRESH_TOKEN_MAX_AGE)
+                    .secure(false)
+                    .httpOnly(true)
+                    .build();
 
             return Response.ok(new LoginResponse(user.getId(), loginRequest.getUsername(), user.isMustChangePassword()))
                     .cookie(accessCookie, refreshCookie)
@@ -219,27 +202,21 @@ public class AuthenticationResource {
     @Path("/logout")
     @Produces(MediaType.APPLICATION_JSON)
     public Response logout() {
-        NewCookie accessCookie = new NewCookie(
-                ACCESS_TOKEN_COOKIE,
-                "",
-                "/",
-                null,
-                null,
-                0,
-                false,
-                true
-        );
+        NewCookie accessCookie = new NewCookie.Builder(ACCESS_TOKEN_COOKIE)
+                .value("")
+                .path("/")
+                .maxAge(0)
+                .secure(false)
+                .httpOnly(true)
+                .build();
 
-        NewCookie refreshCookie = new NewCookie(
-                REFRESH_TOKEN_COOKIE,
-                "",
-                "/",
-                null,
-                null,
-                0,
-                false,
-                true
-        );
+        NewCookie refreshCookie = new NewCookie.Builder(REFRESH_TOKEN_COOKIE)
+                .value("")
+                .path("/")
+                .maxAge(0)
+                .secure(false)
+                .httpOnly(true)
+                .build();
 
         return Response.ok(new MessageResponse("Logged out successfully"))
                 .cookie(accessCookie, refreshCookie)
@@ -274,16 +251,13 @@ public class AuthenticationResource {
             String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
             String newAccessToken = jwtTokenProvider.generateAccessToken(username);
 
-            NewCookie accessCookie = new NewCookie(
-                    ACCESS_TOKEN_COOKIE,
-                    newAccessToken,
-                    "/",
-                    null,
-                    null,
-                    ACCESS_TOKEN_MAX_AGE,
-                    false,
-                    true
-            );
+            NewCookie accessCookie = new NewCookie.Builder(ACCESS_TOKEN_COOKIE)
+                    .value(newAccessToken)
+                    .path("/")
+                    .maxAge(ACCESS_TOKEN_MAX_AGE)
+                    .secure(false)
+                    .httpOnly(true)
+                    .build();
 
             return Response.ok(new MessageResponse("Token refreshed"))
                     .cookie(accessCookie)

@@ -103,18 +103,6 @@ public class AS2MDNCreation {
     }
 
     /**
-     * Displays a bundle of byte arrays as hex string, for debug purpose only
-     */
-    private String toHexDisplay(byte[] data) {
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < data.length; i++) {
-            result.append(Integer.toString((data[i] & 0xff) + 0x100, 16).substring(1));
-            result.append(" ");
-        }
-        return result.toString();
-    }
-
-    /**
      * Creates an mdn that could be returned to the sender and indicates that
      * everything is ok
      */
@@ -201,10 +189,10 @@ public class AS2MDNCreation {
         try (ByteArrayOutputStream memOutUnsigned = new ByteArrayOutputStream()) {
             //normally the content type header is folded (which is correct but some products are not able to parse this properly)
             //Now take the content-type, unfold it and write it
-            Enumeration hdrLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
+            Enumeration<String> hdrLines = messagePart.getMatchingHeaderLines(new String[]{"Content-Type"});
             while (hdrLines.hasMoreElements()) {
                 //requires java mail API >= 1.4
-                String nextHeaderLine = MimeUtility.unfold((String) hdrLines.nextElement());
+                String nextHeaderLine = MimeUtility.unfold(hdrLines.nextElement());
                 memOutUnsigned.write((nextHeaderLine + "\r\n").getBytes("US-ASCII"));
             }
             messagePart.writeTo(memOutUnsigned,

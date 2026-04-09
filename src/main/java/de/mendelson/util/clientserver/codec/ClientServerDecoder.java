@@ -137,7 +137,7 @@ public class ClientServerDecoder extends CumulativeProtocolDecoder {
      * @return
      */
     private ObjectInputFilter.Status clientServerMessageFilter(ObjectInputFilter.FilterInfo filterInfo) {
-        Class serialClass = filterInfo.serialClass();
+        Class<?> serialClass = filterInfo.serialClass();
         if (serialClass == null) {
             return (ObjectInputFilter.Status.ALLOWED);
         }

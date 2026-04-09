@@ -175,7 +175,7 @@ public class PreferencesPanelProxy extends PreferencesPanel {
 
         jPanelProxyOnOff.setLayout(new java.awt.GridBagLayout());
 
-        jLabelUseProxy.setText(this.rb.getResourceString( "label.proxy.use"));
+        jLabelUseProxy.setText(PreferencesPanelProxy.rb.getResourceString( "label.proxy.use"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
@@ -184,7 +184,7 @@ public class PreferencesPanelProxy extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelProxyOnOff.add(jLabelUseProxy, gridBagConstraints);
 
-        jLabelProxyURL.setText(this.rb.getResourceString( "label.proxy.url"));
+        jLabelProxyURL.setText(PreferencesPanelProxy.rb.getResourceString( "label.proxy.url"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -269,7 +269,7 @@ public class PreferencesPanelProxy extends PreferencesPanel {
 
         jPanelProxyAuth.setLayout(new java.awt.GridBagLayout());
 
-        jLabelUseProxyAuthentification.setText(this.rb.getResourceString( "label.proxy.useauthentification"));
+        jLabelUseProxyAuthentification.setText(PreferencesPanelProxy.rb.getResourceString( "label.proxy.useauthentification"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 4;
@@ -277,7 +277,7 @@ public class PreferencesPanelProxy extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
         jPanelProxyAuth.add(jLabelUseProxyAuthentification, gridBagConstraints);
 
-        jLabelProxyUser.setText(this.rb.getResourceString( "label.proxy.user"));
+        jLabelProxyUser.setText(PreferencesPanelProxy.rb.getResourceString( "label.proxy.user"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
@@ -285,7 +285,7 @@ public class PreferencesPanelProxy extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
         jPanelProxyAuth.add(jLabelProxyUser, gridBagConstraints);
 
-        jLabelProxyPass.setText(this.rb.getResourceString( "label.proxy.pass"));
+        jLabelProxyPass.setText(PreferencesPanelProxy.rb.getResourceString( "label.proxy.pass"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;

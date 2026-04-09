@@ -153,8 +153,8 @@ public class PreferencesPanelLog extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jPanelSpace559, gridBagConstraints);
 
-        jPanelUIHelpLabelLogHTTPRequests.setToolTipText(this.rb.getResourceString( "label.loghttprequests.help" ));
-        jPanelUIHelpLabelLogHTTPRequests.setText(this.rb.getResourceString( "label.loghttprequests" ));
+        jPanelUIHelpLabelLogHTTPRequests.setToolTipText(PreferencesPanelLog.rb.getResourceString( "label.loghttprequests.help" ));
+        jPanelUIHelpLabelLogHTTPRequests.setText(PreferencesPanelLog.rb.getResourceString( "label.loghttprequests" ));
         jPanelUIHelpLabelLogHTTPRequests.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_CENTER
         );
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -172,8 +172,8 @@ public class PreferencesPanelLog extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
         jPanelMargin.add(jPanelSpace7743, gridBagConstraints);
 
-        jPanelUIHelpLabelLogPollProcess.setToolTipText(this.rb.getResourceString( "label.logpollprocess.help" ));
-        jPanelUIHelpLabelLogPollProcess.setText(this.rb.getResourceString( "label.logpollprocess" ));
+        jPanelUIHelpLabelLogPollProcess.setToolTipText(PreferencesPanelLog.rb.getResourceString( "label.logpollprocess.help" ));
+        jPanelUIHelpLabelLogPollProcess.setText(PreferencesPanelLog.rb.getResourceString( "label.logpollprocess" ));
         jPanelUIHelpLabelLogPollProcess.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_TOP
         );
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -184,8 +184,8 @@ public class PreferencesPanelLog extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jPanelUIHelpLabelLogPollProcess, gridBagConstraints);
 
-        jPanelUIHelpLabelLogAutoMessageDelete.setToolTipText(this.rb.getResourceString( "label.deletemsglog.help"));
-        jPanelUIHelpLabelLogAutoMessageDelete.setText(this.rb.getResourceString( "label.deletemsglog"));
+        jPanelUIHelpLabelLogAutoMessageDelete.setToolTipText(PreferencesPanelLog.rb.getResourceString( "label.deletemsglog.help"));
+        jPanelUIHelpLabelLogAutoMessageDelete.setText(PreferencesPanelLog.rb.getResourceString( "label.deletemsglog"));
         jPanelUIHelpLabelLogAutoMessageDelete.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_TOP
         );
         gridBagConstraints = new java.awt.GridBagConstraints();

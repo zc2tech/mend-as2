@@ -328,11 +328,11 @@ public class JDialogPartnerConfig extends JDialog {
         boolean success = fileClient.rename(existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator),
                 newPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator));
         if (success) {
-            this.logger.log(Level.FINE, rb.getResourceString("directory.rename.success",
+            JDialogPartnerConfig.logger.log(Level.FINE, rb.getResourceString("directory.rename.success",
                     new Object[]{existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator),
                         newPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator)}));
         } else {
-            this.logger.log(Level.SEVERE, rb.getResourceString("directory.rename.failure",
+            JDialogPartnerConfig.logger.log(Level.SEVERE, rb.getResourceString("directory.rename.failure",
                     new Object[]{existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator),
                         newPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator)}));
         }
@@ -357,10 +357,10 @@ public class JDialogPartnerConfig extends JDialog {
         FileOperationClient fileClient = new FileOperationClient(this.guiClient.getBaseClient());
         boolean success = fileClient.delete(existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator));
         if (success) {
-            this.logger.log(Level.FINE, rb.getResourceString("directory.delete.success",
+            JDialogPartnerConfig.logger.log(Level.FINE, rb.getResourceString("directory.delete.success",
                     new Object[]{existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator)}));
         } else {
-            this.logger.log(Level.WARNING, rb.getResourceString("directory.delete.failure",
+            JDialogPartnerConfig.logger.log(Level.WARNING, rb.getResourceString("directory.delete.failure",
                     new Object[]{
                         existingPartner.getMessagePath(serverSideMessagePath, serverSideFileSeparator),
                         fileClient.getLastException().getMessage()
@@ -553,7 +553,7 @@ public class JDialogPartnerConfig extends JDialog {
         jPanelConfigurationWarning = new javax.swing.JPanel();
         jLabelConfigurationWarning = new javax.swing.JLabel();
 
-        WindowTitleUtil.setTitle(this, this.rb.getResourceString( "title" ));
+        WindowTitleUtil.setTitle(this, JDialogPartnerConfig.rb.getResourceString( "title" ));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 closeDialog(evt);
@@ -564,7 +564,7 @@ public class JDialogPartnerConfig extends JDialog {
         jToolBar.setRollover(true);
 
         jButtonNewPartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonNewPartner.setText(this.rb.getResourceString( "button.new"));
+        jButtonNewPartner.setText(JDialogPartnerConfig.rb.getResourceString( "button.new"));
         jButtonNewPartner.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonNewPartner.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonNewPartner.addActionListener(new java.awt.event.ActionListener() {
@@ -575,7 +575,7 @@ public class JDialogPartnerConfig extends JDialog {
         jToolBar.add(jButtonNewPartner);
 
         jButtonClonePartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonClonePartner.setText(this.rb.getResourceString( "button.clone"));
+        jButtonClonePartner.setText(JDialogPartnerConfig.rb.getResourceString( "button.clone"));
         jButtonClonePartner.setFocusable(false);
         jButtonClonePartner.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonClonePartner.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -587,7 +587,7 @@ public class JDialogPartnerConfig extends JDialog {
         jToolBar.add(jButtonClonePartner);
 
         jButtonDeletePartner.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonDeletePartner.setText(this.rb.getResourceString( "button.delete"));
+        jButtonDeletePartner.setText(JDialogPartnerConfig.rb.getResourceString( "button.delete"));
         jButtonDeletePartner.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonDeletePartner.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonDeletePartner.addActionListener(new java.awt.event.ActionListener() {
@@ -598,7 +598,7 @@ public class JDialogPartnerConfig extends JDialog {
         jToolBar.add(jButtonDeletePartner);
 
         jButtonGlobalSettings.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonGlobalSettings.setText(this.rb.getResourceString( "button.globalchange"));
+        jButtonGlobalSettings.setText(JDialogPartnerConfig.rb.getResourceString( "button.globalchange"));
         jButtonGlobalSettings.setFocusable(false);
         jButtonGlobalSettings.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonGlobalSettings.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -618,7 +618,7 @@ public class JDialogPartnerConfig extends JDialog {
 
         jLabelModuleLockedWarning.setFont(new java.awt.Font("Dialog", 1, 11)); // NOI18N
         jLabelModuleLockedWarning.setForeground(new java.awt.Color(204, 51, 0));
-        jLabelModuleLockedWarning.setText(this.rb.getResourceString( "module.locked"));
+        jLabelModuleLockedWarning.setText(JDialogPartnerConfig.rb.getResourceString( "module.locked"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -676,7 +676,7 @@ public class JDialogPartnerConfig extends JDialog {
 
         jPanelButton.setLayout(new java.awt.GridBagLayout());
 
-        jButtonCancel.setText(this.rb.getResourceString( "button.cancel" ));
+        jButtonCancel.setText(JDialogPartnerConfig.rb.getResourceString( "button.cancel" ));
         jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonCancelActionPerformed(evt);
@@ -689,7 +689,7 @@ public class JDialogPartnerConfig extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelButton.add(jButtonCancel, gridBagConstraints);
 
-        jButtonPartnerConfigOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonPartnerConfigOk.setText(JDialogPartnerConfig.rb.getResourceString( "button.ok" ));
         jButtonPartnerConfigOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonPartnerConfigOkActionPerformed(evt);
@@ -715,7 +715,7 @@ public class JDialogPartnerConfig extends JDialog {
 
         jLabelConfigurationWarning.setFont(new java.awt.Font("Dialog", 1, 11)); // NOI18N
         jLabelConfigurationWarning.setForeground(new java.awt.Color(204, 51, 0));
-        jLabelConfigurationWarning.setText(this.rb.getResourceString( "text.configurationproblem"));
+        jLabelConfigurationWarning.setText(JDialogPartnerConfig.rb.getResourceString( "text.configurationproblem"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -755,8 +755,6 @@ public class JDialogPartnerConfig extends JDialog {
         this.partnerList.add(partner);
     }//GEN-LAST:event_jButtonNewPartnerActionPerformed
 
-    private void jTreePartnerValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreePartnerValueChanged
-    }//GEN-LAST:event_jTreePartnerValueChanged
 
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         this.setVisible(false);

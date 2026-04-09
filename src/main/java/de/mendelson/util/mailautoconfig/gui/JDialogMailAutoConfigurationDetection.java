@@ -1,11 +1,9 @@
 package de.mendelson.util.mailautoconfig.gui;
 
 import de.mendelson.util.IStatusBar;
-import de.mendelson.util.WindowTitleUtil;
 import de.mendelson.util.LockingGlassPane;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
-import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.TextOverlay;
 import de.mendelson.util.clientserver.BaseClient;
 import de.mendelson.util.clientserver.GUIClient;

@@ -17,7 +17,7 @@ import javax.swing.SwingConstants;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ListCellRendererSignature extends JLabel implements ListCellRenderer {
+public class ListCellRendererSignature extends JLabel implements ListCellRenderer<SignatureDisplay> {
 
     public static final int IMAGE_HEIGHT = 18;
     protected static final int ROW_HEIGHT = IMAGE_HEIGHT + 2;
@@ -175,7 +175,7 @@ public class ListCellRendererSignature extends JLabel implements ListCellRendere
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<? extends SignatureDisplay> list, SignatureDisplay value, int index, boolean isSelected, boolean cellHasFocus) {
         setComponentOrientation(list.getComponentOrientation());
         if (isSelected) {
             this.setBackground(list.getSelectionBackground());
@@ -188,15 +188,12 @@ public class ListCellRendererSignature extends JLabel implements ListCellRendere
         this.setFont(list.getFont());
         //Linux sets the value to null if nothing has been selected in the combobox
         if (value != null) {
-            if (value instanceof SignatureDisplay) {
-                SignatureDisplay display = (SignatureDisplay) value;
-                this.setEnabled(this.container.isEnabled());
-                this.setText(display.getText());
-                if (this.container.isEnabled()) {
-                    this.setIcon(display.getIcon());
-                } else {
-                    this.setIcon(ImageUtil.grayImage(display.getIcon()));
-                }
+            this.setEnabled(this.container.isEnabled());
+            this.setText(value.getText());
+            if (this.container.isEnabled()) {
+                this.setIcon(value.getIcon());
+            } else {
+                this.setIcon(ImageUtil.grayImage(value.getIcon()));
             }
         }
         this.setHorizontalAlignment(SwingConstants.LEADING);

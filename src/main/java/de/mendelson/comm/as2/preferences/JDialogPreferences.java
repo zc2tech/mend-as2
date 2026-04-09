@@ -416,7 +416,7 @@ public class JDialogPreferences extends JDialog {
         jPanelButtonBar = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle(this.rb.getResourceString( "title"));
+        setTitle(JDialogPreferences.rb.getResourceString( "title"));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosed(java.awt.event.WindowEvent evt) {
                 formWindowClosed(evt);
@@ -480,7 +480,7 @@ public class JDialogPreferences extends JDialog {
 
         jLabelLanguageInfo.setFont(new java.awt.Font("Tahoma", 3, 11)); // NOI18N
         jLabelLanguageInfo.setForeground(new java.awt.Color(255, 51, 0));
-        jLabelLanguageInfo.setText(this.rb.getResourceString("info.restart.client"));
+        jLabelLanguageInfo.setText(JDialogPreferences.rb.getResourceString("info.restart.client"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 18;
@@ -492,7 +492,7 @@ public class JDialogPreferences extends JDialog {
 
         jScrollPaneCountry.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
-        jListCountry.setModel(new DefaultListModel());
+        jListCountry.setModel(new DefaultListModel<DisplayCountry>());
         jListCountry.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jListCountry.setVisibleRowCount(15);
         jScrollPaneCountry.setViewportView(jListCountry);
@@ -525,7 +525,7 @@ public class JDialogPreferences extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelColorBlindness.add(jLabelIconBlind, gridBagConstraints);
 
-        jLabelColorBlindness.setText(this.rb.getResourceString( "label.colorblindness"));
+        jLabelColorBlindness.setText(JDialogPreferences.rb.getResourceString( "label.colorblindness"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
@@ -570,7 +570,7 @@ public class JDialogPreferences extends JDialog {
         jPanelDarkMode.add(jRadioButtonLiteMode, gridBagConstraints);
 
         jLabelDarkMode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
-        jLabelDarkMode.setText(this.rb.getResourceString( "label.darkmode"));
+        jLabelDarkMode.setText(JDialogPreferences.rb.getResourceString( "label.darkmode"));
         jLabelDarkMode.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelDarkModeMouseClicked(evt);
@@ -586,7 +586,7 @@ public class JDialogPreferences extends JDialog {
         jPanelDarkMode.add(jLabelDarkMode, gridBagConstraints);
 
         jLabelLightMode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
-        jLabelLightMode.setText(this.rb.getResourceString( "label.litemode"));
+        jLabelLightMode.setText(JDialogPreferences.rb.getResourceString( "label.litemode"));
         jLabelLightMode.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelLightModeMouseClicked(evt);
@@ -601,7 +601,7 @@ public class JDialogPreferences extends JDialog {
         jPanelDarkMode.add(jLabelLightMode, gridBagConstraints);
 
         jLabelHiContrastMode.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
-        jLabelHiContrastMode.setText(this.rb.getResourceString( "label.hicontrastmode"));
+        jLabelHiContrastMode.setText(JDialogPreferences.rb.getResourceString( "label.hicontrastmode"));
         jLabelHiContrastMode.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jLabelHiContrastModeMouseClicked(evt);
@@ -630,9 +630,9 @@ public class JDialogPreferences extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(20, 5, 20, 5);
         jPanelLanguage.add(jPanelDarkMode, gridBagConstraints);
 
-        jPanelUIHelpLabelCountry.setToolTipText(this.rb.getResourceString( "label.country.help"));
+        jPanelUIHelpLabelCountry.setToolTipText(JDialogPreferences.rb.getResourceString( "label.country.help"));
         jPanelUIHelpLabelCountry.setFont(new java.awt.Font("Dialog", 1, 12)); // NOI18N
-        jPanelUIHelpLabelCountry.setText(this.rb.getResourceString( "label.country"));
+        jPanelUIHelpLabelCountry.setText(JDialogPreferences.rb.getResourceString( "label.country"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 3;
         gridBagConstraints.gridy = 0;
@@ -641,9 +641,9 @@ public class JDialogPreferences extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(20, 5, 5, 0);
         jPanelLanguage.add(jPanelUIHelpLabelCountry, gridBagConstraints);
 
-        jPanelUIHelpLabelLanguage.setToolTipText(this.rb.getResourceString( "label.language.help"));
+        jPanelUIHelpLabelLanguage.setToolTipText(JDialogPreferences.rb.getResourceString( "label.language.help"));
         jPanelUIHelpLabelLanguage.setFont(new java.awt.Font("Dialog", 1, 12)); // NOI18N
-        jPanelUIHelpLabelLanguage.setText(this.rb.getResourceString( "label.language"));
+        jPanelUIHelpLabelLanguage.setText(JDialogPreferences.rb.getResourceString( "label.language"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -666,9 +666,9 @@ public class JDialogPreferences extends JDialog {
         gridBagConstraints.insets = new java.awt.Insets(20, 20, 20, 20);
         jPanelLanguage.add(jPanelSpace545, gridBagConstraints);
 
-        jPanelUIHelpLabelDisplayMode.setToolTipText(this.rb.getResourceString( "label.displaymode.help"));
+        jPanelUIHelpLabelDisplayMode.setToolTipText(JDialogPreferences.rb.getResourceString( "label.displaymode.help"));
         jPanelUIHelpLabelDisplayMode.setFont(new java.awt.Font("Dialog", 1, 12)); // NOI18N
-        jPanelUIHelpLabelDisplayMode.setText(this.rb.getResourceString( "label.displaymode"));
+        jPanelUIHelpLabelDisplayMode.setText(JDialogPreferences.rb.getResourceString( "label.displaymode"));
         jPanelUIHelpLabelDisplayMode.setTooltipWidth(150);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 7;
@@ -716,7 +716,7 @@ public class JDialogPreferences extends JDialog {
 
         jPanelButtons.setLayout(new java.awt.GridBagLayout());
 
-        jButtonOk.setText(this.rb.getResourceString( "button.ok" ));
+        jButtonOk.setText(JDialogPreferences.rb.getResourceString( "button.ok" ));
         jButtonOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonOkActionPerformed(evt);
@@ -817,7 +817,10 @@ public class JDialogPreferences extends JDialog {
 
         public DisplayCountry(String countryCode) {
             this.countryCode = countryCode.toUpperCase();
-            Locale locale = new Locale(Locale.getDefault().getLanguage(), countryCode);
+            Locale locale = new Locale.Builder()
+                    .setLanguage(Locale.getDefault().getLanguage())
+                    .setRegion(countryCode)
+                    .build();
             this.displayString = locale.getDisplayCountry() + " (" + countryCode + ")";
         }
 

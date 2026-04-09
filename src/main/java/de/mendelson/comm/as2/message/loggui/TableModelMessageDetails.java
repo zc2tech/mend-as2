@@ -161,13 +161,13 @@ public class TableModelMessageDetails extends AbstractTableModel {
             case 3:
                 return (detailRow.getMessageId());
             case 4:
-                return (this.rbMessage.getResourceString("signature." + detailRow.getSignType()));
+                return (TableModelMessageDetails.rbMessage.getResourceString("signature." + detailRow.getSignType()));
             case 5:
                 if (detailRow.isMDN()) {
                     return ("--");
                 } else {
                     AS2MessageInfo messageInfo = (AS2MessageInfo) detailRow;
-                    return (this.rbMessage.getResourceString("encryption." + messageInfo.getEncryptionType()));
+                    return (TableModelMessageDetails.rbMessage.getResourceString("encryption." + messageInfo.getEncryptionType()));
                 }
             case 6:
                 if (detailRow.getSenderHost() != null) {
@@ -219,8 +219,8 @@ public class TableModelMessageDetails extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
-        return (new Class[]{
+    public Class<?> getColumnClass(int col) {
+        return (new Class<?>[]{
             ImageIcon.class,
             String.class,
             ImageIcon.class,

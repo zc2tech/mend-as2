@@ -137,7 +137,7 @@ public abstract class ServerSideLogfileSearch {
                 TopDocs hits = searcher.search(query, filter.getMaxResults(), sortByMillisecs);
                 if (hits.totalHits.value > 0) {
                     for (ScoreDoc scoreDoc : hits.scoreDocs) {
-                        Document doc = multiReader.document(scoreDoc.doc);
+                        Document doc = searcher.storedFields().document(scoreDoc.doc);
                         try {
                             resultList.add(this.generateLoglineFromSingleSearchResult(doc));
                         } catch (Throwable e) {
@@ -168,7 +168,6 @@ public abstract class ServerSideLogfileSearch {
     private void recreateIndex(Date date, String indexDirStr) throws IOException {
         //dont use DateTimeFormatter here - this class does not like references to calendars
         final DateFormat DAILY_SUB_DIR_FORMAT = new SimpleDateFormat("yyyyMMdd");
-        int logFileCount = 0;
         Path indexDirPath = Paths.get(indexDirStr);
         //generate index
         FSDirectory indexDir = FSDirectory.open(indexDirPath);
@@ -181,7 +180,6 @@ public abstract class ServerSideLogfileSearch {
                     if (Files.isDirectory(foundLogfile)) {
                         continue;
                     }
-                    logFileCount++;
                     try (BufferedReader reader = Files.newBufferedReader(foundLogfile)) {
                         String line = "";
                         while (line != null) {

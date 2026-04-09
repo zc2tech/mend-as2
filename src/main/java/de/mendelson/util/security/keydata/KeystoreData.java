@@ -1,6 +1,5 @@
 package de.mendelson.util.security.keydata;
 
-import de.mendelson.util.security.cert.KeystoreStorageImplDB;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany

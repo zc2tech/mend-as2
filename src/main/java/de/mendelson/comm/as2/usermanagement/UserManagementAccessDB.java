@@ -21,7 +21,6 @@
 
 package de.mendelson.comm.as2.usermanagement;
 
-import de.mendelson.util.clientserver.user.User;
 import de.mendelson.util.database.IDBDriverManager;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -41,6 +40,7 @@ import java.util.logging.Logger;
 public class UserManagementAccessDB {
 
     private final IDBDriverManager dbDriverManager;
+    @SuppressWarnings("unused")
     private final Logger logger;
 
     public UserManagementAccessDB(IDBDriverManager dbDriverManager, Logger logger) {

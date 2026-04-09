@@ -226,9 +226,9 @@ public class KeyStoreUtil {
      * its alias. Returns null if the cert is not in the keystore
      */
     public static String getCertificateAlias(KeyStore keystore, X509Certificate cert) throws Exception {
-        Enumeration enumeration = keystore.aliases();
+        Enumeration<String> enumeration = keystore.aliases();
         while (enumeration.hasMoreElements()) {
-            String certAlias = (String) enumeration.nextElement();
+            String certAlias = enumeration.nextElement();
             X509Certificate checkCert = convertToX509Certificate(keystore.getCertificate(certAlias));
             if (checkCert.getSerialNumber().equals(cert.getSerialNumber())
                     && checkCert.getNotAfter().equals(cert.getNotAfter())
@@ -746,9 +746,9 @@ public class KeyStoreUtil {
      */
     public static Map<String, Certificate> getCertificatesFromKeystore(KeyStore keystore) throws GeneralSecurityException {
         Map<String, Certificate> certMap = new HashMap<String, Certificate>();
-        Enumeration enumeration = keystore.aliases();
+        Enumeration<String> enumeration = keystore.aliases();
         while (enumeration.hasMoreElements()) {
-            String certAlias = (String) enumeration.nextElement();
+            String certAlias = enumeration.nextElement();
             certMap.put(certAlias, keystore.getCertificate(certAlias));
         }
         return (certMap);
@@ -775,7 +775,7 @@ public class KeyStoreUtil {
      * Returns a list of aliases for a specified keystore
      */
     public static List<String> getKeyAliases(KeyStore keystore) throws KeyStoreException {
-        Enumeration enumeration = keystore.aliases();
+        Enumeration<String> enumeration = keystore.aliases();
         List<String> keyList = new ArrayList<String>();
         while (enumeration.hasMoreElements()) {
             String alias = (String) enumeration.nextElement();
@@ -791,7 +791,7 @@ public class KeyStoreUtil {
      * because this may be used for GUI lists
      */
     public static List<String> getNonKeyAliases(KeyStore keystore) throws KeyStoreException {
-        Enumeration enumeration = keystore.aliases();
+        Enumeration<String> enumeration = keystore.aliases();
         List<String> nonkeyList = new ArrayList<String>();
         while (enumeration.hasMoreElements()) {
             String alias = (String) enumeration.nextElement();

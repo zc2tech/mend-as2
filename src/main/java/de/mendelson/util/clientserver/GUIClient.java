@@ -8,7 +8,6 @@ import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.util.clientserver.messages.LoginResponse;
 import de.mendelson.util.clientserver.messages.ServerInfo;
 import de.mendelson.util.clientserver.messages.ServerSideNotification;
-import de.mendelson.util.clientserver.user.User;
 import java.awt.Color;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -58,7 +57,6 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
             = new ScheduledThreadPoolExecutor(4, new NamedThreadFactory("ui-client-schedules"));
 
     private final List<ClientsideMessageProcessor> messageProcessorList = Collections.synchronizedList(new ArrayList<ClientsideMessageProcessor>());
-    private String serverProductName = null;
 
     protected GUIClient() {
         this.client = new BaseClient(this, BaseClient.CLIENT_RICH_CLIENT);
@@ -167,16 +165,6 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
     }
 
     /**
-     * Login dialog removed - no longer needed
-     * @deprecated Authentication removed for SwingUI
-     */
-    @Deprecated
-    private Object performLogin(String user) {
-        // No login dialog needed
-        return null;
-    }
-
-    /**
      * Sends a message asynchronous to the server
      */
     public void sendAsync(ClientServerMessage message) {
@@ -254,7 +242,7 @@ public abstract class GUIClient extends JFrame implements ClientSessionHandlerCa
         }
         //catch the server information if its available
         if (message instanceof ServerInfo) {
-            this.serverProductName = ((ServerInfo) message).getProductname();
+            // this.serverProductName = ((ServerInfo) message).getProductname();
         } else {
             boolean processed = false;
             synchronized (this.messageProcessorList) {

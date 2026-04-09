@@ -156,7 +156,7 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         add(jPanelSpace124, gridBagConstraints);
 
-        jLabelShowQuota.setText(this.rb.getResourceString( "label.showquota" ));
+        jLabelShowQuota.setText(PreferencesPanelInterface.rb.getResourceString( "label.showquota" ));
         jLabelShowQuota.setMaximumSize(new java.awt.Dimension(200, 20));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -166,7 +166,7 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
         add(jLabelShowQuota, gridBagConstraints);
 
-        jLabelCEM.setText(this.rb.getResourceString( "label.cem" ));
+        jLabelCEM.setText(PreferencesPanelInterface.rb.getResourceString( "label.cem" ));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 6;
@@ -175,8 +175,8 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
         add(jLabelCEM, gridBagConstraints);
 
-        jPanelUIHelpLabelShowHTTPHeader.setToolTipText(this.rb.getResourceString( "label.showhttpheader.help" ));
-        jPanelUIHelpLabelShowHTTPHeader.setText(this.rb.getResourceString( "label.showhttpheader" ));
+        jPanelUIHelpLabelShowHTTPHeader.setToolTipText(PreferencesPanelInterface.rb.getResourceString( "label.showhttpheader.help" ));
+        jPanelUIHelpLabelShowHTTPHeader.setText(PreferencesPanelInterface.rb.getResourceString( "label.showhttpheader" ));
         jPanelUIHelpLabelShowHTTPHeader.setTooltipWidth(350);
         jPanelUIHelpLabelShowHTTPHeader.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_TOP
         );
@@ -188,8 +188,8 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         add(jPanelUIHelpLabelShowHTTPHeader, gridBagConstraints);
 
-        jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setToolTipText(this.rb.getResourceString( "label.showsecurityoverwrite.help" ));
-        jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setText(this.rb.getResourceString( "label.showsecurityoverwrite" ));
+        jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setToolTipText(PreferencesPanelInterface.rb.getResourceString( "label.showsecurityoverwrite.help" ));
+        jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setText(PreferencesPanelInterface.rb.getResourceString( "label.showsecurityoverwrite" ));
         jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setTooltipWidth(350);
         jPanelUIHelpLabelDisplaySecurityOverwriteLocalstation.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_TOP
         );
@@ -249,8 +249,8 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 5);
         add(jPanelSpace7743, gridBagConstraints);
 
-        jPanelUIHelpLabelOutboundStatusFiles.setToolTipText(this.rb.getResourceString( "label.outboundstatusfiles.help" ));
-        jPanelUIHelpLabelOutboundStatusFiles.setText(this.rb.getResourceString( "label.outboundstatusfiles" ));
+        jPanelUIHelpLabelOutboundStatusFiles.setToolTipText(PreferencesPanelInterface.rb.getResourceString( "label.outboundstatusfiles.help" ));
+        jPanelUIHelpLabelOutboundStatusFiles.setText(PreferencesPanelInterface.rb.getResourceString( "label.outboundstatusfiles" ));
         jPanelUIHelpLabelOutboundStatusFiles.setTooltipWidth(350);
         jPanelUIHelpLabelOutboundStatusFiles.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM
         );
@@ -262,8 +262,8 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         add(jPanelUIHelpLabelOutboundStatusFiles, gridBagConstraints);
 
-        jPanelUIHelpLabelCheckRevocationLists.setToolTipText(this.rb.getResourceString( "label.checkrevocationlists.help" ));
-        jPanelUIHelpLabelCheckRevocationLists.setText(this.rb.getResourceString( "label.checkrevocationlists" ));
+        jPanelUIHelpLabelCheckRevocationLists.setToolTipText(PreferencesPanelInterface.rb.getResourceString( "label.checkrevocationlists.help" ));
+        jPanelUIHelpLabelCheckRevocationLists.setText(PreferencesPanelInterface.rb.getResourceString( "label.checkrevocationlists" ));
         jPanelUIHelpLabelCheckRevocationLists.setTooltipWidth(350);
         jPanelUIHelpLabelCheckRevocationLists.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM
         );
@@ -283,8 +283,8 @@ public class PreferencesPanelInterface extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         add(switchCheckRevocationLists, gridBagConstraints);
 
-        jPanelUIHelpLabelCheckPartnerTLSCertificates.setToolTipText(this.rb.getResourceString( "autoimport.tls.help"));
-        jPanelUIHelpLabelCheckPartnerTLSCertificates.setText(this.rb.getResourceString( "autoimport.tls"));
+        jPanelUIHelpLabelCheckPartnerTLSCertificates.setToolTipText(PreferencesPanelInterface.rb.getResourceString( "autoimport.tls.help"));
+        jPanelUIHelpLabelCheckPartnerTLSCertificates.setText(PreferencesPanelInterface.rb.getResourceString( "autoimport.tls"));
         jPanelUIHelpLabelCheckPartnerTLSCertificates.setTooltipWidth(350);
         jPanelUIHelpLabelCheckPartnerTLSCertificates.setTriangleAlignment(BalloonToolTip.TRIANGLE_ALIGNMENT_BOTTOM
         );

@@ -9,7 +9,6 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.ImageUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -360,7 +359,7 @@ public class TableModelMessageOverview extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
+    public Class<?> getColumnClass(int col) {
         return (new Class[]{
             ImageIcon.class,
             ImageIcon.class,

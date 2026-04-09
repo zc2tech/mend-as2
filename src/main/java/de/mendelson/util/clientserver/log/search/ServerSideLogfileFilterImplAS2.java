@@ -1,7 +1,6 @@
 //$Header: /as2/de/mendelson/util/clientserver/log/search/ServerSideLogfileFilterImplAS2.java 2     2/11/23 15:53 Heller $
 package de.mendelson.util.clientserver.log.search;
 
-import java.io.Serializable;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -16,7 +15,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class ServerSideLogfileFilterImplAS2 extends ServerSideLogfileFilter implements Serializable {
+public class ServerSideLogfileFilterImplAS2 extends ServerSideLogfileFilter  {
 
     private static final long serialVersionUID = 1L;
 

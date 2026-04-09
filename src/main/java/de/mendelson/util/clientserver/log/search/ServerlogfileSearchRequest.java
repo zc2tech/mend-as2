@@ -4,7 +4,6 @@ package de.mendelson.util.clientserver.log.search;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -19,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class ServerlogfileSearchRequest extends ClientServerMessage implements Serializable {
+public class ServerlogfileSearchRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
     private final ServerSideLogfileFilter filter;

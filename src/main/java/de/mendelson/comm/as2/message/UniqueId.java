@@ -2,11 +2,8 @@ package de.mendelson.comm.as2.message;
 
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.server.ServerInstance;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 /*
