@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Response for user create request
  *
  */
-public class UserCreateResponse extends ClientServerResponse implements Serializable {
+public class UserCreateResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private int userId;

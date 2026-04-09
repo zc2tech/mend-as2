@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class CSRGenerationResponse extends ClientServerResponse implements Serializable {
+public class CSRGenerationResponse extends ClientServerResponse {
 
     /**
      * @return the crmfSignatureBase64

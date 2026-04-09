@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.cem.clientserver;
 
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 /*
@@ -19,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class CEMSendResponse extends ClientServerResponse implements Serializable {
+public class CEMSendResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<Partner> informedPartner = null;

@@ -34,7 +34,7 @@ import org.w3c.dom.NodeList;
  * @author S.Heller
  * @version $Revision: 97 $
  */
-public class Partner implements Serializable, Comparable, Cloneable {
+public class Partner implements Serializable, Comparable<Partner>, Cloneable {
 
     private static final long serialVersionUID = 1L;
     //setup a much longer timeout than the default for the partner sync client-server requests 
@@ -598,8 +598,7 @@ public class Partner implements Serializable, Comparable, Cloneable {
     }
 
     @Override
-    public int compareTo(Object obj) {
-        Partner partner = (Partner) obj;
+    public int compareTo(Partner partner) {
         return (this.name.compareToIgnoreCase(partner.name));
     }
 
@@ -740,12 +739,12 @@ public class Partner implements Serializable, Comparable, Cloneable {
             builder.append(rbPartnerPanel.getResourceString("label.maxpollfiles")).append(" ");
             builder.append(String.valueOf(this.maxPollFiles)).append("\n");
         }
-        if (this.authenticationCredentialsMessage.isEnabled()) {
+        if (this.authenticationCredentialsMessage.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             builder.append(rbPartnerPanel.getResourceString("label.httpauth.credentials.message")).append(" (Msg): ");
             builder.append(this.authenticationCredentialsMessage.getUser() + "/"
                     + this.authenticationCredentialsMessage.getPassword()).append("\n");
         }
-        if (this.authenticationCredentialsAsyncMDN.isEnabled()) {
+        if (this.authenticationCredentialsAsyncMDN.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             builder.append(rbPartnerPanel.getResourceString("label.httpauth.credentials.asyncmdn")).append(" (MDN): ");
             builder.append(this.authenticationCredentialsAsyncMDN.getUser() + "/"
                     + this.authenticationCredentialsAsyncMDN.getPassword()).append("\n");

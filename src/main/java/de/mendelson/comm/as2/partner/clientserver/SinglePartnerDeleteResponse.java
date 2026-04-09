@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 1 $
  */
-public class SinglePartnerDeleteResponse extends ClientServerResponse implements Serializable {
+public class SinglePartnerDeleteResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private Partner partner = null;

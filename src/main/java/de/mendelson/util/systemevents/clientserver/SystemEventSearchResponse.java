@@ -19,7 +19,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class SystemEventSearchResponse extends ClientServerResponse implements Serializable {
+public class SystemEventSearchResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<SystemEvent> eventResultList = new ArrayList<SystemEvent>();

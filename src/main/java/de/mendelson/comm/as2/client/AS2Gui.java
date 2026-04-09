@@ -5,7 +5,6 @@ import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.cem.gui.DialogCEMOverview;
 import de.mendelson.comm.as2.cem.gui.DialogSendCEM;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
-import de.mendelson.comm.as2.client.manualsend.ManualSendResponse;
 import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientCEMDisplay;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;
@@ -59,7 +58,6 @@ import de.mendelson.util.clientserver.ClientsideMessageProcessor;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.SyncRequestTimeoutException;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
-import de.mendelson.util.clientserver.about.ServerInfoResponse;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.comm.as2.usermanagement.gui.JDialogChangePassword;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserListRequest;
@@ -104,13 +102,9 @@ import de.mendelson.util.tables.hideablecolumns.TableColumnModelHideable;
 import de.mendelson.util.uinotification.UINotification;
 import java.awt.Color;
 import java.awt.Desktop;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Taskbar;
-import java.awt.Toolkit;
-import java.awt.desktop.AboutEvent;
-import java.awt.desktop.AboutHandler;
 import java.awt.desktop.QuitEvent;
 import java.awt.desktop.QuitHandler;
 import java.awt.desktop.QuitResponse;
@@ -122,13 +116,8 @@ import java.beans.PropertyChangeListener;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -160,13 +149,7 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
-// Oracle JavaHelp imports removed - incompatible with JDK 17+
-import java.net.http.HttpRequest;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.net.http.HttpClient.Redirect;
-import java.net.http.HttpClient.Version;
-import java.net.http.HttpHeaders;
+
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.plaf.InsetsUIResource;
@@ -272,15 +255,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private static final MendelsonMultiResolutionImage IMAGE_CEM = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/cem/gui/cem.svg",
             IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_NEW_VERSION = MendelsonMultiResolutionImage
-            .fromSVG("/de/mendelson/comm/as2/client/import_red.svg", 16);
     private static final MendelsonMultiResolutionImage IMAGE_HOURGLASS = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/client/hourglass.svg",
             IMAGE_SIZE_MENU_ITEM,
             IMAGE_SIZE_TOOLBAR * 2);
-    private static final MendelsonMultiResolutionImage IMAGE_SHOP = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/shop.svg",
-            IMAGE_SIZE_MENU_ITEM);
+
 
     /**
      * Helper method to determine logo path based on test mode
@@ -317,8 +296,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Host to connect to
      */
     private final String host;
-    private final String username;
-    private final String password;
+
 
     public static final String DARK_MODE_CLASSNAME = "com.formdev.flatlaf.FlatDarculaLaf";
     public static final String HIGH_CONSTRAST_MODE_CLASSNAME = "com.formdev.flatlaf.intellijthemes.FlatHighContrastIJTheme";
@@ -336,15 +314,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private Date filterStartDate = new Date();
     private Date filterEndDate = new Date();
     private Color COLOR_RED = Color.RED.darker();
-    private String downloadURLNewVersion = "http://github.com/zc2tech/mend-as2";
 
     /**
      * Creates new form NewJFrame
      */
     public AS2Gui(Splash splash, String host, String username, String password, String displayMode) {
         this.host = host;
-        this.username = username;
-        this.password = password;
+   
         if (displayMode == null) {
             displayMode = "LIGHT";
         }
@@ -910,7 +886,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
     @Override
     public Logger getLogger() {
-        return (this.logger);
+        return (AS2Gui.logger);
     }
 
     /**
@@ -1178,7 +1154,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     this.rb.getResourceString("uploading.to.server"));
             dialog.setVisible(true);
         } catch (Exception e) {
-            this.logger.severe("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
+            AS2Gui.logger.severe("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
         }
     }
 
@@ -1268,7 +1244,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                                         inStream.transferTo(outStream);
                                         outStream.flush();
                                     } catch (Throwable e) {
-                                        AS2Gui.this.logger.severe(e.getMessage());
+                                        AS2Gui.logger.severe(e.getMessage());
                                         return;
                                     } finally {
                                         if (inStream != null) {
@@ -1291,12 +1267,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                                                     "resend.failed.nopayload",
                                                     message.getAS2Info().getMessageId()));
                                 }
-                                ManualSendResponse response = dialog.performResend(info.getMessageId(),
+                                dialog.performResend(info.getMessageId(),
                                         sender, receiver, tempFile, originalFilename, info.getSubject());
-                                String newMessageId = "--";
-                                if (response != null) {
-                                    newMessageId = response.getAS2Info().getMessageId();
-                                }
                                 info.setResendCounter(info.getResendCounter() + 1);
                             }
                         }
@@ -1535,7 +1507,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             null,  // IDBDriverManager not available in client, will be handled server-side
                             AS2Gui.logger));
                     // modifying the underlaying keystore settings makes only sense if HA is enabled
-                    ServerInfoResponse infoResponse = (ServerInfoResponse) AS2Gui.this.getBaseClient()
+                    AS2Gui.this.getBaseClient()
                             .sendSync(new ServerInfoRequest());
                     panelList.add(new PreferencesPanelDirectories(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelSystemMaintenance(AS2Gui.this.getBaseClient()));
@@ -1723,14 +1695,14 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jLabelFilterShowPending = new javax.swing.JLabel();
         jLabelFilterShowError = new javax.swing.JLabel();
         jButtonHideFilter = new javax.swing.JButton();
-        jComboBoxFilterPartner = new javax.swing.JComboBox();
+        jComboBoxFilterPartner = new javax.swing.JComboBox<>();
         jPaneSpace = new javax.swing.JPanel();
         jLabelPartnerFilter = new javax.swing.JLabel();
         jSeparator4 = new javax.swing.JSeparator();
-        jComboBoxFilterLocalStation = new javax.swing.JComboBox();
+        jComboBoxFilterLocalStation = new javax.swing.JComboBox<>();
         jLabelLocalStationFilter = new javax.swing.JLabel();
         jLabelDirectionFilter = new javax.swing.JLabel();
-        jComboBoxFilterDirection = new javax.swing.JComboBox();
+        jComboBoxFilterDirection = new javax.swing.JComboBox<>();
         jSeparator11 = new javax.swing.JSeparator();
         jCheckBoxUseTimeFilter = new javax.swing.JCheckBox();
         jDateChooserStartDate = new com.toedter.calendar.JDateChooser();
@@ -1762,7 +1734,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuUserPreference = new javax.swing.JMenu();
         jMenuItemUserPrefHttpAuth = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
-        jSeparator8 = new javax.swing.JSeparator();
         jMenuItemFileExit = new javax.swing.JMenuItem();
         jMenuItemHelpAbout = new javax.swing.JMenuItem();
         jMenuItemHelpSystem = new javax.swing.JMenuItem();
@@ -2630,7 +2601,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
     private void jMenuItemCEMSendActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCEMSendActionPerformed
         try {
-            PreferencesClient client = new PreferencesClient(AS2Gui.this.getBaseClient());
+            new PreferencesClient(AS2Gui.this.getBaseClient());
             CertificateManager certificateManagerEncSign = new CertificateManager(logger);
             KeystoreStorage storage = new KeystoreStorageImplClientServer(
                     AS2Gui.this.getBaseClient(),
@@ -2706,14 +2677,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JButton jButtonMessageDetails;
     private javax.swing.JButton jButtonPartner;
     private javax.swing.JButton jButtonUserManagement;
-    private javax.swing.JButton jButtonShop;
     private javax.swing.JCheckBox jCheckBoxFilterShowOk;
     private javax.swing.JCheckBox jCheckBoxFilterShowPending;
     private javax.swing.JCheckBox jCheckBoxFilterShowStopped;
     private javax.swing.JCheckBox jCheckBoxUseTimeFilter;
-    private javax.swing.JComboBox jComboBoxFilterDirection;
-    private javax.swing.JComboBox jComboBoxFilterLocalStation;
-    private javax.swing.JComboBox jComboBoxFilterPartner;
+    private javax.swing.JComboBox<String> jComboBoxFilterDirection;
+    private javax.swing.JComboBox<Object> jComboBoxFilterLocalStation;
+    private javax.swing.JComboBox<Object> jComboBoxFilterPartner;
     private com.toedter.calendar.JDateChooser jDateChooserEndDate;
     private com.toedter.calendar.JDateChooser jDateChooserStartDate;
     private javax.swing.JLabel jLabelDirectionFilter;
@@ -2766,7 +2736,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator6;
-    private javax.swing.JSeparator jSeparator8;
     private javax.swing.JPopupMenu.Separator jSeparator9;
     private javax.swing.JSplitPane jSplitPane;
     private de.mendelson.util.tables.JTableSortable jTableMessageOverview;
@@ -2875,7 +2844,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         AS2Gui.this.rb.getResourceString("server.answer.timeout.details"));
             }
         } else {
-            this.logger.severe(throwable.getMessage());
+            AS2Gui.logger.severe(throwable.getMessage());
         }
     }
 

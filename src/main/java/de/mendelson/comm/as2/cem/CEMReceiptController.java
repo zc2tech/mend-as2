@@ -357,7 +357,7 @@ public class CEMReceiptController {
         boolean imported = false;
         this.logger.log(Level.INFO, this.rb.getResourceString("transmitted.certificate.info",
                 new Object[]{
-                    certificate.getIssuerDN().toString(),
+                    certificate.getIssuerX500Principal().getName(),
                     certificate.getSerialNumber().toString(),}), info);
         //check if the cert already exists
         String importAlias = KeyStoreUtil.getCertificateAlias(certificateManager.getKeystore(), certificate);

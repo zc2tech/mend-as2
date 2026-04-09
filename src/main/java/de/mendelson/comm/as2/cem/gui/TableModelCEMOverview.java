@@ -145,8 +145,8 @@ public class TableModelCEMOverview extends AbstractTableModel {
      * @param col requested column
      */
     @Override
-    public Class getColumnClass(int col) {
-        return (new Class[]{
+    public Class<?> getColumnClass(int col) {
+        return (new Class<?>[]{
                     CEMSystemActivity.class,
                     CEMEntry.class,
                     String.class,

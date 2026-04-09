@@ -5,7 +5,6 @@ import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -23,7 +22,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 7 $
  */
-public class CEMSendRequest extends ClientServerMessage implements Serializable {
+public class CEMSendRequest extends ClientServerMessage {
    
     private static final long serialVersionUID = 1L;
     private Partner initiator = null;

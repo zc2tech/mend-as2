@@ -14,7 +14,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class PreferencesResponse extends ClientServerResponse implements Serializable{
+public class PreferencesResponse extends ClientServerResponse{
 
     private static final long serialVersionUID = 1L;
     private String value = null;

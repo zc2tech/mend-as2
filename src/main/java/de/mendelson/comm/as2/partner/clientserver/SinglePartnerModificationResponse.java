@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 1 $
  */
-public class SinglePartnerModificationResponse extends ClientServerResponse implements Serializable {
+public class SinglePartnerModificationResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

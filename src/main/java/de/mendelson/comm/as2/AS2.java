@@ -125,22 +125,22 @@ public class AS2 {
                 country = "US";
             }
             if (language.toLowerCase().equals("en")) {
-                Locale.setDefault(new Locale(Locale.ENGLISH.getLanguage(), country));
+                Locale.setDefault(new Locale.Builder().setLanguage(Locale.ENGLISH.getLanguage()).setRegion(country).build());
             } else if (language.toLowerCase().equals("de")) {
-                Locale.setDefault(new Locale(Locale.GERMAN.getLanguage(), country));
+                Locale.setDefault(new Locale.Builder().setLanguage(Locale.GERMAN.getLanguage()).setRegion(country).build());
             } else if (language.toLowerCase().equals("fr")) {
-                Locale.setDefault(new Locale(Locale.FRENCH.getLanguage(), country));
+                Locale.setDefault(new Locale.Builder().setLanguage(Locale.FRENCH.getLanguage()).setRegion(country).build());
             } else if (language.toLowerCase().equals("it")) {
-                Locale.setDefault(new Locale(Locale.ITALIAN.getLanguage(), country));
+                Locale.setDefault(new Locale.Builder().setLanguage(Locale.ITALIAN.getLanguage()).setRegion(country).build());
             } else if (language.toLowerCase().equals("es")) {
-                Locale spain = new Locale("es", "ES");
-                Locale.setDefault(new Locale(spain.getLanguage(), country));
+                Locale spain = new Locale.Builder().setLanguage("es").setRegion("ES").build();
+                Locale.setDefault(new Locale.Builder().setLanguage(spain.getLanguage()).setRegion(country).build());
             } else if (language.toLowerCase().equals("pt")) {
-                Locale portugal = new Locale("pt", "PT");
-                Locale.setDefault(new Locale(portugal.getLanguage(), country));
+                Locale portugal = new Locale.Builder().setLanguage("pt").setRegion("PT").build();
+                Locale.setDefault(new Locale.Builder().setLanguage(portugal.getLanguage()).setRegion(country).build());
             } else {
                 System.out.println("Language " + language + " is not supported, switching to en");
-                Locale.setDefault(new Locale(Locale.ENGLISH.getLanguage(), country));
+                Locale.setDefault(new Locale.Builder().setLanguage(Locale.ENGLISH.getLanguage()).setRegion(country).build());
             }
         }
 

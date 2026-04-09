@@ -30,7 +30,7 @@ import java.util.List;
  * Response containing list of users
  *
  */
-public class UserListResponse extends ClientServerResponse implements Serializable {
+public class UserListResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<WebUIUser> users;

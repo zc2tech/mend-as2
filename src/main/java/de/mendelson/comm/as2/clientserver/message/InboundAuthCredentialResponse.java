@@ -32,7 +32,7 @@ import java.util.List;
  *
  * @author Julian Xu
  */
-public class InboundAuthCredentialResponse extends ClientServerResponse implements Serializable {
+public class InboundAuthCredentialResponse extends ClientServerResponse {
 
     private List<InboundAuthCredential> credentials;
     private boolean success;

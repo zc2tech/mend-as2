@@ -85,7 +85,7 @@ import org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec;
  * @author S.Heller
  * @version $Revision: 65 $
  */
-public class KeystoreCertificate implements Comparable, Serializable, Cloneable {
+public class KeystoreCertificate implements Comparable<KeystoreCertificate>, Serializable, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
@@ -1029,7 +1029,6 @@ public class KeystoreCertificate implements Comparable, Serializable, Cloneable 
         return (this.alias);
     }
 
-    @Override
     /**
      * Sort a list of KeystoreCertificate You MUST not use the equals method in
      * this method - this will result in a "Comparison method violates its
@@ -1037,8 +1036,8 @@ public class KeystoreCertificate implements Comparable, Serializable, Cloneable 
      * implementor must also ensure that the relation is transitive:
      * (x.compareTo(y)>0 && y.compareTo(z)>0) implies x.compareTo(z)>0.
      */
-    public int compareTo(Object object) {
-        KeystoreCertificate otherCert = (KeystoreCertificate) object;
+    @Override
+    public int compareTo(KeystoreCertificate otherCert) {
         return (this.alias.toUpperCase().compareTo(otherCert.alias.toUpperCase()));
     }
 

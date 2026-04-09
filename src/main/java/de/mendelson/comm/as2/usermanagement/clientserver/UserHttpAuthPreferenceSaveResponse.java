@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Response after saving HTTP authentication preferences
  */
-public class UserHttpAuthPreferenceSaveResponse extends ClientServerResponse implements Serializable {
+public class UserHttpAuthPreferenceSaveResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

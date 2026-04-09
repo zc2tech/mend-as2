@@ -12,7 +12,7 @@ import java.awt.Rectangle;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class TableCellRendererCEMSystemState extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererCEMSystemState extends DefaultTableCellRenderer{
 
     private final Color colorAccepted = new Color(166, 247, 164);
     private final Color colorPending = new Color(255, 255, 183);

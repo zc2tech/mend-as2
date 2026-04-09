@@ -19,7 +19,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class HSQLDBPartnerResponse extends ClientServerResponse implements Serializable {
+public class HSQLDBPartnerResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<Partner> partnerList = new ArrayList<Partner>();

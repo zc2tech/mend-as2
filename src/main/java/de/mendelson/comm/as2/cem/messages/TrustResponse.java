@@ -22,11 +22,8 @@ import java.util.List;
  */
 public class TrustResponse extends CEMStructure {
 
-    private final static int STATUS_PENDING_INT = CEMEntry.STATUS_PENDING_INT;
     private final static int STATUS_REJECTED_INT = CEMEntry.STATUS_REJECTED_INT;
     private final static int STATUS_ACCEPTED_INT = CEMEntry.STATUS_ACCEPTED_INT;
-    private final static int STATUS_EXPIRED_INT = CEMEntry.STATUS_EXPIRED_INT;
-    private final static int STATUS_REVOKED_INT = CEMEntry.STATUS_REVOKED_INT;
     public static final String STATUS_ACCEPTED_STR = EDIINTCertificateExchangeResponse.STATUS_ACCEPTED_STR;
     public static final String STATUS_REJECTED_STR = EDIINTCertificateExchangeResponse.STATUS_REJECTED_STR;
     private int state = STATUS_ACCEPTED_INT;

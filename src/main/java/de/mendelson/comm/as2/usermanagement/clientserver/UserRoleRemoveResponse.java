@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Response for role removal
  */
-public class UserRoleRemoveResponse extends ClientServerResponse implements Serializable {
+public class UserRoleRemoveResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

@@ -22,7 +22,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class DownloadResponseKeystore extends ClientServerResponse implements Serializable {
+public class DownloadResponseKeystore extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

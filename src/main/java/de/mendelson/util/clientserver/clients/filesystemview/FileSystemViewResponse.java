@@ -17,7 +17,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 6 $
  */
-public class FileSystemViewResponse extends ClientServerResponse implements Serializable {
+public class FileSystemViewResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private FileObject parameterFile = null;

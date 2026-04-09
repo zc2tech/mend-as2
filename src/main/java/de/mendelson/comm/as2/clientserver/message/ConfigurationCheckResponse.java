@@ -19,7 +19,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ConfigurationCheckResponse extends ClientServerResponse implements Serializable {
+public class ConfigurationCheckResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<ConfigurationIssue> issueList = new ArrayList<ConfigurationIssue>();

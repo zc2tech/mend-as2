@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Response for user modify request
  *
  */
-public class UserModifyResponse extends ClientServerResponse implements Serializable {
+public class UserModifyResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

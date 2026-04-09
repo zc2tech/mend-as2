@@ -20,7 +20,7 @@ import javax.swing.border.EmptyBorder;
  * @author S.Heller
  * @version $Revision: 13 $
  */
-public class ListCellRendererPartner extends JLabel implements ListCellRenderer {
+public class ListCellRendererPartner extends JLabel implements ListCellRenderer<Object> {
 
     private final static int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_LIST;
     private final static int ROW_HEIGHT = IMAGE_HEIGHT+2;
@@ -193,7 +193,7 @@ public class ListCellRendererPartner extends JLabel implements ListCellRenderer 
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
         setComponentOrientation(list.getComponentOrientation());
         setBorder(new EmptyBorder(0,2,0,0));
         if (isSelected) {

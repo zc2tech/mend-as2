@@ -13,14 +13,13 @@ import java.util.Date;
 import java.util.List;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 
 /** 
  * Renders the CEM state column
  * @author S.Heller
  * @version $Revision: 10 $
  */
-public class TableCellRendererCEMState extends DefaultTableCellRenderer implements TableCellRenderer {
+public class TableCellRendererCEMState extends DefaultTableCellRenderer {
 
     private final DateFormat format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
     private final Color colorAccepted = new Color(166, 247, 164);

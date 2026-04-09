@@ -2,7 +2,6 @@ package de.mendelson.comm.as2.cem.clientserver;
 
 import de.mendelson.comm.as2.cem.CEMEntry;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import java.io.Serializable;
 import java.util.List;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -18,7 +17,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class CEMListResponse extends ClientServerResponse implements Serializable {
+public class CEMListResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<CEMEntry> list = null;

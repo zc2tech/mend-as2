@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class UploadResponseKeystore extends ClientServerResponse implements Serializable {
+public class UploadResponseKeystore extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     public UploadResponseKeystore(UploadRequestKeystore request) {

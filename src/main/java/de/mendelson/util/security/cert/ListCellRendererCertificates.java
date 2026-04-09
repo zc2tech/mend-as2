@@ -27,7 +27,7 @@ import javax.swing.SwingConstants;
  * @author S.Heller
  * @version $Revision: 13 $
  */
-public class ListCellRendererCertificates extends JLabel implements ListCellRenderer {
+public class ListCellRendererCertificates extends JLabel implements ListCellRenderer<KeystoreCertificate> {
 
     protected static final int IMAGE_HEIGHT = JDialogCertificates.IMAGE_SIZE_LIST;
     public static final int ROW_HEIGHT = IMAGE_HEIGHT + 2;
@@ -199,7 +199,7 @@ public class ListCellRendererCertificates extends JLabel implements ListCellRend
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<? extends KeystoreCertificate> list, KeystoreCertificate value, int index, boolean isSelected, boolean cellHasFocus) {
         setComponentOrientation(list.getComponentOrientation());
         if (isSelected) {
             this.setBackground(list.getSelectionBackground());
@@ -212,9 +212,8 @@ public class ListCellRendererCertificates extends JLabel implements ListCellRend
         this.setFont(list.getFont());
         //Linux sets the value to null if nothing has been selected in the combobox
         if (value != null) {
-            if (value instanceof KeystoreCertificate) {
-                KeystoreCertificate certificate = (KeystoreCertificate) value;
-                if (certificate.getIsKeyPair()) {
+            KeystoreCertificate certificate = value;
+            if (certificate.getIsKeyPair()) {
                     this.setIcon(
                             new ImageIcon(
                                     TableModelCertificates.IMAGE_KEY_MULTIRESOLUTION.toMinResolution(IMAGE_HEIGHT)));
@@ -243,11 +242,6 @@ public class ListCellRendererCertificates extends JLabel implements ListCellRend
                             .append("]");
                 }
                 this.setText(builder.toString());
-            } else {
-                this.setText(rb.getResourceString("certificate.not.assigned"));
-                this.setIcon(new ImageIcon(
-                        TableModelCertificates.IMAGE_UNTRUSTED_MULTIRESOLUTION.toMinResolution(IMAGE_HEIGHT)));
-            }
         } else {
             this.setText(rb.getResourceString("certificate.not.assigned"));
             this.setIcon(

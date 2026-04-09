@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 2 $
  */
-public class CertificateExportResponse extends ClientServerResponse implements Serializable {
+public class CertificateExportResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private byte[] exportData = null;

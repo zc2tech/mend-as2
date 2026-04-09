@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 1 $
  */
-public class ExportResponsePrivateKey extends ClientServerResponse implements Serializable {
+public class ExportResponsePrivateKey extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private String saveFileOnServer = null;

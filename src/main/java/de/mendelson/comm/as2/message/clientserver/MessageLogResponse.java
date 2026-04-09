@@ -18,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class MessageLogResponse extends ClientServerResponse implements Serializable {
+public class MessageLogResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     

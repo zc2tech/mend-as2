@@ -18,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 9 $
  */
-public class DisplayHTTPServerConfigurationResponse extends ClientServerResponse implements Serializable {
+public class DisplayHTTPServerConfigurationResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

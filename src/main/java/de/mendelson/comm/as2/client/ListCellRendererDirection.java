@@ -21,7 +21,7 @@ import javax.swing.border.EmptyBorder;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ListCellRendererDirection extends JLabel implements ListCellRenderer {
+public class ListCellRendererDirection extends JLabel implements ListCellRenderer<String> {
 
     private final static int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_MENU_ITEM;
     private final static int ROW_HEIGHT = IMAGE_HEIGHT + 2;
@@ -180,7 +180,7 @@ public class ListCellRendererDirection extends JLabel implements ListCellRendere
 
     @Override
     public Component getListCellRendererComponent(
-            JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
         setComponentOrientation(list.getComponentOrientation());
         setBorder(new EmptyBorder(0,2,0,0));
         if (isSelected) {
@@ -195,20 +195,15 @@ public class ListCellRendererDirection extends JLabel implements ListCellRendere
         //Linux sets the value to null if nothing has been selected in the combobox
         if (value != null) {
             this.setEnabled(list.isEnabled());
-            if (value instanceof String) {
-                String valueStr = (String) value;
-                if (valueStr.equals(rb.getResourceString("filter.direction.inbound"))) {
-                    this.setIcon(new ImageIcon(IMAGE_DIRECTION_INBOUND.toMinResolution(IMAGE_HEIGHT)));
-                    this.setText(valueStr);
-                } else if (valueStr.equals(rb.getResourceString("filter.direction.outbound"))) {
-                    this.setIcon(new ImageIcon(IMAGE_DIRECTION_OUTBOUND.toMinResolution(IMAGE_HEIGHT)));
-                    this.setText(valueStr);
-                } else {
-                    this.setIcon(null);
-                    this.setText(valueStr);
-                }
+            if (value.equals(rb.getResourceString("filter.direction.inbound"))) {
+                this.setIcon(new ImageIcon(IMAGE_DIRECTION_INBOUND.toMinResolution(IMAGE_HEIGHT)));
+                this.setText(value);
+            } else if (value.equals(rb.getResourceString("filter.direction.outbound"))) {
+                this.setIcon(new ImageIcon(IMAGE_DIRECTION_OUTBOUND.toMinResolution(IMAGE_HEIGHT)));
+                this.setText(value);
             } else {
-                this.setText(value.toString());
+                this.setIcon(null);
+                this.setText(value);
             }
         }
         this.setHorizontalAlignment(SwingConstants.LEADING);

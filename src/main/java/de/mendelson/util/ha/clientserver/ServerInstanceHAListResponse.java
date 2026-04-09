@@ -18,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class ServerInstanceHAListResponse extends ClientServerResponse implements Serializable {
+public class ServerInstanceHAListResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<ServerInstanceHA> list = null;

@@ -28,7 +28,7 @@ import java.io.Serializable;
  * Response for user delete request
  *
  */
-public class UserDeleteResponse extends ClientServerResponse implements Serializable {
+public class UserDeleteResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Response containing roles for a user
  */
-public class UserRolesResponse extends ClientServerResponse implements Serializable {
+public class UserRolesResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<Role> roles;

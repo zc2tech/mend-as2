@@ -18,7 +18,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 13 $
  */
-public abstract class DownloadResponse extends ClientServerResponse implements Serializable {
+public abstract class DownloadResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private byte[] data = null;

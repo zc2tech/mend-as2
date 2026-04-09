@@ -20,7 +20,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 5 $
  */
-public class ConnectionTestResponse extends ClientServerResponse implements Serializable {
+public class ConnectionTestResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private ConnectionTestResult result = null;

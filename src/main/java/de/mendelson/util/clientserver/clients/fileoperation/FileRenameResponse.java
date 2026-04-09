@@ -15,7 +15,7 @@ import java.io.Serializable;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class FileRenameResponse extends ClientServerResponse implements Serializable {
+public class FileRenameResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private boolean success = false;

@@ -17,7 +17,7 @@ import java.util.Properties;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class ServerInfoResponse extends ClientServerResponse implements Serializable {
+public class ServerInfoResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     public static final String SERVER_PRODUCT_NAME = ServerInfoRequest.SERVER_PRODUCT_NAME;

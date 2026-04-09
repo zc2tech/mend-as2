@@ -18,7 +18,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class MessageOverviewResponse extends ClientServerResponse implements Serializable {
+public class MessageOverviewResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private List<AS2MessageInfo> list = null;

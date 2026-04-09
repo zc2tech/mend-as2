@@ -22,7 +22,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class CRLVerificationResponse extends ClientServerResponse implements Serializable {
+public class CRLVerificationResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<CRLRevocationInformation> informationList = new ArrayList<CRLRevocationInformation>();

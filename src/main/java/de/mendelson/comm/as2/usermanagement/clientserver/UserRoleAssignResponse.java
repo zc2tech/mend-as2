@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * Response for role assignment
  */
-public class UserRoleAssignResponse extends ClientServerResponse implements Serializable {
+public class UserRoleAssignResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

@@ -30,7 +30,7 @@ import java.util.Map;
  * Response containing HTTP authentication preferences for a user
  * Structure: partnerId -> type (message/mdn) -> field (username/password) -> value
  */
-public class UserHttpAuthPreferenceResponse extends ClientServerResponse implements Serializable {
+public class UserHttpAuthPreferenceResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
 

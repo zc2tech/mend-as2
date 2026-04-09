@@ -31,7 +31,7 @@ import java.util.List;
  *
  * @author Julian Xu
  */
-public class TrackerMessageResponse extends ClientServerResponse implements Serializable {
+public class TrackerMessageResponse extends ClientServerResponse {
 
     public static final long serialVersionUID = 1L;
 

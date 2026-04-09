@@ -26,7 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * @author S.Heller
  * @version $Revision: 4 $
  */
-public class IncomingMessageResponse extends ClientServerResponse implements Serializable {
+public class IncomingMessageResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private Properties header = new Properties();

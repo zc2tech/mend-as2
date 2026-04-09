@@ -20,7 +20,7 @@ import java.util.List;
  * @author S.Heller
  * @version $Revision: 3 $
  */
-public class MailAutoConfigDetectResponse extends ClientServerResponse implements Serializable {
+public class MailAutoConfigDetectResponse extends ClientServerResponse {
 
     private static final long serialVersionUID = 1L;
     private final List<MailServiceConfiguration> configurationList = new ArrayList<MailServiceConfiguration>();
