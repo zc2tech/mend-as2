@@ -177,6 +177,12 @@ public class PEMKeys2Keystore {
      * @param keystorePass Password for the keystore
      */
     public void saveKeyStore(KeyStore keystore, char[] keystorePass, Path file) throws Exception {
+        // Ensure parent directory exists
+        Path parentDir = file.getParent();
+        if (parentDir != null && !Files.exists(parentDir)) {
+            Files.createDirectories(parentDir);
+        }
+
         try (OutputStream out = Files.newOutputStream(file)) {
             keystore.store(out, keystorePass);
         }

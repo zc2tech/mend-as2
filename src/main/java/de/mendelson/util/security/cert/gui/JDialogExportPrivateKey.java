@@ -162,7 +162,7 @@ public class JDialogExportPrivateKey extends JDialog {
      */
     private void performExportPrivateKey() {
         try {
-            String serverSideTargetPath = this.jTextFieldExportFile.getText();
+            String serverSideTargetPath = this.jTextFieldExportFile.getText().trim();
             char[] serverSideTargetPass = this.jPasswordFieldPassphrase.getPassword();
             int sourceKeystoreUsage = this.manager.getStorageUsage();
             KeystoreCertificate selectedKey = (KeystoreCertificate) this.jComboBoxKeys.getSelectedItem();
@@ -195,11 +195,25 @@ public class JDialogExportPrivateKey extends JDialog {
                         selectedAlias,
                         saveFileOnServer
                     }));
-        } catch (Throwable e) {
+        } catch (java.nio.file.InvalidPathException e) {
             UINotification.instance().addNotification(null,
                     UINotification.TYPE_ERROR,
                     rb.getResourceString("key.export.error.title"),
-                    rb.getResourceString("key.export.error.message", e.getMessage()));
+                    "Invalid export path: " + e.getMessage() + "\nPlease check the directory path and try again.");
+        } catch (java.nio.file.NoSuchFileException e) {
+            UINotification.instance().addNotification(null,
+                    UINotification.TYPE_ERROR,
+                    rb.getResourceString("key.export.error.title"),
+                    "Directory not found: " + e.getMessage() + "\nThe parent directory will be created automatically.");
+        } catch (Throwable e) {
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && (errorMsg.contains("NoSuchFileException") || errorMsg.contains("InvalidPathException"))) {
+                errorMsg = "Invalid or non-existent directory path.\nPlease verify the path and try again.";
+            }
+            UINotification.instance().addNotification(null,
+                    UINotification.TYPE_ERROR,
+                    rb.getResourceString("key.export.error.title"),
+                    errorMsg != null ? errorMsg : rb.getResourceString("key.export.error.message", e.getClass().getSimpleName()));
         }
     }
 
@@ -454,6 +468,25 @@ public class JDialogExportPrivateKey extends JDialog {
     }//GEN-LAST:event_jButtonCancelActionPerformed
 
     private void jButtonOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOkActionPerformed
+        // Validate the export path before proceeding
+        String exportPath = this.jTextFieldExportFile.getText().trim();
+        if (exportPath.isEmpty()) {
+            UINotification.instance().addNotification(null,
+                    UINotification.TYPE_ERROR,
+                    rb.getResourceString("key.export.error.title"),
+                    "Please specify an export directory");
+            return;
+        }
+
+        // Check if path contains invalid characters (basic validation)
+        if (exportPath.contains("\0")) {
+            UINotification.instance().addNotification(null,
+                    UINotification.TYPE_ERROR,
+                    rb.getResourceString("key.export.error.title"),
+                    "Export path contains invalid characters");
+            return;
+        }
+
         this.setVisible(false);
         this.performExportPrivateKey();
         this.dispose();

@@ -13,7 +13,6 @@ package de.mendelson.comm.as2.send;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
-import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;

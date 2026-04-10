@@ -42,7 +42,6 @@ import de.mendelson.comm.as2.preferences.PreferencesPanelProxy;
 import de.mendelson.comm.as2.preferences.PreferencesPanelInboundAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelSystemMaintenance;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferencesAS2;
-import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ColorUtil;
@@ -116,7 +115,6 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DateFormat;
@@ -424,11 +422,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jPopupMenu.addPopupMenuListener(this);
         this.jTableMessageOverview.addMouseListener(this);
         super.addMessageProcessor(this);
-        // perform the connection to the server
-        // warning! this works for localhost only so far
-        // Use test mode port if system property is set
-        int clientServerCommPort = WindowTitleUtil.isTestMode() ? AS2Server.CLIENTSERVER_COMM_PORT_TEST
-                : AS2Server.CLIENTSERVER_COMM_PORT;
+    
         this.configureHideableColumns();
         this.jToolBar.setLayout(new LayoutManagerJToolbar());
         this.setupDateChooser();
@@ -460,6 +454,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * @param initialPassword Initial password to try
      * @return LoginResponse if successful, null if user cancels
      */
+    @SuppressWarnings("unused")
     private LoginResponse performLoginWithRetry(String initialUsername, char[] initialPassword) {
         String username = initialUsername;
         char[] password = initialPassword;
@@ -911,6 +906,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     /**
      * Shows forced password change dialog if user must change password on first login
      */
+    @SuppressWarnings("unused")
     private void showForcedPasswordChangeDialog(User user) {
         try {
             // Get user info from server via client-server messaging

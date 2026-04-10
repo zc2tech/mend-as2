@@ -114,6 +114,12 @@ public class PKCS112PKCS12 {
      *
      */
     public void saveTargetKeyStoreTo(Path file) throws Exception {
+        // Ensure parent directory exists
+        Path parentDir = file.getParent();
+        if (parentDir != null && !Files.exists(parentDir)) {
+            Files.createDirectories(parentDir);
+        }
+
         try (OutputStream out = Files.newOutputStream(file)) {
             this.targetKeystore.store(out, this.targetKeystorePass);
         }

@@ -32,6 +32,7 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Forced password change on first login
   - Password complexity enforcement
   - Account enable/disable functionality
+  - Admin user protection (cannot be disabled or deleted)
 
 - **HTTP Authentication (Outbound)**
   - Flexible HTTP Basic Auth for partner connections
@@ -244,16 +245,27 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
 **Available Sections (permission-based):**
 - **Dashboard** - Quick access to all sections
 - **Partners** - Manage trading partners with visibility controls
+  - Visual direction indicators (🏠 Local Station, 🌐 Remote Partner)
+  - Filter search with immediate feedback
 - **Certificates** - Import/export certificates
+  - Password-protected keystore export (user-defined password)
+  - Per-certificate and full keystore export options
 - **Messages** - View and send AS2 messages (filtered by partner visibility)
+  - Real-time search with database refresh
+  - Format filtering (cXML, X12, EDIFACT)
+  - Payload format and document type display
+- **Tracker Messages** - View tracker endpoint submissions
+  - Real-time search with database refresh
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
-  - **Inbound Authentication** - Configure incoming message authentication
+  - **Inb. AS2 Auth** - Configure incoming AS2 message authentication
+  - **Tracker Conf** - Configure tracker endpoint settings
   - System Events
-  - Server Log Search
+  - Search in Server Log
   - Maintenance
   - Notification
 - **Users** - User and role management (Admin only)
+  - Protected admin user (cannot disable/delete)
 - **Preferences** - HTTP authentication credentials (user-specific)
 
 ### SwingUI (Desktop)
@@ -265,11 +277,14 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 **Menu Navigation:**
 - **File → Partner** - Manage trading partners
 - **File → Certificates** - Certificate management
+  - Password-protected keystore export (user-defined password)
 - **File → Preferences** - System-wide preferences
   - HTTP Server Configuration
-  - **Inbound Authentication** - Configure incoming message authentication
+  - **Inb. AS2 Auth** - Configure incoming AS2 message authentication
   - Connectivity, Proxy, Directories, etc.
 - **User Preference → HTTP Authentication** - Configure HTTP auth credentials
+- **User Management** - Create/edit users
+  - Protected admin user (cannot disable/delete)
 
 **Keyboard Shortcuts:**
 - `Cmd/Ctrl + ,` - Open Preferences
@@ -371,6 +386,8 @@ mend-as2/
 8. Enable inbound authentication to prevent unauthorized message submission
 9. Use certificate authentication for strongest security
 10. Regularly audit authentication logs for suspicious activity
+11. Use password-protected keystore exports with strong passwords
+12. Refresh message list to see newly received messages (Search button invalidates cache)
 
 ## 🔄 Backup & Restore
 
@@ -456,6 +473,13 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Database auto-creation on first run
 - [x] Fat JAR with all dependencies (no Maven needed)
 - [x] Single release distribution (81 MB)
+- [x] Password-protected keystore export
+- [x] Real-time message search with cache invalidation
+- [x] Message format filtering (cXML, X12, EDIFACT)
+- [x] Payload format and document type display
+- [x] Partner direction visual indicators
+- [x] Admin user protection (cannot disable/delete)
+- [x] Improved Tracker Config UI consistency
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -496,7 +520,7 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - For SwingUI: Check credentials are set for admin user (ID=1)
 
 **Inbound Messages Being Rejected (401 Unauthorized)**
-- Check System → Inb. Auth settings (WebUI) or File → Preferences → Inb. Auth (SwingUI)
+- Check System → Inb. AS2 Auth settings (WebUI) or File → Preferences → Inb. AS2 Auth (SwingUI)
 - Verify at least one authentication type is enabled
 - For Basic Auth: Ensure sending partner uses one of the configured username/password pairs
 - For Certificate Auth: Ensure sending partner's certificate is in the trusted list
@@ -513,6 +537,21 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Or use headless build profile: `mvn clean package -Pheadless`
 - Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
 - Access via WebUI at http://localhost:8080/as2/webui/
+
+**New Messages Not Appearing**
+- Click the **Search** button to refresh from database (invalidates query cache)
+- Changing filters automatically triggers search
+- Text field filters (Message ID, Tracker ID) have 1-second debounce delay
+
+**Cannot Disable Admin User**
+- The 'admin' user's 'Enabled' checkbox is intentionally disabled
+- This prevents accidental lockout from the system
+- Admin user cannot be deleted from either UI
+
+**Keystore Export Password**
+- Both WebUI and SwingUI now prompt for password before export
+- Use a strong password to protect exported certificates
+- Password is required to import the keystore later
 
 ---
 

@@ -1,9 +1,5 @@
 package de.mendelson.comm.as2.server;
 
-import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
-import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
-import de.mendelson.comm.as2.message.clientserver.MessageOverviewRequest;
-import de.mendelson.comm.as2.message.clientserver.MessageOverviewResponse;
 import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
 
