@@ -20,7 +20,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
 import { format } from 'date-fns';
 import TrackerMessageDetails from './TrackerMessageDetails';
@@ -31,6 +31,7 @@ export default function TrackerMessageList() {
   const { user, hasPermission } = useAuth();
   const [trackerAuthRequired, setTrackerAuthRequired] = useState(false);
   const [downloading, setDownloading] = useState({});
+  const queryClient = useQueryClient();
 
   // Check if user has admin-like permissions (USER_MANAGE means they can see all users)
   const isAdmin = hasPermission('USER_MANAGE');
@@ -114,6 +115,8 @@ export default function TrackerMessageList() {
 
   const handleSearch = () => {
     setQueryFilters({ ...filters });
+    // Invalidate the query cache to force a fresh fetch from the database
+    queryClient.invalidateQueries(['tracker-messages']);
   };
 
   const handleResetFilters = () => {
@@ -123,6 +126,8 @@ export default function TrackerMessageList() {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
+    // Invalidate the query cache to force a fresh fetch from the database
+    queryClient.invalidateQueries(['tracker-messages']);
   };
 
   const handleKeyPress = (e) => {

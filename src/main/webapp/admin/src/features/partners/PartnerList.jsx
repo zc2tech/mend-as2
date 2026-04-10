@@ -166,7 +166,11 @@ export default function PartnerList() {
                   ) : '-'}
                 </td>
                 <td style={tdStyle}>
-                  {partner.localStation ? 'Local' : 'Remote'}
+                  {partner.localStation ? (
+                    <span title="Local Station" style={{ fontSize: '1.5rem' }}>🏠</span>
+                  ) : (
+                    <span title="Remote Partner" style={{ fontSize: '1.5rem' }}>🌐</span>
+                  )}
                 </td>
                 <td style={tdStyle}>
                   <button

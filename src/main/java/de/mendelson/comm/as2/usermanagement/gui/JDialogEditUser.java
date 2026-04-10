@@ -228,6 +228,14 @@ public class JDialogEditUser extends JDialog {
         gbc.weightx = 1.0;
         checkEnabled = new JCheckBox();
         checkEnabled.setSelected(editingUser == null || editingUser.isEnabled());
+
+        // Disable the checkbox for admin user
+        boolean isAdminUser = editingUser != null && editingUser.getUsername().equalsIgnoreCase("admin");
+        if (isAdminUser) {
+            checkEnabled.setEnabled(false);
+            checkEnabled.setToolTipText("Cannot disable admin user");
+        }
+
         formPanel.add(checkEnabled, gbc);
 
         row++;

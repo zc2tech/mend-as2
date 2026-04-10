@@ -732,9 +732,24 @@ function UserFormModal({ user, onClose, onSuccess }) {
               type="checkbox"
               checked={formData.enabled}
               onChange={(e) => setFormData({...formData, enabled: e.target.checked})}
-              style={{ marginRight: '0.5rem' }}
+              disabled={user?.username.toLowerCase() === 'admin'}
+              style={{
+                marginRight: '0.5rem',
+                cursor: user?.username.toLowerCase() === 'admin' ? 'not-allowed' : 'pointer',
+                opacity: user?.username.toLowerCase() === 'admin' ? 0.5 : 1
+              }}
             />
-            Enabled
+            <span style={{
+              color: user?.username.toLowerCase() === 'admin' ? '#6c757d' : 'inherit',
+              cursor: user?.username.toLowerCase() === 'admin' ? 'not-allowed' : 'pointer'
+            }}>
+              Enabled
+              {user?.username.toLowerCase() === 'admin' && (
+                <span style={{ fontStyle: 'italic', marginLeft: '0.5rem' }}>
+                  (Cannot disable admin user)
+                </span>
+              )}
+            </span>
           </label>
 
           {/* Roles Section */}

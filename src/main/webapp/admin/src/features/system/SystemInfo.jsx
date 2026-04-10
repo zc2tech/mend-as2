@@ -66,13 +66,13 @@ export default function SystemInfo() {
           style={tabButtonStyle(activeTab === 'inboundAuth')}
           onClick={() => setActiveTab('inboundAuth')}
         >
-          Inb. Auth
+          Inb. AS2 Auth
         </button>
         <button
           style={tabButtonStyle(activeTab === 'tracker')}
           onClick={() => setActiveTab('tracker')}
         >
-          Tracker
+          Tracker Conf
         </button>
         <button
           style={tabButtonStyle(activeTab === 'events')}

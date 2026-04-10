@@ -47,7 +47,7 @@ const partnerSchema = z.object({
   // Receive/MDN tab
   mdnURL: z.string().optional(),
   syncMDN: z.boolean().default(true),
-  signedMDN: z.boolean().default(true),
+  signedMDN: z.boolean().default(false),
 
   // Security tab
   signFingerprintSHA1: z.string().optional(),
@@ -163,7 +163,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       contentType: 'application/EDI-Consent',
       email: 'sender@as2server.com',
       syncMDN: true,
-      signedMDN: true,
+      signedMDN: false,
       encryptionType: 5, // AES-128-CBC
       signType: 13, // SHA-256
       compressionType: 0, // None

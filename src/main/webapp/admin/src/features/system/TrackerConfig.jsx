@@ -88,76 +88,131 @@ export default function TrackerConfig() {
   };
 
   if (isLoading) {
-    return <LoadingPage />;
+    return <LoadingPage message="Loading tracker configuration..." />;
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Tracker Configuration</h2>
-        <p className="text-gray-600 mb-6">
-          Configure the tracker endpoint settings for receiving messages via HTTP POST.
-        </p>
-      </div>
+  const cardStyle = {
+    backgroundColor: 'white',
+    padding: '1.5rem',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    marginBottom: '1.5rem'
+  };
 
-      <div className="bg-white rounded-lg shadow p-6 space-y-6">
+  const sectionStyle = {
+    marginBottom: '1.5rem',
+    paddingBottom: '1.5rem',
+    borderBottom: '1px solid #dee2e6'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontWeight: '600',
+    fontSize: '0.875rem',
+    color: '#495057'
+  };
+
+  const descriptionStyle = {
+    fontSize: '0.875rem',
+    color: '#6c757d',
+    marginBottom: '0.75rem'
+  };
+
+  const inputStyle = {
+    padding: '0.5rem',
+    border: '1px solid #ced4da',
+    borderRadius: '4px',
+    fontSize: '0.875rem',
+    width: '200px'
+  };
+
+  const checkboxContainerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.5rem'
+  };
+
+  const saveButtonStyle = {
+    padding: '0.5rem 1.5rem',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    opacity: saveMutation.isPending ? 0.6 : 1
+  };
+
+  const gridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '1.5rem',
+    marginTop: '1rem'
+  };
+
+  return (
+    <div>
+      <div style={cardStyle}>
+        <p style={descriptionStyle}>
+          Configure the tracker endpoint settings for receiving messages via HTTP POST to /as2/tracker.
+        </p>
+
         {/* Enable Tracker */}
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Enable Tracker Endpoint
-            </label>
-            <p className="text-sm text-gray-500">
-              Allow messages to be posted to /as2/tracker endpoint
-            </p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
+        <div style={sectionStyle}>
+          <div style={checkboxContainerStyle}>
             <input
               type="checkbox"
-              className="sr-only peer"
+              id="enableTracker"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
               disabled={!canWrite}
+              style={{ cursor: canWrite ? 'pointer' : 'not-allowed' }}
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+            <label htmlFor="enableTracker" style={{ ...labelStyle, marginBottom: 0, cursor: canWrite ? 'pointer' : 'not-allowed' }}>
+              Enable Tracker Endpoint
+            </label>
+          </div>
+          <p style={descriptionStyle}>
+            Allow messages to be posted to /as2/tracker endpoint
+          </p>
         </div>
 
         {/* Require Authentication */}
-        <div className="flex items-center justify-between">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Require Authentication
-            </label>
-            <p className="text-sm text-gray-500">
-              Require HTTP Basic Authentication for tracker endpoint access
-            </p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
+        <div style={sectionStyle}>
+          <div style={checkboxContainerStyle}>
             <input
               type="checkbox"
-              className="sr-only peer"
+              id="requireAuth"
               checked={authRequired}
               onChange={(e) => setAuthRequired(e.target.checked)}
               disabled={!canWrite}
+              style={{ cursor: canWrite ? 'pointer' : 'not-allowed' }}
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
+            <label htmlFor="requireAuth" style={{ ...labelStyle, marginBottom: 0, cursor: canWrite ? 'pointer' : 'not-allowed' }}>
+              Require Authentication
+            </label>
+          </div>
+          <p style={descriptionStyle}>
+            Require HTTP Basic Authentication for tracker endpoint access
+          </p>
         </div>
 
         {/* Max Size */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div style={sectionStyle}>
+          <label style={labelStyle}>
             Maximum Message Size (MB)
           </label>
-          <p className="text-sm text-gray-500 mb-2">
+          <p style={descriptionStyle}>
             Maximum allowed size for tracker messages
           </p>
           <input
             type="number"
             min="1"
             max="100"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={inputStyle}
             value={maxSizeMB}
             onChange={(e) => setMaxSizeMB(parseInt(e.target.value) || 1)}
             disabled={!canWrite}
@@ -165,25 +220,27 @@ export default function TrackerConfig() {
         </div>
 
         {/* Rate Limiting Section */}
-        <div className="pt-4 border-t">
-          <h3 className="text-lg font-semibold mb-4">Rate Limiting</h3>
-          <p className="text-sm text-gray-500 mb-4">
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.75rem' }}>
+            Rate Limiting
+          </h3>
+          <p style={descriptionStyle}>
             Configure rate limiting to prevent abuse. When a client exceeds the failure threshold within the time window, they will be temporarily blocked.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={gridStyle}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label style={labelStyle}>
                 Max Failed Attempts
               </label>
-              <p className="text-sm text-gray-500 mb-2">
+              <p style={descriptionStyle}>
                 Number of failed auth attempts before blocking
               </p>
               <input
                 type="number"
                 min="1"
                 max="100"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
                 value={rateLimitFailures}
                 onChange={(e) => setRateLimitFailures(parseInt(e.target.value) || 1)}
                 disabled={!canWrite}
@@ -191,17 +248,17 @@ export default function TrackerConfig() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label style={labelStyle}>
                 Time Window (Hours)
               </label>
-              <p className="text-sm text-gray-500 mb-2">
+              <p style={descriptionStyle}>
                 Time period to track failed attempts
               </p>
               <input
                 type="number"
                 min="1"
                 max="24"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
                 value={rateLimitWindowHours}
                 onChange={(e) => setRateLimitWindowHours(parseInt(e.target.value) || 1)}
                 disabled={!canWrite}
@@ -209,17 +266,17 @@ export default function TrackerConfig() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label style={labelStyle}>
                 Block Duration (Minutes)
               </label>
-              <p className="text-sm text-gray-500 mb-2">
+              <p style={descriptionStyle}>
                 How long to block after exceeding limit
               </p>
               <input
                 type="number"
                 min="1"
                 max="1440"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
                 value={rateLimitBlockMinutes}
                 onChange={(e) => setRateLimitBlockMinutes(parseInt(e.target.value) || 1)}
                 disabled={!canWrite}
@@ -229,20 +286,18 @@ export default function TrackerConfig() {
         </div>
 
         {/* Save Button */}
-        {canWrite && (
-          <div className="flex justify-end pt-4 border-t">
+        {canWrite ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
             <button
               onClick={handleSave}
               disabled={saveMutation.isPending}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              style={saveButtonStyle}
             >
               {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
             </button>
           </div>
-        )}
-
-        {!canWrite && (
-          <div className="text-sm text-gray-500 italic pt-4 border-t">
+        ) : (
+          <div style={{ fontSize: '0.875rem', color: '#6c757d', fontStyle: 'italic', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
             You have read-only access to this configuration.
           </div>
         )}
