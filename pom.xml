@@ -533,15 +533,7 @@
             <artifactId>lucene-analysis-common</artifactId>
             <version>${lucene.version}</version>
         </dependency>
-        <!-- Apache Mina - Required for compilation in all profiles -->
-        <!-- In 'headless' profile: scope=provided (not included in distribution) -->
-        <!-- In 'full' profile: scope=compile (included in distribution) -->
-        <dependency>
-            <groupId>org.apache.mina</groupId>
-            <artifactId>mina-core</artifactId>
-            <version>${mina.version}</version>
-            <scope>provided</scope>
-        </dependency>
+        <!-- Apache Mina - REMOVED: Replaced with EventBus for in-memory communication -->
         <dependency>
             <groupId>com.github.oshi</groupId>
             <artifactId>oshi-core</artifactId>
@@ -670,13 +662,7 @@
                 <build.profile>full</build.profile>
             </properties>
             <dependencies>
-                <!-- Override Mina scope to include it in distribution -->
-                <dependency>
-                    <groupId>org.apache.mina</groupId>
-                    <artifactId>mina-core</artifactId>
-                    <version>${mina.version}</version>
-                    <scope>compile</scope>
-                </dependency>
+                <!-- Apache Mina - REMOVED: No longer needed -->
                 <!-- Override Batik scope to include it in distribution -->
                 <dependency>
                     <groupId>org.apache.xmlgraphics</groupId>

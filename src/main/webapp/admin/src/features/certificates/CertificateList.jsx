@@ -35,6 +35,9 @@ export default function CertificateList() {
   const [showGenerateKey, setShowGenerateKey] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [exportFormat, setExportFormat] = useState(null);
+  const [exportPassword, setExportPassword] = useState('');
   const { data: certificates, isLoading, error } = useCertificates(keystoreType);
   const exportCertificate = useExportCertificate();
   const exportKeystore = useExportKeystore();
@@ -112,20 +115,37 @@ export default function CertificateList() {
     }
   };
 
-  const handleExportKeystore = async (format) => {
+  const handleExportKeystoreClick = (format) => {
+    setExportFormat(format);
+    setExportPassword('');
+    setShowExportMenu(false);
+    setShowPasswordDialog(true);
+  };
+
+  const handleExportKeystore = async () => {
+    if (!exportPassword) {
+      toast.error('Please enter a password');
+      return;
+    }
+
     try {
-      const blob = await exportKeystore.mutateAsync({ keystoreType, format });
+      const blob = await exportKeystore.mutateAsync({
+        keystoreType,
+        format: exportFormat,
+        password: exportPassword
+      });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const ext = format === 'PKCS12' ? 'p12' : 'jks';
+      const ext = exportFormat === 'PKCS12' ? 'p12' : 'jks';
       a.download = `${keystoreType}_keystore.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success(`Keystore exported successfully`);
-      setShowExportMenu(false);
+      setShowPasswordDialog(false);
+      setExportPassword('');
     } catch (error) {
       toast.error('Failed to export keystore: ' + (error.response?.data?.error || error.message));
     }
@@ -322,7 +342,7 @@ export default function CertificateList() {
                   }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  onClick={() => handleExportKeystore('PKCS12')}
+                  onClick={() => handleExportKeystoreClick('PKCS12')}
                 >
                   Export Keystore (PKCS#12)
                 </button>
@@ -338,7 +358,7 @@ export default function CertificateList() {
                   }}
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  onClick={() => handleExportKeystore('JKS')}
+                  onClick={() => handleExportKeystoreClick('JKS')}
                 >
                   Export Keystore (JKS)
                 </button>
@@ -609,6 +629,98 @@ export default function CertificateList() {
             // Refresh the certificate list
           }}
         />
+      )}
+
+      {showPasswordDialog && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+          onClick={() => {
+            setShowPasswordDialog(false);
+            setExportPassword('');
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '2rem',
+              maxWidth: '400px',
+              width: '90%'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Export Keystore</h2>
+            <p style={{ marginBottom: '1rem', color: '#6c757d' }}>
+              Enter a password to protect the exported keystore file.
+            </p>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                Password:
+              </label>
+              <input
+                type="password"
+                value={exportPassword}
+                onChange={(e) => setExportPassword(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && exportPassword) {
+                    handleExportKeystore();
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  fontSize: '1rem'
+                }}
+                placeholder="Enter password"
+                autoFocus
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                onClick={() => {
+                  setShowPasswordDialog(false);
+                  setExportPassword('');
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExportKeystore}
+                disabled={!exportPassword}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: 'none',
+                  borderRadius: '4px',
+                  backgroundColor: exportPassword ? '#007bff' : '#6c757d',
+                  color: 'white',
+                  cursor: exportPassword ? 'pointer' : 'not-allowed'
+                }}
+              >
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

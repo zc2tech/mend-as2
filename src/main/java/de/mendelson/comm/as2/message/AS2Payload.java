@@ -46,6 +46,14 @@ public class AS2Payload implements Serializable {
      * identified by its content type
      */
     private String contentType = null;
+    /**
+     * Format of the payload (cXML, X12, EDIFACT, Unknown)
+     */
+    private String payloadFormat = null;
+    /**
+     * Document type of the payload (Purchase Order, Invoice, 810, DESADV, etc.)
+     */
+    private String payloadDocType = null;
 
     public AS2Payload() {
     }
@@ -142,6 +150,34 @@ public class AS2Payload implements Serializable {
      */
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    /**
+     * @return the payloadFormat
+     */
+    public String getPayloadFormat() {
+        return payloadFormat;
+    }
+
+    /**
+     * @param payloadFormat the payloadFormat to set
+     */
+    public void setPayloadFormat(String payloadFormat) {
+        this.payloadFormat = payloadFormat;
+    }
+
+    /**
+     * @return the payloadDocType
+     */
+    public String getPayloadDocType() {
+        return payloadDocType;
+    }
+
+    /**
+     * @param payloadDocType the payloadDocType to set
+     */
+    public void setPayloadDocType(String payloadDocType) {
+        this.payloadDocType = payloadDocType;
     }
 
     /**

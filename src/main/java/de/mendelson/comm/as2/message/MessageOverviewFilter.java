@@ -42,7 +42,8 @@ public class MessageOverviewFilter implements Serializable{
     private String userdefinedId = null;
     private Integer userId = null;  // WebUI user ID for partner visibility filtering
     private boolean isAdmin = false;  // True if user has ADMIN role (bypasses visibility filtering)
-    
+    private String payloadFormat = null;  // Filter by payload format (cXML, X12, EDIFACT)
+
     /**Filters for the message type that should be displayed*/
     public void setShowMessageType( final int MESSAGETYPE ){
         if( MESSAGETYPE != MESSAGETYPE_ALL
@@ -211,9 +212,24 @@ public class MessageOverviewFilter implements Serializable{
         this.isAdmin = isAdmin;
     }
 
+    /**
+     * @return the payloadFormat filter. Null means no format filter
+     */
+    public String getPayloadFormat() {
+        return payloadFormat;
+    }
+
+    /**
+     * @param payloadFormat the payload format to filter (cXML, X12, EDIFACT).
+     * Set to null to show all formats (default)
+     */
+    public void setPayloadFormat(String payloadFormat) {
+        this.payloadFormat = payloadFormat;
+    }
+
     /**Prevent an overwrite of the readObject method for de-serialization*/
     private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException{
         inStream.defaultReadObject();
     }
-    
+
 }

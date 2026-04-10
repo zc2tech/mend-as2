@@ -8,6 +8,7 @@ import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferences;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
@@ -140,7 +141,7 @@ public class MessageDeleteController {
         }
         this.messageAccess.deleteMessages(messageIdList, runtimeConnectionNoAutoCommit);
         if (broadcastRefresh && this.clientserver != null) {
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
         }
     }
 
@@ -178,6 +179,7 @@ public class MessageDeleteController {
                         this.deleteMessageFromLogPart(subList, broadcastRefresh, deleteLog, runtimeConnectionNoAutoCommit);
                     }
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionname);
+                    runtimeConnectionNoAutoCommit.commit();
                 } catch (Throwable e) {
                     SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
                     this.dbDriverManager.rollbackTransaction(transactionStatement);
@@ -186,7 +188,6 @@ public class MessageDeleteController {
         } catch (Exception e) {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
         }
-
     }
 
     public class MessageDeleteThread implements Runnable {

@@ -100,6 +100,14 @@ public class AS2MessageInfo implements AS2Info {
     private String userdefinedId = null;
     /**Stores if the transmission was transmitted using a secure connection*/
     private boolean usesTLS = false;
+    /**
+     * Format of the first payload (cXML, X12, EDIFACT, Unknown)
+     */
+    private String payloadFormat = null;
+    /**
+     * Document type of the first payload (Purchase Order, Invoice, 810, DESADV, etc.)
+     */
+    private String payloadDocType = null;
 
     /**
      * These are the disposition notification options
@@ -581,6 +589,34 @@ public class AS2MessageInfo implements AS2Info {
     @Override
     public void setUsesTLS(boolean usesTLS) {
         this.usesTLS = usesTLS;
+    }
+
+    /**
+     * @return the payloadFormat
+     */
+    public String getPayloadFormat() {
+        return payloadFormat;
+    }
+
+    /**
+     * @param payloadFormat the payloadFormat to set
+     */
+    public void setPayloadFormat(String payloadFormat) {
+        this.payloadFormat = payloadFormat;
+    }
+
+    /**
+     * @return the payloadDocType
+     */
+    public String getPayloadDocType() {
+        return payloadDocType;
+    }
+
+    /**
+     * @param payloadDocType the payloadDocType to set
+     */
+    public void setPayloadDocType(String payloadDocType) {
+        this.payloadDocType = payloadDocType;
     }
 
     /**

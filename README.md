@@ -61,12 +61,12 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - JWT-based authentication for WebUI
   - HttpOnly cookies for session management
   - PBKDF2 password hashing with mandatory first-login password change
-  - SwingUI authentication with login dialog (Mina port 1234)
+  - SwingUI in-process communication (no network ports)
   - Permission-based API endpoint protection
   - Read-only UI for viewer roles
   - Partner-level visibility controls
   - Inbound message authentication (Basic + Certificate Auth)
-  - Headless mode: Mina server disabled for reduced attack surface
+  - Zero network attack surface for SwingUI (EventBus replaces Mina TCP)
 
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -349,8 +349,7 @@ mend-as2/
 ## 🔐 Security
 
 - ✅ JWT authentication with HttpOnly cookies (WebUI)
-- ✅ SwingUI authentication with login dialog (admin only)
-- ✅ Mina client-server port authentication (localhost-only)
+- ✅ SwingUI in-process communication via EventBus (no network ports)
 - ✅ PBKDF2 password hashing
 - ✅ Role-based access control (RBAC)
 - ✅ API permission enforcement
@@ -359,7 +358,7 @@ mend-as2/
 - ✅ Partner visibility controls
 - ✅ User-specific HTTP authentication credentials (outbound)
 - ✅ System-wide inbound message authentication (Basic + Certificate Auth)
-- ✅ Headless mode: Mina server disabled for security
+- ✅ Zero attack surface for GUI mode (Mina removed, EventBus replaces TCP)
 
 **Best Practices:**
 1. Change default admin password immediately
@@ -372,8 +371,6 @@ mend-as2/
 8. Enable inbound authentication to prevent unauthorized message submission
 9. Use certificate authentication for strongest security
 10. Regularly audit authentication logs for suspicious activity
-11. Use headless build profile for containerized deployments
-12. Never expose Mina port 1234 to external networks
 
 ## 🔄 Backup & Restore
 
@@ -452,7 +449,8 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Inbound message authentication (Basic + Certificate)
 - [x] Partner visibility controls
 - [x] Message filtering by partner visibility
-- [x] SwingUI authentication with login dialog
+- [x] SwingUI in-process communication (Mina removal)
+- [x] Zero network attack surface for GUI mode
 - [x] Forced password change for admin user
 - [x] Mode selection (GUI vs headless) via config/flag
 - [x] Database auto-creation on first run
@@ -506,16 +504,14 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - If both auth types enabled, message must pass EITHER one (OR logic)
 
 **SwingUI Login Issues**
-- Default username is "admin" (cannot be changed, readonly field)
-- If password forgotten, reset in database: `UPDATE webui_users SET password_hash='...' WHERE username='admin'`
-- Login dialog appears before main window (splash closes first)
-- If Mina library missing (headless build), GUI automatically falls back to headless mode
+- SwingUI now runs in-process (no network authentication required)
+- No login dialog - SwingUI connects directly to server components via EventBus
+- For password reset, use WebUI or database update: `UPDATE webui_users SET password_hash='...' WHERE username='admin'`
 
 **Headless Mode**
 - Use `-nogui` flag: `java -jar mend-as2-1.1.0-full.jar -nogui`
 - Or use headless build profile: `mvn clean package -Pheadless`
 - Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
-- Mina port 1234 is not started in headless mode
 - Access via WebUI at http://localhost:8080/as2/webui/
 
 ---

@@ -5,6 +5,7 @@ import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;
 import de.mendelson.comm.as2.clientserver.message.IncomingMessageResponse;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.server.AS2MessageProcessor;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.clientserver.AnonymousTextClient;
@@ -201,39 +202,37 @@ public class HttpReceiver extends HttpServlet {
                 }
             }
         }
-        try(AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)){
-            client.setDisplayServerLogMessages(false);
-            // Use test mode port if enabled
-            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
-            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
-            client.connect("localhost", port, 30000);
-            IncomingMessageResponse messageResponse = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
-            if (messageResponse == null) {
-                throw new Exception("Failed to communicate with AS2 server processing: no response received");
+        // Direct method call instead of Mina socket communication
+        AS2MessageProcessor processor = AS2MessageProcessor.getInstance();
+        IncomingMessageResponse messageResponse = processor.processIncomingMessage(messageRequest);
+
+        if (messageResponse == null) {
+            throw new Exception("Failed to process AS2 message: no response received");
+        }
+
+        if (messageResponse.getException() != null) {
+            throw messageResponse.getException();
+        }
+
+        //build up response, this is the sync MDN
+        if (response != null) {
+            if (messageResponse.getHttpReturnCode() != HttpServletResponse.SC_OK) {
+                response.setStatus(messageResponse.getHttpReturnCode());
             }
-            if (messageResponse.getException() != null) {
-                throw (messageResponse.getException());
-            }
-            //build up response, this is the sync MDN
-            if (response != null) {
-                if (messageResponse.getHttpReturnCode() != HttpServletResponse.SC_OK) {
-                    response.setStatus(messageResponse.getHttpReturnCode());
+            //add MDN data
+            if (messageResponse.getMDNData() != null) {
+                Properties header = messageResponse.getHeader();
+                Iterator<Object> iterator = header.keySet().iterator();
+                while (iterator.hasNext()) {
+                    String key = (String) iterator.next();
+                    response.setHeader(key, header.getProperty(key));
                 }
-                //add MDN data
-                if (messageResponse.getMDNData() != null) {
-                    Properties header = messageResponse.getHeader();
-                    Iterator<Object> iterator = header.keySet().iterator();
-                    while (iterator.hasNext()) {
-                        String key = (String) iterator.next();
-                        response.setHeader(key, header.getProperty(key));
-                    }
-                    ServletOutputStream outStream;
-                    try (ByteArrayInputStream inStream = new ByteArrayInputStream(messageResponse.getMDNData())) {
-                        outStream = response.getOutputStream();
-                        inStream.transferTo(outStream);
-                    }
-                    outStream.flush();
+                ServletOutputStream outStream;
+                try (ByteArrayInputStream inStream = new ByteArrayInputStream(messageResponse.getMDNData())) {
+                    outStream = response.getOutputStream();
+                    inStream.transferTo(outStream);
                 }
+                outStream.flush();
             }
         }
     }

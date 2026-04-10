@@ -39,11 +39,13 @@ public class AS2Config {
     private static final String PROP_DISPLAY_MODE = "as2.display.mode";
     private static final String PROP_SKIP_CONFIG_CHECK = "as2.startup.skip.configcheck";
     private static final String PROP_TEST_MODE = "as2.test.mode";
+    private static final String PROP_LOG_LEVEL = "as2.log.level";
 
     private static final String ENV_START_GUI = "AS2_START_GUI";
     private static final String ENV_DISPLAY_MODE = "AS2_DISPLAY_MODE";
     private static final String ENV_SKIP_CONFIG_CHECK = "AS2_SKIP_CONFIG_CHECK";
     private static final String ENV_TEST_MODE = "AS2_TEST_MODE";
+    private static final String ENV_LOG_LEVEL = "AS2_LOG_LEVEL";
 
     private final Properties properties;
 
@@ -85,6 +87,11 @@ public class AS2Config {
         String envTestMode = System.getenv(ENV_TEST_MODE);
         if (envTestMode != null) {
             properties.setProperty(PROP_TEST_MODE, envTestMode);
+        }
+
+        String envLogLevel = System.getenv(ENV_LOG_LEVEL);
+        if (envLogLevel != null) {
+            properties.setProperty(PROP_LOG_LEVEL, envLogLevel);
         }
 
         // Set system property so WindowTitleUtil can access test mode setting
@@ -145,5 +152,14 @@ public class AS2Config {
      */
     public int getHttpsPort() {
         return isTestMode() ? 11443 : 8443;
+    }
+
+    /**
+     * Returns the log level for the server logger
+     * Valid values: ALL, FINEST, FINER, FINE, INFO, WARNING, SEVERE, OFF
+     * @return log level name, defaults to INFO
+     */
+    public String getLogLevel() {
+        return properties.getProperty(PROP_LOG_LEVEL, "INFO").toUpperCase();
     }
 }

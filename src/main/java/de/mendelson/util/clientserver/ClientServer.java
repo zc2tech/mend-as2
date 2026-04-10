@@ -1,26 +1,5 @@
 package de.mendelson.util.clientserver;
 
-import de.mendelson.util.MecResourceBundle;
-import de.mendelson.util.NamedThreadFactory;
-import de.mendelson.util.clientserver.codec.ClientServerCodecFactory;
-import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.executor.ExecutorFilter;
-import org.apache.mina.filter.executor.UnorderedThreadPoolExecutor;
-import org.apache.mina.filter.ssl.SslFilter;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-
-
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
@@ -37,124 +16,82 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
  * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
- * Server root for the mendelson client/server architecture
+ * Minimal stub for ClientServer compatibility.
+ * Mina networking removed - server communication now uses EventBus.
  *
- * @author S.Heller
- * @version $Revision: 46 $
+ * @author Julian Xu
+ * @version 1.0
  */
 public class ClientServer {
-
-    private long startTime = 0;
-    private final Logger logger;
-    private ClientServerSessionHandler sessionHandler = null;
-    private int port;
-    private String productName = "";
-    public static final String[] SERVERSIDE_ACCEPTED_TLS_PROTOCOLS
-            = new String[]{"TLSv1.2"};
-    private final MecResourceBundle rb;
-    private final ClientServerTLS clientserverTLS;
-    //core pool size = 4
-    //max pool size = 16
-    private final UnorderedThreadPoolExecutor THREAD_POOL_EXECUTOR
-            = new UnorderedThreadPoolExecutor(4, 16, 30, TimeUnit.SECONDS, 
-            new NamedThreadFactory("client-server-serverside-exec"));
+    // Constants for compatibility
+    public static final int CLIENTSERVER_COMM_PORT = 1234;
+    public static final int CLIENTSERVER_COMM_PORT_TEST = 41234;
+    public static final String SESSION_ATTRIB_USER = "user";
+    public static final String SESSION_ATTRIB_CLIENT_PID = "clientPid";
+    public static final long TIMEOUT_SYNC_RECEIVE = 30000L;
+    public static final String[] SERVERSIDE_ACCEPTED_TLS_PROTOCOLS = new String[]{"TLSv1.2", "TLSv1.3"};
 
     /**
-     * Creates a new instance of Server
+     * No-arg constructor stub
      */
-    public ClientServer(Logger logger, int port, ClientServerTLS clientserverTLS) {
-        this.port = port;
-        this.logger = logger;
-        this.clientserverTLS = clientserverTLS;
-        //load resource bundle
-        try {
-            this.rb = (MecResourceBundle) ResourceBundle.getBundle(
-                    ResourceBundleClientServer.class.getName());
-        } catch (MissingResourceException e) {
-            throw new RuntimeException("Oops..resource bundle "
-                    + e.getClassName() + " not found.");
-        }
-    }
-
-    public void setSessionHandler(ClientServerSessionHandler sessionHandler) {
-        this.sessionHandler = sessionHandler;
-    }
-
-    public void setClientServerPort(int port) {
-        this.port = port;
+    public ClientServer() {
+        // Stub
     }
 
     /**
-     * Returns the start time of the server
+     * Multi-arg constructor stub for compatibility
      */
-    public long getStartTime() {
-        return startTime;
+    public ClientServer(Object logger, int port, Object tls) {
+        // Stub
     }
 
     /**
-     * Sends a message object to all connected clients
+     * Stub method - no longer broadcasts via Mina
+     * EventBus is used instead
      */
-    public void broadcastToClients(ClientServerMessage message) {
-        if (this.sessionHandler != null) {
-            sessionHandler.broadcast(message);
-        }
+    public void broadcastToClients(Object message) {
+        // No-op: All broadcasts now go through EventBus
     }
 
+    /**
+     * Stub method for compatibility
+     */
     public void setProductName(String productName) {
-        this.productName = productName;
+        // No-op
     }
 
     /**
-     * Finally starts the server
+     * Stub method for compatibility
      */
     public void start() throws Exception {
-        this.logger.log(Level.INFO, this.rb.getResourceString("clientserver.start",
-                new Object[]{
-                    this.productName,
-                    String.valueOf(this.port)
-                }));
-        if (this.sessionHandler != null) {
-            this.sessionHandler.setProductName(this.productName);
-        } else {
-            this.logger.log(Level.WARNING, "No session handler assigned to the client server!");
-        }
-        NioSocketAcceptor acceptor = new NioSocketAcceptor();
-        //enable SO_REUSEADDR to allow quick restart even if port is in TIME_WAIT state
-        acceptor.setReuseAddress(true);
-        //add SSL support
-        SslFilter tlsFilter = new SslFilter(this.clientserverTLS.createSSLContext());
-        //If client authentication is disabled the client certificate must not be in the servers keystore
-        tlsFilter.setNeedClientAuth(false);
-        // new mina version does not need this
-        // tlsFilter.setUseNonBlockingPipeline(true);
-        //allow defined TLS protocols only for the client-server connection
-        tlsFilter.setEnabledProtocols(SERVERSIDE_ACCEPTED_TLS_PROTOCOLS);
-        acceptor.getFilterChain().addFirst("TLS", tlsFilter);
-        //add CPU bound tasks first
-        acceptor.getFilterChain().addLast("protocol",
-                new ProtocolCodecFilter(new ClientServerCodecFactory(null)));
-        //see https://issues.apache.org/jira/browse/DIRMINA-682?page=com.atlassian.jira.plugin.system.issuetabpanels:all-tabpanel
-        //..and now set up the thread pool
-        acceptor.getFilterChain().addLast("executor", new ExecutorFilter(this.THREAD_POOL_EXECUTOR));
-        if (this.sessionHandler != null) {
-            acceptor.setHandler(this.sessionHandler);
-        }
-        //finally bind the protocol handler to the port
-        acceptor.bind(new InetSocketAddress(this.port));
-        this.logger.log(Level.INFO, this.rb.getResourceString("clientserver.started", this.productName));
-        this.startTime = System.currentTimeMillis();
+        // No-op: Server starts without Mina socket
     }
 
     /**
-     * Returns the current sessions on this server
+     * Stub method for compatibility
      */
-    public List<IoSession> getSessions() {
-        if (this.sessionHandler != null) {
-            return (this.sessionHandler.getSessions());
-        } else {
-            List<IoSession> emptyList = new ArrayList<IoSession>();
-            return (Collections.unmodifiableList(emptyList));
-        }
+    public java.util.Collection<?> getSessions() {
+        return java.util.Collections.emptyList();
     }
 
+    /**
+     * Stub method for compatibility
+     */
+    public void setSessionHandler(Object handler) {
+        // No-op
+    }
+
+    /**
+     * Stub method for compatibility
+     */
+    public static String clientTypeToStr(int clientType) {
+        switch (clientType) {
+            case 1: return "WEB";
+            case 2: return "RICH_CLIENT";
+            case 3: return "REST";
+            case 4: return "SENDORDER";
+            case 5: return "SHUTDOWN";
+            default: return "UNSPECIFIED";
+        }
+    }
 }

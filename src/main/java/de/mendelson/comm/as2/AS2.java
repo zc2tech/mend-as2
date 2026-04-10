@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2;
 
 import de.mendelson.comm.as2.client.AS2Gui;
-import de.mendelson.comm.as2.client.JDialogLogin;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.server.ServerAlreadyRunningException;
@@ -147,25 +146,8 @@ public class AS2 {
         // Set headless mode if GUI is disabled
         if (!startGUI) {
             System.setProperty("java.awt.headless", "true");
-        } else {
-            // Check if Mina is available (headless builds exclude it)
-            try {
-                Class.forName("org.apache.mina.core.service.IoAcceptor");
-            } catch (ClassNotFoundException e) {
-                System.err.println("ERROR: SwingUI requested but Mina library not found.");
-                System.err.println("This appears to be a headless build (built with -Pheadless profile).");
-                System.err.println("SwingUI is not available in headless builds.");
-                System.err.println("");
-                System.err.println("Solutions:");
-                System.err.println("  1. Use headless mode: java -jar as2.jar -nogui");
-                System.err.println("  2. Access WebUI at: http://localhost:8080/as2/webui/");
-                System.err.println("  3. Rebuild with full profile: mvn clean package -Pfull");
-                System.err.println("");
-                System.err.println("Forcing headless mode...");
-                startGUI = false;
-                System.setProperty("java.awt.headless", "true");
-            }
         }
+        // Note: SwingUI no longer requires Mina - uses EventBus for in-process communication
 
         String displayMode = clientPreferences.get(PreferencesAS2.DISPLAY_MODE_CLIENT);
         if (displayMode.equalsIgnoreCase(DisplayMode.DARK)) {
@@ -205,9 +187,9 @@ public class AS2 {
             //initialize the security provider
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
-            // Always start Mina server for internal communication (HttpReceiver -> AS2ServerProcessing)
-            // In headless mode, localhost-only restriction prevents external SwingUI access
-            // allowAllClients=false ensures only localhost can connect (HttpReceiver needs this)
+            // Start AS2 server
+            // Note: The 7th parameter (startMinaServer) is now a no-op stub - Mina has been removed
+            // SwingUI now uses EventBus for in-process communication instead of TCP sockets
             new AS2Server(startHTTP, false, false, importTLS, importEncSign,
                          config.shouldSkipConfigCheck(), true, config);
         } catch (ServerAlreadyRunningException e) {
@@ -258,37 +240,15 @@ public class AS2 {
 
         // Start GUI client or run in headless mode
         if (startGUI) {
-            // Close splash screen before showing login dialog
+            // Close splash screen before showing GUI
             if (splash != null) {
                 splash.destroy();
                 splash.dispose();
             }
 
-            // Show login dialog
-            JDialogLogin loginDialog = new JDialogLogin(null, displayMode);
-            loginDialog.setVisible(true);
-
-            if (!loginDialog.isLoginSuccessful()) {
-                // User cancelled login - exit application
-                System.out.println("Login cancelled by user");
-                System.exit(0);
-            }
-
-            // Get credentials from login dialog
-            String username = loginDialog.getUsername();
-            char[] password = loginDialog.getPassword();
-
-            // Start client with provided credentials (no splash - already closed)
-            AS2Gui gui = new AS2Gui(null, "localhost", username, new String(password), displayMode);
-
-            // Clear sensitive data
-            loginDialog.clearPassword();
-            if (password != null) {
-                for (int i = 0; i < password.length; i++) {
-                    password[i] = 0;
-                }
-            }
-
+            // SwingUI now runs in same JVM as server - no authentication needed
+            // EventBus replaces Mina networking (no login dialog required)
+            AS2Gui gui = new AS2Gui(splash, "localhost", "admin", "", displayMode);
             gui.setVisible(true);
         } else {
             // Headless mode - server keeps running without GUI or authentication

@@ -1,28 +1,33 @@
 package de.mendelson.comm.as2.server;
 
-import de.mendelson.comm.as2.clientserver.message.IncomingMessageRequest;
-import de.mendelson.util.clientserver.about.ServerInfoRequest;
-import de.mendelson.util.clientserver.AnonymousProcessing;
-import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import org.apache.mina.core.session.IoSession;
-
-/**
- * Contains all request messages that could be processed without a login
+/*
+ * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
- * @author S.Heller
- * @version $Revision: 6 $
- * @since build 68
+ * This software is subject to the license agreement set forth in the license.
+ * Please read and agree to all terms before using this software.
+ * Other product and brand names are trademarks of their respective owners.
  */
-public class AnonymousProcessingAS2 implements AnonymousProcessing {
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
+ */
+/**
+ * Minimal stub for AnonymousProcessingAS2 compatibility.
+ * Mina networking removed.
+ *
+ * @author Julian Xu
+ * @version 1.0
+ */
+public class AnonymousProcessingAS2 {
+    public AnonymousProcessingAS2() {
+        // Stub constructor
+    }
 
-    @Override
-    public boolean processMessageWithoutLogin(IoSession session, ClientServerMessage message) {
-        if (message instanceof IncomingMessageRequest ) {
-            return (true);
-        }
-        if (message instanceof ServerInfoRequest) {
-            return (true);
-        }        
-        return (false);
+    public AnonymousProcessingAS2(AS2ServerProcessing processing) {
+        // Stub constructor with parameter
     }
 }

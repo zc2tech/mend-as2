@@ -1,301 +1,64 @@
 package de.mendelson.util.clientserver;
 
-import de.mendelson.util.clientserver.console.LoggingHandlerPrintStream;
-import de.mendelson.util.clientserver.messages.ClientServerMessage;
-import de.mendelson.util.clientserver.messages.ClientServerResponse;
-import de.mendelson.util.clientserver.messages.ServerSideNotification;
-import de.mendelson.util.log.LogFormatter;
-import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import de.mendelson.util.clientserver.messages.LoginResponse;
+import de.mendelson.util.clientserver.messages.LoginRequest;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
  *
  * This software is subject to the license agreement set forth in the license.
- * Please read and agree to all terms before using this software. Other product
- * and brand names are trademarks of their respective owners.
+ * Please read and agree to all terms before using this software.
+ * Other product and brand names are trademarks of their respective owners.
+ */
+/*
+ * Modifications Copyright (C) 2026 Julian Xu
+ * Email: julian.xu@aliyun.com
+ * GitHub: https://github.com/zc2tech
+ *
+ * This file is part of mend-as2, a fork of mendelson AS2.
+ * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
- * Text Client root implementation
+ * Minimal stub for BaseTextClient compatibility.
+ * Mina networking removed.
  *
- * @author S.Heller
- * @version $Revision: 24 $
+ * @author Julian Xu
+ * @version 1.0
  */
-public abstract class BaseTextClient implements ClientSessionHandlerCallback {
-
-    private final static String MODULE_NAME = "[CLIENT-SERVER]";
-    
-    private final Logger logger = Logger.getAnonymousLogger();
-    private BaseClient baseClient = null;
-    private final List<ClientsideMessageProcessor> messageProcessorList 
-            = Collections.synchronizedList(new ArrayList<ClientsideMessageProcessor>());
-    private final PrintStream out;
-    private String host = null;
-
-    /**
-     * 
-     * @param CLIENT_TYPE The client type as defined in the BaseClient.CLIENT_XXX
-     */
-    protected BaseTextClient(final int CLIENT_TYPE) {
-        this.out = System.out;
-        this.setupLogger();
-        this.baseClient = new BaseClient(this, CLIENT_TYPE);
-        this.baseClient.setLogger(this.logger);
+public class BaseTextClient extends BaseClient {
+    public BaseTextClient(int clientType) {
+        // Stub constructor
     }
 
-    public void setBaseClient(BaseClient baseClient) {
-        this.baseClient = baseClient;
-        this.baseClient.setLogger(this.logger);
-    }
-    
-    /**
-     * Indicates if server log messages should be displayed in the client or
-     * simply ignored
-     */
-    public void setDisplayServerLogMessages(boolean flag) {
-        this.baseClient.setDisplayServerLogMessages(flag);
+    public void addMessageProcessor(Object processor) {
+        // No-op stub
     }
 
-    private void setupLogger() {
-        this.logger.setUseParentHandlers(false);
-        //send log output to the console
-        LoggingHandlerPrintStream loggingHandler = new LoggingHandlerPrintStream(this.out);
-        loggingHandler.setFormatter(new LogFormatter(LogFormatter.FORMAT_CONSOLE));
-        this.logger.addHandler(loggingHandler);
-        this.logger.setLevel(Level.ALL);
+    public BaseClient getBaseClient() {
+        return this;
     }
 
-    public void addMessageProcessor(ClientsideMessageProcessor processor) {
-        synchronized (this.messageProcessorList) {
-            this.messageProcessorList.add(processor);
-        }
+    public java.util.logging.Logger getLogger() {
+        return java.util.logging.Logger.getLogger(getClass().getName());
     }
 
-    public void removeMessageProcessor(ClientsideMessageProcessor processor) {
-        synchronized (this.messageProcessorList) {
-            this.messageProcessorList.remove(processor);
-        }
-    }
-
-    /**
-     * Logs something to the clients log
-     */
-    @Override
-    public void log(Level logLevel, String message) {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        this.logger.log(logLevel, MODULE_NAME + " " + message);
-    }
-
-    @Override
-    public Logger getLogger() {
-        return (this.logger);
-    }
-
-    /**
-     * Returns if the client is connected
-     */
-    public boolean isConnected() {
-        return (this.baseClient.isConnected());
-    }
-
-    public abstract void performLogin();
-
-    public void connect(String host, int port, long timeout) throws Exception {
-        this.host = host;
-        this.connect(new InetSocketAddress(host, port), timeout);
-    }
-
-    public void connect(InetSocketAddress hostAddress, long timeout) throws Exception {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        if (this.baseClient.getDisplayServerLogMessages()) {
-            this.log(Level.INFO, 
-                    BaseClient.clientTypeToStr(this.baseClient.getClientType()) 
-                    +  " client is connecting to " + hostAddress);
-        }
-        if (!this.baseClient.connect(hostAddress, timeout)) {
-            String logMessage = BaseClient.clientTypeToStr(this.baseClient.getClientType()) 
-                    + " client could not reach server (connection refused): " + hostAddress.toString();
-            this.log(Level.WARNING, logMessage);
-            throw new Exception(logMessage);
-        }
+    public void log(java.util.logging.Level level, String message) {
+        getLogger().log(level, message);
     }
 
     public void disconnect() {
-        if (this.baseClient != null) {
-            this.baseClient.disconnect();
-        }
+        // No-op stub
     }
 
-    /**
-     * Makes this a ClientSessionCallback
-     */
-    @Override
-    public void syncRequestFailed(ClientServerMessage request, ClientServerMessage response, Throwable throwable) {
-        this.log(Level.WARNING, throwable.getMessage());
+    public void connect(java.net.InetSocketAddress address, long timeout) {
+        // No-op stub
     }
 
-    /**
-     * Sends a message async to the server
-     */
-    public void sendAsync(ClientServerMessage message) {
-        this.baseClient.sendAsync(message);
-    }
-
-    /**
-     * Sends a message sync to the server and returns a response Will inform the
-     * ClientSessionHandler callback (syncRequestFailed) if the sync request
-     * fails
-     */
-    public ClientServerResponse sendSync(ClientServerMessage request, long timeout) {
-        return (this.getBaseClient().sendSync(request, timeout));
-    }
-
-    /**
-     * Sends a message sync to the server and returns a response Will inform the
-     * ClientSessionHandler callback (syncRequestFailed) if the sync request
-     * fails
-     */
-    public ClientServerResponse sendSync(ClientServerMessage request) {
-        return (this.getBaseClient().sendSync(request));
-    }
-
-    /**
-     * Sends a sync message and waits infinite for an answer. A connection
-     * timeout will occur if the request could not be sent to the server anyway.
-     * Once the request has been sent this will wait for an answer without any
-     * timeout.
-     *
-     */
-    public ClientServerResponse sendSyncWaitInfinite(ClientServerMessage request) {
-        return (this.getBaseClient().sendSyncWaitInfinite(request));
-    }
-
-    @Override
-    public void connected(SocketAddress socketAddress) {
-        if (this.logger == null) {
-            throw new RuntimeException("TextClient: No logger set.");
-        }
-        if (this.baseClient.getDisplayServerLogMessages()) {
-            this.log(Level.INFO, 
-                    BaseClient.clientTypeToStr(this.baseClient.getClientType())
-                    + "client has established connection to " + socketAddress.toString());
-        }
-    }
-
-    @Override
-    public void loggedOut() {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        if (this.baseClient.getDisplayServerLogMessages()) {
-            this.log(Level.INFO, 
-                    BaseClient.clientTypeToStr(this.baseClient.getClientType())
-                    + " client logged out");
-        }
-    }
-
-    @Override
-    public void disconnected() {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        if (this.baseClient.getDisplayServerLogMessages()) {
-            this.log(Level.INFO, 
-                    BaseClient.clientTypeToStr(this.baseClient.getClientType())
-                    + " client connection closed by foreign host");
-        }
-    }
-
-    /**
-     * Overwrite this in the client implementation for user defined processing
-     */
-    @Override
-    public void messageReceivedFromServer(ClientServerMessage message) {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        //there is no user defined processing for sync responses
-        if (message._isSyncRequest()) {
-            return;
-        } else {
-            //let the message process by all registered client side processors
-            boolean processed = false;
-            synchronized (this.messageProcessorList) {
-                for (ClientsideMessageProcessor processor : this.messageProcessorList) {
-                    processed |= processor.processMessageFromServer(message);
-                }
-            }
-            if (!(message instanceof ServerSideNotification) && !processed) {
-                this.log(Level.WARNING,
-                        "The server notified an unprocessed message of type "
-                        + message.getClass().getName());
-            }
-        }
-    }
-
-    /**
-     * @return the client
-     */
-    public BaseClient getBaseClient() {
-        return (this.baseClient);
-    }
-
-    @Override
-    public void error(String message) {
-        if (this.logger == null) {
-            throw new RuntimeException("BaseTextClient: No logger set.");
-        }
-        this.log(Level.SEVERE, 
-                BaseClient.clientTypeToStr(this.baseClient.getClientType())
-                + " client reports error: " + message);
-    }
-
-    /**
-     * Performs a logout, closes the actual session
-     */
-    public void logout() {
-        this.baseClient.logout();
-    }
-
-    /**
-     * checks if the client is connected
-     */
-    public boolean isConnectedAndLoggedIn() {
-        return (this.baseClient.isConnected());
-    }
-
-    /**
-     * Calback: the server requets a login
-     */
-    @Override
-    public void loginRequestedFromServer() {
-        this.performLogin();
-    }
-
-    /**
-     * @return the host
-     */
-    public String getHost() {
-        return host;
-    }
-    
-    /**This is called if there is any decoder problem between client and server which means that the client is not compatible to the server.
-     * This is not a result of a compare of the client/server versions but mainly a problem that occurs already if the client tries to connect/login.
-     * In this case a transfer of the client version to the server to check the versions is not even possible
-     * 
-     */
-    @Override
-    public void clientIsIncompatible( String errorMessage ){
-        this.logger.severe(errorMessage);
+    public LoginResponse performLogin(String username, char[] password, String clientId) {
+        // No authentication needed - return success
+        LoginRequest request = new LoginRequest(username, password, clientId);
+        LoginResponse response = new LoginResponse(request);
+        response.setSuccess(true);
+        return response;
     }
 }

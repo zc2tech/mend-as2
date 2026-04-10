@@ -37,6 +37,7 @@ import de.mendelson.comm.as2.timing.StatisticDeleteController;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
+import de.mendelson.util.clientserver.ClientServerSessionHandlerLocalhost;
 import de.mendelson.util.clientserver.log.ClientServerLoggingHandler;
 import de.mendelson.util.log.DailySubdirFileLoggingHandler;
 import de.mendelson.util.log.LogFormatter;
@@ -463,6 +464,15 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.certificateManagerEncSign, this.certificateManagerTLS, this.dbDriverManager,
                     this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
                     this.dbClientInformation);
+
+            // Initialize AS2MessageProcessor for HttpReceiver (replaces Mina socket communication)
+            AS2MessageProcessor.getInstance().setServerProcessing(this.serverProcessing);
+            logger.info("AS2MessageProcessor initialized for HttpReceiver");
+
+            // Initialize DirectServiceClient for SwingUI (replaces Mina request-response)
+            DirectServiceClient.getInstance().setServerProcessing(this.serverProcessing);
+            logger.info("DirectServiceClient initialized for SwingUI");
+
             // Only set session handler if Mina server is running
             if (this.clientServerSessionHandler != null) {
                 this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
@@ -556,11 +566,21 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * Initialize the main logging interface
      */
     private void initializeLogger() {
-        this.logger.setLevel(Level.ALL);
+        // Get log level from configuration (defaults to INFO)
+        String logLevelName = this.config.getLogLevel();
+        Level logLevel;
+        try {
+            logLevel = Level.parse(logLevelName);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Warning: Invalid log level '" + logLevelName + "' in configuration, using INFO");
+            logLevel = Level.INFO;
+        }
+
+        this.logger.setLevel(logLevel);
         if (this.logger.getParent() != null) {
             Handler[] handlerList = this.logger.getParent().getHandlers();
             for (Handler handler : handlerList) {
-                handler.setLevel(Level.ALL);
+                handler.setLevel(logLevel);
                 if (handler instanceof ConsoleHandler) {
                     handler.setFormatter(new LogFormatter(LogFormatter.FORMAT_CONSOLE));
                 }
@@ -568,16 +588,18 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         }
         Handler[] handlerList = this.logger.getHandlers();
         for (Handler handler : handlerList) {
-            handler.setLevel(Level.ALL);
+            handler.setLevel(logLevel);
             if (handler instanceof ConsoleHandler) {
                 handler.setFormatter(new LogFormatter(LogFormatter.FORMAT_CONSOLE));
             }
         }
         LogFormatter logformatterSystemOut = new LogFormatter(LogFormatter.FORMAT_CONSOLE);
         this.loggingHandlerSystemOut.setFormatter(logformatterSystemOut);
-        this.loggingHandlerSystemOut.setLevel(Level.ALL);
+        this.loggingHandlerSystemOut.setLevel(logLevel);
         this.logger.addHandler(this.loggingHandlerSystemOut);
         this.logger.setUseParentHandlers(false);
+
+        this.logger.info("Log level set to: " + logLevel.getName());
     }
 
     /**

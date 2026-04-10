@@ -8,6 +8,7 @@ import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.comm.as2.timing.TimingScheduledThreadPool;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
@@ -104,7 +105,7 @@ public class CertificateCEMController {
                 }
             }
             if (clientserver != null) {
-                clientserver.broadcastToClients(new RefreshClientCEMDisplay());
+                EventBus.getInstance().publish(new RefreshClientCEMDisplay());
             }
         }
 
@@ -135,7 +136,7 @@ public class CertificateCEMController {
                 }
             }
             if (clientserver != null) {
-                clientserver.broadcastToClients(new RefreshClientCEMDisplay());
+                EventBus.getInstance().publish(new RefreshClientCEMDisplay());
             }
         }
     }

@@ -90,7 +90,8 @@ public class MessageResource {
             @QueryParam("partnerId") Integer partnerId,
             @QueryParam("localStationId") Integer localStationId,
             @QueryParam("userdefinedId") String userdefinedId,
-            @QueryParam("messageId") String messageId) {
+            @QueryParam("messageId") String messageId,
+            @QueryParam("format") String format) {
 
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
@@ -157,6 +158,10 @@ public class MessageResource {
 
             if (userdefinedId != null && !userdefinedId.isEmpty()) {
                 filter.setUserdefinedId(userdefinedId);
+            }
+
+            if (format != null && !format.isEmpty()) {
+                filter.setPayloadFormat(format);
             }
 
             // Handle partner and local station filters

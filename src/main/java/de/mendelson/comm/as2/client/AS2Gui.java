@@ -43,6 +43,7 @@ import de.mendelson.comm.as2.preferences.PreferencesPanelInboundAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelSystemMaintenance;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.DateChooserUI;
@@ -308,6 +309,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private final RefreshThread refreshThread = new RefreshThread();
     private final LogConsolePanel consolePanel;
     /**
+     * EventBus listener for server notifications
+     */
+    private EventBus.EventListener eventListener;
+    /**
      * This dialog is just hidden, never closed
      */
     private JDialogSystemEvents dialogSystemEvents = null;
@@ -431,15 +436,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             splash.destroy();
         }
         this.initializeUINotification();
-        this.connect(new InetSocketAddress(host, clientServerCommPort), 5000);
 
-        // Perform authentication with retry capability
-        LoginResponse loginResponse = this.performLoginWithRetry(username, password.toCharArray());
+        // Subscribe to EventBus for server events (replaces Mina socket connection)
+        this.eventListener = message -> {
+            // Call on EDT to ensure thread safety
+            SwingUtilities.invokeLater(() -> {
+                processMessageFromServer(message);
+            });
+        };
+        EventBus.getInstance().subscribe(this.eventListener);
 
-        // Check if password change required
-        if (loginResponse != null && loginResponse.isMustChangePassword()) {
-            this.showForcedPasswordChangeDialog(loginResponse.getUser());
-        }
+        // No Mina authentication needed - SwingUI runs in same JVM as server
+        // Start the table update thread and initialize status bar
+        GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
+        this.as2StatusBar.initialize(this.getBaseClient(), this);
+        this.as2StatusBar.startConfigurationChecker();
     }
 
     /**
@@ -867,7 +878,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 });
     }
 
-    @Override
     public void loginRequestedFromServer() {
         // Authentication is now handled by performLoginWithRetry() in constructor
         // Just initialize the UI components here
@@ -879,7 +889,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Override messageReceivedFromServer to detect ServerInfo and initialize the UI
      * Since LoginRequired is no longer sent, we use ServerInfo as the trigger
      */
-    @Override
     public void messageReceivedFromServer(de.mendelson.util.clientserver.messages.ClientServerMessage message) {
         // Detect ServerInfo message (sent when client connects)
         if (message instanceof de.mendelson.util.clientserver.messages.ServerInfo) {
@@ -895,7 +904,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
     }
 
-    @Override
     public Logger getLogger() {
         return (AS2Gui.logger);
     }
@@ -2492,6 +2500,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }// GEN-LAST:event_jButtonFilterActionPerformed
 
     private void formWindowClosing(java.awt.event.WindowEvent evt) {// GEN-FIRST:event_formWindowClosing
+        // Unsubscribe from EventBus
+        if (this.eventListener != null) {
+            EventBus.getInstance().unsubscribe(this.eventListener);
+        }
         this.savePreferences();
     }// GEN-LAST:event_formWindowClosing
 
@@ -2839,7 +2851,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Makes this a ClientSesionHandlerCallback. This is called if a sync
      * request failed
      */
-    @Override
     public void syncRequestFailed(ClientServerMessage request, ClientServerMessage response, Throwable throwable) {
         // the client has a timeout problem either sending data to the server or
         // receiving a sync answer
@@ -2870,7 +2881,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.storeColumSettings();
     }
 
-    @Override
     public void clientIsIncompatible(String errorMessage) {
         JOptionPane.showMessageDialog(this,
                 AS2Tools.fold(errorMessage, "\n", 80),

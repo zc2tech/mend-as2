@@ -74,7 +74,6 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
         return (true);
     }
 
-    @Override
     public void loginRequestedFromServer() {
         // Simplified - no authentication needed
         // Create a dummy user for compatibility
@@ -92,7 +91,6 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
     /**
      * Performs a logout, closes the actual session
      */
-    @Override
     public void logout() {
         if (this.getBaseClient().getDisplayServerLogMessages()) {
             this.log(Level.INFO, "Logging out");
@@ -112,12 +110,10 @@ public class TextClient extends BaseTextClient implements ClientsideMessageProce
     /**
      * Allows a manual login, not supported so far
      */
-    @Override
     public void performLogin() {
         throw new IllegalArgumentException("PerformLogin: manual login not implemented so far.");
     }
 
-    @Override
     public void processSyncResponseFromServer(ClientServerResponse response) {
     }
 

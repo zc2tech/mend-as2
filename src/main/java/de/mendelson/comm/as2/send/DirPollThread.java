@@ -6,6 +6,7 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.sendorder.SendOrderSender;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.IOFileFilterRegexpMatch;
 import de.mendelson.util.MecResourceBundle;
@@ -340,7 +341,7 @@ public class DirPollThread implements Runnable {
             SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
             AS2Message message = orderSender.send(this.certificateManagerEncSign, this.sender, this.receiver, file, null,
                     this.receiver.getSubject(), null);
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             try {
                 Files.delete(file);
                 if (message != null) {

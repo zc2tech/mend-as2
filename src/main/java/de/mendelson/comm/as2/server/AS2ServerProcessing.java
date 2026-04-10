@@ -407,7 +407,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         try {
             if (message instanceof PartnerConfigurationChanged) {
                 this.dirPollManager.partnerConfigurationChanged();
-                this.clientserver.broadcastToClients(new RefreshTablePartnerData());
+                EventBus.getInstance().publish(new RefreshTablePartnerData());
                 return (true);
             } else if (message instanceof RefreshKeystoreCertificates) {
                 //a certificate manager signals that there are some changes made, reload all internal keystores
@@ -1597,7 +1597,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         builder.append(transactionDeleteLog);
         event.setBody(builder.toString());
         SystemEventManagerImplAS2.instance().newEvent(event);
-        this.clientserver.broadcastToClients(refreshRequest);
+        EventBus.getInstance().publish(refreshRequest);
     }
 
     private void processUploadRequestFile(IoSession session, UploadRequestFile request) {
@@ -1940,10 +1940,10 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     event.setSubject(this.rb.getResourceString("message.resend.title"));
                     SystemEventManagerImplAS2.instance().newEvent(event);
                 }
-                this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             }
         } catch (Exception e) {
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             response.setException(e);
         }
         session.write(response);
@@ -2030,7 +2030,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             event.setProcessOriginHost(processOriginHost);
             event.setUser(userName);
             SystemEventManagerImplAS2.instance().newEvent(event);
-            this.clientserver.broadcastToClients(new ConfigurationChangedOnServerNotification());
+            EventBus.getInstance().publish(new ConfigurationChangedOnServerNotification());
         }
     }
 
@@ -2057,7 +2057,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             oldValue = "***";
             newValue = "***";
         }
-        this.clientserver.broadcastToClients(new ConfigurationChangedOnServerPreferences(
+        EventBus.getInstance().publish(new ConfigurationChangedOnServerPreferences(
                 key, oldValue, newValue
         ));
     }
@@ -2465,7 +2465,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             event.setProcessOriginHost(processOriginHost);
             SystemEventManagerImplAS2.instance().newEvent(event);
             //inform all attached clients about the changes via server push message
-            this.clientserver.broadcastToClients(new ConfigurationChangedOnServerNotification());
+            EventBus.getInstance().publish(new ConfigurationChangedOnServerNotification());
         }
     }
 
@@ -2710,6 +2710,104 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     /**
+     * Handle incoming AS2 message without IoSession dependency.
+     * Called directly by AS2MessageProcessor (no Mina).
+     *
+     * This is the new entry point that replaces the Mina socket-based communication.
+     *
+     * @param incomingMessageRequest the incoming message request
+     * @return the response with MDN data and HTTP status code
+     * @throws Exception if processing fails
+     */
+    public IncomingMessageResponse handleIncomingMessage(IncomingMessageRequest incomingMessageRequest)
+            throws Exception {
+        IncomingMessageResponse incomingMessageResponse = new IncomingMessageResponse(incomingMessageRequest);
+        try {
+            try {
+                //inc the sent data size, this is for sync error MDN
+                long size = 0;
+                if (incomingMessageRequest.getHeader() != null) {
+                    size += this.computeRawHeaderSize(incomingMessageRequest.getHeader());
+                }
+                if (incomingMessageRequest.getMessageDataFilename() != null) {
+                    size += Files.size(Paths.get(incomingMessageRequest.getMessageDataFilename()));
+                }
+                //MBean counter for received data size
+                AS2Server.incRawReceivedData(size);
+                //fully process the inbound message
+                incomingMessageResponse = this.newMessageArrived(incomingMessageRequest);
+            } catch (AS2Exception as2Exception) {
+                AS2MessageInfo messageInfo = (AS2MessageInfo) as2Exception.getAS2Message().getAS2Info();
+                messageInfo.setUsesTLS(incomingMessageRequest.usesTLS());
+                //fire a system event for a failed inbound message processing
+                try {
+                    SystemEventManagerImplAS2.instance().newEventTransactionError(messageInfo.getMessageId(),
+                            this.dbDriverManager);
+                } catch (Exception e) {
+                    SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
+                }
+                String foundSenderId = messageInfo.getSenderId();
+                String foundReceiverId = messageInfo.getReceiverId();
+                Partner as2MessageReceiver = this.partnerAccess.getPartner(foundReceiverId);
+                AS2MDNCreation mdnCreation = new AS2MDNCreation(this.certificateManagerEncSign);
+                mdnCreation.setLogger(this.logger);
+                //partner might be null - thats ok
+                Partner foundSender = this.partnerAccess.getPartner(foundSenderId);
+                AS2Message mdn = mdnCreation.createMDNError(as2Exception, foundSender, foundSenderId, as2MessageReceiver, foundReceiverId);
+                AS2MDNInfo mdnInfo = (AS2MDNInfo) mdn.getAS2Info();
+                if (messageInfo.requestsSyncMDN()) {
+                    //sync error MDN
+                    incomingMessageResponse.setContentType(mdn.getContentType());
+                    incomingMessageResponse.setMDNData(mdn.getRawData());
+                    //build up the header for the sync response
+                    Properties header = mdnCreation.buildHeaderForSyncMDN(mdn);
+                    incomingMessageResponse.setHeader(header);
+                    //MBean counter: inc the sent data size, this is for sync error MDN
+                    AS2Server.incRawSentData(this.computeRawHeaderSize(header) + mdn.getRawDataSize());
+                    Partner mdnReceiver = partnerAccess.getPartner(mdnInfo.getReceiverId());
+                    Partner mdnSender = partnerAccess.getPartner(mdnInfo.getSenderId());
+                    this.messageStoreHandler.storeSentMessage(mdn, mdnSender, mdnReceiver, header);
+                    this.mdnAccess.initializeOrUpdateMDN(mdnInfo);
+                    this.logger.log(Level.INFO,
+                            this.rb.getResourceString("sync.mdn.sent",
+                                    new Object[]{
+                                        mdnInfo.getRelatedMessageId()
+                                    }), mdnInfo);
+                    this.messageAccess.setMessageState(mdnInfo.getRelatedMessageId(), AS2Message.STATE_STOPPED);
+                    // Use EventBus instead of clientserver.broadcastToClients
+                    EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
+                    return incomingMessageResponse;
+                } else {
+                    //async error MDN
+                    Partner messageReceiver = this.partnerAccess.getPartner(mdnInfo.getReceiverId());
+                    Partner messageSender = this.partnerAccess.getPartner(mdnInfo.getSenderId());
+                    //async back to sender. There are ALWAYS required partners for the send order even if the as2 ids
+                    //are not founnd because the partners are required for the async MDN receipt URL and a well structured MDN
+                    if (messageReceiver == null) {
+                        messageReceiver = new Partner();
+                        messageReceiver.setAS2Identification(mdnInfo.getReceiverId());
+                        messageReceiver.setMdnURL(messageInfo.getAsyncMDNURL());
+                    }
+                    if (messageSender == null) {
+                        messageSender = new Partner();
+                        messageSender.setAS2Identification(mdnInfo.getSenderId());
+                    }
+                    this.addSendOrder(mdn, messageReceiver, messageSender);
+                }
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+            StringBuilder message = new StringBuilder("AS2ServerProcessing: [" + e.getClass().getName() + "] " + e.getMessage());
+            if (e.getCause() != null) {
+                message.append(" - caused by [" + e.getCause().getClass().getName() + "] " + e.getCause().getMessage());
+            }
+            this.logger.severe(message.toString());
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
+        }
+        return incomingMessageResponse;
+    }
+
+    /**
      * An incoming message arrives from the receipt servlet or the system itself
      * (sync answer)
      */
@@ -2767,7 +2865,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                                         mdnInfo.getRelatedMessageId()
                                     }), mdnInfo);
                     this.messageAccess.setMessageState(mdnInfo.getRelatedMessageId(), AS2Message.STATE_STOPPED);
-                    this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                    EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
                     session.write(incomingMessageResponse);
                     return;
                 } else {
@@ -2874,7 +2972,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         order.setSender(sender);
         SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
         orderSender.send(order);
-        this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+        EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
     }
 
     /**
@@ -2967,7 +3065,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                         mdnInfo.getSenderId(), mdnInfo.getState(), mdnInfo.getRelatedMessageId());
             }
             this.updatePartnerSystemInfo(requestObject.getHeader());
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
         } catch (AS2Exception e) {
             //exec on MDN send makes no sense here because no valid filename exists
             AS2Info as2Info = e.getAS2Message().getAS2Info();
@@ -3016,7 +3114,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     this.logger.log(Level.SEVERE, e.getMessage(), as2Info);
                 }
             }
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             //dont't thow an exception here if this is an MDN already, a thrown Exception
             //will result in another MDN!
             if (as2Info.isMDN()) {
@@ -3048,7 +3146,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         this.messageStoreHandler.storeParsedIncomingMessage(message, messageReceiver);
         if (!as2Info.isMDN()) {
             this.messageAccess.updateFilenames((AS2MessageInfo) as2Info);
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
         }
         //process MDN
         if (message.isMDN()) {
@@ -3108,7 +3206,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     }
                 }
                 this.messageAccess.setMessageState(((AS2MDNInfo) mdn.getAS2Info()).getRelatedMessageId(), mdn.getAS2Info().getState());
-                this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } else {
                 //async MDN requested, dont send MDN in this case
                 //process the CEM request if it requires async MDN

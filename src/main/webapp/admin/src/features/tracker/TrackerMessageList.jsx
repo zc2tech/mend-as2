@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
 import { format } from 'date-fns';
@@ -58,8 +58,9 @@ export default function TrackerMessageList() {
   };
 
   const [filters, setFilters] = useState(defaultFilters);
-  const [queryFilters, setQueryFilters] = useState(defaultFilters); // Actual filters used for query
+  const [queryFilters, setQueryFilters] = useState(defaultFilters);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const searchTimeoutRef = useRef(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['trackerMessages', queryFilters],
@@ -81,6 +82,36 @@ export default function TrackerMessageList() {
     }
   });
 
+  // Apply search immediately for non-text filters
+  const applyFiltersImmediately = (newFilters) => {
+    setFilters(newFilters);
+    setQueryFilters(newFilters);
+  };
+
+  // Debounced search for text inputs (trackerId, user)
+  const applyFiltersDebounced = (newFilters) => {
+    setFilters(newFilters);
+
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout - apply search after 1 second of no input
+    searchTimeoutRef.current = setTimeout(() => {
+      setQueryFilters(newFilters);
+    }, 1000);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSearch = () => {
     setQueryFilters({ ...filters });
   };
@@ -88,10 +119,18 @@ export default function TrackerMessageList() {
   const handleResetFilters = () => {
     setFilters(defaultFilters);
     setQueryFilters(defaultFilters);
+    // Clear any pending debounced search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
+      // Clear timeout and apply immediately on Enter
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
       handleSearch();
     }
   };
@@ -277,7 +316,7 @@ export default function TrackerMessageList() {
             <input
               type="date"
               value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+              onChange={(e) => applyFiltersImmediately({ ...filters, startDate: e.target.value })}
               disabled={!!filters.trackerId}
               style={{
                 width: '100%',
@@ -295,7 +334,7 @@ export default function TrackerMessageList() {
             <input
               type="date"
               value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+              onChange={(e) => applyFiltersImmediately({ ...filters, endDate: e.target.value })}
               disabled={!!filters.trackerId}
               style={{
                 width: '100%',
@@ -314,7 +353,7 @@ export default function TrackerMessageList() {
               type="text"
               placeholder="Search by Tracker ID"
               value={filters.trackerId}
-              onChange={(e) => setFilters({ ...filters, trackerId: e.target.value })}
+              onChange={(e) => applyFiltersDebounced({ ...filters, trackerId: e.target.value })}
               onKeyPress={handleKeyPress}
               style={{
                 width: '100%',
@@ -334,7 +373,7 @@ export default function TrackerMessageList() {
                 type="text"
                 placeholder="User"
                 value={filters.user}
-                onChange={(e) => setFilters({ ...filters, user: e.target.value })}
+                onChange={(e) => applyFiltersDebounced({ ...filters, user: e.target.value })}
                 onKeyPress={handleKeyPress}
                 style={{
                   width: '100%',
@@ -352,7 +391,7 @@ export default function TrackerMessageList() {
             </label>
             <select
               value={filters.format}
-              onChange={(e) => setFilters({ ...filters, format: e.target.value })}
+              onChange={(e) => applyFiltersImmediately({ ...filters, format: e.target.value })}
               style={{
                 width: '100%',
                 padding: '0.5rem',
@@ -374,7 +413,7 @@ export default function TrackerMessageList() {
             <input
               type="checkbox"
               checked={filters.authNone}
-              onChange={(e) => setFilters({ ...filters, authNone: e.target.checked })}
+              onChange={(e) => applyFiltersImmediately({ ...filters, authNone: e.target.checked })}
               style={{ marginRight: '0.5rem' }}
             />
             Show No Auth
@@ -383,7 +422,7 @@ export default function TrackerMessageList() {
             <input
               type="checkbox"
               checked={filters.authSuccess}
-              onChange={(e) => setFilters({ ...filters, authSuccess: e.target.checked })}
+              onChange={(e) => applyFiltersImmediately({ ...filters, authSuccess: e.target.checked })}
               style={{ marginRight: '0.5rem' }}
             />
             Show Auth Success

@@ -15,6 +15,7 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerHttpHeader;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
 import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
 import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
@@ -232,7 +233,7 @@ public class MessageHttpUploader {
             mdnAccess.initializeOrUpdateMDN((AS2MDNInfo) as2Info);
         }
         if (this.clientserver != null) {
-            this.clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
         }
         long startTime = System.currentTimeMillis();
         //sets the global requestHeader

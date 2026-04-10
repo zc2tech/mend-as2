@@ -16,27 +16,18 @@ package de.mendelson.util.clientserver;
  * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
- * Minimal stub for AnonymousTextClient compatibility.
+ * Minimal stub for ClientServerSessionHandlerLocalhost compatibility.
  * Mina networking removed.
  *
  * @author Julian Xu
  * @version 1.0
  */
-public class AnonymousTextClient extends BaseClient implements AutoCloseable {
-    public AnonymousTextClient(int clientType) {
+public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHandler {
+    public ClientServerSessionHandlerLocalhost() {
         // Stub constructor
     }
 
-    public void setDisplayServerLogMessages(boolean display) {
-        // No-op stub
-    }
-
-    public void connect(String host, int port, int timeout) {
-        // No-op stub
-    }
-
-    @Override
-    public void close() {
-        // No-op stub
+    public ClientServerSessionHandlerLocalhost(Object logger, String[] products, boolean allowAll, int maxSessions, Object eventManager, Object dbDriver) {
+        // Stub constructor with parameters
     }
 }

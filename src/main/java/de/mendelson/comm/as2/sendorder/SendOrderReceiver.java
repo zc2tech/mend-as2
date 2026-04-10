@@ -12,6 +12,7 @@ import de.mendelson.comm.as2.send.HttpConnectionParameter;
 import de.mendelson.comm.as2.send.MessageHttpUploader;
 import de.mendelson.comm.as2.send.NoConnectionException;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
@@ -316,7 +317,7 @@ public class SendOrderReceiver {
                 //Either it is processed now or the entry in the queue was no longer valid - delete it in both cases
                 sendOrderAccess.delete(order.getDbId());
                 //send push messages to all clients that the number/state of transaction has been changed
-                clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } catch (NoConnectionException e) {
                 int retryCount = order.incRetryCount();
                 int maxRetryCount = preferences.getInt(PreferencesAS2.MAX_CONNECTION_RETRY_COUNT);
@@ -384,7 +385,7 @@ public class SendOrderReceiver {
                     messageAccess.setMessageState(((AS2MDNInfo) order.getMessage().getAS2Info()).getRelatedMessageId(),
                             AS2Message.STATE_STOPPED);
                 }
-                clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } catch (Exception ee) {
                 ee.printStackTrace();
                 logger.log(Level.SEVERE, "SendOrderReceiver.processUploadError(): " + ee.getMessage(),

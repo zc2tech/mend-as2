@@ -49,10 +49,11 @@ export function useExportCertificate() {
 
 export function useExportKeystore() {
   return useMutation({
-    mutationFn: async ({ keystoreType, format = 'PKCS12' }) => {
+    mutationFn: async ({ keystoreType, format = 'PKCS12', password }) => {
       const response = await api.post('/certificates/export-keystore', {
         keystoreType,
-        format
+        format,
+        password
       }, {
         responseType: 'blob'
       });

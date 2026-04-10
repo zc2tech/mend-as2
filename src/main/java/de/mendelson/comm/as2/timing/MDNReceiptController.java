@@ -8,6 +8,7 @@ import de.mendelson.comm.as2.message.postprocessingevent.ProcessingEvent;
 import de.mendelson.comm.as2.message.store.MessageStoreHandler;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
@@ -107,7 +108,7 @@ public class MDNReceiptController {
                         }
                     }
                     if (!overviewList.isEmpty()) {
-                        clientserver.broadcastToClients(new RefreshClientMessageOverviewList());
+                        EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
                     }
                 }
             } catch (Throwable e) {

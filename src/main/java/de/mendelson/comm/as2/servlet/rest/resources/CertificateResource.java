@@ -164,6 +164,14 @@ public class CertificateResource {
                         .build();
             }
 
+            // Validate password is provided
+            if (exportRequest.getPassword() == null || exportRequest.getPassword().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Password is required"))
+                        .type(MediaType.APPLICATION_JSON)
+                        .build();
+            }
+
             // Get the appropriate certificate manager
             CertificateManager manager = "tls".equals(exportRequest.getKeystoreType())
                     ? processing.getCertificateManagerTLS()
@@ -175,10 +183,10 @@ public class CertificateResource {
                         .build();
             }
 
-            // Get the keystore and serialize it to bytes
+            // Get the keystore and serialize it to bytes with user-provided password
             java.security.KeyStore keystore = manager.getKeystore();
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-            char[] password = manager.getKeystorePass();
+            char[] password = exportRequest.getPassword().toCharArray();
             keystore.store(baos, password);
             byte[] keystoreData = baos.toByteArray();
 
@@ -748,6 +756,7 @@ public class CertificateResource {
     public static class ExportKeystoreRequestDTO {
         private String keystoreType;
         private String format;
+        private String password;
 
         public ExportKeystoreRequestDTO() {
         }
@@ -766,6 +775,14 @@ public class CertificateResource {
 
         public void setFormat(String format) {
             this.format = format;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 

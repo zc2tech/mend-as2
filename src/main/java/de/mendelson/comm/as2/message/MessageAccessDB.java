@@ -202,6 +202,24 @@ public class MessageAccessDB {
     }
 
     /**
+     * Loads the first payload's format and doctype into the AS2MessageInfo
+     */
+    private void loadPayloadMetadata(Connection connection, AS2MessageInfo info) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT payload_format, payload_doctype FROM payload WHERE messageid=? LIMIT 1")) {
+            statement.setString(1, info.getMessageId());
+            try (ResultSet result = statement.executeQuery()) {
+                if (result.next()) {
+                    info.setPayloadFormat(result.getString("payload_format"));
+                    info.setPayloadDocType(result.getString("payload_doctype"));
+                }
+            }
+        } catch (Exception e) {
+            // Silently ignore - format/doctype are optional fields
+        }
+    }
+
+    /**
      * Returns information about the payload of a special message
      */
     public List<AS2Payload> getPayload(String messageId) {
@@ -217,6 +235,8 @@ public class MessageAccessDB {
                         payload.setOriginalFilename(result.getString("originalfilename"));
                         payload.setContentId(result.getString("contentid"));
                         payload.setContentType(result.getString("contenttype"));
+                        payload.setPayloadFormat(result.getString("payload_format"));
+                        payload.setPayloadDocType(result.getString("payload_doctype"));
                         payloadList.add(payload);
                     }
                 }
@@ -358,6 +378,8 @@ public class MessageAccessDB {
                             info.setResendCounter(result.getInt("resendcounter"));
                             info.setUserdefinedId(result.getString("userdefinedid"));
                             info.setUsesTLS(result.getInt("secureconnection") == 1);
+                            // Load first payload's format and doctype
+                            this.loadPayloadMetadata(runtimeConnectionNoAutoCommit, info);
                             messageList.add(info);
                         }
                     }
@@ -458,6 +480,16 @@ public class MessageAccessDB {
                 }
                 queryCondition.append(" userdefinedid=?");
                 parameterList.add(filter.getUserdefinedId());
+            }
+            if (filter.getPayloadFormat() != null && !filter.getPayloadFormat().isEmpty()) {
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
+                }
+                // Join with payload table to filter by format
+                queryCondition.append(" messageid IN (SELECT DISTINCT messageid FROM payload WHERE payload_format=?)");
+                parameterList.add(filter.getPayloadFormat());
             }
             boolean hasStartTime = filter.getStartTime() != 0L;
             boolean hasEndTime = filter.getEndTime() != 0L;
@@ -598,6 +630,8 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        // Load first payload's format and doctype
+                        this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
                         //change the order of the list. This is required because of the LIMIT clause of HSQLDB
                         messageList.add(0, info);
                     }
@@ -963,13 +997,15 @@ public class MessageAccessDB {
             for (AS2Payload payload : payloadList) {
                 try (PreparedStatement statementInsert
                         = runtimeConnectionNoAutoCommit.prepareStatement(
-                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype)"
-                                + "VALUES(?,?,?,?,?)")) {
+                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype,payload_format,payload_doctype)"
+                                + "VALUES(?,?,?,?,?,?,?)")) {
                     statementInsert.setString(1, messageId);
                     statementInsert.setString(2, payload.getOriginalFilename());
                     statementInsert.setString(3, payload.getPayloadFilename());
                     statementInsert.setString(4, payload.getContentId());
                     statementInsert.setString(5, payload.getContentType());
+                    statementInsert.setString(6, payload.getPayloadFormat());
+                    statementInsert.setString(7, payload.getPayloadDocType());
                     statementInsert.executeUpdate();
                 }
             }
