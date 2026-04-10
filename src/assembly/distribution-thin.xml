@@ -32,6 +32,15 @@
             </excludes>
         </fileSet>
 
+        <!-- Notification templates -->
+        <fileSet>
+            <directory>notificationtemplates</directory>
+            <outputDirectory>notificationtemplates</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+
         <!-- Documentation -->
         <fileSet>
             <directory>${project.basedir}</directory>

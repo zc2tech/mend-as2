@@ -90,6 +90,13 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
     }
 
     /**
+     * Get the anonymous processing handler
+     */
+    protected AnonymousProcessing getAnonymousProcessing() {
+        return this.anonymousProcessing;
+    }
+
+    /**
      * Logs something to the clients log - but only if the level is higher than
      * the defined loglevelThreshold
      */
@@ -140,6 +147,17 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
         //store immediatly the remote IP address in the session - if the session is closed it is no longer
         //available and it might be required later even if the session goes into the closed state
         session.setAttribute(SESSION_ATTRIB_CLIENT_IP, session.getRemoteAddress().toString());
+
+        // Add session to tracked sessions immediately so it receives broadcasts
+        synchronized (this.sessions) {
+            // Check max clients limit
+            if (this.maxClients > 0 && this.sessions.size() >= this.maxClients) {
+                this.log(Level.WARNING, "Maximum number of clients reached, rejecting connection");
+                session.closeOnFlush();
+                return;
+            }
+            this.sessions.add(session);
+        }
     }
 
     /**
@@ -165,17 +183,7 @@ public class ClientServerSessionHandler extends IoHandlerAdapter {
                 // Track session with a generic identifier
                 session.setAttribute(SESSION_ATTRIB_USER, "swing_client");
                 session.setAttribute(SESSION_ATTRIB_CLIENT_TYPE, Integer.valueOf(1)); // RICH_CLIENT type
-
-                // Add session to the list
-                synchronized (this.sessions) {
-                    // Check max clients limit
-                    if (this.maxClients > 0 && this.sessions.size() >= this.maxClients) {
-                        this.log(Level.WARNING, "Maximum number of clients reached, rejecting connection");
-                        session.closeOnFlush();
-                        return;
-                    }
-                    this.sessions.add(session);
-                }
+                // Note: Session was already added to sessions list in sessionOpened()
             }
 
             //here starts the user defined processing to extend the server functionality

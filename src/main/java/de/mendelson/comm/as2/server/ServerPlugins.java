@@ -59,7 +59,7 @@ public class ServerPlugins implements Serializable {
      * @return the licensee
      */
     public String getLicensee() {
-        return( "Community edition");
+        return( "GPL 2.0");
     }
 
     public LocalDateTime getLicenseExpireDate() {

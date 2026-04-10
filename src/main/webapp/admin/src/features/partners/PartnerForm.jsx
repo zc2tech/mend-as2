@@ -48,6 +48,13 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
   const toast = useToast();
   const isEdit = !!partner;
 
+  // Debug: log partner object when editing
+  if (isEdit) {
+    console.log('Editing partner:', partner);
+    console.log('localStation:', partner.localStation);
+    console.log('isLocalStation:', partner.isLocalStation);
+  }
+
   const {
     register,
     handleSubmit,
@@ -134,11 +141,11 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
           {isEdit ? (
             <>
               <span>Edit Partner</span>
-              <span style={{ fontSize: '1.5rem' }} title={partner.localStation ? 'Local Station' : 'Remote Partner'}>
-                {partner.localStation ? '🏠' : '🌐'}
+              <span style={{ fontSize: '1.5rem' }} title={(partner.localStation || partner.isLocalStation) ? 'Local Station' : 'Remote Partner'}>
+                {(partner.localStation || partner.isLocalStation) ? '🏠' : '🌐'}
               </span>
               <span style={{ fontSize: '0.875rem', color: '#666', fontWeight: 'normal' }}>
-                {partner.localStation ? '(Local Station)' : '(Remote Partner)'}
+                {(partner.localStation || partner.isLocalStation) ? '(Local Station)' : '(Remote Partner)'}
               </span>
             </>
           ) : (

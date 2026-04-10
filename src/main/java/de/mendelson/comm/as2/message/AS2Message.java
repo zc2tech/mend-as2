@@ -14,6 +14,7 @@ import de.mendelson.util.security.encryption.EncryptionConstantsAS2;
 import de.mendelson.util.security.signature.SignatureConstantsAS2;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -29,7 +30,9 @@ import java.util.Properties;
  * @author S.Heller
  * @version $Revision: 74 $
  */
-public class AS2Message {
+public class AS2Message implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public static final int ENCRYPTION_UNKNOWN = EncryptionConstantsAS2.ENCRYPTION_UNKNOWN;
     public static final int ENCRYPTION_NONE = EncryptionConstantsAS2.ENCRYPTION_NONE;

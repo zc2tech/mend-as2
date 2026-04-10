@@ -226,13 +226,13 @@ public class PartnerResource {
     }
 
     /**
-     * Update an existing partner
+     * Update an existing partner by database ID
      */
     @PUT
-    @Path("/{as2id}")
+    @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePartner(@PathParam("as2id") String as2id, PartnerDTO partnerDTO) {
+    public Response updatePartner(@PathParam("id") int dbId, PartnerDTO partnerDTO) {
         try {
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
@@ -241,13 +241,31 @@ public class PartnerResource {
                         .build();
             }
 
-            // Convert DTO to Partner object
-            Partner partner = partnerDTO.toPartner();
+            // Get existing partner by database ID to preserve internal state
+            PartnerAccessDB partnerAccess = new PartnerAccessDB(processing.getDBDriverManager());
+            Partner existingPartner = partnerAccess.getPartner(dbId);
 
-            // Ensure the AS2 ID in the path matches the partner object
-            partner.setAS2Identification(as2id);
+            if (existingPartner == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("Partner with ID " + dbId + " not found"))
+                        .build();
+            }
 
-            SinglePartnerModificationRequest request = new SinglePartnerModificationRequest(partner);
+            // Check if AS2 ID is being changed to a duplicate
+            String newAS2Id = partnerDTO.getAs2Identification();
+            if (newAS2Id != null && !newAS2Id.equals(existingPartner.getAS2Identification())) {
+                Partner duplicateCheck = partnerAccess.getPartner(newAS2Id);
+                if (duplicateCheck != null && duplicateCheck.getDBId() != dbId) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(new ErrorResponse("A partner with AS2 ID '" + newAS2Id + "' already exists"))
+                            .build();
+                }
+            }
+
+            // Update existing partner with values from DTO (preserves fields not in DTO)
+            updatePartnerFromDTO(existingPartner, partnerDTO);
+
+            SinglePartnerModificationRequest request = new SinglePartnerModificationRequest(existingPartner);
             SinglePartnerModificationResponse response = processing.processPartnerModificationRequest(request);
 
             if (response.getException() != null) {
@@ -258,6 +276,8 @@ public class PartnerResource {
 
             return Response.ok(new SuccessResponse("Partner updated successfully")).build();
         } catch (Exception e) {
+            logger.severe("Partner update error: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
                     .build();
@@ -395,6 +415,93 @@ public class PartnerResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
                     .build();
+        }
+    }
+
+    /**
+     * Update an existing Partner object with values from PartnerDTO
+     * This preserves fields not included in the DTO
+     */
+    private void updatePartnerFromDTO(Partner partner, PartnerDTO dto) {
+        // General tab
+        if (dto.getName() != null) {
+            partner.setName(dto.getName());
+        }
+        if (dto.getAs2Identification() != null) {
+            partner.setAS2Identification(dto.getAs2Identification());
+        }
+        partner.setLocalStation(dto.isLocalStation());
+        partner.setComment(dto.getComment());
+
+        // Send tab
+        if (dto.getUrl() != null && !dto.getUrl().isEmpty()) {
+            partner.setURL(dto.getUrl());
+        }
+        if (dto.getSubject() != null) {
+            partner.setSubject(dto.getSubject());
+        }
+        if (dto.getContentType() != null) {
+            partner.setContentType(dto.getContentType());
+        }
+        if (dto.getEmail() != null) {
+            partner.setEmail(dto.getEmail());
+        }
+        partner.setEncryptionType(dto.getEncryptionType());
+        partner.setSignType(dto.getSignType());
+        partner.setCompressionType(dto.getCompressionType());
+
+        // Receive/MDN tab
+        if (dto.getMdnURL() != null && !dto.getMdnURL().isEmpty()) {
+            partner.setMdnURL(dto.getMdnURL());
+        }
+        partner.setSyncMDN(dto.isSyncMDN());
+        partner.setSignedMDN(dto.isSignedMDN());
+
+        // Security tab
+        if (dto.getSignFingerprintSHA1() != null) {
+            partner.setSignFingerprintSHA1(dto.getSignFingerprintSHA1());
+        }
+        if (dto.getCryptFingerprintSHA1() != null) {
+            partner.setCryptFingerprintSHA1(dto.getCryptFingerprintSHA1());
+        }
+        partner.setOverwriteLocalStationSecurity(dto.isOverwriteLocalStationSecurity());
+        if (dto.getSignOverwriteLocalstationFingerprintSHA1() != null) {
+            partner.setSignOverwriteLocalstationFingerprintSHA1(dto.getSignOverwriteLocalstationFingerprintSHA1());
+        }
+        if (dto.getCryptOverwriteLocalstationFingerprintSHA1() != null) {
+            partner.setCryptOverwriteLocalstationFingerprintSHA1(dto.getCryptOverwriteLocalstationFingerprintSHA1());
+        }
+        partner.setUseAlgorithmIdentifierProtectionAttribute(dto.isUseAlgorithmIdentifierProtectionAttribute());
+
+        // Directory Poll tab
+        partner.setEnableDirPoll(dto.isEnableDirPoll());
+        partner.setPollInterval(dto.getPollInterval());
+        partner.setMaxPollFiles(dto.getMaxPollFiles());
+        if (dto.getPollIgnoreListAsString() != null) {
+            partner.setPollIgnoreListString(dto.getPollIgnoreListAsString());
+        }
+        partner.setKeepOriginalFilenameOnReceipt(dto.isKeepFilenameOnReceipt());
+
+        // HTTP tab
+        if (dto.getHttpProtocolVersion() != null) {
+            partner.setHttpProtocolVersion(dto.getHttpProtocolVersion());
+        }
+        partner.setContentTransferEncoding(dto.getContentTransferEncoding());
+
+        // HTTP Authentication tab
+        if (dto.getAuthenticationCredentialsMessage() != null) {
+            partner.setAuthentication(dto.getAuthenticationCredentialsMessage());
+        }
+        if (dto.getAuthenticationCredentialsAsyncMDN() != null) {
+            partner.setAuthenticationAsyncMDN(dto.getAuthenticationCredentialsAsyncMDN());
+        }
+
+        // Contact tab
+        if (dto.getContactAS2() != null) {
+            partner.setContactAS2(dto.getContactAS2());
+        }
+        if (dto.getContactCompany() != null) {
+            partner.setContactCompany(dto.getContactCompany());
         }
     }
 

@@ -1263,7 +1263,9 @@ public class JPanelPartner extends JPanel {
         jPanelSpaceX2 = new javax.swing.JPanel();
         jRadioButtonHttpAuthNoneMessage = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthCredentialsMessage = new javax.swing.JRadioButton();
+        jRadioButtonHttpAuthUserPreferenceMessage = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthCredentialsMDN = new javax.swing.JRadioButton();
+        jRadioButtonHttpAuthUserPreferenceMDN = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthNoneMDN = new javax.swing.JRadioButton();
         jPanelHTTPAuthCredentialsMessage = new javax.swing.JPanel();
         jLabelHttpAuth = new javax.swing.JLabel();
@@ -2082,6 +2084,10 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHttpAuthData.add(jRadioButtonHttpAuthCredentialsMessage, gridBagConstraints);
 
+        // Hidden radio button for AUTH_MODE_USER_PREFERENCE (backward compatibility)
+        buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthUserPreferenceMessage);
+        jRadioButtonHttpAuthUserPreferenceMessage.setVisible(false);
+
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthCredentialsMDN);
         jRadioButtonHttpAuthCredentialsMDN.setText(JPanelPartner.rb.getResourceString( "label.httpauth.credentials.asyncmdn" ));
         jRadioButtonHttpAuthCredentialsMDN.addItemListener(new java.awt.event.ItemListener() {
@@ -2095,6 +2101,10 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHttpAuthData.add(jRadioButtonHttpAuthCredentialsMDN, gridBagConstraints);
+
+        // Hidden radio button for AUTH_MODE_USER_PREFERENCE (backward compatibility)
+        buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthUserPreferenceMDN);
+        jRadioButtonHttpAuthUserPreferenceMDN.setVisible(false);
 
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthNoneMDN);
         jRadioButtonHttpAuthNoneMDN.setSelected(true);

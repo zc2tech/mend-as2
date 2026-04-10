@@ -1,5 +1,7 @@
 package de.mendelson.comm.as2.partner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,6 +19,7 @@ import org.w3c.dom.NodeList;
  * @author S.Heller
  * @version $Revision: 9 $
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HTTPAuthentication implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -26,11 +29,18 @@ public class HTTPAuthentication implements Serializable {
     public static final int AUTH_MODE_BASIC = 1;
     public static final int AUTH_MODE_USER_PREFERENCE = 2;
 
+    @JsonProperty("authMode")
     private int authMode = AUTH_MODE_NONE;
+
+    @JsonProperty("user")
     private String user = "";
+
+    @JsonProperty("password")
     private String password = "";
+
     /**Use it or dont use it? @deprecated Use authMode instead*/
     @Deprecated
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private boolean enabled = false;
 
     public HTTPAuthentication() {

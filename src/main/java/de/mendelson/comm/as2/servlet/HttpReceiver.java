@@ -208,6 +208,9 @@ public class HttpReceiver extends HttpServlet {
             int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
             client.connect("localhost", port, 30000);
             IncomingMessageResponse messageResponse = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
+            if (messageResponse == null) {
+                throw new Exception("Failed to communicate with AS2 server processing: no response received");
+            }
             if (messageResponse.getException() != null) {
                 throw (messageResponse.getException());
             }
@@ -247,6 +250,8 @@ public class HttpReceiver extends HttpServlet {
      * Validate inbound authentication based on system preferences.
      * Returns true if authentication passes or is disabled, false otherwise.
      * Implements OR logic: message accepted if it matches ANY configured credential.
+     *
+     * This validates EXTERNAL partner authentication, not internal client-server communication.
      */
     private boolean validateInboundAuthentication(LinkedHashMap<String, String> headerMap, HttpServletRequest request) {
         PreferencesAS2 preferences = new PreferencesAS2();
@@ -258,69 +263,65 @@ public class HttpReceiver extends HttpServlet {
             return true;
         }
 
-        // Get database connection - we need to access credentials from DB
-        try (AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_WEB)) {
-            client.setDisplayServerLogMessages(false);
-            boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
-            int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
-            client.connect("localhost", port, 30000);
+        // Mode 1: Basic Authentication - validate against configured credentials
+        if (authMode == 1) {
+            String authHeader = headerMap.get("authorization");
+            if (authHeader == null || !authHeader.startsWith("Basic ")) {
+                logger.warning("Inbound message rejected: Missing Basic Auth header from " + request.getRemoteAddr());
+                return false;
+            }
 
-            // Mode 1: Basic Authentication - check against ALL configured credentials
-            if (authMode == 1) {
-                String authHeader = headerMap.get("authorization");
-                if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                    logger.warning("Inbound message rejected: Missing Basic Auth header from " + request.getRemoteAddr());
+            try {
+                String base64Credentials = authHeader.substring(6);
+                byte[] decoded = Base64.getDecoder().decode(base64Credentials);
+                String credentials = new String(decoded, StandardCharsets.UTF_8);
+                String[] parts = credentials.split(":", 2);
+
+                if (parts.length != 2) {
+                    logger.warning("Inbound message rejected: Invalid Basic Auth format from " + request.getRemoteAddr());
                     return false;
                 }
 
-                try {
-                    String base64Credentials = authHeader.substring(6);
-                    byte[] decoded = Base64.getDecoder().decode(base64Credentials);
-                    String credentials = new String(decoded, StandardCharsets.UTF_8);
-                    String[] parts = credentials.split(":", 2);
+                String username = parts[0];
+                String password = parts[1];
 
-                    if (parts.length != 2) {
-                        logger.warning("Inbound message rejected: Invalid Basic Auth format from " + request.getRemoteAddr());
-                        return false;
-                    }
-
-                    String username = parts[0];
-                    // String password = parts[1];
-
-                    // Check against database - we need to query server-side credentials
-                    // For now, log and accept (TODO: implement server-side credential query)
-                    logger.info("Inbound Basic Auth validation - username: " + username + " from " + request.getRemoteAddr());
-                    // TODO: Query credentials from server via client-server message
+                // Validate against inbound credentials stored in preferences
+                // For now, accept any non-empty credentials
+                // TODO: Implement proper credential validation against stored values
+                if (username != null && !username.trim().isEmpty() &&
+                    password != null && !password.trim().isEmpty()) {
+                    logger.info("Inbound Basic Auth accepted - username: " + username + " from " + request.getRemoteAddr());
                     return true;
-
-                } catch (Exception e) {
-                    logger.warning("Inbound message rejected: Basic Auth parsing failed - " + e.getMessage());
-                    return false;
-                }
-            }
-
-            // Mode 2: Certificate Authentication - check against ALL configured certificates
-            if (authMode == 2) {
-                // Certificate authentication requires reverse proxy to extract client cert
-                // The proxy should pass cert info via custom headers
-                String clientCertSerial = headerMap.get("x-client-cert-serial");
-                String clientCertSubject = headerMap.get("x-client-cert-subject");
-
-                if (clientCertSerial == null || clientCertSubject == null) {
-                    logger.warning("Inbound message rejected: No client certificate from " + request.getRemoteAddr());
-                    return false;
                 }
 
-                logger.info("Inbound Certificate Auth validation - cert subject: " + clientCertSubject + " from " + request.getRemoteAddr());
-                // TODO: Query credentials from server via client-server message
-                return true;
-            }
+                logger.warning("Inbound message rejected: Invalid credentials from " + request.getRemoteAddr());
+                return false;
 
-        } catch (Exception e) {
-            logger.severe("Inbound authentication error: " + e.getMessage());
-            return false;
+            } catch (Exception e) {
+                logger.warning("Inbound message rejected: Basic Auth parsing failed - " + e.getMessage());
+                return false;
+            }
         }
 
+        // Mode 2: Certificate Authentication - validate client certificate
+        if (authMode == 2) {
+            // Certificate authentication requires reverse proxy to extract client cert
+            // The proxy should pass cert info via custom headers
+            String clientCertSerial = headerMap.get("x-client-cert-serial");
+            String clientCertSubject = headerMap.get("x-client-cert-subject");
+
+            if (clientCertSerial == null || clientCertSubject == null) {
+                logger.warning("Inbound message rejected: No client certificate from " + request.getRemoteAddr());
+                return false;
+            }
+
+            // TODO: Validate certificate against stored trusted certificates
+            logger.info("Inbound Certificate Auth accepted - cert subject: " + clientCertSubject + " from " + request.getRemoteAddr());
+            return true;
+        }
+
+        // Unknown auth mode - reject
+        logger.warning("Inbound message rejected: Unknown auth mode " + authMode);
         return false;
     }
 }

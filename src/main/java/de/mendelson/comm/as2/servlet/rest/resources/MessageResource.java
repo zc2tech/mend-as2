@@ -893,8 +893,10 @@ public class MessageResource {
                         .build();
             }
 
-            // Broadcast refresh to connected clients
-            processing.getClientserver().broadcastToClients(new RefreshClientMessageOverviewList());
+            // Broadcast refresh to connected clients (if ClientServer is available)
+            if (processing.getClientserver() != null) {
+                processing.getClientserver().broadcastToClients(new RefreshClientMessageOverviewList());
+            }
 
             String messageId = ((AS2MessageInfo)message.getAS2Info()).getMessageId();
             String successMsg = fileParts.size() == 1
@@ -1078,8 +1080,10 @@ public class MessageResource {
             controller.deleteMessagesFromLog(deleteList, true, deleteLog);
 
 
-            // Broadcast refresh to connected clients
-            processing.getClientserver().broadcastToClients(new RefreshClientMessageOverviewList());
+            // Broadcast refresh to connected clients (if ClientServer is available)
+            if (processing.getClientserver() != null) {
+                processing.getClientserver().broadcastToClients(new RefreshClientMessageOverviewList());
+            }
 
             return Response.ok(new DeleteSuccessResponse("Message deleted successfully")).build();
 

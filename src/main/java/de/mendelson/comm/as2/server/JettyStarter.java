@@ -144,9 +144,13 @@ public class JettyStarter {
 
             // Use regular thread pool for HTTP request handling (Java 17 compatible)
             QueuedThreadPool threadPool = new QueuedThreadPool();
+            threadPool.setStopTimeout(5000); // Set thread pool stop timeout (5 seconds)
             // Virtual threads require Java 21+, using regular threads for Java 17 compatibility
             // threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
             org.eclipse.jetty.server.Server tempHTTPServer = new org.eclipse.jetty.server.Server(threadPool);
+
+            // Set stop timeout to avoid long waits during shutdown (5 seconds)
+            tempHTTPServer.setStopTimeout(5000);
 
             jettyXMLConfiguration.configure(tempHTTPServer);
 

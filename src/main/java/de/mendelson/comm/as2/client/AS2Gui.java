@@ -690,9 +690,20 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 this.rb.getResourceString("details") + " [" +
                         KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_D) + "]");
 
-        // Delete Message button - DELETE key
+        // Delete Message button - DELETE key (no modifier) and Cmd+Backspace on Mac
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonDeleteMessage,
+                java.awt.event.KeyEvent.VK_DELETE,
+                0, // No modifiers - just DELETE key
+                "DELETE_MESSAGE");
+        // Add Cmd+Backspace for Mac users (standard macOS delete shortcut)
+        KeyboardShortcutUtil.addButtonShortcut(
+                this.jButtonDeleteMessage,
+                java.awt.event.KeyEvent.VK_BACK_SPACE,
+                "DELETE_MESSAGE_BACKSPACE");
         this.jButtonDeleteMessage.setToolTipText(
-                this.rb.getResourceString("delete.msg") + " [DELETE]");
+                this.rb.getResourceString("delete.msg") + " [DELETE or " +
+                KeyboardShortcutUtil.getShortcutDisplayText(java.awt.event.KeyEvent.VK_BACK_SPACE) + "]");
 
         // Filter button - Cmd/Ctrl+F (FIXED: use correct key "filter")
         KeyboardShortcutUtil.addButtonShortcut(
@@ -2904,7 +2915,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
 
         public void serverRequestsOverviewRefresh() {
-            if (!AS2Gui.this.jToggleButtonStopRefresh.isSelected()) {
+            boolean refreshEnabled = !AS2Gui.this.jToggleButtonStopRefresh.isSelected();
+            if (refreshEnabled) {
                 this.overviewRefreshRequested = true;
             }
         }

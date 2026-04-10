@@ -119,6 +119,8 @@ public class ClientServer {
             this.logger.log(Level.WARNING, "No session handler assigned to the client server!");
         }
         NioSocketAcceptor acceptor = new NioSocketAcceptor();
+        //enable SO_REUSEADDR to allow quick restart even if port is in TIME_WAIT state
+        acceptor.setReuseAddress(true);
         //add SSL support
         SslFilter tlsFilter = new SslFilter(this.clientserverTLS.createSSLContext());
         //If client authentication is disabled the client certificate must not be in the servers keystore

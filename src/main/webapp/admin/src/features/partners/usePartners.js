@@ -50,8 +50,8 @@ export function useUpdatePartner() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ as2id, partner }) => {
-      const response = await api.put(`/partners/${as2id}`, partner);
+    mutationFn: async ({ id, partner }) => {
+      const response = await api.put(`/partners/${id}`, partner);
       return response.data;
     },
     onSuccess: () => {

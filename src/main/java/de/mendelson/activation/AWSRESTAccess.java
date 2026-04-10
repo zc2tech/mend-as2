@@ -13,10 +13,10 @@ public class AWSRESTAccess {
     }
 
     public static String retrieveInstanceId() {
-        return ("MENDELSON COMMUNITY EDITION");
+        return ("MEND-AS2");
     }
 
     public static String retrieveIP4Address() {
-        return ("MENDELSON COMMUNITY EDITION");
+        return ("MEND-AS2");
     }
 }

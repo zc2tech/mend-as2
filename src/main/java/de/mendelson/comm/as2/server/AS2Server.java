@@ -174,8 +174,9 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * @param allowAllClients Allow client-server connections from other than
      *                        localhost
      * @param startPlugins    Starts the plugins if there are any in the system
-     * @param startMinaServer Start the Mina client-server for SwingUI. Should be
-     *                        disabled in headless mode for security
+     * @param startMinaServer Start the Mina client-server for internal communication.
+     *                        Required for HttpReceiver to forward messages to AS2ServerProcessing.
+     *                        Also enables SwingUI access. Should always be true.
      * @param config          AS2 configuration object for test mode and other
      *                        settings
      *
@@ -218,15 +219,16 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
 
         // Conditionally start Mina client-server for SwingUI
         if (startMinaServer) {
-            this.logger.info("Starting Mina client-server for SwingUI on port " + clientServerPort);
+            this.logger.info("Starting Mina client-server on port " + clientServerPort + " (internal communication & SwingUI)");
             this.clientserver = new ClientServer(this.logger, clientServerPort,
                     new ClientServerTLSImplDefault(AS2ServerVersion.getFullProductName()));
             this.clientserver.setProductName(AS2ServerVersion.getFullProductName());
             this.initializeServerInstanceHA();
             this.setupClientServerSessionHandler();
         } else {
-            this.logger.info("Mina client-server DISABLED (headless mode) - SwingUI access not available");
-            this.logger.info("Management available via WebUI at http://localhost:8080/as2/webui/");
+            this.logger.severe("Mina client-server DISABLED - HttpReceiver will NOT work!");
+            this.logger.severe("The client-server is required for internal communication between HttpReceiver and AS2ServerProcessing.");
+            this.logger.severe("This configuration is NOT supported. Please set startMinaServer=true.");
             // Set clientserver to null so we can detect headless mode
             this.clientserver = null;
             this.clientServerSessionHandler = null;
@@ -425,6 +427,13 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS);
             this.certificateManagerTLS.loadKeystoreCertificates(tlsStorage);
+
+            // Start client-server BEFORE HTTP server to avoid race condition
+            // where HTTP receiver gets messages but client-server isn't ready yet
+            if (this.clientserver != null) {
+                this.clientserver.start();
+            }
+
             // Time costing process:
             this.startHTTPServer(tlsStorage);
             this.startSendOrderReceiver();
@@ -481,10 +490,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.getLogger(),
                     this.dbDriverManager);
             Runtime.getRuntime().addShutdownHook(new AS2ShutdownThread(this.dbServer));
-            // listen for inbound client connects (only if Mina server is enabled)
-            if (this.clientserver != null) {
-                this.clientserver.start();
-            }
+
+            // Client-server already started earlier (before HTTP server)
+            // to avoid race condition during startup
+
             // run the configuration check unless skipped
             List<ConfigurationIssue> configurationIssues;
             if (skipStartupConfigCheck) {
@@ -593,9 +602,14 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private void setupClientServerSessionHandler() {
         // Only called if Mina server is enabled (startMinaServer=true)
         // set up session handler for incoming client requests
+        // this.clientServerSessionHandler = new
+        // ClientServerSessionHandlerLocalhost(this.logger,
+        // new String[] { AS2ServerVersion.getFullProductName() }, this.allowAllClients,
+        // this.preferences.getBoolean(PreferencesAS2.COMMUNITY_EDITION) ? 1 : -1,
+        // SystemEventManagerImplAS2.instance(), this.dbDriverManager);
         this.clientServerSessionHandler = new ClientServerSessionHandlerLocalhost(this.logger,
                 new String[] { AS2ServerVersion.getFullProductName() }, this.allowAllClients,
-                this.preferences.getBoolean(PreferencesAS2.COMMUNITY_EDITION) ? 1 : -1,
+                3,
                 SystemEventManagerImplAS2.instance(), this.dbDriverManager);
         this.clientServerSessionHandler.setAnonymousProcessing(new AnonymousProcessingAS2());
         this.clientserver.setSessionHandler(this.clientServerSessionHandler);
@@ -614,7 +628,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      */
     private void checkLock() {
         // check if lock file exists, if it exists cancel!
-        Path lockFile = Paths.get(AS2ServerVersion.getProductName().replace(' ', '_') + ".lock");
+        Path lockFile = getLockFilePath();
         if (Files.exists(lockFile)) {
             long lastModificationTime = System.currentTimeMillis();
             try {
@@ -803,10 +817,30 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     }
 
     /**
+     * Gets the lock file path, including test mode suffix if applicable
+     */
+    private Path getLockFilePath() {
+        String lockFileName = AS2ServerVersion.getProductName().replace(' ', '_');
+        // Add suffix for test mode to allow running both instances simultaneously
+        if (config.isTestMode()) {
+            lockFileName += "_test";
+        }
+        lockFileName += ".lock";
+        return Paths.get(lockFileName);
+    }
+
+    /**
      * Deletes the lock file
      */
     public static void deleteLockFile() {
-        Path lockFile = Paths.get(AS2ServerVersion.getProductName().replace(' ', '_') + ".lock");
+        // Need to check test mode from system property since this is static
+        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
+        String lockFileName = AS2ServerVersion.getProductName().replace(' ', '_');
+        if (isTestMode) {
+            lockFileName += "_test";
+        }
+        lockFileName += ".lock";
+        Path lockFile = Paths.get(lockFileName);
         try {
             Files.delete(lockFile);
         } catch (Exception e) {

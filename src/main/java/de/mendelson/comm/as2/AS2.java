@@ -205,10 +205,11 @@ public class AS2 {
             //initialize the security provider
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
-            // Only start Mina server if GUI mode is enabled (for SwingUI)
-            // In headless mode, disable Mina for security - WebUI uses REST API
+            // Always start Mina server for internal communication (HttpReceiver -> AS2ServerProcessing)
+            // In headless mode, localhost-only restriction prevents external SwingUI access
+            // allowAllClients=false ensures only localhost can connect (HttpReceiver needs this)
             new AS2Server(startHTTP, false, false, importTLS, importEncSign,
-                         config.shouldSkipConfigCheck(), startGUI, config);
+                         config.shouldSkipConfigCheck(), true, config);
         } catch (ServerAlreadyRunningException e) {
             //don't delete the lockfile in this case!
             SystemEventManagerImplAS2.instance().newEvent(
@@ -307,8 +308,10 @@ public class AS2 {
      */
     private static void logWithTimestamp(String message) {
         java.time.LocalTime now = java.time.LocalTime.now();
-        String timestamp = String.format("[%02d:%02d:%02d %s]",
-                now.getHour() > 12 ? now.getHour() - 12 : (now.getHour() == 0 ? 12 : now.getHour()),
+        // Format: [h:mm:ss AM/PM] - no leading zero for hour to match system log format
+        int hour12 = now.getHour() > 12 ? now.getHour() - 12 : (now.getHour() == 0 ? 12 : now.getHour());
+        String timestamp = String.format("[%d:%02d:%02d %s]",
+                hour12,
                 now.getMinute(),
                 now.getSecond(),
                 now.getHour() >= 12 ? "PM" : "AM");

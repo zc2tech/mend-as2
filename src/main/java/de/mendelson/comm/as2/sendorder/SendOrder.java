@@ -26,10 +26,14 @@ public class SendOrder implements Serializable {
     private Partner receiver;
     private AS2Message message;
     private Partner sender;
-    private final AtomicInteger retryCount = new AtomicInteger(0);
+    private transient AtomicInteger retryCount;
     private int dbId = -1;
     private String userdefinedId = null;
     private int userId = -1; // WebUI user ID for HTTP auth preference resolution
+
+    public SendOrder() {
+        this.retryCount = new AtomicInteger(0);
+    }
 
     public Partner getReceiver() {
         return receiver;
@@ -105,6 +109,25 @@ public class SendOrder implements Serializable {
     public SendOrder setUserId(int userId) {
         this.userId = userId;
         return( this );
+    }
+
+    /**
+     * Custom serialization to handle transient AtomicInteger
+     */
+    private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
+        out.defaultWriteObject();
+        // Save the retry count value
+        out.writeInt(retryCount != null ? retryCount.get() : 0);
+    }
+
+    /**
+     * Custom deserialization to restore transient AtomicInteger
+     */
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        // Restore the retry count value
+        int retryCountValue = in.readInt();
+        this.retryCount = new AtomicInteger(retryCountValue);
     }
 
 }

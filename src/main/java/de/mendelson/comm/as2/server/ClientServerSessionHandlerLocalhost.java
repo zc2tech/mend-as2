@@ -69,16 +69,25 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
         try {
             InetSocketAddress localAddress = (InetSocketAddress) session.getLocalAddress();
             InetSocketAddress remoteAddress = (InetSocketAddress) session.getRemoteAddress();
+            this.log(Level.INFO, "Session opened: local=" + localAddress + ", remote=" + remoteAddress +
+                    ", allowAllClients=" + this.allowAllClients);
+
             if (!this.allowAllClients && !localAddress.getHostName().equalsIgnoreCase(remoteAddress.getHostName())) {
+                this.log(Level.SEVERE, "Rejecting non-localhost client: " + remoteAddress.getHostName() +
+                        " vs " + localAddress.getHostName());
                 ServerLogMessage message = new ServerLogMessage();
                 message.setLevel(Level.SEVERE);
                 message.setMessage(this.rb.getResourceString("only.localhost.clients"));
                 session.write(message);
                 session.closeNow();
             } else {
+                this.log(Level.INFO, "Session allowed, calling super.sessionOpened()");
                 super.sessionOpened(session);
             }
         } catch (Exception e) {
+            // Log the exception instead of silently closing
+            this.log(Level.SEVERE, "Exception in sessionOpened: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
             session.closeNow();
         }
     }
@@ -89,12 +98,27 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
      */
     public void messageReceived(IoSession session, Object message) {
         if (!(message instanceof ClientServerMessage)) {
+            this.log(Level.INFO, "Received non-ClientServerMessage, passing to super");
+            super.messageReceived(session, message);
+            return;
+        }
+
+        ClientServerMessage clientMessage = (ClientServerMessage) message;
+        this.log(Level.INFO, "Received message: " + clientMessage.getClass().getSimpleName());
+
+        // Check if this message can be processed anonymously (e.g., IncomingMessageRequest from web servlet)
+        // This must be checked BEFORE authentication to allow web servlet communication
+        if (this.getAnonymousProcessing() != null &&
+            this.getAnonymousProcessing().processMessageWithoutLogin(session, clientMessage)) {
+            this.log(Level.INFO, "Message allowed for anonymous processing: " + clientMessage.getClass().getSimpleName());
+            // Message is allowed without authentication - pass to parent
             super.messageReceived(session, message);
             return;
         }
 
         // Handle login request
         if (message instanceof LoginRequest) {
+            this.log(Level.INFO, "Processing LoginRequest");
             LoginRequest request = (LoginRequest) message;
             LoginResponse response = this.processLoginRequest(request, session);
             session.write(response);
@@ -102,6 +126,9 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             if (response.isSuccess()) {
                 // Mark session as authenticated on successful login
                 session.setAttribute(SESSION_ATTRIB_AUTHENTICATED, Boolean.TRUE);
+                this.log(Level.INFO, "Login successful for: " + request.getUsername());
+            } else {
+                this.log(Level.WARNING, "Login failed for: " + request.getUsername());
             }
             // Note: Do NOT close session on failed login - allow retry
             return;
@@ -116,6 +143,7 @@ public class ClientServerSessionHandlerLocalhost extends ClientServerSessionHand
             return;
         }
 
+        this.log(Level.INFO, "Message authenticated, passing to super");
         // Authenticated - pass to parent handler
         super.messageReceived(session, message);
     }

@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,9 +40,9 @@ const partnerSchema = z.object({
   subject: z.string().optional(),
   contentType: z.string().optional(),
   email: z.string().optional(),
-  encryptionType: z.number().optional(),
-  signType: z.number().optional(),
-  compressionType: z.number().optional(),
+  encryptionType: z.coerce.number().optional(),
+  signType: z.coerce.number().optional(),
+  compressionType: z.coerce.number().optional(),
 
   // Receive/MDN tab
   mdnURL: z.string().optional(),
@@ -53,37 +53,79 @@ const partnerSchema = z.object({
   signFingerprintSHA1: z.string().optional(),
   cryptFingerprintSHA1: z.string().optional(),
   overwriteLocalStationSecurity: z.boolean().default(false),
-  overwriteSignFingerprintSHA1: z.string().optional(),
-  overwriteCryptFingerprintSHA1: z.string().optional(),
+  signOverwriteLocalstationFingerprintSHA1: z.string().optional(),
+  cryptOverwriteLocalstationFingerprintSHA1: z.string().optional(),
   useAlgorithmIdentifierProtectionAttribute: z.boolean().default(true),
 
   // Directory Poll tab
   enableDirPoll: z.boolean().default(true),
-  pollInterval: z.number().min(1).default(30),
-  maxPollFiles: z.number().min(1).default(100),
+  pollInterval: z.coerce.number().min(1).default(30),
+  maxPollFiles: z.coerce.number().min(1).default(100),
   pollIgnoreListAsString: z.string().optional(),
   keepFilenameOnReceipt: z.boolean().default(false),
 
   // HTTP tab
-  httpProtocolVersion: z.string().default('HTTP/1.1'),
-  contentTransferEncoding: z.number().default(0),
+  httpProtocolVersion: z.string().default('1.1'),
+  contentTransferEncoding: z.coerce.number().default(0),
 
   // HTTP Authentication tab
-  authModeMessage: z.number().default(0),
+  authModeMessage: z.coerce.number().default(0),
   useHttpAuthMessage: z.boolean().default(false),
   httpAuthMessageUser: z.string().optional(),
   httpAuthMessagePassword: z.string().optional(),
-  authModeAsyncMDN: z.number().default(0),
+  authModeAsyncMDN: z.coerce.number().default(0),
   useHttpAuthAsyncMDN: z.boolean().default(false),
   httpAuthAsyncMDNUser: z.string().optional(),
   httpAuthAsyncMDNPassword: z.string().optional(),
 
   // Contact tab
   contactAS2: z.string().optional(),
-  contactCompany: z.string().optional()
+  contactCompany: z.string().optional(),
+
+  // Additional fields from Partner.java
+  notifySend: z.coerce.number().optional(),
+  notifyReceive: z.coerce.number().optional(),
+  notifySendReceive: z.coerce.number().optional(),
+  notifySendEnabled: z.boolean().optional(),
+  notifyReceiveEnabled: z.boolean().optional(),
+  notifySendReceiveEnabled: z.boolean().optional()
 });
 
+// Helper function to flatten nested authentication credentials from backend format
+const getFlattenedPartnerData = (partner) => {
+  if (!partner) return null;
+
+  const authModeMessageValue = partner.authenticationCredentialsMessage?.authMode ?? 0;
+  const authModeAsyncMDNValue = partner.authenticationCredentialsAsyncMDN?.authMode ?? 0;
+
+  // Create a copy WITHOUT the nested auth objects
+  const { authenticationCredentialsMessage, authenticationCredentialsAsyncMDN, ...partnerWithoutNestedAuth } = partner;
+
+  const flattened = {
+    ...partnerWithoutNestedAuth,
+    // Flatten authentication credentials from nested objects
+    // Convert to STRING to match select values (z.coerce.number in schema will convert back)
+    authModeMessage: String(authModeMessageValue),
+    httpAuthMessageUser: partner.authenticationCredentialsMessage?.user ?? '',
+    httpAuthMessagePassword: partner.authenticationCredentialsMessage?.password ?? '',
+    useHttpAuthMessage: partner.authenticationCredentialsMessage?.enabled ?? false,
+
+    authModeAsyncMDN: String(authModeAsyncMDNValue),
+    httpAuthAsyncMDNUser: partner.authenticationCredentialsAsyncMDN?.user ?? '',
+    httpAuthAsyncMDNPassword: partner.authenticationCredentialsAsyncMDN?.password ?? '',
+    useHttpAuthAsyncMDN: partner.authenticationCredentialsAsyncMDN?.enabled ?? false
+  };
+
+  return flattened;
+};
+
 export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
+  // Memoize the flattened partner data so it doesn't change on every render
+  const initialPartnerData = useMemo(() => {
+    const flattened = getFlattenedPartnerData(partner);
+    return flattened;
+  }, [partner?.dbid]); // Only re-compute if the partner ID changes
+
   const [activeTab, setActiveTab] = useState('general');
   const [localStationType, setLocalStationType] = useState(partner?.localStation ?? null);
   const createPartner = useCreatePartner();
@@ -105,10 +147,12 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
-    setValue
+    setValue,
+    reset,
+    getValues
   } = useForm({
     resolver: zodResolver(partnerSchema),
-    defaultValues: partner || {
+    defaultValues: initialPartnerData || {
       name: '',
       as2Identification: '',
       localStation: false,
@@ -127,13 +171,13 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       pollInterval: 30,
       maxPollFiles: 100,
       keepFilenameOnReceipt: false,
-      httpProtocolVersion: 'HTTP/1.1',
+      httpProtocolVersion: '1.1',
       contentTransferEncoding: 0,
-      authModeMessage: 0,
+      authModeMessage: "0",
       useHttpAuthMessage: false,
       httpAuthMessageUser: '',
       httpAuthMessagePassword: '',
-      authModeAsyncMDN: 0,
+      authModeAsyncMDN: "0",
       useHttpAuthAsyncMDN: false,
       httpAuthAsyncMDNUser: '',
       httpAuthAsyncMDNPassword: '',
@@ -145,6 +189,19 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       overwriteCryptFingerprintSHA1: ''
     }
   });
+
+  // REMOVED: This useEffect was causing form resets on every render
+  // The initialPartnerData with useMemo handles initialization correctly
+
+  // Log form validation errors
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      // Validation errors - handled by form display
+    }
+  }, [errors]);
+
+  // REMOVED: This useEffect with reset() was also causing form resets
+  // The memoized initialPartnerData in defaultValues handles initialization
 
   const enableDirPoll = watch('enableDirPoll');
   const overwriteLocalStationSecurity = watch('overwriteLocalStationSecurity');
@@ -158,15 +215,52 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   };
 
   const onSubmit = async (data) => {
+    // Transform flat auth fields back to nested structure for backend
+    const {
+      authModeMessage,
+      httpAuthMessageUser,
+      httpAuthMessagePassword,
+      useHttpAuthMessage,
+      authModeAsyncMDN,
+      httpAuthAsyncMDNUser,
+      httpAuthAsyncMDNPassword,
+      useHttpAuthAsyncMDN,
+      ...otherData
+    } = data;
+
+    const backendData = {
+      ...otherData,
+      authenticationCredentialsMessage: {
+        authMode: authModeMessage,
+        user: httpAuthMessageUser || '',
+        password: httpAuthMessagePassword || '',
+        enabled: useHttpAuthMessage
+      },
+      authenticationCredentialsAsyncMDN: {
+        authMode: authModeAsyncMDN,
+        user: httpAuthAsyncMDNUser || '',
+        password: httpAuthAsyncMDNPassword || '',
+        enabled: useHttpAuthAsyncMDN
+      }
+    };
+
     try {
       let savedPartnerId;
       if (isEdit) {
-        await updatePartner.mutateAsync({ id: partner.dbId, partner: data });
-        savedPartnerId = partner.dbId;
+        // Use database ID for update - property name is 'dbid' (all lowercase)
+        const dbId = partner.dbid || partner.dbId || partner.id || partner.DBId;
+
+        if (!dbId) {
+          toast.error('Failed to update: Database ID not found');
+          return;
+        }
+
+        await updatePartner.mutateAsync({ id: dbId, partner: backendData });
+        savedPartnerId = dbId;
         toast.success('Partner updated successfully');
       } else {
-        const result = await createPartner.mutateAsync(data);
-        savedPartnerId = result?.dbId || result?.id;
+        const result = await createPartner.mutateAsync(backendData);
+        savedPartnerId = result?.dbId || result?.id || result?.dbid;
         toast.success('Partner created successfully');
       }
 
@@ -178,7 +272,6 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
             userIds: visibilityMode === 'specific' ? selectedUserIds : []
           });
         } catch (error) {
-          console.error('Failed to save visibility settings:', error);
           toast.error('Partner saved, but failed to update visibility settings');
         }
       }
@@ -442,6 +535,11 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                 {localStation ? '🏠 Local Station' : '🌐 Remote Partner'}
               </div>
             )}
+            {isEdit && (
+              <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.25rem' }}>
+                {partner?.localStation ? '🏠 Local Station' : '🌐 Remote Partner'}
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -493,25 +591,14 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
 
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>AS2 Identification *</label>
-                  <input type="text" {...register('as2Identification')} style={inputStyle} disabled={isSubmitting} />
+                  <input
+                    type="text"
+                    {...register('as2Identification')}
+                    style={inputStyle}
+                    disabled={isSubmitting}
+                  />
                   {errors.as2Identification && <div style={errorStyle}>{errors.as2Identification.message}</div>}
                 </div>
-
-                {/* Show local station toggle only in edit mode, but disabled */}
-                {isEdit && (
-                  <div style={formGroupStyle}>
-                    <div style={checkboxContainerStyle}>
-                      <input
-                        type="checkbox"
-                        {...register('localStation')}
-                        disabled={true}
-                      />
-                      <label style={{...labelStyle, marginBottom: 0, color: '#6c757d'}}>
-                        Local Station (cannot be changed)
-                      </label>
-                    </div>
-                  </div>
-                )}
 
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>Comment</label>
@@ -546,7 +633,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
 
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>Compression</label>
-                  <select {...register('compressionType', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
+                  <select {...register('compressionType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
                     <option value="0">None</option>
                     <option value="1">ZLIB</option>
                   </select>
@@ -560,14 +647,14 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>HTTP Protocol Version</label>
                   <select {...register('httpProtocolVersion')} style={inputStyle} disabled={isSubmitting}>
-                    <option value="HTTP/1.1">HTTP/1.1</option>
-                    <option value="HTTP/1.0">HTTP/1.0</option>
+                    <option value="1.1">HTTP/1.1</option>
+                    <option value="1.0">HTTP/1.0</option>
                   </select>
                 </div>
 
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>Content Transfer Encoding</label>
-                  <select {...register('contentTransferEncoding', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
+                  <select {...register('contentTransferEncoding', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
                     <option value="0">Binary</option>
                     <option value="1">Base64</option>
                     <option value="2">Quoted-Printable</option>
@@ -640,7 +727,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                       >
                         <option value="">-- Select Certificate --</option>
                         {certificates?.filter(cert => cert.isKeyPair).map((cert) => (
-                          <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                          <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
                             🔑 {cert.alias} - {cert.subjectDN || 'No DN'}
                           </option>
                         ))}
@@ -659,7 +746,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                       >
                         <option value="">-- Select Certificate --</option>
                         {certificates?.filter(cert => cert.isKeyPair).map((cert) => (
-                          <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                          <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
                             🔑 {cert.alias} - {cert.subjectDN || 'No DN'}
                           </option>
                         ))}
@@ -684,7 +771,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         {certificates?.map((cert) => {
                           const icon = cert.isKeyPair ? '🔑' : '📜';
                           return (
-                            <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                            <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
                               {icon} {cert.alias} - {cert.subjectDN || 'No DN'}
                             </option>
                           );
@@ -707,7 +794,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         {certificates?.map((cert) => {
                           const icon = cert.isKeyPair ? '🔑' : '📜';
                           return (
-                            <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                            <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
                               {icon} {cert.alias} - {cert.subjectDN || 'No DN'}
                             </option>
                           );
@@ -721,7 +808,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     {/* 3. Digital signature algorithm */}
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Digital Signature Algorithm</label>
-                      <select {...register('signType', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
+                      <select {...register('signType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
                         <option value="0">None</option>
                         <option value="11">MD5</option>
                         <option value="12">SHA-1</option>
@@ -746,7 +833,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     {/* 4. Message encryption algorithm */}
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Message Encryption Algorithm</label>
-                      <select {...register('encryptionType', { valueAsNumber: true })} style={inputStyle} disabled={isSubmitting}>
+                      <select {...register('encryptionType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
                         <option value="0">None</option>
                         <option value="1">3DES</option>
                         <option value="5">AES-128-CBC</option>
@@ -846,48 +933,19 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                   <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Message Transmission Authentication</h4>
 
                   <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="0"
-                        {...register('authModeMessage', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      No HTTP Authentication
-                    </label>
+                    <label style={labelStyle}>Authentication Method</label>
+                    <select
+                      {...register('authModeMessage')}
+                      style={inputStyle}
+                      disabled={isSubmitting}
+                    >
+                      <option value="0">No HTTP Authentication</option>
+                      <option value="1">Basic Auth (credentials in this form)</option>
+                      <option value="2">Use User Preference</option>
+                    </select>
                   </div>
 
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="1"
-                        {...register('authModeMessage', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      Basic Auth (credentials in this form)
-                    </label>
-                  </div>
-
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="2"
-                        {...register('authModeMessage', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      Use User Preference
-                    </label>
-                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
-                      Credentials will be taken from the user's HTTP Authentication preferences
-                    </div>
-                  </div>
-
-                  {watch('authModeMessage') === 1 && (
+                  {watch('authModeMessage') === "1" && (
                     <>
                       <div style={formGroupStyle}>
                         <label style={labelStyle}>Username</label>
@@ -919,48 +977,19 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                   <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Async MDN Authentication</h4>
 
                   <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="0"
-                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      No HTTP Authentication
-                    </label>
+                    <label style={labelStyle}>Authentication Method</label>
+                    <select
+                      {...register('authModeAsyncMDN')}
+                      style={inputStyle}
+                      disabled={isSubmitting}
+                    >
+                      <option value="0">No HTTP Authentication</option>
+                      <option value="1">Basic Auth (credentials in this form)</option>
+                      <option value="2">Use User Preference</option>
+                    </select>
                   </div>
 
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="1"
-                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      Basic Auth (credentials in this form)
-                    </label>
-                  </div>
-
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>
-                      <input
-                        type="radio"
-                        value="2"
-                        {...register('authModeAsyncMDN', { valueAsNumber: true })}
-                        disabled={isSubmitting}
-                        style={{ marginRight: '0.5rem' }}
-                      />
-                      Use User Preference
-                    </label>
-                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
-                      Credentials will be taken from the user's HTTP Authentication preferences
-                    </div>
-                  </div>
-
-                  {watch('authModeAsyncMDN') === 1 && (
+                  {watch('authModeAsyncMDN') === "1" && (
                     <>
                       <div style={formGroupStyle}>
                         <label style={labelStyle}>Username</label>
