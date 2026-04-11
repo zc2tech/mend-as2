@@ -315,29 +315,19 @@ public class MessageResource {
         byte[] data;
         try {
             data = payload.getData();
-            System.out.println("DEBUG Download: Payload index " + index +
-                             ", getData() returned " + (data != null ? data.length : 0) + " bytes");
 
             // If getData() returns empty but payloadFilename exists, try reading from file
             if ((data == null || data.length == 0) && payload.getPayloadFilename() != null) {
-                System.out.println("DEBUG Download: Trying to read from file: " + payload.getPayloadFilename());
                 try {
                     java.nio.file.Path payloadFile = java.nio.file.Paths.get(payload.getPayloadFilename());
                     if (java.nio.file.Files.exists(payloadFile)) {
                         data = java.nio.file.Files.readAllBytes(payloadFile);
-                        System.out.println("DEBUG Download: Read " + data.length + " bytes from file");
-                    } else {
-                        System.out.println("DEBUG Download: File does not exist: " + payloadFile);
                     }
                 } catch (Exception fileEx) {
                     System.err.println("ERROR: Failed to read payload file: " + fileEx.getMessage());
                     fileEx.printStackTrace();
                 }
             }
-
-            System.out.println("DEBUG Download: Final data size: " + (data != null ? data.length : 0) +
-                             ", ContentType: " + payload.getContentType() +
-                             ", Filename: " + payload.getOriginalFilename());
         } catch (Exception e) {
             System.err.println("ERROR: Failed to get payload data: " + e.getMessage());
             e.printStackTrace();
@@ -404,7 +394,6 @@ public class MessageResource {
 
         // Create simplified payload info without the actual data
         java.util.List<PayloadInfo> payloadInfos = new java.util.ArrayList<>();
-        System.out.println("DEBUG Payloads: Found " + payloads.size() + " payload(s) for message " + targetMessageId);
         for (int i = 0; i < payloads.size(); i++) {
             AS2Payload payload = payloads.get(i);
             PayloadInfo info = new PayloadInfo();
@@ -412,15 +401,9 @@ public class MessageResource {
             info.setContentType(payload.getContentType());
             info.setOriginalFilename(payload.getOriginalFilename());
 
-            System.out.println("DEBUG Payloads: Payload " + i +
-                             " - Filename: " + payload.getOriginalFilename() +
-                             " - ContentType: " + payload.getContentType() +
-                             " - PayloadFilename: " + payload.getPayloadFilename());
-
             try {
                 byte[] data = payload.getData();
                 info.setSize(data != null ? data.length : 0);
-                System.out.println("DEBUG Payloads: getData() returned " + (data != null ? data.length : 0) + " bytes");
 
 
                 // If getData() returns empty but payloadFilename exists, try reading from file
@@ -430,9 +413,6 @@ public class MessageResource {
                         if (java.nio.file.Files.exists(payloadFile)) {
                             data = java.nio.file.Files.readAllBytes(payloadFile);
                             info.setSize(data.length);
-                            System.out.println("DEBUG Payloads: Read " + data.length + " bytes from file");
-                        } else {
-                            System.out.println("DEBUG Payloads: File does not exist: " + payloadFile);
                         }
                     } catch (Exception fileEx) {
                         System.err.println("ERROR: Failed to read payload " + i + " from file: " + fileEx.getMessage());
@@ -752,9 +732,6 @@ public class MessageResource {
             @FormDataParam("subject") String subject,
             @FormDataParam("contentType") String contentType) {
 
-        System.out.println("DEBUG Request: Content-Length header: " + request.getHeader("Content-Length"));
-        System.out.println("DEBUG Request: Content-Type header: " + request.getHeader("Content-Type"));
-
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -841,25 +818,17 @@ public class MessageResource {
             String[] originalFilenames = new String[fileParts.size()];
             String[] payloadContentTypes = new String[fileParts.size()];
 
-            System.out.println("DEBUG Send: Received " + fileParts.size() + " files from client");
-
             for (int i = 0; i < fileParts.size(); i++) {
                 FormDataBodyPart part = fileParts.get(i);
                 FormDataContentDisposition fileDetail = part.getFormDataContentDisposition();
                 String originalFilename = fileDetail.getFileName();
 
-                System.out.println("DEBUG Upload: Processing file " + i + ": " + originalFilename);
-                System.out.println("DEBUG Upload: Content-Length from part header: " + part.getHeaders().getFirst("Content-Length"));
-
                 // Get entity as byte array directly
                 byte[] fileBytes = part.getValueAs(byte[].class);
-                System.out.println("DEBUG Upload: Got byte array of length: " + fileBytes.length);
 
                 File tempFile = File.createTempFile("as2_upload_", "_" + originalFilename);
                 java.nio.file.Files.write(tempFile.toPath(), fileBytes);
                 tempFiles.add(tempFile);
-
-                System.out.println("DEBUG Upload: Temp file size on disk: " + tempFile.length());
 
                 sendFiles[i] = tempFile.toPath();
                 originalFilenames[i] = originalFilename;
@@ -871,10 +840,6 @@ public class MessageResource {
                     // Auto-detect content type from file extension
                     payloadContentTypes[i] = detectContentType(originalFilenames[i]);
                 }
-
-                System.out.println("DEBUG: File " + i + " - " + originalFilenames[i] +
-                                   " - ContentType: " + payloadContentTypes[i] +
-                                   " - Size: " + tempFile.length());
             }
 
             // Send the message using SendOrderSender with userId
