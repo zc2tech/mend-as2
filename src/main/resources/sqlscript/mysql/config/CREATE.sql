@@ -285,7 +285,7 @@ INSERT INTO notification (mailhost, mailhostport, notificationemailaddress, noti
   notifycem, notifysystemfailure, notifypostprocessing, replyto,
   usesmtpauth, smtpauthuser, smtpauthpass, notifyresend, security,
   maxnotificationspermin, notifyconnectionproblem, notifyclientserver, usesmtpoauth2, smtpoauth2id)
-VALUES ('smtp.office365.com', 587, 'julian.xu@aliyun.com', 1, 1, 0, 1, 1, 'julian.xu@aliyun.com', 1, 'julian.xu@aliyun.com', 'password!', 1, 2, 2, 1, 0, 0, 0);
+VALUES ('smtp.example12345.com', 587, '', 1, 1, 0, 1, 1, '', 1, '', '', 1, 2, 2, 1, 0, 0, 0);
 
 INSERT INTO version
 VALUES(

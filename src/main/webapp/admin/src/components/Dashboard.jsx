@@ -21,6 +21,7 @@
 
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/useAuth';
+import AdminWarnings from './AdminWarnings';
 
 export default function Dashboard() {
   const { hasAnyPermission } = useAuth();
@@ -54,6 +55,9 @@ export default function Dashboard() {
     <div>
       <h1>Dashboard</h1>
       <p>Welcome to the AS2 Server Administration Interface</p>
+
+      <AdminWarnings />
+
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',

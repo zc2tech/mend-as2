@@ -19,7 +19,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import HTTPServerConfig from './HTTPServerConfig';
 import InboundAuth from './InboundAuth';
 import TrackerConfig from './TrackerConfig';
@@ -29,7 +30,16 @@ import MaintenanceSettings from './MaintenanceSettings';
 import NotificationSettings from './NotificationSettings';
 
 export default function SystemInfo() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('httpConfig');
+
+  // Check for tab parameter in URL on mount
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   const tabStyle = {
     display: 'flex',

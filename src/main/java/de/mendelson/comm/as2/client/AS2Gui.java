@@ -445,6 +445,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
         this.as2StatusBar.initialize(this.getBaseClient(), this);
         this.as2StatusBar.startConfigurationChecker();
+
+        // Check and show admin configuration warnings (SwingUI always runs as admin)
+        AdminConfigurationWarning.checkAndShowWarnings(this, username, this.getBaseClient());
     }
 
     /**
@@ -468,6 +471,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 GUIClient.scheduleWithFixedDelay(this.refreshThread, 3000, 3000, TimeUnit.MILLISECONDS);
                 this.as2StatusBar.initialize(this.getBaseClient(), this);
                 this.as2StatusBar.startConfigurationChecker();
+
+                // Check and show admin configuration warnings
+                AdminConfigurationWarning.checkAndShowWarnings(this, username, this.getBaseClient());
+
                 return loginResponse;
             }
 
