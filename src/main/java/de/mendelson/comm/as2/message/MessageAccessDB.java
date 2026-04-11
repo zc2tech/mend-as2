@@ -583,11 +583,9 @@ public class MessageAccessDB {
                 }
             }
 
-            //Hint: This is the wrong order! It should be ordered using "ASC". But the HSQLDB LIMIT clause
-            //just takes the n first rows of the result set and returns them. Means the first n results are taken now 
-            //in the wrong order and then the returned list of transactions is built in the wrong order again 
-            //(add every row to the pos 0 of the list)
-            //- then the result is as if the LIMIT has been taken from the other side of the result set
+            // Order by initdateutc DESC to show newest messages first
+            // Note: For MySQL/PostgreSQL, we append rows normally (not to position 0)
+            // since these databases handle LIMIT correctly with ORDER BY DESC
             String query = "SELECT * FROM messages" + queryCondition.toString()
                     + " ORDER BY initdateutc DESC";
             boolean useTimeFilter = hasStartTime || hasEndTime;
@@ -632,8 +630,8 @@ public class MessageAccessDB {
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         // Load first payload's format and doctype
                         this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
-                        //change the order of the list. This is required because of the LIMIT clause of HSQLDB
-                        messageList.add(0, info);
+                        // Append to list normally (MySQL/PostgreSQL handle ORDER BY DESC correctly)
+                        messageList.add(info);
                     }
                 }
             }

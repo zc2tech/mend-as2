@@ -87,6 +87,18 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
         // Get username from token
         String username = jwtTokenProvider.getUsernameFromToken(token);
 
+        // Check if user must change password before accessing other endpoints
+        if (!isPasswordChangeEndpoint(path) && mustUserChangePassword(username)) {
+            LOGGER.log(Level.WARNING, "User {0} must change password before accessing {1}",
+                    new Object[]{username, path});
+            requestContext.abortWith(
+                    Response.status(Response.Status.FORBIDDEN)
+                            .entity("{\"error\":\"Password change required. Please change your password before accessing other resources.\"}")
+                            .build()
+            );
+            return;
+        }
+
         // Check permissions for protected operations
         String requiredPermission = getRequiredPermission(method, path);
         if (requiredPermission != null) {
@@ -222,5 +234,46 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
 
         // Default: no specific permission required (authenticated users can access)
         return null;
+    }
+
+    /**
+     * Check if user must change password
+     */
+    private boolean mustUserChangePassword(String username) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                LOGGER.log(Level.WARNING, "AS2ServerProcessing not available for password check");
+                return false;
+            }
+
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                    processing.getDBDriverManager(), LOGGER);
+            de.mendelson.comm.as2.usermanagement.WebUIUser user = userMgmt.getUserByUsername(username);
+            return user != null && user.isMustChangePassword();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error checking must change password flag", e);
+            return false;
+        }
+    }
+
+    /**
+     * Check if the path is a password change endpoint
+     * Allow users with must_change_password=true to access these endpoints
+     */
+    private boolean isPasswordChangeEndpoint(String path) {
+        // Allow password change endpoint
+        if (path.matches("users/\\d+/password")) {
+            return true;
+        }
+        // Allow getting user list (needed by ChangePassword.jsx to find current user ID)
+        if (path.equals("users") || path.equals("users/")) {
+            return true;
+        }
+        // Allow logout
+        if (path.startsWith("auth/logout")) {
+            return true;
+        }
+        return false;
     }
 }

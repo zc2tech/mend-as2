@@ -194,10 +194,10 @@ public class DBDriverManagerPostgreSQL extends AbstractDBDriverManagerPostgreSQL
             int dbVersion = 0;
             if (DB_TYPE == IDBDriverManager.DB_CONFIG) {
                 dbVersion = AS2ServerVersion.getRequiredDBVersionConfig();
-                createResource = SQLScriptExecutor.SCRIPT_RESOURCE_CONFIG;
+                createResource = SQLScriptExecutor.SCRIPT_RESOURCE_CONFIG_POSTGRES;
             } else if (DB_TYPE == IDBDriverManager.DB_RUNTIME) {
                 dbVersion = AS2ServerVersion.getRequiredDBVersionRuntime();
-                createResource = SQLScriptExecutor.SCRIPT_RESOURCE_RUNTIME;
+                createResource = SQLScriptExecutor.SCRIPT_RESOURCE_RUNTIME_POSTGRES;
             } else if (DB_TYPE != IDBDriverManager.DB_DEPRICATED) {
                 throw new RuntimeException("Unknown DB type requested in DBDriverManager.");
             }

@@ -37,8 +37,16 @@ import java.util.TimeZone;
  */
 public class SQLScriptExecutor {
 
-    public static final String SCRIPT_RESOURCE_CONFIG = "/sqlscript/config/";
-    public static final String SCRIPT_RESOURCE_RUNTIME = "/sqlscript/runtime/";
+    // Legacy paths - kept for backward compatibility, but point to PostgreSQL
+    public static final String SCRIPT_RESOURCE_CONFIG = "/sqlscript/postgres/config/";
+    public static final String SCRIPT_RESOURCE_RUNTIME = "/sqlscript/postgres/runtime/";
+
+    // Database-specific paths
+    public static final String SCRIPT_RESOURCE_CONFIG_POSTGRES = "/sqlscript/postgres/config/";
+    public static final String SCRIPT_RESOURCE_RUNTIME_POSTGRES = "/sqlscript/postgres/runtime/";
+    public static final String SCRIPT_RESOURCE_CONFIG_MYSQL = "/sqlscript/mysql/config/";
+    public static final String SCRIPT_RESOURCE_RUNTIME_MYSQL = "/sqlscript/mysql/runtime/";
+
     private ISQLQueryModifier queryModifier = null;
     private final static boolean DISPLAY_QUERY = false;
 

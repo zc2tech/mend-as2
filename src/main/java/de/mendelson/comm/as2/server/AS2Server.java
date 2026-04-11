@@ -11,6 +11,7 @@
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Config;
+import de.mendelson.comm.as2.AS2Properties;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.Copyright;
 import de.mendelson.activation.AWSRESTAccess;
@@ -20,7 +21,9 @@ import de.mendelson.comm.as2.cem.CertificateCEMController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
+import de.mendelson.comm.as2.database.DBDriverManagerMySQL;
 import de.mendelson.comm.as2.database.DBDriverManagerPostgreSQL;
+import de.mendelson.comm.as2.database.DBServerMySQL;
 import de.mendelson.util.database.DBServerInformation;
 import de.mendelson.comm.as2.database.DBServerPostgreSQL;
 import de.mendelson.comm.as2.log.DBLoggingHandler;
@@ -316,16 +319,14 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * Returns the currently activated DB driver manager
      */
     public static final IDBDriverManager getActivatedDBDriverManager() {
-        // if (PLUGINS.isActivated(ServerPlugins.PLUGIN_POSTGRESQL)) {
-        // return (DBDriverManagerPostgreSQL.instance());
-        // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_MYSQL)) {
-        // return (DBDriverManagerMySQL.instance());
-        // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_ORACLE_DB)) {
-        // return (DBDriverManagerOracleDB.instance());
-        // } else {
-        // return (DBDriverManagerHSQL.instance());
-        // }
-        return (DBDriverManagerPostgreSQL.instance());
+        AS2Properties config = AS2Properties.getInstance();
+        String dbType = config.getDatabaseType();
+
+        if ("mysql".equals(dbType)) {
+            return DBDriverManagerMySQL.instance();
+        } else {
+            return DBDriverManagerPostgreSQL.instance();
+        }
     }
 
     /**
@@ -726,29 +727,21 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * Starts the database server
      */
     private void ensureRunningDBServer() throws Exception {
-        // start the database server and ensure it is running
-        // I only want postgres currently
+        this.logger.info("Starting database server");
+        AS2Properties config = AS2Properties.getInstance();
+        String dbType = config.getDatabaseType();
 
-        // if (PLUGINS.isActivated(ServerPlugins.PLUGIN_POSTGRESQL)) {
-        // this.dbServer = new DBServerPostgreSQL(this.dbDriverManager,
-        // this.dbServerInformation,
-        // this.dbClientInformation);
-        // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_MYSQL)) {
-        // this.dbServer = new DBServerMySQL(this.dbDriverManager,
-        // this.dbServerInformation,
-        // this.dbClientInformation);
-        // } else if (PLUGINS.isActivated(ServerPlugins.PLUGIN_ORACLE_DB)) {
-        // this.dbServer = new DBServerOracle(this.dbDriverManager,
-        // this.dbServerInformation,
-        // this.dbClientInformation);
-        // } else {
-        // this.dbServer = new DBServerHSQL(this.dbDriverManager,
-        // this.dbServerInformation,
-        // this.dbClientInformation);
-        // }
+        this.logger.info("Selected database type: " + dbType);
 
-        this.dbServer = new DBServerPostgreSQL(this.dbDriverManager, this.dbServerInformation,
-                this.dbClientInformation);
+        // Create appropriate database server based on configuration
+        if ("mysql".equals(dbType)) {
+            this.dbServer = new DBServerMySQL(this.dbDriverManager,
+                    this.dbServerInformation, this.dbClientInformation);
+        } else {
+            this.dbServer = new DBServerPostgreSQL(this.dbDriverManager,
+                    this.dbServerInformation, this.dbClientInformation);
+        }
+
         this.dbServer.ensureServerIsRunning();
     }
 

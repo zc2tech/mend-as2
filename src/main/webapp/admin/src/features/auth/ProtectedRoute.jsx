@@ -19,11 +19,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './useAuth.jsx';
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, mustChangePassword } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -40,6 +41,11 @@ export default function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Force user to change password before accessing any other route
+  if (mustChangePassword && location.pathname !== '/change-password-forced') {
+    return <Navigate to="/change-password-forced" replace />;
   }
 
   return children;

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.ResourceBundleAS2Message;
@@ -256,6 +257,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
         this.localStation = localStation;
     }
 
+    @JsonProperty("as2Identification")
     public String getAS2Identification() {
         return as2Identification;
     }

@@ -439,9 +439,9 @@ public class DBServerPostgreSQL implements IDBServer {
     private boolean startDBUpdate(int startVersion, final int DB_TYPE) {
         String updateResource = null;
         if (DB_TYPE == IDBDriverManager.DB_CONFIG) {
-            updateResource = SQLScriptExecutor.SCRIPT_RESOURCE_CONFIG;
+            updateResource = SQLScriptExecutor.SCRIPT_RESOURCE_CONFIG_POSTGRES;
         } else if (DB_TYPE == IDBDriverManager.DB_RUNTIME) {
-            updateResource = SQLScriptExecutor.SCRIPT_RESOURCE_RUNTIME;
+            updateResource = SQLScriptExecutor.SCRIPT_RESOURCE_RUNTIME_POSTGRES;
         } else if (DB_TYPE != IDBDriverManager.DB_DEPRICATED) {
             throw new RuntimeException("Unknown DB type requested in DBServer.");
         }

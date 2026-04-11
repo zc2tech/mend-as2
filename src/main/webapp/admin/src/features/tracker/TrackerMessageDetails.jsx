@@ -122,7 +122,7 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
 
       // Extract filename from Content-Disposition header
       const contentDisposition = response.headers['content-disposition'];
-      let filename = 'tracker_message.msg';
+      let filename = 'tracker_message.txt';
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
         if (filenameMatch) {
@@ -179,6 +179,39 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
     }
   };
 
+  const handleDownloadBruno = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get(`/tracker-messages/${trackerId}/download-bruno`, {
+        responseType: 'blob'
+      });
+
+      // Extract filename from Content-Disposition header
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'bruno_collection.zip';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Failed to download Bruno collection: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={overlayStyle}>
@@ -221,6 +254,14 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
               title="Download payloads as ZIP"
             >
               📦 Payloads
+            </button>
+            <button
+              onClick={handleDownloadBruno}
+              disabled={downloading}
+              style={downloading ? disabledButtonStyle : downloadButtonStyle}
+              title="Download Bruno collection (ZIP with .bru files)"
+            >
+              <span style={{ fontSize: '1rem', verticalAlign: 'middle' }}>🐶</span> Bruno
             </button>
           </div>
         </div>
@@ -314,16 +355,32 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
         {message.requestHeaders && (
           <div style={sectionStyle}>
             <h3>Request Headers</h3>
-            <pre style={{
+            <div style={{
               backgroundColor: '#f8f9fa',
               padding: '0.75rem',
               borderRadius: '4px',
               overflow: 'auto',
-              fontSize: '0.875rem',
-              whiteSpace: 'pre-wrap'
+              fontSize: '0.875rem'
             }}>
-              {message.requestHeaders}
-            </pre>
+              {(() => {
+                try {
+                  // Try to parse as JSON first
+                  const headers = JSON.parse(message.requestHeaders);
+                  return Object.entries(headers).map(([key, value], index) => (
+                    <div key={index} style={{ marginBottom: '0.25rem' }}>
+                      {key}: {String(value)}
+                    </div>
+                  ));
+                } catch (e) {
+                  // Fallback to plain text if not JSON
+                  return message.requestHeaders.split('\n').filter(line => line.trim()).map((line, index) => (
+                    <div key={index} style={{ marginBottom: '0.25rem' }}>
+                      {line.trim()}
+                    </div>
+                  ));
+                }
+              })()}
+            </div>
           </div>
         )}
 

@@ -330,7 +330,7 @@ public class TrackerMessageResource {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
             String timestamp = sdf.format(info.getInitDate());
             String filename = "tracker_" + trackerId.substring(0, Math.min(8, trackerId.length())) +
-                    "_" + timestamp + ".msg";
+                    "_" + timestamp + ".txt";
 
             return Response.ok(content)
                     .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
@@ -444,6 +444,205 @@ public class TrackerMessageResource {
             String timestamp = sdf.format(info.getInitDate());
             String filename = "payloads_" + trackerId.substring(0, Math.min(8, trackerId.length())) +
                     "_" + timestamp + ".zip";
+
+            return Response.ok(zipData)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .build();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    @GET
+    @Path("/{trackerId}/download-bruno")
+    @Produces("application/zip")
+    public Response downloadBrunoYaml(
+            @Context SecurityContext securityContext,
+            @PathParam("trackerId") String trackerId) {
+        try {
+            // Get username from security context
+            String username = securityContext.getUserPrincipal().getName();
+
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
+            PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
+
+            // Get current user
+            WebUIUser currentUser = userMgmt.getUserByUsername(username);
+            if (currentUser == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("{\"error\":\"User not found\"}").build();
+            }
+
+            TrackerMessageInfo info = dao.getTrackerMessage(trackerId);
+            if (info == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"Message not found\"}").build();
+            }
+
+            // Check permissions
+            boolean isAdmin = false;
+            List<Role> userRoles = userMgmt.getUserRoles(currentUser.getId());
+            for (Role role : userRoles) {
+                if ("ADMIN".equals(role.getName())) {
+                    isAdmin = true;
+                    break;
+                }
+            }
+
+            boolean authRequired = "true".equals(prefs.get(PreferencesAS2.TRACKER_AUTH_REQUIRED));
+            if (authRequired && !isAdmin) {
+                if (info.getAuthUser() == null || !info.getAuthUser().equals(currentUser.getUsername())) {
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity("{\"error\":\"Access denied\"}").build();
+                }
+            }
+
+            // Load message content
+            byte[] content = null;
+            if (info.getRawFilename() != null) {
+                TrackerMessageStoreHandler storeHandler = new TrackerMessageStoreHandler(prefs);
+                content = storeHandler.readTrackerMessage(info.getRawFilename());
+            }
+
+            // Create opencollection.yml content
+            StringBuilder openCollectionYaml = new StringBuilder();
+            openCollectionYaml.append("opencollection: 1.0.0\n\n");
+            openCollectionYaml.append("info:\n");
+
+            // Build collection name from host and context: "localhost-8080-as2-tracker"
+            String collectionName = "localhost-8080-as2-tracker";
+            if (info.getAuthUser() != null && !info.getAuthUser().isEmpty()) {
+                collectionName += "-" + info.getAuthUser();
+            }
+            openCollectionYaml.append("  name: ").append(collectionName).append("\n");
+            openCollectionYaml.append("bundled: false\n");
+            openCollectionYaml.append("extensions:\n");
+            openCollectionYaml.append("  bruno:\n");
+            openCollectionYaml.append("    ignore:\n");
+            openCollectionYaml.append("      - node_modules\n");
+            openCollectionYaml.append("      - .git\n");
+
+            // Create request.yml content (the actual request)
+            StringBuilder requestYaml = new StringBuilder();
+            requestYaml.append("info:\n");
+            requestYaml.append("  name: Recreate Tracker Message\n");
+            requestYaml.append("  type: http\n");
+            requestYaml.append("  seq: 1\n\n");
+
+            requestYaml.append("http:\n");
+            requestYaml.append("  method: POST\n");
+
+            // Build URL - if auth_user exists, include it in path
+            String trackerUrl = "http://localhost:8080/as2/tracker";
+            if (info.getAuthUser() != null && !info.getAuthUser().isEmpty()) {
+                trackerUrl += "/" + info.getAuthUser();
+            }
+            requestYaml.append("  url: ").append(trackerUrl).append("\n");
+
+            // Add headers
+            if (info.getRequestHeaders() != null && !info.getRequestHeaders().isEmpty()) {
+                requestYaml.append("  headers:\n");
+                try {
+                    // Try to parse as JSON
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<String, Object> headers = mapper.readValue(info.getRequestHeaders(),
+                        new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+
+                    for (java.util.Map.Entry<String, Object> entry : headers.entrySet()) {
+                        // Skip certain headers that Bruno should regenerate
+                        String headerName = entry.getKey();
+                        if (headerName.equalsIgnoreCase("Host") ||
+                            headerName.equalsIgnoreCase("Content-Length") ||
+                            headerName.equalsIgnoreCase("Authorization") ||
+                            headerName.toLowerCase().startsWith("request-")) {
+                            continue;
+                        }
+                        requestYaml.append("    ").append(headerName).append(": ").append(entry.getValue()).append("\n");
+                    }
+                } catch (Exception e) {
+                    // Fallback: add as comment if parsing fails
+                    requestYaml.append("    # Headers could not be parsed\n");
+                }
+            }
+
+            // Add body
+            requestYaml.append("  body:\n");
+
+            // Determine body type from content-type
+            String bodyType = "text";
+            if (info.getContentType() != null) {
+                String contentType = info.getContentType().toLowerCase();
+                if (contentType.contains("xml")) {
+                    bodyType = "xml";
+                } else if (contentType.contains("json")) {
+                    bodyType = "json";
+                } else if (contentType.contains("text")) {
+                    bodyType = "text";
+                }
+            }
+
+            requestYaml.append("    type: ").append(bodyType).append("\n");
+            requestYaml.append("    data: |-\n");
+            if (content != null) {
+                String contentStr = new String(content, "UTF-8");
+                // Indent each line for YAML
+                String[] lines = contentStr.split("\n");
+                for (String line : lines) {
+                    requestYaml.append("      ").append(line).append("\n");
+                }
+            } else {
+                requestYaml.append("      # Content not available\n");
+            }
+
+            // Add auth section if auth_user exists
+            if (info.getAuthUser() != null && !info.getAuthUser().isEmpty()) {
+                requestYaml.append("  auth:\n");
+                requestYaml.append("    type: basic\n");
+                requestYaml.append("    username: ").append(info.getAuthUser()).append("\n");
+                requestYaml.append("    password: # Enter password here\n");
+            }
+
+            // Add settings
+            requestYaml.append("\nsettings:\n");
+            requestYaml.append("  encodeUrl: true\n");
+            requestYaml.append("  timeout: 0\n");
+            requestYaml.append("  followRedirects: true\n");
+            requestYaml.append("  maxRedirects: 5\n");
+
+            // Create ZIP file with both YAML files
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(baos);
+
+            // Add opencollection.yml
+            java.util.zip.ZipEntry openCollectionEntry = new java.util.zip.ZipEntry("opencollection.yml");
+            zos.putNextEntry(openCollectionEntry);
+            zos.write(openCollectionYaml.toString().getBytes("UTF-8"));
+            zos.closeEntry();
+
+            // Add request.yml
+            java.util.zip.ZipEntry requestEntry = new java.util.zip.ZipEntry("Recreate Tracker Message.yml");
+            zos.putNextEntry(requestEntry);
+            zos.write(requestYaml.toString().getBytes("UTF-8"));
+            zos.closeEntry();
+
+            zos.close();
+            byte[] zipData = baos.toByteArray();
+
+            // Generate filename with current time in user's timezone
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd-HHmmss");
+            String timestamp = sdf.format(new Date());
+            String filename = "bruno-collect-" + timestamp + ".zip";
 
             return Response.ok(zipData)
                     .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")

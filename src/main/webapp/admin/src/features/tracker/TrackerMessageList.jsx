@@ -234,6 +234,37 @@ export default function TrackerMessageList() {
     }
   };
 
+  const handleDownloadBruno = async (trackerId) => {
+    setDownloading({ ...downloading, [trackerId]: 'bruno' });
+    try {
+      const response = await api.get(`/tracker-messages/${trackerId}/download-bruno`, {
+        responseType: 'blob'
+      });
+
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'bruno_collection.zip';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Failed to download Bruno collection: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setDownloading({ ...downloading, [trackerId]: null });
+    }
+  };
+
   if (isLoading) {
     return <LoadingPage message="Loading tracker messages..." />;
   }
@@ -535,6 +566,27 @@ export default function TrackerMessageList() {
                       }}
                     >
                       📦
+                    </button>
+                    <button
+                      onClick={() => handleDownloadBruno(message.trackerId)}
+                      disabled={downloading[message.trackerId] === 'bruno'}
+                      title="Download Bruno collection"
+                      style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: downloading[message.trackerId] === 'bruno' ? '#6c757d' : '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: downloading[message.trackerId] === 'bruno' ? 'not-allowed' : 'pointer',
+                        fontSize: '0.875rem',
+                        width: '32px',
+                        height: '28px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem', verticalAlign: 'middle' }}>🐶</span>
                     </button>
                   </div>
                 </td>
