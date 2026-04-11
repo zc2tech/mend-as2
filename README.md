@@ -72,8 +72,33 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
   - **Frontend**: React 18, React Router, TanStack Query, Vite
-  - **Database**: PostgreSQL 15+ (replaced HSQLDB)
+  - **Database**: PostgreSQL 15+ or MySQL 8+ (replaced HSQLDB)
   - **Build**: Maven 3.9+
+
+- **Database Support**
+  - **PostgreSQL 15+** - Default, recommended for production
+  - **MySQL 8+ / MariaDB 10.6+** - Full support with optimized queries
+  - Database selection via `as2.properties` or environment variable
+  - Connection pooling with HikariCP for both databases
+  - Automatic schema creation and migration
+
+- **Tracker Messages**
+  - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
+  - Authentication support (Basic Auth with user-specific credentials)
+  - Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
+  - WebUI for viewing, searching, and filtering messages
+  - Message sorting by timestamp (newest first) with database indexes
+  - Download capabilities:
+    - Raw message content (.txt)
+    - Extracted payloads (.zip)
+    - **Bruno HTTP Client collections** (.zip with .yml files) - Recreate requests in Bruno
+  - Bruno collection format: Complete request reconstruction with headers, auth, body, and settings
+
+- **Performance Optimizations**
+  - Headless mode skips unnecessary SwingUI initialization
+  - Database indexes on timestamp columns for fast sorting
+  - Message list optimization (AS2 Messages sorted newest first)
+  - Clean logging without debug output in production
 
 ## 📦 Installation
 
@@ -157,6 +182,83 @@ java -jar target/mend-as2-1.1.0.jar -nogui
 **📦 Build Profiles:** [md-memo/BUILD_PROFILES.md](md-memo/BUILD_PROFILES.md)  
 **🚀 Release Process:** [RELEASE.md](RELEASE.md)
 
+## 💾 Database Configuration
+
+Mend AS2 supports both PostgreSQL and MySQL/MariaDB databases.
+
+### Selecting Database Type
+
+Edit `config/as2.properties`:
+
+```properties
+# Use PostgreSQL (default)
+as2.database.type=postgresql
+
+# Use MySQL/MariaDB
+as2.database.type=mysql
+```
+
+Or set environment variable:
+```bash
+export AS2_DATABASE_TYPE=mysql
+# or
+export AS2_DATABASE_TYPE=postgresql
+```
+
+### PostgreSQL Configuration
+
+**Default port:** 5432  
+**Configuration file:** `config/database-postgresql.properties`
+
+```properties
+# Database connection
+db.host=localhost
+db.port=5432
+db.config.name=as2_db_config
+db.runtime.name=as2_db_runtime
+db.user=as2user
+db.password=your_password
+```
+
+**Environment Variables:**
+- `DB_HOST`, `DB_PORT`
+- `DB_CONFIG_NAME`, `DB_RUNTIME_NAME`
+- `DB_USER`, `DB_PASSWORD`
+
+### MySQL/MariaDB Configuration
+
+**Default port:** 3306  
+**Configuration file:** `config/database-mysql.properties`
+
+```properties
+# Database connection
+mysql.host=localhost
+mysql.port=3306
+mysql.config.db=as2_db_config
+mysql.runtime.db=as2_db_runtime
+mysql.user=as2user
+mysql.password=your_password
+```
+
+**Environment Variables:**
+- `MYSQL_HOST`, `MYSQL_PORT`
+- `MYSQL_CONFIG_DB`, `MYSQL_RUNTIME_DB`
+- `MYSQL_USER`, `MYSQL_PASSWORD`
+
+### Configuration Priority
+
+For all database properties:
+1. **Environment Variables** (highest priority)
+2. **System Properties** (`-Ddb.host=...`)
+3. **Properties File** (`database-*.properties`)
+4. **Default Values** (lowest priority)
+
+### Database Initialization
+
+- Schema and tables are created automatically on first startup
+- Migration scripts run automatically when upgrading
+- Indexes are created for optimal query performance
+
 ## 🎯 Usage
 
 ### Inbound Authentication
@@ -238,6 +340,58 @@ Configure HTTP Basic Auth credentials for partner connections:
   - **Always Use** - Use credentials from partner config
   - **Use User Preference** - Use credentials from user preferences (above)
 
+### Tracker Endpoint
+
+HTTP endpoint for receiving and logging test messages (useful for development and testing).
+
+**Endpoint URLs:**
+```
+POST http://your-server:8080/as2/tracker
+POST http://your-server:8080/as2/tracker/{username}
+```
+
+**Features:**
+- Accepts any HTTP POST request
+- Logs full request details (headers, body, timestamp)
+- Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
+- Optional Basic Authentication (per-user credentials)
+- View messages in WebUI → **Tracker Messages**
+
+**Example Usage:**
+```bash
+# Without authentication
+curl -X POST http://localhost:8080/as2/tracker \
+  -H "Content-Type: application/xml" \
+  -d @test-message.xml
+
+# With authentication (user-specific path)
+curl -X POST http://localhost:8080/as2/tracker/alice \
+  -u alice:password123 \
+  -H "Content-Type: application/xml" \
+  -d @test-message.xml
+```
+
+**Viewing Tracker Messages:**
+1. Login to WebUI
+2. Navigate to **Tracker Messages**
+3. Search/filter by date, user, format, etc.
+4. Click message to view details
+5. Download options:
+   - **⬇ Content** - Raw message (.txt)
+   - **📦 Payloads** - Extracted payloads (.zip)
+   - **🐶 Bruno** - Bruno HTTP Client collection (.zip)
+
+**Bruno Collection:**
+- Complete request reconstruction for Bruno HTTP Client
+- Includes: URL, headers, authentication, body, settings
+- Unzip and import into Bruno to recreate the exact request
+
+**Configuration:**
+- WebUI → **System** → **Tracker Conf**
+- Enable/disable tracker endpoint
+- Configure authentication requirements
+- Set retention period for old messages
+
 ### WebUI Access
 
 Navigate to `http://localhost:8080/as2/webui/` and login.
@@ -254,8 +408,13 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
   - Real-time search with database refresh
   - Format filtering (cXML, X12, EDIFACT)
   - Payload format and document type display
+  - Messages sorted by Init Date (newest first)
 - **Tracker Messages** - View tracker endpoint submissions
   - Real-time search with database refresh
+  - Format filtering (cXML, X12, EDIFACT, etc.)
+  - Download options: Raw content (.txt), Payloads (.zip), Bruno collection (.zip)
+  - Bruno collections include complete request recreation (headers, auth, body)
+  - Messages sorted by timestamp (newest first)
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
   - **Inb. AS2 Auth** - Configure incoming AS2 message authentication

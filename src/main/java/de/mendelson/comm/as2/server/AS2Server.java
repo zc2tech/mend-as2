@@ -178,9 +178,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
      * @param allowAllClients Allow client-server connections from other than
      *                        localhost
      * @param startPlugins    Starts the plugins if there are any in the system
-     * @param startMinaServer Start the Mina client-server for internal communication.
-     *                        Required for HttpReceiver to forward messages to AS2ServerProcessing.
-     *                        Also enables SwingUI access. Should always be true.
+     * @param startMinaServer Start the client-server for SwingUI communication.
+     *                        Set to false for headless mode (no GUI, WebUI only).
      * @param config          AS2 configuration object for test mode and other
      *                        settings
      *
@@ -221,19 +220,16 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.serverStartupSequence.performWork();
         dbDriverManager = getActivatedDBDriverManager();
 
-        // Conditionally start Mina client-server for SwingUI
+        // Conditionally start client-server for SwingUI
         if (startMinaServer) {
-            this.logger.info("Starting Mina client-server on port " + clientServerPort + " (internal communication & SwingUI)");
+            this.logger.info("Starting client-server on port " + clientServerPort + " (SwingUI communication)");
             this.clientserver = new ClientServer(this.logger, clientServerPort,
                     new ClientServerTLSImplDefault(AS2ServerVersion.getFullProductName()));
             this.clientserver.setProductName(AS2ServerVersion.getFullProductName());
             this.initializeServerInstanceHA();
             this.setupClientServerSessionHandler();
         } else {
-            this.logger.severe("Mina client-server DISABLED - HttpReceiver will NOT work!");
-            this.logger.severe("The client-server is required for internal communication between HttpReceiver and AS2ServerProcessing.");
-            this.logger.severe("This configuration is NOT supported. Please set startMinaServer=true.");
-            // Set clientserver to null so we can detect headless mode
+            // Set clientserver to null for headless mode (no SwingUI)
             this.clientserver = null;
             this.clientServerSessionHandler = null;
         }
@@ -466,15 +462,18 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
                     this.dbClientInformation);
 
-            // Initialize AS2MessageProcessor for HttpReceiver (replaces Mina socket communication)
+            // Initialize AS2MessageProcessor for HttpReceiver
             AS2MessageProcessor.getInstance().setServerProcessing(this.serverProcessing);
             logger.info("AS2MessageProcessor initialized for HttpReceiver");
 
-            // Initialize DirectServiceClient for SwingUI (replaces Mina request-response)
-            DirectServiceClient.getInstance().setServerProcessing(this.serverProcessing);
-            logger.info("DirectServiceClient initialized for SwingUI");
+            // Initialize DirectServiceClient for SwingUI only if client-server is running
+            // In headless mode, SwingUI is not available so skip this
+            if (this.clientserver != null) {
+                DirectServiceClient.getInstance().setServerProcessing(this.serverProcessing);
+                logger.info("DirectServiceClient initialized for SwingUI");
+            }
 
-            // Only set session handler if Mina server is running
+            // Only set session handler if client-server is running
             if (this.clientServerSessionHandler != null) {
                 this.clientServerSessionHandler.addServerProcessing(this.serverProcessing);
             }
@@ -623,8 +622,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     }
 
     private void setupClientServerSessionHandler() {
-        // Only called if Mina server is enabled (startMinaServer=true)
-        // set up session handler for incoming client requests
+        // Only called if client-server is enabled (startMinaServer=true)
+        // Set up session handler for incoming client requests
         // this.clientServerSessionHandler = new
         // ClientServerSessionHandlerLocalhost(this.logger,
         // new String[] { AS2ServerVersion.getFullProductName() }, this.allowAllClients,

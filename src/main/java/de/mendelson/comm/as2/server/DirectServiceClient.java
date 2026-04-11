@@ -19,8 +19,8 @@ import de.mendelson.util.clientserver.messages.ClientServerResponse;
  * Licensed under GPL-2.0. See LICENSE file for details.
  */
 /**
- * Direct service client for SwingUI to call server operations without Mina networking.
- * Replaces Mina request-response with direct method calls in same JVM.
+ * Direct service client for SwingUI to call server operations.
+ * Provides direct method calls in same JVM for SwingUI communication.
  *
  * @author Julian Xu
  * @version 1.0

@@ -188,10 +188,10 @@ public class AS2 {
             BCCryptoHelper helper = new BCCryptoHelper();
             helper.initialize();
             // Start AS2 server
-            // Note: The 7th parameter (startMinaServer) is now a no-op stub - Mina has been removed
-            // SwingUI now uses EventBus for in-process communication instead of TCP sockets
+            // startGUI determines if client-server should start for SwingUI
+            // In headless mode (startGUI=false), client-server is disabled
             new AS2Server(startHTTP, false, false, importTLS, importEncSign,
-                         config.shouldSkipConfigCheck(), true, config);
+                         config.shouldSkipConfigCheck(), startGUI, config);
         } catch (ServerAlreadyRunningException e) {
             //don't delete the lockfile in this case!
             SystemEventManagerImplAS2.instance().newEvent(
