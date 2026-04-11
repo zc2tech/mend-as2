@@ -16,6 +16,14 @@ if not exist "%SCRIPT_DIR%lib\.dependencies_complete" (
     echo This may take a few minutes...
     echo.
 
+    REM Check if dependencies-downloadable.txt exists
+    if not exist "%SCRIPT_DIR%dependencies-downloadable.txt" (
+        echo ERROR: dependencies-downloadable.txt not found!
+        echo This file should be in the same directory as start.bat
+        pause
+        exit /b 1
+    )
+
     REM Check if Maven is installed
     where mvn >nul 2>&1
     if errorlevel 1 (
@@ -39,13 +47,32 @@ if not exist "%SCRIPT_DIR%lib\.dependencies_complete" (
     REM Create temporary pom.xml for dependency download
     call :create_pom
 
+    if not exist "%SCRIPT_DIR%lib\temp-pom.xml" (
+        echo ERROR: Failed to create temporary pom.xml
+        pause
+        exit /b 1
+    )
+
     REM Use Maven to download all dependencies from Maven Central
-    mvn dependency:copy-dependencies -f "%SCRIPT_DIR%lib\temp-pom.xml" -DoutputDirectory="%SCRIPT_DIR%lib" -DincludeScope=runtime -q
+    echo Running: mvn dependency:copy-dependencies
+    echo This may take a few minutes on first run...
+    echo.
+    call mvn dependency:copy-dependencies -f "%SCRIPT_DIR%lib\temp-pom.xml" -DoutputDirectory="%SCRIPT_DIR%lib" -DincludeScope=runtime
 
     if errorlevel 1 (
+        echo.
         echo ERROR: Failed to download dependencies
-        echo Check your internet connection and try again
-        del "%SCRIPT_DIR%lib\temp-pom.xml" >nul 2>&1
+        echo.
+        echo Possible causes:
+        echo   1. Internet connection issue
+        echo   2. Maven Central is unreachable
+        echo   3. Proxy settings needed
+        echo   4. Invalid dependency in dependencies-downloadable.txt
+        echo.
+        echo The temp-pom.xml file is at: %SCRIPT_DIR%lib\temp-pom.xml
+        echo You can check it and try running Maven manually:
+        echo   mvn dependency:copy-dependencies -f "%SCRIPT_DIR%lib\temp-pom.xml" -DoutputDirectory="%SCRIPT_DIR%lib"
+        echo.
         pause
         exit /b 1
     )
@@ -58,6 +85,8 @@ if not exist "%SCRIPT_DIR%lib\.dependencies_complete" (
     echo.
     echo Dependencies are ready. Starting the application...
     echo.
+    REM Reset errorlevel to ensure script continues
+    ver >nul
 )
 
 REM Set classpath with thin JAR and all libs

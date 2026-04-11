@@ -25,6 +25,7 @@ org.ow2.asm:asm:9.7.1
 org.ow2.asm:asm-commons:9.7.1
 org.ow2.asm:asm-tree:9.7.1
 org.postgresql:postgresql:42.7.4
+com.mysql:mysql-connector-j:8.3.0
 org.checkerframework:checker-qual:3.42.0
 org.bouncycastle:bctls-jdk18on:1.80
 org.bouncycastle:bcutil-jdk18on:1.80

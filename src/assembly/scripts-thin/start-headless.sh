@@ -82,4 +82,4 @@ fi
 CLASSPATH="$SCRIPT_DIR/mend-as2-1.1.0-thin.jar:$SCRIPT_DIR/lib/*"
 
 # Start the application in headless mode
-java -cp "$CLASSPATH" de.mendelson.comm.as2.AS2 -Dmend-as2.headless=true "$@"
+java -cp "$CLASSPATH" de.mendelson.comm.as2.AS2 -nogui "$@"

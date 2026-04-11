@@ -239,11 +239,14 @@ public class DBServerMySQL implements IDBServer {
      * Check if databases exist and create tables if they don't exist
      */
     private void createCheck() throws Exception {
-        if (!this.databaseExists(IDBDriverManager.DB_CONFIG)) {
+        boolean configExists = this.databaseExists(IDBDriverManager.DB_CONFIG);
+        if (!configExists) {
             // New installation - create tables
             this.dbDriverManager.createDatabase(IDBDriverManager.DB_CONFIG);
         }
-        if (!this.databaseExists(IDBDriverManager.DB_RUNTIME)) {
+
+        boolean runtimeExists = this.databaseExists(IDBDriverManager.DB_RUNTIME);
+        if (!runtimeExists) {
             // New installation - create tables
             this.dbDriverManager.createDatabase(IDBDriverManager.DB_RUNTIME);
         }
@@ -253,7 +256,12 @@ public class DBServerMySQL implements IDBServer {
      * Returns if the passed database type exists
      */
     private boolean databaseExists(int databaseType) {
+        String actualDbName = (databaseType == IDBDriverManager.DB_CONFIG) ?
+            MySQLConfig.getInstance().getConfigDatabase() :
+            MySQLConfig.getInstance().getRuntimeDatabase();
+
         String TABLE_NAME = "TABLE_NAME";
+        String TABLE_CATALOG = "TABLE_CAT";
         String[] TABLE_TYPES = {"TABLE"};
         boolean databaseFound = false;
         try (Connection connection = this.dbDriverManager.getConnectionWithoutErrorHandling(databaseType)) {
@@ -262,17 +270,23 @@ public class DBServerMySQL implements IDBServer {
                 // MySQL uses null for schema, unlike PostgreSQL's "public"
                 try (ResultSet tableResult = metadata.getTables(null, null, null, TABLE_TYPES)) {
                     while (tableResult.next()) {
-                        if (tableResult.getString(TABLE_NAME).equalsIgnoreCase("version")) {
-                            databaseFound = true;
-                            break;
+                        String tableName = tableResult.getString(TABLE_NAME);
+                        String tableCatalog = tableResult.getString(TABLE_CATALOG);
+
+                        if (tableName.equalsIgnoreCase("version")) {
+                            // Only count it if it's in the correct database
+                            if (actualDbName.equalsIgnoreCase(tableCatalog)) {
+                                databaseFound = true;
+                                break;
+                            }
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            return (false);
+            // Ignore - database doesn't exist
         }
-        return (databaseFound);
+        return databaseFound;
     }
 
     /**

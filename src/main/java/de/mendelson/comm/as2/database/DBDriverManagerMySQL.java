@@ -15,6 +15,7 @@ import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.MissingResourceException;
@@ -219,14 +220,12 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                 try (Statement statement = connection.createStatement()) {
                     statement.executeQuery("SELECT COUNT(*) FROM version");
                     databaseExists = true;
-                    logger.info(MODULE_NAME + " Database already exists for " + this.getDBName(DB_TYPE) + ", skipping creation");
                 } catch (SQLException e) {
                     // VERSION table doesn't exist, database needs to be created
                     databaseExists = false;
                 }
             } catch (SQLException e) {
                 // Connection failed or database doesn't exist
-                logger.info(MODULE_NAME + " Database does not exist or connection failed: " + e.getMessage());
                 throw new Exception("MySQL database " + this.getDBName(DB_TYPE)
                         + " does not exist. Please create it manually:\n"
                         + "CREATE DATABASE " + this.getDBName(DB_TYPE) + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n"
@@ -238,13 +237,32 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                 if (DB_TYPE == IDBDriverManager.DB_CONFIG) {
                     try (Connection connection = DriverManager.getConnection(
                             this.getConnectionURI(DB_TYPE), config.getUser(), config.getPassword())) {
-                        // Check if keydata table has any entries
-                        try (Statement statement = connection.createStatement()) {
-                            java.sql.ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM keydata");
-                            if (rs.next() && rs.getInt(1) == 0) {
-                                // Keystores missing - initialize them
-                                logger.info(MODULE_NAME + " Keystore data missing, initializing empty keystores");
-                                this.initializeEmptyKeystores(connection);
+
+                        // Check if keydata table exists
+                        boolean keydataTableExists = false;
+                        try (ResultSet rs = connection.getMetaData().getTables(null, this.getDBName(DB_TYPE), "keydata", null)) {
+                            keydataTableExists = rs.next();
+                        }
+
+                        if (!keydataTableExists) {
+                            // keydata table is missing - recreate database structure
+                            SQLScriptExecutor executor = new SQLScriptExecutor();
+                            executor.create(connection, createResource, dbVersion, new AS2ServerVersion());
+                            this.initializeEmptyKeystores(connection);
+                            return true;
+                        }
+
+                        // Check keystore entries
+                        try (PreparedStatement pstmt = connection.prepareStatement(
+                                "SELECT COUNT(*) as count FROM keydata WHERE purpose IN (1,2)")) {
+                            try (ResultSet rs = pstmt.executeQuery()) {
+                                if (rs.next()) {
+                                    int keystoreCount = rs.getInt("count");
+                                    if (keystoreCount < 2) {
+                                        // Missing one or both keystores - initialize them
+                                        this.initializeEmptyKeystores(connection);
+                                    }
+                                }
                             }
                         }
                     }
@@ -252,7 +270,6 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                 return true;
             }
 
-            logger.info(MODULE_NAME + " " + rb.getResourceString("creating.database." + DB_TYPE));
             // Create tables in the existing database
             try (Connection connection = DriverManager.getConnection(
                     this.getConnectionURI(DB_TYPE), config.getUser(), config.getPassword())) {
@@ -299,9 +316,6 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
      * Called during initial database creation
      */
     private void initializeEmptyKeystores(Connection connection) throws Exception {
-        Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
-        logger.info("[DATABASE] Initializing empty keystores");
-
         try {
             // Create empty PKCS12 keystores
             de.mendelson.util.security.BCCryptoHelper cryptoHelper =
@@ -352,10 +366,7 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                 stmt.executeUpdate();
             }
 
-            logger.info("[DATABASE] Empty keystores initialized successfully");
-
         } catch (Exception e) {
-            logger.severe("[DATABASE] Failed to initialize keystores: " + e.getMessage());
             throw new Exception("Failed to initialize empty keystores: " + e.getMessage(), e);
         }
     }
