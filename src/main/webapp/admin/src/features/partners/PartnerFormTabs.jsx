@@ -157,8 +157,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       as2Identification: '',
       localStation: false,
       comment: '',
-      url: 'http://localhost:8080/as2/HttpReceiver',
-      mdnURL: 'http://localhost:8080/as2/HttpReceiver',
+      url: '',
+      mdnURL: '',
       subject: 'AS2 message',
       contentType: 'application/EDI-Consent',
       email: 'sender@as2server.com',
@@ -208,6 +208,26 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
 
   // For new partners, determine localStation from the selection step
   const localStation = isEdit ? partner.localStation : localStationType;
+
+  // Fetch server URL when creating a new local station
+  useEffect(() => {
+    if (!isEdit && localStation) {
+      // Only fetch for new local stations
+      fetch('/as2/api/v1/system/server-url', {
+        credentials: 'include'
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.httpReceiverUrl) {
+            setValue('url', data.httpReceiverUrl);
+            setValue('mdnURL', data.httpReceiverUrl);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch server URL:', err);
+        });
+    }
+  }, [localStation, isEdit, setValue]);
 
   const handleLocalStationSelection = (isLocal) => {
     setLocalStationType(isLocal);
@@ -675,9 +695,14 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     {...register('mdnURL')}
                     placeholder="http://partner.com:8080/as2/HttpReceiver"
                     style={inputStyle}
-                    disabled={isSubmitting || localStation}
+                    disabled={isSubmitting}
                   />
                   {errors.mdnURL && <div style={errorStyle}>{errors.mdnURL.message}</div>}
+                  {localStation && (
+                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                      For local station: Use your server's public URL (not localhost) if accessible from internet
+                    </div>
+                  )}
                 </div>
 
                 <div style={formGroupStyle}>

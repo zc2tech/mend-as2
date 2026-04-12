@@ -38,7 +38,6 @@ export default function NotificationSettings() {
     notifyCertExpire: false,
     notifyTransactionError: false,
     notifySystemFailure: false,
-    notifyCEM: false,
     notifyConnectionProblem: false,
     notifyPostprocessingProblem: false,
     notifyClientServerProblem: false
@@ -415,19 +414,6 @@ export default function NotificationSettings() {
           />
           <label htmlFor="notifyClientServerProblem" style={{ cursor: 'pointer', fontSize: '0.875rem' }}>
             <strong>Client-Server Problems</strong> - Notify when client-server communication issues occur
-          </label>
-        </div>
-
-        <div style={checkboxContainerStyle}>
-          <input
-            type="checkbox"
-            id="notifyCEM"
-            checked={settings.notifyCEM}
-            onChange={(e) => setSettings({ ...settings, notifyCEM: e.target.checked })}
-            style={checkboxStyle}
-          />
-          <label htmlFor="notifyCEM" style={{ cursor: 'pointer', fontSize: '0.875rem' }}>
-            <strong>CEM (Certificate Exchange)</strong> - Notify about certificate exchange messages
           </label>
         </div>
       </div>

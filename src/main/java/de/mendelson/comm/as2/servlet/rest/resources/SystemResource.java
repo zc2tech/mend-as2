@@ -36,8 +36,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -65,6 +67,30 @@ public class SystemResource {
         info.setBuild(AS2ServerVersion.getBuild());
 
         return Response.ok(info).build();
+    }
+
+    @GET
+    @Path("/server-url")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getServerURL(@Context UriInfo uriInfo) {
+        try {
+            // Get the base URI from the request (includes scheme, host, port, and context path)
+            String baseUri = uriInfo.getBaseUri().toString();
+            // Remove trailing slash and "/api/v1" from base URI to get the application base
+            String appBase = baseUri.replaceAll("/api/v1/?$", "");
+
+            // Construct the HttpReceiver URL
+            String httpReceiverUrl = appBase + "/HttpReceiver";
+
+            java.util.Map<String, String> result = new java.util.HashMap<>();
+            result.put("baseUrl", appBase);
+            result.put("httpReceiverUrl", httpReceiverUrl);
+
+            return Response.ok(result).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
     }
 
     @GET
