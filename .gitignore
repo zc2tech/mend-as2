@@ -8,7 +8,7 @@ passwd
 .DS_Store
 Thumbs.db
 certificates.p12
-messages/
+/messages/
 *.cer
 *.key
 temp/
