@@ -1,5 +1,9 @@
 name: Build and Upload Maven Artifact
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   release:
     types: [published]
