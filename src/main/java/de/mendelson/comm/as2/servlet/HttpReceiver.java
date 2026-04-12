@@ -82,10 +82,39 @@ public class HttpReceiver extends HttpServlet {
      */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //stores if the commit already occured. Do not send an additional error in this case        
+        //stores if the commit already occured. Do not send an additional error in this case
         boolean committed = false;
         Path dataFile = null;
         try {
+            // Extract username from URL path for user-specific endpoints
+            String pathInfo = request.getPathInfo();  // e.g., "/john" or null
+            String targetUsername = null;
+            int targetUserId = 0;
+
+            if (pathInfo != null && pathInfo.length() > 1) {
+                // Remove leading slash
+                targetUsername = pathInfo.substring(1);
+
+                // Lookup user ID (would need UserManagementAccessDB here)
+                // For now, set to 0 (admin) - will be enhanced later
+                targetUserId = 0;  // TODO: Implement user lookup
+
+                if (targetUserId == 0 && !"admin".equals(targetUsername)) {
+                    // User not found
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND,
+                        "User not found: " + targetUsername);
+                    return;
+                }
+            } else {
+                // No path info - use system/admin (backward compatibility)
+                targetUsername = "admin";
+                targetUserId = 0;
+            }
+
+            // Store user context for processing
+            request.setAttribute("targetUserId", targetUserId);
+            request.setAttribute("targetUsername", targetUsername);
+
             String tlsProtocol = "-";
             String cipherSuite = "-";
             int localPort = request.getLocalPort();
@@ -187,6 +216,13 @@ public class HttpReceiver extends HttpServlet {
         messageRequest.setTLSProtocol(tlsProtocol);
         messageRequest.setCipherSuite(cipherSuite);
         messageRequest.setRemoteAddress(remoteAddress);
+
+        // Set target user ID from request attributes
+        Integer targetUserId = (Integer) request.getAttribute("targetUserId");
+        if (targetUserId != null) {
+            messageRequest.setTargetUserId(targetUserId);
+        }
+
         String remoteHost = request.getRemoteHost();
         if (remoteHost == null) {
             remoteHost = request.getRemoteAddr();

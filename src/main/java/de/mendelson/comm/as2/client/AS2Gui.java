@@ -2,11 +2,9 @@ package de.mendelson.comm.as2.client;
 
 import de.mendelson.util.httpconfig.gui.JDialogDisplayHTTPConfiguration;
 import de.mendelson.comm.as2.AS2ServerVersion;
-import de.mendelson.comm.as2.cem.gui.DialogCEMOverview;
-import de.mendelson.comm.as2.cem.gui.DialogSendCEM;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
+import de.mendelson.comm.as2.client.permissions.SwingUIPermissionManager;
 import de.mendelson.comm.as2.clientserver.message.DeleteMessageRequest;
-import de.mendelson.comm.as2.clientserver.message.RefreshClientCEMDisplay;
 import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewList;
 import de.mendelson.comm.as2.clientserver.message.RefreshTablePartnerData;
 import de.mendelson.comm.as2.message.AS2Message;
@@ -59,6 +57,7 @@ import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.SyncRequestTimeoutException;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.Permissions;
 import de.mendelson.comm.as2.usermanagement.gui.JDialogChangePassword;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserListRequest;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserListResponse;
@@ -251,9 +250,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private static final MendelsonMultiResolutionImage IMAGE_SYSINFO = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/util/systemevents/gui/sysinfo.svg",
             IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_CEM = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/cem/gui/cem.svg",
-            IMAGE_SIZE_MENU_ITEM);
     private static final MendelsonMultiResolutionImage IMAGE_HOURGLASS = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/client/hourglass.svg",
             IMAGE_SIZE_MENU_ITEM,
@@ -296,6 +292,23 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      */
     private final String host;
 
+    /**
+     * Current username (can be switched via impersonation)
+     */
+    private String username;
+    /**
+     * Original admin username (always "admin" for SwingUI)
+     */
+    private final String originalUsername = "admin";
+    /**
+     * Cached user ID for current user (0 = admin, >0 = specific user)
+     */
+    private int userId = 0;
+    /**
+     * Permission manager for checking user permissions
+     */
+    private SwingUIPermissionManager permissionManager;
+
 
     public static final String DARK_MODE_CLASSNAME = "com.formdev.flatlaf.FlatDarculaLaf";
     public static final String HIGH_CONSTRAST_MODE_CLASSNAME = "com.formdev.flatlaf.intellijthemes.FlatHighContrastIJTheme";
@@ -323,7 +336,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      */
     public AS2Gui(Splash splash, String host, String username, String password, String displayMode) {
         this.host = host;
-   
+        this.username = username;
+
+        // Set username in base client for user-scoped operations
+        this.getBaseClient().setUsername(username);
+
         if (displayMode == null) {
             displayMode = "LIGHT";
         }
@@ -430,6 +447,21 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             splash.destroy();
         }
         this.initializeUINotification();
+
+        // Initialize userId from username
+        this.userId = this.getUserIdFromUsername(username);
+
+        // Initialize permission manager and load permissions
+        this.permissionManager = new SwingUIPermissionManager(this.getBaseClient());
+        try {
+            this.permissionManager.loadPermissions();
+        } catch (Exception e) {
+            this.logger.severe("Failed to load user permissions: " + e.getMessage());
+            // Continue with empty permissions - user will have no access
+        }
+
+        // Apply permission checks to menus
+        this.updateMenusForPermissions();
 
         // Subscribe to EventBus for server events (replaces Mina socket connection)
         this.eventListener = message -> {
@@ -624,7 +656,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jMenuItemCertificatesSSL.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemCertificatesSignCrypt
                 .setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuFileCertificates.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemFileSend.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemPopupSendAgain.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_POPUP)));
         this.jButtonPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
@@ -645,8 +676,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jLabelFilterShowPending.setIcon(new ImageIcon(IMAGE_PENDING.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jButtonHideFilter.setIcon(new ImageIcon(IMAGE_HIDE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         this.jMenuItemSystemEvents.setIcon(new ImageIcon(IMAGE_SYSINFO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemCEMManager.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemCEMSend.setIcon(new ImageIcon(IMAGE_CEM.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
         // this.jButtonShop.setIcon(new
         // ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
     }
@@ -1228,10 +1257,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                                 PartnerListRequest listRequest = new PartnerListRequest(
                                         PartnerListRequest.LIST_BY_AS2_ID);
                                 listRequest.setAdditionalListOptionStr(info.getSenderId());
+                                listRequest.setUserId(AS2Gui.this.userId);  // Set user context
                                 Partner sender = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList()
                                         .get(0);
                                 listRequest = new PartnerListRequest(PartnerListRequest.LIST_BY_AS2_ID);
                                 listRequest.setAdditionalListOptionStr(info.getReceiverId());
+                                listRequest.setUserId(AS2Gui.this.userId);  // Set user context
                                 Partner receiver = ((PartnerListResponse) AS2Gui.this.sendSync(listRequest)).getList()
                                         .get(0);
                                 List<AS2Payload> payloads = ((MessagePayloadResponse) AS2Gui.this
@@ -1338,10 +1369,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             ServerInfo serverInfo = (ServerInfo) message;
             this.getLogger().log(Level.CONFIG, serverInfo.getProductname());
             return (true);
-        } else if (message instanceof RefreshClientCEMDisplay) {
-            // return true for this message even if it is not processed here to prevent a
-            // warning that the message was not processed
-            return (true);
         } else if (message instanceof ConfigurationChangedOnServer) {
             this.preferencesChangedOnServer((ConfigurationChangedOnServer) message);
             return (true);
@@ -1398,7 +1425,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
                 try {
-                    AS2Gui.this.jMenuFileCertificates.setEnabled(false);
+                    AS2Gui.this.jMenuItemCertificatesSSL.setEnabled(false);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
                     AS2Gui.this.jButtonCertificatesTLS.setEnabled(false);
                     dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this,
@@ -1426,7 +1453,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     if (dialog != null) {
                         dialog.setVisible(true);
                     }
-                    AS2Gui.this.jMenuFileCertificates.setEnabled(true);
+                    AS2Gui.this.jMenuItemCertificatesSignCrypt.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesTLS.setEnabled(true);
                 }
@@ -1446,7 +1473,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 // display wait indicator
                 AS2Gui.this.as2StatusBar.startProgressIndeterminate(
                         AS2Gui.this.rb.getResourceString("menu.file.certificate"), uniqueId);
-                AS2Gui.this.jMenuFileCertificates.setEnabled(false);
+                AS2Gui.this.jMenuItemCertificatesSignCrypt.setEnabled(false);
                 AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
                 AS2Gui.this.jButtonCertificatesTLS.setEnabled(false);
                 try {
@@ -1480,7 +1507,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     if (dialog != null) {
                         dialog.setVisible(true);
                     }
-                    AS2Gui.this.jMenuFileCertificates.setEnabled(true);
+                    AS2Gui.this.jMenuItemCertificatesSignCrypt.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(true);
                     AS2Gui.this.jButtonCertificatesTLS.setEnabled(true);
                 }
@@ -1738,24 +1765,19 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jLabelRefreshStopWarning = new javax.swing.JLabel();
         as2StatusBar = new de.mendelson.comm.as2.client.AS2StatusBar();
         jMenuBar = new javax.swing.JMenuBar();
-        jMenuFile = new javax.swing.JMenu();
         jMenuItemFileSend = new javax.swing.JMenuItem();
-        jSeparator2 = new javax.swing.JSeparator();
         jMenuItemFilePreferences = new javax.swing.JMenuItem();
         jMenuItemPartner = new javax.swing.JMenuItem();
         jSeparator6 = new javax.swing.JSeparator();
-        jMenuFileCertificates = new javax.swing.JMenu();
         jMenuItemCertificatesSignCrypt = new javax.swing.JMenuItem();
         jMenuItemCertificatesSSL = new javax.swing.JMenuItem();
-        jSeparator10 = new javax.swing.JPopupMenu.Separator();
-        jMenuItemCEMManager = new javax.swing.JMenuItem();
-        jMenuItemCEMSend = new javax.swing.JMenuItem();
         jSeparator3 = new javax.swing.JSeparator();
         jMenuItemHTTPServerInfo = new javax.swing.JMenuItem();
         jMenuItemSystemEvents = new javax.swing.JMenuItem();
         jMenuUserPreference = new javax.swing.JMenu();
         jMenuItemUserPrefHttpAuth = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
+        jMenuItemSwitchUser = new javax.swing.JMenuItem();
         jMenuItemFileExit = new javax.swing.JMenuItem();
         jMenuItemHelpAbout = new javax.swing.JMenuItem();
         jMenuItemHelpSystem = new javax.swing.JMenuItem();
@@ -1817,7 +1839,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jButtonPartner.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonPartner.setText(this.rb.getResourceString("menu.file.partner"));
+        jButtonPartner.setText("My Partner");
         jButtonPartner.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         jButtonPartner.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jButtonPartner.addActionListener(new java.awt.event.ActionListener() {
@@ -1826,6 +1848,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jToolBar.add(jButtonPartner);
+
+        jButtonCertificatesSignEncrypt.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
+        jButtonCertificatesSignEncrypt.setText("My Sign/Crypt");
+        jButtonCertificatesSignEncrypt.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jButtonCertificatesSignEncrypt.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButtonCertificatesSignEncrypt.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCertificatesSignEncryptActionPerformed(evt);
+            }
+        });
+        jToolBar.add(jButtonCertificatesSignEncrypt);
 
         jButtonUserManagement.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
@@ -1838,18 +1872,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jToolBar.add(jButtonUserManagement);
-
-        jButtonCertificatesSignEncrypt.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
-        jButtonCertificatesSignEncrypt.setText(this.rb.getResourceString("menu.file.certificate.signcrypt"));
-        jButtonCertificatesSignEncrypt.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButtonCertificatesSignEncrypt.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jButtonCertificatesSignEncrypt.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonCertificatesSignEncryptActionPerformed(evt);
-            }
-        });
-        jToolBar.add(jButtonCertificatesSignEncrypt);
 
         jButtonCertificatesTLS.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image24x24.gif"))); // NOI18N
@@ -2258,20 +2280,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         getContentPane().add(jPanelMain, java.awt.BorderLayout.CENTER);
 
-        jMenuFile.setText(this.rb.getResourceString("menu.file"));
+        // System menu
+        jMenuSystem = new javax.swing.JMenu();
+        jMenuSystem.setText(this.rb.getResourceString("menu.system"));
 
-        jMenuItemFileSend.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemFileSend.setText(this.rb.getResourceString("menu.file.send"));
-        jMenuItemFileSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_M));
-        jMenuItemFileSend.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemFileSendActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemFileSend);
-        jMenuFile.add(jSeparator2);
-
+        // System Preferences
         jMenuItemFilePreferences.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemFilePreferences.setText(this.rb.getResourceString("menu.file.preferences"));
@@ -2282,20 +2295,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 jMenuItemFilePreferencesActionPerformed(evt);
             }
         });
-        jMenuFile.add(jMenuItemFilePreferences);
+        jMenuSystem.add(jMenuItemFilePreferences);
 
-        jMenuItemPartner.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemPartner.setText(this.rb.getResourceString("menu.file.partner"));
-        jMenuItemPartner.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_P));
-        jMenuItemPartner.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemPartnerActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemPartner);
-        jMenuFile.add(jSeparator6);
-
+        // User Management
         jMenuItemUserManagement = new javax.swing.JMenuItem();
         jMenuItemUserManagement.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
@@ -2306,25 +2308,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 jMenuItemUserManagementActionPerformed(evt);
             }
         });
-        jMenuFile.add(jMenuItemUserManagement);
-        jMenuFile.add(new javax.swing.JSeparator());
+        jMenuSystem.add(jMenuItemUserManagement);
 
-        jMenuFileCertificates.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuFileCertificates.setText(this.rb.getResourceString("menu.file.certificates"));
-
-        jMenuItemCertificatesSignCrypt.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCertificatesSignCrypt.setText(this.rb.getResourceString("menu.file.certificate.signcrypt"));
-        jMenuItemCertificatesSignCrypt.setAccelerator(KeyboardShortcutUtil
-                .createMenuShortcut(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemCertificatesSignCrypt.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCertificatesSignCryptActionPerformed(evt);
-            }
-        });
-        jMenuFileCertificates.add(jMenuItemCertificatesSignCrypt);
-
+        // TLS Certificates
         jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
         jMenuItemCertificatesSSL.setText(this.rb.getResourceString("menu.file.certificate.ssl"));
@@ -2335,52 +2321,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 jMenuItemCertificatesSSLActionPerformed(evt);
             }
         });
-        jMenuFileCertificates.add(jMenuItemCertificatesSSL);
-        jMenuFileCertificates.add(jSeparator10);
-
-        jMenuItemCEMManager.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCEMManager.setText(this.rb.getResourceString("menu.file.cem"));
-        jMenuItemCEMManager.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_E,
-                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemCEMManager.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCEMManagerActionPerformed(evt);
-            }
-        });
-        jMenuFileCertificates.add(jMenuItemCEMManager);
-
-        jMenuItemCEMSend.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemCEMSend.setText(this.rb.getResourceString("menu.file.cemsend"));
-        jMenuItemCEMSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_N,
-                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemCEMSend.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCEMSendActionPerformed(evt);
-            }
-        });
-        jMenuFileCertificates.add(jMenuItemCEMSend);
-
-        jMenuFile.add(jMenuFileCertificates);
-        jMenuFile.add(jSeparator3);
-
-        jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(
-                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
-        jMenuItemFileExit.setText(this.rb.getResourceString("menu.file.exit"));
-        jMenuItemFileExit.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Q));
-        jMenuItemFileExit.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemFileExitActionPerformed(evt);
-            }
-        });
-        jMenuFile.add(jMenuItemFileExit);
-
-        jMenuBar.add(jMenuFile);
-
-        // System menu
-        jMenuSystem = new javax.swing.JMenu();
-        jMenuSystem.setText(this.rb.getResourceString("menu.system"));
+        jMenuSystem.add(jMenuItemCertificatesSSL);
+        jMenuSystem.add(jSeparator3);
 
         jMenuItemHTTPServerInfo.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
@@ -2415,6 +2357,33 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jMenuSystem.add(jMenuItemSearchInServerLog);
+        jMenuSystem.add(new javax.swing.JSeparator());
+
+        // Switch User (only for admin role)
+        jMenuItemSwitchUser = new javax.swing.JMenuItem();
+        jMenuItemSwitchUser.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
+        jMenuItemSwitchUser.setText("Switch User");
+        jMenuItemSwitchUser.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_W));
+        jMenuItemSwitchUser.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemSwitchUserActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemSwitchUser);
+        jMenuSystem.add(new javax.swing.JSeparator());
+
+        // Exit
+        jMenuItemFileExit.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemFileExit.setText(this.rb.getResourceString("menu.file.exit"));
+        jMenuItemFileExit.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_Q));
+        jMenuItemFileExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemFileExitActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemFileExit);
 
         jMenuBar.add(jMenuSystem);
 
@@ -2449,6 +2418,45 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         // User Preference menu
         jMenuUserPreference.setText(this.rb.getResourceString("menu.userpreference"));
 
+        // Send file to partner
+        jMenuItemFileSend.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemFileSend.setText(this.rb.getResourceString("menu.file.send"));
+        jMenuItemFileSend.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_M));
+        jMenuItemFileSend.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemFileSendActionPerformed(evt);
+            }
+        });
+        jMenuUserPreference.add(jMenuItemFileSend);
+
+        // Partner configuration
+        jMenuItemPartner.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemPartner.setText("My Partner");
+        jMenuItemPartner.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_P));
+        jMenuItemPartner.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemPartnerActionPerformed(evt);
+            }
+        });
+        jMenuUserPreference.add(jMenuItemPartner);
+
+        // Sign/Crypt Certificates
+        jMenuItemCertificatesSignCrypt.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
+        jMenuItemCertificatesSignCrypt.setText("My Sign/Crypt");
+        jMenuItemCertificatesSignCrypt.setAccelerator(KeyboardShortcutUtil
+                .createMenuShortcut(java.awt.event.KeyEvent.VK_1, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
+        jMenuItemCertificatesSignCrypt.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCertificatesSignCryptActionPerformed(evt);
+            }
+        });
+        jMenuUserPreference.add(jMenuItemCertificatesSignCrypt);
+        jMenuUserPreference.add(jSeparator6);
+
+        // HTTP Auth preferences
         jMenuItemUserPrefHttpAuth.setText(this.rb.getResourceString("menu.userpreference.httpauth"));
         jMenuItemUserPrefHttpAuth.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -2569,6 +2577,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         dialog.setVisible(true);
     }
 
+    private void jMenuItemSwitchUserActionPerformed(java.awt.event.ActionEvent evt) {
+        this.switchUser();
+    }
+
     private void jMenuItemHelpSystemActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemHelpSystemActionPerformed
         this.displayHelpSystem();
     }// GEN-LAST:event_jMenuItemHelpSystemActionPerformed
@@ -2609,37 +2621,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.refreshThread.userRequestsOverviewRefresh();
     }// GEN-LAST:event_jComboBoxFilterDirectionActionPerformed
 
-    private void jMenuItemCEMManagerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCEMManagerActionPerformed
-        try {
-            CertificateManager certificateManagerEncSign = new CertificateManager(logger);
-            KeystoreStorage storage = new KeystoreStorageImplClientServer(
-                    AS2Gui.this.getBaseClient(),
-                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
-            certificateManagerEncSign.loadKeystoreCertificates(storage);
-            DialogCEMOverview cemOverview = new DialogCEMOverview(this, (GUIClient) this,
-                    certificateManagerEncSign, this.consolePanel.getHandler());
-            cemOverview.setVisible(true);
-        } catch (Throwable e) {
-            UINotification.instance().addNotification(e);
-        }
-    }// GEN-LAST:event_jMenuItemCEMManagerActionPerformed
 
-    private void jMenuItemCEMSendActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemCEMSendActionPerformed
-        try {
-            new PreferencesClient(AS2Gui.this.getBaseClient());
-            CertificateManager certificateManagerEncSign = new CertificateManager(logger);
-            KeystoreStorage storage = new KeystoreStorageImplClientServer(
-                    AS2Gui.this.getBaseClient(),
-                    KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
-            certificateManagerEncSign.loadKeystoreCertificates(storage);
-            DialogSendCEM dialog = new DialogSendCEM(this, certificateManagerEncSign, this.getBaseClient());
-            dialog.setVisible(true);
-        } catch (Throwable e) {
-            UINotification.instance().addNotification(e);
-        }
-    }// GEN-LAST:event_jMenuItemCEMSendActionPerformed
 
     private void jMenuItemPopupMessageDetailsActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPopupMessageDetailsActionPerformed
         this.showSelectedRowDetails();
@@ -2722,16 +2704,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JLabel jLabelTimefilterFrom;
     private javax.swing.JLabel jLabelTimefilterTo;
     private javax.swing.JMenuBar jMenuBar;
-    private javax.swing.JMenu jMenuFile;
-    private javax.swing.JMenu jMenuFileCertificates;
     private javax.swing.JMenu jMenuSystem;
     private javax.swing.JMenu jMenuUserPreference;
     private javax.swing.JMenuItem jMenuItemUserPrefHttpAuth;
     private javax.swing.JMenu jMenuTracker;
     private javax.swing.JMenuItem jMenuItemTrackerConfig;
     private javax.swing.JMenuItem jMenuItemTrackerMessage;
-    private javax.swing.JMenuItem jMenuItemCEMManager;
-    private javax.swing.JMenuItem jMenuItemCEMSend;
     private javax.swing.JMenuItem jMenuItemCertificatesSSL;
     private javax.swing.JMenuItem jMenuItemCertificatesSignCrypt;
     private javax.swing.JMenuItem jMenuItemFileExit;
@@ -2746,6 +2724,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuItem jMenuItemPopupSendAgain;
     private javax.swing.JMenuItem jMenuItemSearchInServerLog;
     private javax.swing.JMenuItem jMenuItemSystemEvents;
+    private javax.swing.JMenuItem jMenuItemSwitchUser;
     private javax.swing.JMenuItem jMenuItemUserManagement;
     private javax.swing.JPanel jPaneSpace;
     private javax.swing.JPanel jPanelFilterOverview;
@@ -2756,9 +2735,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JPanel jPanelServerLog;
     private javax.swing.JPopupMenu jPopupMenu;
     private javax.swing.JScrollPane jScrollPaneMessageOverview;
-    private javax.swing.JPopupMenu.Separator jSeparator10;
     private javax.swing.JSeparator jSeparator11;
-    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
     private javax.swing.JSeparator jSeparator6;
@@ -2945,10 +2922,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
          */
         public void refreshTablePartnerData() {
             try {
-                List<Partner> partnerList = ((PartnerListResponse) AS2Gui.this.sendSync(
-                        new PartnerListRequest(
-                                PartnerListRequest.LIST_ALL,
-                                PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE)))
+                PartnerListRequest request = new PartnerListRequest(
+                        PartnerListRequest.LIST_ALL,
+                        PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE);
+                request.setUserId(AS2Gui.this.userId);  // Set user context
+                List<Partner> partnerList = ((PartnerListResponse) AS2Gui.this.sendSync(request))
                         .getList();
                 Map<String, Partner> partnerMap = new HashMap<String, Partner>();
                 for (Partner partner : partnerList) {
@@ -3106,6 +3084,228 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 // nop
             }
         }
+    }
+
+    /**
+     * Helper method to get user ID from username
+     * @param username Username to lookup
+     * @return User ID (0 for admin, >0 for specific users)
+     */
+    private int getUserIdFromUsername(String username) {
+        if ("admin".equals(username)) {
+            return 0;  // Admin is always user_id=0
+        }
+        try {
+            UserListResponse response = (UserListResponse) this.sendSync(new UserListRequest(), 10000);
+            if (response != null && response.getUsers() != null) {
+                for (WebUIUser user : response.getUsers()) {
+                    if (user.getUsername().equals(username)) {
+                        return user.getId();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            this.getLogger().severe("Failed to lookup user ID for username: " + username);
+        }
+        return 0;  // Default to admin if lookup fails
+    }
+
+    /**
+     * Switch to a different user (impersonation)
+     * Only available for admin role users with USER_SWITCH permission
+     */
+    private void switchUser() {
+        // Check permission first
+        if (!this.permissionManager.hasPermission(Permissions.USER_SWITCH)) {
+            JOptionPane.showMessageDialog(this,
+                    "You do not have permission to switch users",
+                    "Access Denied",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Check if currently impersonating another user
+        if (!this.username.equals("admin") && this.originalUsername.equals("admin")) {
+            // Switch back to admin directly without confirmation
+            this.username = "admin";
+            this.userId = getUserIdFromUsername("admin");
+
+            // Update BaseClient username
+            this.getBaseClient().setUsername("admin");
+
+            // CRITICAL: Refresh permissions for admin user
+            try {
+                this.permissionManager.refreshPermissions();
+            } catch (Exception e) {
+                this.getLogger().severe("Failed to load permissions for admin: " + e.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        "Failed to load permissions: " + e.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Update menus based on new permissions
+            updateMenusForPermissions();
+
+            // Update window title to remove user indication
+            updateWindowTitle();
+
+            // Update menu item text back to "Switch User"
+            jMenuItemSwitchUser.setText("Switch User");
+
+            // Refresh all data for admin user
+            refreshAfterUserSwitch();
+
+            JOptionPane.showMessageDialog(this,
+                    "Switched back to admin user",
+                    "Switch User",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Only allow switching if current user is admin (original user)
+        if (!this.originalUsername.equals("admin")) {
+            JOptionPane.showMessageDialog(this,
+                    "User switching is only available for administrators",
+                    "Access Denied",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            // Get list of all users
+            UserListResponse response = (UserListResponse) this.sendSync(new UserListRequest(), 10000);
+            if (response == null || response.getUsers() == null || response.getUsers().isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "No users available for switching",
+                        "Switch User",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // Show switch user dialog
+            JDialogSwitchUser dialog = new JDialogSwitchUser(this, this.username, response.getUsers());
+            dialog.setVisible(true);
+
+            if (dialog.isSwitchSuccessful()) {
+                String newUsername = dialog.getSelectedUsername();
+                if (newUsername != null && !newUsername.equals(this.username)) {
+                    // Switch to new user
+                    this.username = newUsername;
+                    this.userId = getUserIdFromUsername(newUsername);
+
+                    // Update BaseClient username
+                    this.getBaseClient().setUsername(newUsername);
+
+                    // CRITICAL: Refresh permissions for new user
+                    try {
+                        this.permissionManager.refreshPermissions();
+                    } catch (Exception e) {
+                        this.getLogger().severe("Failed to load permissions for user " + newUsername + ": " + e.getMessage());
+                        JOptionPane.showMessageDialog(this,
+                                "Failed to load permissions for user: " + e.getMessage(),
+                                "Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // Update menus based on new permissions
+                    updateMenusForPermissions();
+
+                    // Update window title to show current user
+                    updateWindowTitle();
+
+                    // Update menu item text to "Switch Back"
+                    jMenuItemSwitchUser.setText("Switch Back");
+
+                    // Refresh all data for new user
+                    refreshAfterUserSwitch();
+
+                    // Show success message
+                    JOptionPane.showMessageDialog(this,
+                            "Switched to user: " + newUsername,
+                            "Switch User",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        } catch (Exception e) {
+            this.getLogger().severe("Failed to switch user: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Failed to switch user: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Update window title to show current user
+     */
+    private void updateWindowTitle() {
+        String title = WindowTitleUtil.buildTitle(AS2ServerVersion.getFullProductName());
+        if (!"admin".equals(this.username)) {
+            title += " [User: " + this.username + "]";
+        }
+        this.setTitle(title);
+    }
+
+    /**
+     * Refresh all data after user switch
+     */
+    private void refreshAfterUserSwitch() {
+        // Trigger a full refresh of the message overview
+        // This will automatically use the new userId
+        this.refreshThread.userRequestsOverviewRefresh();
+    }
+
+    /**
+     * Update menu visibility and enabled state based on current user permissions
+     * Called after permission loading or user switching
+     */
+    private void updateMenusForPermissions() {
+        if (this.permissionManager == null || !this.permissionManager.isLoaded()) {
+            // No permissions loaded - disable everything except exit
+            return;
+        }
+
+        // System Menu items
+        this.jMenuItemFilePreferences.setEnabled(this.permissionManager.hasAnyPermission(
+            Permissions.SYSTEM_CONFIG_CONNECTIVITY, Permissions.SYSTEM_CONFIG_INBOUND_AUTH,
+            Permissions.SYSTEM_CONFIG_DIRECTORIES, Permissions.SYSTEM_CONFIG_MAINTENANCE,
+            Permissions.SYSTEM_CONFIG_NOTIFICATIONS, Permissions.SYSTEM_CONFIG_INTERFACE,
+            Permissions.SYSTEM_CONFIG_LOGGING
+        ));
+
+        this.jMenuItemUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+        this.jButtonUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+
+        this.jMenuItemCertificatesSSL.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_TLS_READ));
+        this.jButtonCertificatesTLS.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_TLS_READ));
+
+        this.jMenuItemHTTPServerInfo.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_INFO_READ));
+        this.jMenuItemSystemEvents.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_EVENTS_READ));
+        this.jMenuItemSearchInServerLog.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_LOGS_READ));
+
+        this.jMenuItemSwitchUser.setVisible(this.permissionManager.hasPermission(Permissions.USER_SWITCH));
+
+        // User Preference Menu items
+        this.jMenuItemFileSend.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
+
+        this.jMenuItemPartner.setEnabled(this.permissionManager.hasPermission(Permissions.PARTNER_READ));
+        this.jButtonPartner.setEnabled(this.permissionManager.hasPermission(Permissions.PARTNER_READ));
+
+        this.jMenuItemCertificatesSignCrypt.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_READ));
+        this.jButtonCertificatesSignEncrypt.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_READ));
+
+        // Tracker menu (if exists - may not be in all versions)
+        // this.jMenuItemTrackerConfig.setEnabled(this.permissionManager.hasPermission(Permissions.TRACKER_CONFIG_READ));
+        // this.jMenuItemTrackerMessage.setEnabled(this.permissionManager.hasPermission(Permissions.TRACKER_MESSAGE_READ));
+
+        // Message actions
+        this.jButtonDeleteMessage.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
+        this.jMenuItemPopupDeleteMessage.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
+        this.jMenuItemPopupSendAgain.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
     }
 
     private class LazyPayloadLoaderThread implements Runnable {

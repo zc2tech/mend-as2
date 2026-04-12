@@ -33,12 +33,14 @@ CREATE TABLE messages (
   msgsubject VARCHAR(255),
   resendcounter INT DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
-  secureconnection INT DEFAULT 0 NOT NULL
+  secureconnection INT DEFAULT 0 NOT NULL,
+  owner_user_id INT DEFAULT 0 NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);
 CREATE INDEX idx_messages_contentmic ON messages(contentmic);
 CREATE INDEX idx_messages_state ON messages(state);
+CREATE INDEX idx_messages_owner_user ON messages(owner_user_id);
 
 -- MDN table
 CREATE TABLE mdn (

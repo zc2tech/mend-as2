@@ -60,20 +60,24 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
     private final String keystoreStorageType;
     private final SystemEventManager systemEventManager;
     private final IDBDriverManager dbDriverManager;
+    private final int userId;  // User ID for user-scoped keystores (0 = admin/system)
 
     /**
+     * @param userId User ID for user-scoped keystores (0 = admin/system, >0 = specific user)
      */
     public KeystoreStorageImplDB(SystemEventManager systemEventManager,
             IDBDriverManager dbDriverManager, final int KEYSTORE_USAGE,
-            final String KEYSTORE_STORAGE_TYPE) throws Exception {
+            final String KEYSTORE_STORAGE_TYPE, final int userId) throws Exception {
         this.systemEventManager = systemEventManager;
         this.dbDriverManager = dbDriverManager;
+        this.userId = userId;
         KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
-        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE);
+        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE, userId);
         if (keystoreData == null) {
             throw new Exception("Unable to access keystore data (DB, usage="
                     + this.getKeystoreUsage()
-                    + ", storageType=" + this.getKeystoreStorageType() + ")");
+                    + ", storageType=" + this.getKeystoreStorageType()
+                    + ", userId=" + userId + ")");
         }
         this.keystoreUsage = KEYSTORE_USAGE;
         this.keystoreStorageType = KEYSTORE_STORAGE_TYPE;
@@ -97,7 +101,7 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
             }
             KeydataAccessDB dataAccessDB = new KeydataAccessDB(this.dbDriverManager, this.systemEventManager);
             dataAccessDB.updateKeydata(keyData, this.keystoreStorageType, this.keystoreUsage,
-                    this.keystore.getProvider().getName());
+                    this.keystore.getProvider().getName(), this.userId);
         }
     }
 
@@ -230,7 +234,7 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
     @Override
     public Map<String, Certificate> loadCertificatesFromKeystore() throws Exception {
         KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
-        KeystoreData keystoreData = dataAccessDB.getKeydata(this.getKeystoreUsage());
+        KeystoreData keystoreData = dataAccessDB.getKeydata(this.getKeystoreUsage(), this.userId);
         if (keystoreData == null) {
             throw new Exception("Unable to access keystore data (DB, usage="
                     + this.getKeystoreUsage()

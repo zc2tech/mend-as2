@@ -920,11 +920,18 @@ public class MessageHttpUploader {
 
         //TLS key stores not set so far: take the trust store from the system
         if (this.certStore == null) {
+            // Get userId from message info - for outbound messages, use the sender's userId
+            int userId = 0; // Default to admin/system
+            if (as2Info instanceof AS2MessageInfo) {
+                userId = ((AS2MessageInfo) as2Info).getOwnerUserId();
+            }
+
             this.trustStore = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    userId
             );
             this.certStore = this.trustStore;
         }

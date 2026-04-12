@@ -26,14 +26,19 @@ CREATE TABLE oauth2(
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Keystore data storage - stores certificate keystores in database
+-- User-scoped: each user has their own keystores
+-- user_id: 0=system/admin, >0=specific user
 -- purpose: 1=TLS keystore, 2=ENC/SIGN keystore
 -- storagetype: 1=JKS, 2=PKCS12
 CREATE TABLE keydata(
-    purpose INT NOT NULL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL DEFAULT 0,
+    purpose INT NOT NULL,
     storagedata LONGBLOB,
     storagetype INT,
     lastchanged BIGINT,
-    securityprovider VARCHAR(255)
+    securityprovider VARCHAR(255),
+    UNIQUE KEY unique_user_purpose (user_id, purpose)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE partner(
@@ -299,17 +304,12 @@ VALUES(
 -- User Management System - Default Data
 -- ============================================================================
 
--- Default Roles
-INSERT INTO webui_roles (name, description) VALUES
-('ADMIN', 'Full system access - can manage all resources and users'),
-('PARTNER_MANAGER', 'Can manage trading partners and their configurations'),
-('CERTIFICATE_MANAGER', 'Can manage certificates, keystores, and key generation'),
-('MESSAGE_OPERATOR', 'Can view and send messages'),
-('MESSAGE_VIEWER', 'Can view messages'),
-('SYSTEM_MANAGER', 'Can manage/view system settings/logs/events'),
-('VIEWER', 'Read-only access - can only view data');
+-- Default Roles (simplified to ADMIN and USER only)
+INSERT INTO webui_roles (id, name, description) VALUES
+(1, 'ADMIN', 'Administrator with full system access - can manage all resources and users'),
+(2, 'USER', 'Regular user with access to own partners, certificates, and messages');
 
--- Default Permissions
+-- Default Permissions (kept for future extensibility, but currently not enforced)
 INSERT INTO webui_permissions (name, description, category) VALUES
 -- Partner permissions
 ('PARTNER_READ', 'View partners', 'Partners'),
@@ -328,7 +328,33 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 ('SYSTEM_WRITE', 'Modify system settings', 'System'),
 
 -- User management permissions
-('USER_MANAGE', 'Manage users and roles', 'Administration');
+('USER_MANAGE', 'Manage users and roles', 'Administration'),
+
+-- System Configuration permissions (per-panel)
+('SYSTEM_CONFIG_CONNECTIVITY', 'Modify HTTP/HTTPS ports and proxy settings', 'System Configuration'),
+('SYSTEM_CONFIG_INBOUND_AUTH', 'Configure inbound authentication', 'System Configuration'),
+('SYSTEM_CONFIG_DIRECTORIES', 'Change message directories', 'System Configuration'),
+('SYSTEM_CONFIG_MAINTENANCE', 'Configure auto-delete and cleanup settings', 'System Configuration'),
+('SYSTEM_CONFIG_NOTIFICATIONS', 'Configure email notifications', 'System Configuration'),
+('SYSTEM_CONFIG_INTERFACE', 'Modify UI preferences', 'System Configuration'),
+('SYSTEM_CONFIG_LOGGING', 'Configure logging settings', 'System Configuration'),
+
+-- System Monitoring permissions
+('SYSTEM_INFO_READ', 'View HTTP server information', 'System Monitoring'),
+('SYSTEM_EVENTS_READ', 'View system events', 'System Monitoring'),
+('SYSTEM_LOGS_READ', 'Search server logs', 'System Monitoring'),
+
+-- Tracker permissions
+('TRACKER_CONFIG_READ', 'View tracker configuration', 'Tracker'),
+('TRACKER_CONFIG_WRITE', 'Modify tracker settings', 'Tracker'),
+('TRACKER_MESSAGE_READ', 'View tracker messages', 'Tracker'),
+
+-- User switching permission
+('USER_SWITCH', 'Impersonate other users', 'User Management'),
+
+-- TLS Certificate permissions (separate from sign/crypt)
+('CERT_TLS_READ', 'View TLS/SSL certificates', 'Certificates - TLS'),
+('CERT_TLS_WRITE', 'Manage TLS/SSL certificates', 'Certificates - TLS');
 
 -- Default admin user (password: "admin" - MUST be changed on first login)
 INSERT INTO webui_users (username, password_hash, full_name, enabled, must_change_password) VALUES
@@ -341,54 +367,16 @@ FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'ADMIN';
 
--- Grant partner management permissions to PARTNER_MANAGER role
+-- Grant basic permissions to USER role
 INSERT INTO webui_role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM webui_roles r
 CROSS JOIN webui_permissions p
-WHERE r.name = 'PARTNER_MANAGER'
-  AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE');
-
--- Grant certificate management permissions to CERTIFICATE_MANAGER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'CERTIFICATE_MANAGER'
-  AND p.name IN ('CERT_READ', 'CERT_WRITE');
-
--- Grant message operations permissions to MESSAGE_OPERATOR role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'MESSAGE_OPERATOR'
-  AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE');
-
--- Grant message read permission to MESSAGE_VIEWER role
--- MESSAGE_VIEWER also needs PARTNER_READ to see partner info in message lists
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'MESSAGE_VIEWER'
-  AND p.name IN ('MESSAGE_READ', 'PARTNER_READ');
-
--- Grant system monitoring permissions to SYSTEM_MANAGER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'SYSTEM_MANAGER'
-  AND p.name IN ('SYSTEM_READ', 'SYSTEM_WRITE');
-
--- Grant READ-ONLY permissions to VIEWER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'VIEWER'
-  AND p.name IN ('PARTNER_READ', 'CERT_READ', 'MESSAGE_READ', 'SYSTEM_READ');
+WHERE r.name = 'USER'
+  AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE', 'CERT_READ', 'CERT_WRITE',
+                 'MESSAGE_READ', 'MESSAGE_WRITE', 'SYSTEM_READ',
+                 'SYSTEM_CONFIG_INTERFACE', 'SYSTEM_INFO_READ',
+                 'TRACKER_MESSAGE_READ', 'CERT_TLS_READ');
 
 -- Assign ADMIN role to default admin user
 INSERT INTO webui_user_roles (user_id, role_id)

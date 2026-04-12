@@ -41,10 +41,29 @@ public class BaseClient {
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     /**
+     * Username of the logged-in user (for user-scoped operations)
+     */
+    private String username = "admin";  // Default to admin for backward compatibility
+
+    /**
      * Schedule task with fixed delay (used by refresh threads)
      */
     public static void scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         scheduler.scheduleWithFixedDelay(task, initialDelay, delay, unit);
+    }
+
+    /**
+     * Set the username for this client session
+     */
+    public void setUsername(String username) {
+        this.username = username != null ? username : "admin";
+    }
+
+    /**
+     * Get the username for this client session
+     */
+    public String getUsername() {
+        return username;
     }
 
     /**
@@ -53,9 +72,10 @@ public class BaseClient {
     public void sendAsync(Object message) {
         if (message instanceof ClientServerMessage) {
             // Execute in background thread to not block UI
+            final String currentUsername = this.username;
             scheduler.execute(() -> {
                 try {
-                    DirectServiceClient.getInstance().processRequest((ClientServerMessage) message);
+                    DirectServiceClient.getInstance().processRequest((ClientServerMessage) message, currentUsername);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -69,7 +89,7 @@ public class BaseClient {
     public ClientServerResponse sendSync(Object request, long timeout) {
         // Use DirectServiceClient to get real data from server
         if (request instanceof ClientServerMessage) {
-            return DirectServiceClient.getInstance().processRequest((ClientServerMessage) request);
+            return DirectServiceClient.getInstance().processRequest((ClientServerMessage) request, this.username);
         }
         return null;
     }

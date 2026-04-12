@@ -25,7 +25,6 @@ import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.auth.AuthenticationResource;
 import de.mendelson.comm.as2.servlet.rest.auth.JwtAuthenticationFilter;
 import de.mendelson.comm.as2.servlet.rest.exceptions.ApiExceptionMapper;
-import de.mendelson.comm.as2.servlet.rest.resources.CemResource;
 import de.mendelson.comm.as2.servlet.rest.resources.CertificateResource;
 import de.mendelson.comm.as2.servlet.rest.resources.MessageResource;
 import de.mendelson.comm.as2.servlet.rest.resources.NotificationResource;
@@ -70,7 +69,6 @@ public class RestApplication extends ResourceConfig {
         register(PartnerResource.class);
         register(CertificateResource.class);
         register(MessageResource.class);
-        register(CemResource.class);
         register(StatisticsResource.class);
         register(PreferencesResource.class);
         register(NotificationResource.class);

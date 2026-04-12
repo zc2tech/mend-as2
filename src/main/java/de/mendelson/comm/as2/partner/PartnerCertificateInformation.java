@@ -1,6 +1,5 @@
 package de.mendelson.comm.as2.partner;
 
-import de.mendelson.comm.as2.cem.CEMEntry;
 import java.io.Serializable;
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
@@ -19,9 +18,9 @@ import java.io.Serializable;
 public class PartnerCertificateInformation implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    public static final int CATEGORY_CRYPT = CEMEntry.CATEGORY_CRYPT;
-    public static final int CATEGORY_SIGN = CEMEntry.CATEGORY_SIGN;
-    public static final int CATEGORY_TLS = CEMEntry.CATEGORY_TLS;
+    public static final int CATEGORY_CRYPT = 1;
+    public static final int CATEGORY_SIGN = 2;
+    public static final int CATEGORY_TLS = 3;
     public static final int CATEGORY_SIGN_OVERWRITE_LOCALSTATION = 4;
     public static final int CATEGORY_CRYPT_OVERWRITE_LOCALSTATION = 5;
     private int category = CATEGORY_CRYPT;
@@ -98,11 +97,4 @@ public class PartnerCertificateInformation implements Serializable {
         hash = 79 * hash + (this.fingerprintSHA1 != null ? this.fingerprintSHA1.hashCode() : 0);
         return hash;
     }
-
-
-    /**Just for debug purpose*/
-    public String getDebugDisplay(){
-        return( this.fingerprintSHA1 + " (" + CEMEntry.getCategoryLocalized(this.category) + ")");
-    }
-
 }

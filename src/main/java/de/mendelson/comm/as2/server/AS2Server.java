@@ -17,7 +17,6 @@ import de.mendelson.Copyright;
 import de.mendelson.activation.AWSRESTAccess;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.AS2ShutdownThread;
-import de.mendelson.comm.as2.cem.CertificateCEMController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
@@ -154,7 +153,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private SendOrderReceiver sendOrderReceiver = null;
     private final ServerInstanceHA serverInstanceHA = new ServerInstanceHA();
     private final ServerStartupSequence serverStartupSequence = new ServerStartupSequence(this.logger);
-    private CertificateCEMController cemController = null;
     private ModuleLockReleaseController lockReleaseController = null;
     private CertificateExpireController expireController = null;
     private PostProcessingEventController eventController = null;
@@ -251,13 +249,16 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private void handleKeystoreSettings(boolean importTLS, boolean importSignEnc) throws Exception {
         KeydataAccessDB keydataAccessDB = new KeydataAccessDB(this.dbDriverManager,
                 SystemEventManagerImplAS2.instance());
+        // Import to system/admin user (user_id=0)
+        int adminUserId = 0;
         Path keystoreFileEncSign = Paths.get("certificates.p12");
         if (importSignEnc) {
             byte[] keystoreData = Files.readAllBytes(keystoreFileEncSign);
             keydataAccessDB.updateKeydata(keystoreData,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    adminUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileEncSign,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
@@ -268,7 +269,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     keystoreFileEncSign,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    adminUserId);
         }
         Path keystoreFileTLS = Paths.get("jetty12/etc/keystore");
         if (importTLS) {
@@ -276,7 +278,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             keydataAccessDB.updateKeydata(keystoreData,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    adminUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileTLS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
@@ -287,7 +290,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     keystoreFileTLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    adminUserId);
         }
     }
 
@@ -411,19 +415,22 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         try {
             this.ensureRunningDBServer();
             this.handleKeystoreSettings(importTLS, importSignEnc);
+            // Create system/admin keystores (user_id=0)
             this.certificateManagerEncSign = new CertificateManager(this.logger);
             KeystoreStorage signEncStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12);
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    0);  // user_id=0 (admin/system)
             this.certificateManagerEncSign.loadKeystoreCertificates(signEncStorage);
             this.certificateManagerTLS = new CertificateManager(this.logger);
             KeystoreStorage tlsStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS);
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    0);  // user_id=0 (admin/system)
             this.certificateManagerTLS.loadKeystoreCertificates(tlsStorage);
 
             // Start client-server BEFORE HTTP server to avoid race condition
@@ -493,9 +500,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.dbDriverManager, SystemEventManagerImplAS2.instance(),
                     AS2Server.SERVER_LOGGER_NAME);
             this.lockReleaseController.startLockReleaseControl();
-            this.cemController = new CertificateCEMController(
-                    this.clientserver, this.dbDriverManager, this.certificateManagerEncSign);
-            this.cemController.start();
             new SystemEventNotificationControllerImplAS2(
                     this.getLogger(),
                     this.dbDriverManager);

@@ -240,15 +240,18 @@ public class AS2 {
 
         // Start GUI client or run in headless mode
         if (startGUI) {
+            // SwingUI always runs as admin user (no login required)
+            String username = "admin";
+            String passwordStr = "";
+
             // Close splash screen before showing GUI
             if (splash != null) {
                 splash.destroy();
                 splash.dispose();
             }
 
-            // SwingUI now runs in same JVM as server - no authentication needed
-            // EventBus replaces Mina networking (no login dialog required)
-            AS2Gui gui = new AS2Gui(splash, "localhost", "admin", "", displayMode);
+            // Start SwingUI with admin user
+            AS2Gui gui = new AS2Gui(splash, "localhost", username, passwordStr, displayMode);
             gui.setVisible(true);
         } else {
             // Headless mode - server keeps running without GUI or authentication

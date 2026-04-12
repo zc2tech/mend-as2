@@ -343,26 +343,29 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
             byte[] tlsData = tlsOut.toByteArray();
 
             // Insert into keydata table
+            // user_id: 0 = system/admin
             // purpose: 1=TLS, 2=ENC/SIGN
             // storagetype: 2=PKCS12
             try (java.sql.PreparedStatement stmt = connection.prepareStatement(
-                    "INSERT INTO keydata (purpose, storagedata, storagetype, lastchanged, securityprovider) " +
-                    "VALUES (?, ?, ?, ?, ?)")) {
+                    "INSERT INTO keydata (user_id, purpose, storagedata, storagetype, lastchanged, securityprovider) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)")) {
 
-                // Insert ENC/SIGN keystore (purpose=2)
-                stmt.setInt(1, 2);  // purpose = ENC/SIGN
-                stmt.setBytes(2, encSignData);
-                stmt.setInt(3, 2);  // storagetype = PKCS12
-                stmt.setLong(4, System.currentTimeMillis());
-                stmt.setString(5, securityProvider);
+                // Insert ENC/SIGN keystore (purpose=2) for admin user (user_id=0)
+                stmt.setInt(1, 0);  // user_id = 0 (admin/system)
+                stmt.setInt(2, 2);  // purpose = ENC/SIGN
+                stmt.setBytes(3, encSignData);
+                stmt.setInt(4, 2);  // storagetype = PKCS12
+                stmt.setLong(5, System.currentTimeMillis());
+                stmt.setString(6, securityProvider);
                 stmt.executeUpdate();
 
-                // Insert TLS keystore (purpose=1)
-                stmt.setInt(1, 1);  // purpose = TLS
-                stmt.setBytes(2, tlsData);
-                stmt.setInt(3, 2);  // storagetype = PKCS12
-                stmt.setLong(4, System.currentTimeMillis());
-                stmt.setString(5, securityProvider);
+                // Insert TLS keystore (purpose=1) for admin user (user_id=0)
+                stmt.setInt(1, 0);  // user_id = 0 (admin/system)
+                stmt.setInt(2, 1);  // purpose = TLS
+                stmt.setBytes(3, tlsData);
+                stmt.setInt(4, 2);  // storagetype = PKCS12
+                stmt.setLong(5, System.currentTimeMillis());
+                stmt.setString(6, securityProvider);
                 stmt.executeUpdate();
             }
 

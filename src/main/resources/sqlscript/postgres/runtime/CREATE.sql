@@ -38,12 +38,14 @@ CREATE TABLE messages (
   msgsubject VARCHAR(255),
   resendcounter INTEGER DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
-  secureconnection INTEGER DEFAULT 0 NOT NULL
+  secureconnection INTEGER DEFAULT 0 NOT NULL,
+  owner_user_id INTEGER DEFAULT 0 NOT NULL
 );
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);
 CREATE INDEX idx_messages_contentmic ON messages(contentmic);
 CREATE INDEX idx_messages_state ON messages(state);
+CREATE INDEX idx_messages_owner_user ON messages(owner_user_id);
 
 -- MDN table
 CREATE TABLE mdn (

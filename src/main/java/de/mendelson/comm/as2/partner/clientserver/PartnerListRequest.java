@@ -32,14 +32,17 @@ public class PartnerListRequest extends ClientServerMessage{
 
     private String additionalListOptionStr = null;
     private int additionalListOptionInt = -1;
-    
+
     /**Default: Request full partner data*/
     public static final int DATA_COMPLETENESS_FULL = PartnerAccessDB.DATA_COMPLETENESS_FULL;
     /**Just return the partner names and the AS2 id and the type - for fast UI requests*/
     public static final int DATA_COMPLETENESS_NAME_AS2ID_TYPE = PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE;
     private int requestedDataCompleteness = DATA_COMPLETENESS_FULL;
-        
-    
+
+    /**User ID to filter partners (0 = admin sees all, >0 = specific user's partners)*/
+    private int userId = 0;
+
+
     public PartnerListRequest() {
     }
 
@@ -52,7 +55,7 @@ public class PartnerListRequest extends ClientServerMessage{
         this.listOption = listOption;
         this.requestedDataCompleteness = dataCompleteness;
     }
-    
+
     @Override
     public String toString() {
         return ("List partner");
@@ -98,11 +101,25 @@ public class PartnerListRequest extends ClientServerMessage{
     public void setAdditionalListOptionInt(int additionalListOptionInt) {
         this.additionalListOptionInt = additionalListOptionInt;
     }
-    
+
     public int getRequestedDataCompleteness(){
         return( this.requestedDataCompleteness );
     }
-    
+
+    /**
+     * @return the userId
+     */
+    public int getUserId() {
+        return userId;
+    }
+
+    /**
+     * @param userId the userId to set (0 = admin, >0 = specific user)
+     */
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
     /**Prevent an overwrite of the readObject method for de-serialization*/
     private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException{
         inStream.defaultReadObject();

@@ -16,16 +16,6 @@ import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
 import de.mendelson.comm.as2.api.message.CommandRequest;
 import de.mendelson.comm.as2.api.server.ServersideAPICommandProcessing;
-import de.mendelson.comm.as2.cem.CEMAccessDB;
-import de.mendelson.comm.as2.cem.CEMEntry;
-import de.mendelson.comm.as2.cem.CEMInitiator;
-import de.mendelson.comm.as2.cem.CEMReceiptController;
-import de.mendelson.comm.as2.cem.clientserver.CEMCancelRequest;
-import de.mendelson.comm.as2.cem.clientserver.CEMDeleteRequest;
-import de.mendelson.comm.as2.cem.clientserver.CEMListRequest;
-import de.mendelson.comm.as2.cem.clientserver.CEMListResponse;
-import de.mendelson.comm.as2.cem.clientserver.CEMSendRequest;
-import de.mendelson.comm.as2.cem.clientserver.CEMSendResponse;
 import de.mendelson.comm.as2.client.manualsend.ManualSendRequest;
 import de.mendelson.comm.as2.client.manualsend.ManualSendResponse;
 import de.mendelson.comm.as2.clientserver.message.ConfigurationCheckRequest;
@@ -250,7 +240,6 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -503,24 +492,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             } else if (message instanceof StatisticDetailRequest msg) {
                 this.performStatisticDetailRequest(session, msg);
                 return (true);
-            } else if (message instanceof CEMListRequest msg) {
-                this.processCEMListRequest(session, msg);
-                return (true);
-            } else if (message instanceof CEMDeleteRequest msg) {
-                this.processCEMDeleteRequest(session, msg);
-                return (true);
-            } else if (message instanceof CEMCancelRequest msg) {
-                this.processCEMCancelRequest(session, msg);
-                return (true);
-            } else if (message instanceof MessageRequestLastMessage msg) {
-                this.processMessageRequestLastMessage(session, msg);
-                return (true);
-            } else if (message instanceof CEMSendRequest msg) {
-                this.processCEMSendRequest(session, msg);
-                return (true);
-            } else if (message instanceof ServerShutdown msg) {
-                this.performServerShutdown(session, msg);
-                return (true);
             } else if (message instanceof ModuleLockRequest msg) {
                 this.processModuleLockRequest(session, msg);
                 return (true);
@@ -625,6 +596,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof UserHttpAuthPreferenceSaveRequest msg) {
                 session.write(this.processUserHttpAuthPreferenceSaveRequest(msg));
+                return (true);
+            } else if (message instanceof UserPermissionsRequest msg) {
+                session.write(this.processUserPermissionsRequest(msg, session));
                 return (true);
             } else if (message instanceof TrackerMessageRequest) {
                 // Handle tracker message requests
@@ -2321,30 +2295,52 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     public PartnerListResponse processPartnerListRequest(PartnerListRequest request) {
         PartnerListResponse response = new PartnerListResponse(request);
         try {
+            int userId = request.getUserId();
+
             if (request.getListOption() == PartnerListRequest.LIST_ALL) {
-                response.setList(this.partnerAccess.getAllPartner(request.getRequestedDataCompleteness()));
+                if (userId == 0) {
+                    // Admin sees all partners
+                    response.setList(this.partnerAccess.getAllPartner(request.getRequestedDataCompleteness()));
+                } else {
+                    // Regular user sees only their partners
+                    response.setList(this.partnerAccess.getPartnersVisibleToUser(userId, request.getRequestedDataCompleteness()));
+                }
             } else if (request.getListOption() == PartnerListRequest.LIST_LOCALSTATION) {
                 List<Partner> list = new ArrayList<Partner>();
-                list.addAll(this.partnerAccess.getLocalStations(request.getRequestedDataCompleteness()));
-                response.setList(list);
-            } else if (request.getListOption() == PartnerListRequest.LIST_NON_LOCALSTATIONS) {
-                response.setList(this.partnerAccess.getNonLocalStations(
-                        request.getRequestedDataCompleteness()));
-            } else if (request.getListOption() == PartnerListRequest.LIST_NON_LOCALSTATIONS_SUPPORTING_CEM) {
-                List<Partner> partnerList = this.partnerAccess.getNonLocalStations(
-                        request.getRequestedDataCompleteness());
-                List<Partner> cemSupportingList = new ArrayList<Partner>();
-                for (Partner partner : partnerList) {
-                    PartnerSystem partnerSystem = this.partnerSystemAccess.getPartnerSystem(partner);
-                    if (partnerSystem != null && partnerSystem.supportsCEM()) {
-                        cemSupportingList.add(partner);
+                List<Partner> allLocalStations = this.partnerAccess.getLocalStations(request.getRequestedDataCompleteness());
+                if (userId == 0) {
+                    // Admin sees all local stations
+                    list.addAll(allLocalStations);
+                } else {
+                    // Filter local stations by user visibility
+                    for (Partner partner : allLocalStations) {
+                        if (partner.getVisibleToUserIds().contains(userId)) {
+                            list.add(partner);
+                        }
                     }
                 }
-                response.setList(cemSupportingList);
+                response.setList(list);
+            } else if (request.getListOption() == PartnerListRequest.LIST_NON_LOCALSTATIONS) {
+                List<Partner> allNonLocalStations = this.partnerAccess.getNonLocalStations(
+                        request.getRequestedDataCompleteness());
+                if (userId == 0) {
+                    // Admin sees all non-local stations
+                    response.setList(allNonLocalStations);
+                } else {
+                    // Filter by user visibility
+                    List<Partner> filteredList = new ArrayList<Partner>();
+                    for (Partner partner : allNonLocalStations) {
+                        if (partner.getVisibleToUserIds().contains(userId)) {
+                            filteredList.add(partner);
+                        }
+                    }
+                    response.setList(filteredList);
+                }
             } else if (request.getListOption() == PartnerListRequest.LIST_BY_AS2_ID) {
                 List<Partner> list = new ArrayList<Partner>();
                 Partner partner = this.partnerAccess.getPartner(request.getAdditionalListOptionStr());
-                if (partner != null) {
+                // Check user visibility
+                if (partner != null && (userId == 0 || partner.getVisibleToUserIds().contains(userId))) {
                     list.add(partner);
                 }
                 response.setList(list);
@@ -2352,7 +2348,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 List<Partner> list = new ArrayList<Partner>();
                 Partner partner = this.partnerAccess.getPartnerByName(request.getAdditionalListOptionStr(),
                         PartnerListRequest.DATA_COMPLETENESS_FULL);
-                if (partner != null) {
+                // Check user visibility
+                if (partner != null && (userId == 0 || partner.getVisibleToUserIds().contains(userId))) {
                     list.add(partner);
                 }
                 response.setList(list);
@@ -2516,63 +2513,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     /**
      * sync
      */
-    private void processCEMListRequest(IoSession session, CEMListRequest request) {
-        CEMListResponse response = processCEMListRequest(request);
-        session.write(response);
-    }
 
-    public CEMListResponse processCEMListRequest(CEMListRequest request) {
-        CEMListResponse response = new CEMListResponse(request);
-        CEMAccessDB access = new CEMAccessDB(this.dbDriverManager);
-        response.setList(access.getCEMEntries());
-        return response;
-    }
-
-    /**
-     * sync
-     */
-    private void processCEMDeleteRequest(IoSession session, CEMDeleteRequest request) {
-        ClientServerResponse response = processCEMDeleteRequest(request);
-        session.write(response);
-    }
-
-    public ClientServerResponse processCEMDeleteRequest(CEMDeleteRequest request) {
-        CEMEntry entry = request.getEntry();
-        CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
-        cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
-                CEMEntry.STATUS_CANCELED_INT);
-        //remove the underlaying messages
-        if (entry.getRequestMessageid() != null) {
-            List<String> requestMessageList = new ArrayList<String>();
-            requestMessageList.add(entry.getRequestMessageid());
-            this.logAccess.deleteMessageLog(requestMessageList);
-            this.messageAccess.deleteMessages(requestMessageList);
-        }
-        if (entry.getResponseMessageid() != null) {
-            List<String> responseMessageList = new ArrayList<String>();
-            responseMessageList.add(entry.getResponseMessageid());
-            this.logAccess.deleteMessageLog(responseMessageList);
-            this.messageAccess.deleteMessages(responseMessageList);
-        }
-        cemAccess.removeEntry(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId());
-        return new ClientServerResponse(request);
-    }
-
-    /**
-     * sync
-     */
-    private void processCEMCancelRequest(IoSession session, CEMCancelRequest request) {
-        ClientServerResponse response = processCEMCancelRequest(request);
-        session.write(response);
-    }
-
-    public ClientServerResponse processCEMCancelRequest(CEMCancelRequest request) {
-        CEMEntry entry = request.getEntry();
-        CEMAccessDB cemAccess = new CEMAccessDB(this.dbDriverManager);
-        cemAccess.setPendingRequestsToState(entry.getInitiatorAS2Id(), entry.getReceiverAS2Id(), entry.getCategory(), entry.getRequestId(),
-                CEMEntry.STATUS_CANCELED_INT);
-        return new ClientServerResponse(request);
-    }
 
     /**
      * sync
@@ -2585,41 +2526,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     public MessageResponseLastMessage processMessageRequestLastMessage(MessageRequestLastMessage request) {
         MessageResponseLastMessage response = new MessageResponseLastMessage(request);
         response.setInfo(this.messageAccess.getLastMessageEntry(request.getMessageId()));
-        return response;
-    }
-
-    /**
-     * sync
-     */
-    private void processCEMSendRequest(IoSession session, CEMSendRequest request) {
-        CEMSendResponse response = processCEMSendRequest(request);
-        session.write(response);
-    }
-
-    public CEMSendResponse processCEMSendRequest(CEMSendRequest request) {
-        CEMSendResponse response = new CEMSendResponse(request);
-        Partner initiator = request.getInitiator();
-        KeystoreCertificate certificate = request.getCertificate();
-        Date activationDate = request.getActivationDate();
-        //set time to 0:01 of this day
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(activationDate);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 1);
-        calendar.set(Calendar.SECOND, 0);
-        CEMInitiator cemInitiator = new CEMInitiator(this.dbDriverManager, this.certificateManagerEncSign);
-        try {
-            List<Partner> informedPartnerList = cemInitiator.sendRequests(initiator,
-                    request.getReceiver(),
-                    certificate,
-                    request.isPurposeEncryption(),
-                    request.isPurposeSignature(),
-                    request.isPurposeSSL(),
-                    calendar.getTime());
-            response.setInformedPartner(informedPartnerList);
-        } catch (Throwable e) {
-            response.setException(e);
-        }
         return response;
     }
 
@@ -3034,7 +2940,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 responseObject.setHttpReturnCode(HttpServletResponse.SC_BAD_REQUEST);
                 return (responseObject);
             }
-            //its a CEM: check data integrity before returning an MDN
             if (!message.isMDN()) {
                 AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
                 if (requestObject.getHeader().getProperty("disposition-notification-options") != null) {
@@ -3042,12 +2947,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                             new DispositionNotificationOptions(requestObject.getHeader().getProperty("disposition-notification-options")));
                 } else {
                     messageInfo.setDispositionNotificationOptions(new DispositionNotificationOptions(""));
-                }
-                if (messageInfo.getMessageType() == AS2Message.MESSAGETYPE_CEM) {
-                    CEMReceiptController cemReceipt = new CEMReceiptController(
-                            this.clientserver, this.dbDriverManager,
-                            this.certificateManagerEncSign);
-                    cemReceipt.checkInboundCEM(message);
                 }
                 this.messageAccess.initializeOrUpdateMessage(messageInfo);
             } else {
@@ -3194,28 +3093,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     this.messageStoreHandler.movePayloadToInbox(messageInfo.getMessageType(),
                             ((AS2MDNInfo) mdn.getAS2Info()).getRelatedMessageId(),
                             messageReceiver, messageSender);
-                    //dont execute the command after receipt for CEM
-                    if (as2RelatedMessageInfo.getMessageType() == AS2Message.MESSAGETYPE_CEM) {
-                        CEMReceiptController cemReceipt = new CEMReceiptController(this.clientserver,
-                                this.dbDriverManager,
-                                this.certificateManagerEncSign);
-                        cemReceipt.processInboundCEM(as2RelatedMessageInfo);
-                    } else {
-                        ProcessingEvent.enqueueEventIfRequired(this.dbDriverManager,
-                                as2RelatedMessageInfo, null);
-                    }
+                    ProcessingEvent.enqueueEventIfRequired(this.dbDriverManager,
+                            as2RelatedMessageInfo, null);
                 }
                 this.messageAccess.setMessageState(((AS2MDNInfo) mdn.getAS2Info()).getRelatedMessageId(), mdn.getAS2Info().getState());
                 EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } else {
                 //async MDN requested, dont send MDN in this case
-                //process the CEM request if it requires async MDN
-                if (as2RelatedMessageInfo.getMessageType() == AS2Message.MESSAGETYPE_CEM) {
-                    CEMReceiptController cemReceipt = new CEMReceiptController(this.clientserver,
-                            this.dbDriverManager,
-                            this.certificateManagerEncSign);
-                    cemReceipt.processInboundCEM(as2RelatedMessageInfo);
-                }
                 responseObject.setMDNData(null);
                 //async back to sender
                 this.addSendOrder(mdn, messageSender, messageReceiver);
@@ -3247,7 +3131,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 String optionalProfiles = header.getProperty("ediint-features");
                 if (optionalProfiles != null) {
                     partnerSystem.setMa(optionalProfiles.contains("multiple-attachments"));
-                    partnerSystem.setCEM(optionalProfiles.contains("CEM"));
                 }
                 this.partnerSystemAccess.insertOrUpdatePartnerSystem(partnerSystem);
             }
@@ -3546,6 +3429,30 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             response.setErrorMessage(e.getMessage());
             response.setException(e);
             this.logger.log(Level.SEVERE, "Error processing user HTTP auth preference save request", e);
+        }
+        return response;
+    }
+
+    /**
+     * Process user permissions request
+     * Returns the set of permissions for the current session user
+     */
+    public UserPermissionsResponse processUserPermissionsRequest(UserPermissionsRequest request, IoSession session) {
+        UserPermissionsResponse response = new UserPermissionsResponse(request);
+        try {
+            // Get username from session
+            String username = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
+            if (username == null || username.isEmpty()) {
+                throw new Exception("No user session found");
+            }
+
+            // Load permissions from database
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
+            Set<String> permissions = userMgmt.getUserPermissions(username);
+            response.setPermissions(permissions);
+        } catch (Exception e) {
+            response.setException(e);
+            this.logger.log(Level.SEVERE, "Error processing user permissions request", e);
         }
         return response;
     }

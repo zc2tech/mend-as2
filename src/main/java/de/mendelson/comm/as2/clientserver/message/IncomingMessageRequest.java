@@ -36,6 +36,10 @@ public class IncomingMessageRequest extends ClientServerMessage {
      * of the outbound connection
      */
     private boolean isSyncMDN = false;
+    /**
+     * Target user ID for user-specific message processing (0 = admin/system, >0 = specific user)
+     */
+    private int targetUserId = 0;
 
     public IncomingMessageRequest() {
     }
@@ -185,6 +189,20 @@ public class IncomingMessageRequest extends ClientServerMessage {
      */
     public void setSyncMDN(boolean isSyncMDN) {
         this.isSyncMDN = isSyncMDN;
+    }
+
+    /**
+     * @return the targetUserId
+     */
+    public int getTargetUserId() {
+        return targetUserId;
+    }
+
+    /**
+     * @param targetUserId the targetUserId to set (0 = admin/system, >0 = specific user)
+     */
+    public void setTargetUserId(int targetUserId) {
+        this.targetUserId = targetUserId;
     }
 
 }

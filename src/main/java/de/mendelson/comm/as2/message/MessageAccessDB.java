@@ -1096,7 +1096,7 @@ public class MessageAccessDB {
                 + "senderid=?,signature=?,state=?,syncmdn=?,headerfilename=?,useragent=?,"
                 + "rawdecryptedfilename=?,senderhost=?,"
                 + "contentmic=?,msgcompression=?,messagetype=?,asyncmdnurl=?,msgsubject=?,userdefinedid=?,"
-                + "secureconnection=?"
+                + "secureconnection=?,owner_user_id=?"
                 + " WHERE messageid=?")) {
             preparedStatement.setInt(1, info.getEncryptionType());
             preparedStatement.setInt(2, info.getDirection());
@@ -1121,8 +1121,9 @@ public class MessageAccessDB {
                 preparedStatement.setNull(18, Types.VARCHAR);
             }
             preparedStatement.setInt(19, info.usesTLS() ? 1 : 0);
+            preparedStatement.setInt(20, info.getOwnerUserId());
             //condition
-            preparedStatement.setString(20, info.getMessageId());
+            preparedStatement.setString(21, info.getMessageId());
             updatedEntries = preparedStatement.executeUpdate();
             if (updatedEntries > 0) {
                 //insert payload and inc transaction counter

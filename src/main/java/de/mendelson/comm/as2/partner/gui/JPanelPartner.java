@@ -527,7 +527,21 @@ public class JPanelPartner extends JPanel {
         this.buttonOk.computeErrorState();
         this.jTextFieldId.setText(partner.getAS2Identification());
         this.jTextFieldName.setText(partner.getName());
-        this.jTextFieldReceiptURL.setText(partner.getURL());
+
+        // For remote partners, only set Receipt URL if it's not the default value
+        // This keeps the field empty for new remote partners
+        if (partner.isLocalStation()) {
+            this.jTextFieldReceiptURL.setText(partner.getURL());
+        } else {
+            // For remote partners, only populate if URL is not default
+            String url = partner.getURL();
+            if (url != null && !url.equals(partner.getDefaultURL())) {
+                this.jTextFieldReceiptURL.setText(url);
+            } else {
+                this.jTextFieldReceiptURL.setText("");
+            }
+        }
+
         this.jTextFieldMDNURL.setText(partner.getMdnURL());
         this.jTextFieldEMail.setText(partner.getEmail());
         this.setUIValueWithoutEvent(this.switchLocalStation, partner.isLocalStation());
@@ -1217,6 +1231,8 @@ public class JPanelPartner extends JPanel {
         jPanelMDN = new javax.swing.JPanel();
         jPanelMDNMain = new javax.swing.JPanel();
         jTextFieldMDNURL = new javax.swing.JTextField();
+        jButtonMDNURLHttp = new javax.swing.JButton();
+        jButtonMDNURLHttps = new javax.swing.JButton();
         jPanelSpace99 = new javax.swing.JPanel();
         jLabelIconSyncMDN = new javax.swing.JLabel();
         jLabelIconAsyncMDN = new javax.swing.JLabel();
@@ -1470,8 +1486,8 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(15, 5, 0, 5);
         jPanelSendMain.add(jPanelSep, gridBagConstraints);
 
-        jComboBoxContentTransferEncoding.setMinimumSize(new java.awt.Dimension(70, 24));
-        jComboBoxContentTransferEncoding.setPreferredSize(new java.awt.Dimension(70, 24));
+        jComboBoxContentTransferEncoding.setMinimumSize(new java.awt.Dimension(120, 24));
+        jComboBoxContentTransferEncoding.setPreferredSize(new java.awt.Dimension(130, 24));
         jComboBoxContentTransferEncoding.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxContentTransferEncodingActionPerformed(evt);
@@ -1492,7 +1508,7 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelSendMain.add(jLabelContentTransferEncoding, gridBagConstraints);
 
-        jComboBoxHTTPProtocolVersion.setPreferredSize(new java.awt.Dimension(70, 24));
+        jComboBoxHTTPProtocolVersion.setPreferredSize(new java.awt.Dimension(111, 24));
         jComboBoxHTTPProtocolVersion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jComboBoxHTTPProtocolVersionActionPerformed(evt);
@@ -1639,11 +1655,37 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 6;
+        gridBagConstraints.gridwidth = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMDNMain.add(jTextFieldMDNURL, gridBagConstraints);
+
+        jButtonMDNURLHttp.setText("HTTP");
+        jButtonMDNURLHttp.setToolTipText("Fill with HTTP endpoint URL");
+        jButtonMDNURLHttp.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonMDNURLHttpActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMDNMain.add(jButtonMDNURLHttp, gridBagConstraints);
+
+        jButtonMDNURLHttps.setText("HTTPS");
+        jButtonMDNURLHttps.setToolTipText("Fill with HTTPS endpoint URL");
+        jButtonMDNURLHttps.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonMDNURLHttpsActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMDNMain.add(jButtonMDNURLHttps, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 12;
@@ -3672,6 +3714,76 @@ public class JPanelPartner extends JPanel {
         }
     }//GEN-LAST:event_jTextFieldMDNURLKeyReleased
 
+    private void jButtonMDNURLHttpActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.partner != null) {
+            try {
+                // Get username from baseClient
+                String username = this.baseClient.getUsername();
+
+                // Get actual HTTP port from server preferences
+                int httpPort = this.preferences.getInt(PreferencesAS2.HTTP_LISTEN_PORT);
+
+                // Get hostname - use InetAddress to get actual hostname, fallback to localhost
+                String hostname = "localhost";
+                try {
+                    hostname = java.net.InetAddress.getLocalHost().getHostName();
+                } catch (Exception e) {
+                    // Fallback to localhost if unable to get hostname
+                    hostname = "localhost";
+                }
+
+                // Build HTTP MDN URL: http://{hostname}:{port}/as2/HttpReceiver/{username}
+                String mdnUrl = "http://" + hostname + ":" + httpPort + "/as2/HttpReceiver/" + username;
+
+                this.jTextFieldMDNURL.setText(mdnUrl);
+                this.partner.setMdnURL(mdnUrl);
+                this.buttonOk.computeErrorState();
+                this.informTreeModelNodeChanged();
+            } catch (Exception e) {
+                // If any error occurs, show error message
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Failed to generate HTTP URL: " + e.getMessage(),
+                        "Error",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void jButtonMDNURLHttpsActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.partner != null) {
+            try {
+                // Get username from baseClient
+                String username = this.baseClient.getUsername();
+
+                // Get actual HTTPS port from server preferences
+                int httpsPort = this.preferences.getInt(PreferencesAS2.HTTPS_LISTEN_PORT);
+
+                // Get hostname - use InetAddress to get actual hostname, fallback to localhost
+                String hostname = "localhost";
+                try {
+                    hostname = java.net.InetAddress.getLocalHost().getHostName();
+                } catch (Exception e) {
+                    // Fallback to localhost if unable to get hostname
+                    hostname = "localhost";
+                }
+
+                // Build HTTPS MDN URL: https://{hostname}:{port}/as2/HttpReceiver/{username}
+                String mdnUrl = "https://" + hostname + ":" + httpsPort + "/as2/HttpReceiver/" + username;
+
+                this.jTextFieldMDNURL.setText(mdnUrl);
+                this.partner.setMdnURL(mdnUrl);
+                this.buttonOk.computeErrorState();
+                this.informTreeModelNodeChanged();
+            } catch (Exception e) {
+                // If any error occurs, show error message
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Failed to generate HTTPS URL: " + e.getMessage(),
+                        "Error",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void jComboBoxEncryptionTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxEncryptionTypeActionPerformed
         if (this.partner != null) {
             if (this.jComboBoxEncryptionType.getSelectedItem() != null) {
@@ -4116,6 +4228,8 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JButton jButtonEditEventOnSendSuccess;
     private javax.swing.JButton jButtonHttpHeaderAdd;
     private javax.swing.JButton jButtonHttpHeaderRemove;
+    private javax.swing.JButton jButtonMDNURLHttp;
+    private javax.swing.JButton jButtonMDNURLHttps;
     private javax.swing.JButton jButtonOAuth2AuthorizationCodeMDN;
     private javax.swing.JButton jButtonOAuth2AuthorizationCodeMessage;
     private javax.swing.JButton jButtonOAuth2ClientCredentialsMDN;
