@@ -1,6 +1,6 @@
 package de.mendelson.comm.as2.client.permissions;
 
-import de.mendelson.comm.as2.clientserver.message.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.ClientServerResponse;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserPermissionsRequest;
 import de.mendelson.comm.as2.usermanagement.clientserver.UserPermissionsResponse;
 import de.mendelson.util.clientserver.BaseClient;
@@ -54,7 +54,7 @@ public class SwingUIPermissionManager {
      */
     public void loadPermissions() throws Exception {
         UserPermissionsRequest request = new UserPermissionsRequest();
-        ClientServerResponse response = this.baseClient.sendSync(request, BaseClient.TIMEOUT_10S);
+        ClientServerResponse response = this.baseClient.sendSync(request, BaseClient.TIMEOUT_SYNC_RECEIVE);
 
         if (response instanceof UserPermissionsResponse) {
             UserPermissionsResponse permResponse = (UserPermissionsResponse) response;

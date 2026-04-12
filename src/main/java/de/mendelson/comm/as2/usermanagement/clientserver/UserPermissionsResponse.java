@@ -1,6 +1,7 @@
 package de.mendelson.comm.as2.usermanagement.clientserver;
 
-import de.mendelson.comm.as2.clientserver.message.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.ClientServerResponse;
+import de.mendelson.util.clientserver.messages.ClientServerMessage;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,8 +32,8 @@ public class UserPermissionsResponse extends ClientServerResponse {
     public static final long serialVersionUID = 1L;
     private Set<String> permissions = new HashSet<>();
 
-    public UserPermissionsResponse(ClientServerResponse baseResponse) {
-        super(baseResponse);
+    public UserPermissionsResponse(ClientServerMessage request) {
+        super(request);
     }
 
     public Set<String> getPermissions() {

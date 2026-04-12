@@ -1,6 +1,6 @@
 package de.mendelson.comm.as2.usermanagement.clientserver;
 
-import de.mendelson.comm.as2.clientserver.message.ClientServerMessage;
+import de.mendelson.util.clientserver.messages.ClientServerMessage;
 
 /*
  * Copyright (C) mendelson-e-commerce GmbH Berlin Germany
