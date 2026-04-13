@@ -28,6 +28,7 @@ import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.oauth2.OAuth2Config;
 import de.mendelson.util.security.cert.KeystoreStorage;
 import de.mendelson.util.security.cert.KeystoreStorageImplDB;
+import de.mendelson.util.security.cert.SingleCertificateKeyManager;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +42,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.text.DateFormat;
@@ -50,6 +53,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -60,10 +65,13 @@ import java.util.logging.Logger;
 import jakarta.mail.internet.MimeUtility;
 import jakarta.servlet.http.HttpServletResponse;
 import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509KeyManager;
 import javax.security.auth.x500.X500Principal;
 import org.apache.hc.client5.http.ConnectTimeoutException;
 import org.apache.hc.client5.http.auth.AuthCache;
@@ -512,8 +520,13 @@ public class MessageHttpUploader {
             //create the http client
             HttpClientBuilder clientBuilder = HttpClients.custom();
             if (receiptURL.getProtocol().equalsIgnoreCase("https")) {
+                // Determine which authentication to use for SSL client certificate
+                HTTPAuthentication authForSSL = message.isMDN() ?
+                    receiver.getAuthenticationCredentialsAsyncMDN() :
+                    receiver.getAuthenticationCredentialsMessage();
+
                 SSLConnectionSocketFactory sslConnectionSocketFactory
-                        = this.generateSSLFactory(connectionParameter, message.getAS2Info());
+                        = this.generateSSLFactory(connectionParameter, message.getAS2Info(), authForSSL);
                 clientBuilder.setConnectionManager(
                     PoolingHttpClientConnectionManagerBuilder.create()
                         .setSSLSocketFactory(sslConnectionSocketFactory)
@@ -594,6 +607,26 @@ public class MessageHttpUploader {
                     if (this.logger != null) {
                         this.logger.log(Level.WARNING,
                             "HTTP auth user preference mode enabled but userId not set. Sending without authentication.",
+                            message.getAS2Info());
+                    }
+                }
+            } else if (basicAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
+                // Certificate authentication - log the certificate being used
+                if (this.logger != null) {
+                    String fingerprint = basicAuthentication.getCertificateFingerprint();
+                    if (fingerprint != null && !fingerprint.isEmpty()) {
+                        // Try to get certificate alias for logging
+                        String alias = null;
+                        if (this.certStore != null) {
+                            try {
+                                alias = this.findAliasByFingerprint(this.certStore.getKeystore(), fingerprint);
+                            } catch (Exception e) {
+                                // Ignore - logging only
+                            }
+                        }
+                        this.logger.log(Level.INFO,
+                            this.rb.getResourceString("using.certificate.auth",
+                                new Object[]{alias != null ? alias : fingerprint}),
                             message.getAS2Info());
                     }
                 }
@@ -916,7 +949,7 @@ public class MessageHttpUploader {
     }
 
     private SSLConnectionSocketFactory generateSSLFactory(HttpConnectionParameter connectionParameter,
-            AS2Info as2Info) throws Exception {
+            AS2Info as2Info, HTTPAuthentication httpAuthentication) throws Exception {
 
         //TLS key stores not set so far: take the trust store from the system
         if (this.certStore == null) {
@@ -944,10 +977,71 @@ public class MessageHttpUploader {
                     .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
             sslcontext = builder.build();
         } else {
-            sslcontext = SSLContexts.custom()
-                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy)
-                    .loadKeyMaterial(this.certStore.getKeystore(), this.certStore.getKeystorePass())
-                    .build();
+            SSLContextBuilder builder = SSLContexts.custom()
+                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
+
+            // Check if certificate authentication is requested
+            if (httpAuthentication != null &&
+                httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
+
+                String fingerprint = httpAuthentication.getCertificateFingerprint();
+                if (fingerprint != null && !fingerprint.isEmpty()) {
+                    // Find the alias for the certificate with this fingerprint
+                    String targetAlias = this.findAliasByFingerprint(
+                        this.certStore.getKeystore(), fingerprint);
+
+                    if (targetAlias != null) {
+                        // Create a KeyManagerFactory to get the default KeyManager
+                        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+                            KeyManagerFactory.getDefaultAlgorithm());
+                        kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
+
+                        // Wrap the first X509KeyManager with our single-certificate filter
+                        KeyManager[] keyManagers = kmf.getKeyManagers();
+                        for (int i = 0; i < keyManagers.length; i++) {
+                            if (keyManagers[i] instanceof X509KeyManager) {
+                                keyManagers[i] = new SingleCertificateKeyManager(
+                                    (X509KeyManager) keyManagers[i], targetAlias);
+                                break;
+                            }
+                        }
+
+                        // Build SSL context with custom key manager
+                        sslcontext = builder.build();
+                        sslcontext.init(keyManagers, null, null);
+                    } else {
+                        // Certificate not found - log warning and proceed without client cert
+                        if (this.logger != null) {
+                            this.logger.log(Level.WARNING,
+                                "Client certificate with fingerprint " + fingerprint +
+                                " not found in keystore. Proceeding without client certificate.",
+                                as2Info);
+                        }
+                        // Fall back to loading all keys
+                        builder.loadKeyMaterial(
+                            this.certStore.getKeystore(),
+                            this.certStore.getKeystorePass());
+                        sslcontext = builder.build();
+                    }
+                } else {
+                    // No fingerprint specified - log warning
+                    if (this.logger != null) {
+                        this.logger.log(Level.WARNING,
+                            "Certificate authentication mode selected but no certificate fingerprint specified.",
+                            as2Info);
+                    }
+                    builder.loadKeyMaterial(
+                        this.certStore.getKeystore(),
+                        this.certStore.getKeystorePass());
+                    sslcontext = builder.build();
+                }
+            } else {
+                // Not using certificate authentication - load all keys as before
+                builder.loadKeyMaterial(
+                    this.certStore.getKeystore(),
+                    this.certStore.getKeystorePass());
+                sslcontext = builder.build();
+            }
         }
         // Allowed SSL/TLS protocols as client
         String[] allowedProtocols
@@ -972,6 +1066,36 @@ public class MessageHttpUploader {
                     new DefaultHostnameVerifierTrustedOnly(as2Info));
         }
         return (sslConnectionFactory);
+    }
+
+    /**
+     * Helper method to find certificate alias by SHA1 fingerprint
+     * @param keystore The keystore to search
+     * @param fingerprint The SHA1 fingerprint (format: "XX:XX:XX..." or "XXXX...")
+     * @return The alias of the matching certificate, or null if not found
+     */
+    private String findAliasByFingerprint(KeyStore keystore, String fingerprint) throws Exception {
+        // Remove colons and convert to uppercase for comparison
+        String normalizedFingerprint = fingerprint.replace(":", "").toUpperCase();
+
+        Enumeration<String> aliases = keystore.aliases();
+        while (aliases.hasMoreElements()) {
+            String alias = aliases.nextElement();
+            if (keystore.isKeyEntry(alias)) {
+                Certificate cert = keystore.getCertificate(alias);
+                if (cert instanceof X509Certificate) {
+                    X509Certificate x509 = (X509Certificate) cert;
+                    byte[] encoded = x509.getEncoded();
+                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                    byte[] certFingerprint = md.digest(encoded);
+                    String certFingerprintHex = HexFormat.of().formatHex(certFingerprint).toUpperCase();
+                    if (certFingerprintHex.equals(normalizedFingerprint)) {
+                        return alias;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**

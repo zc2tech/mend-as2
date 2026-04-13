@@ -265,25 +265,13 @@ public class JPanelPartner extends JPanel {
         this.jComboBoxCryptCert.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxOverwriteLocalStationCryptKey.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxOverwriteLocalstationSignKey.setRenderer(new ListCellRendererCertificates());
-        this.jComboBoxHttpAuthCertMessage.setRenderer(new ListCellRendererCertificates());
-        this.jComboBoxHttpAuthCertMDN.setRenderer(new ListCellRendererCertificates());
         for (KeystoreCertificate cert : sortedEncSignCertificateList) {
             this.jComboBoxSignCert.addItem(cert);
             this.jComboBoxCryptCert.addItem(cert);
             if (cert.getIsKeyPair()) {
                 this.jComboBoxOverwriteLocalStationCryptKey.addItem(cert);
                 this.jComboBoxOverwriteLocalstationSignKey.addItem(cert);
-                // Add to HTTP auth cert combos - only key pairs (need private key for client auth)
-                this.jComboBoxHttpAuthCertMessage.addItem(cert);
-                this.jComboBoxHttpAuthCertMDN.addItem(cert);
             }
-        }
-        // Populate inbound auth certificate combo with TLS certificates
-        List<KeystoreCertificate> tlsCertificateList = this.certificateManagerSSL.getKeyStoreCertificateList();
-        for (KeystoreCertificate cert : tlsCertificateList) {
-            // Only add certificates (public keys), not key pairs
-            // Inbound auth validates client certificates sent by remote partners
-            this.jComboBoxInboundAuthCert.addItem(cert);
         }
         this.jTableHttpHeader.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -434,6 +422,14 @@ public class JPanelPartner extends JPanel {
                 new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonEditEventOnSendSuccess.setIcon(
                 new ImageIcon(IMAGE_EDIT.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+        this.jButtonOAuth2AuthorizationCodeMessage.setIcon(
+                new ImageIcon(IMAGE_OAUTH2.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonOAuth2ClientCredentialsMessage.setIcon(
+                new ImageIcon(IMAGE_OAUTH2.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonOAuth2AuthorizationCodeMDN.setIcon(
+                new ImageIcon(IMAGE_OAUTH2.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonOAuth2ClientCredentialsMDN.setIcon(
+                new ImageIcon(IMAGE_OAUTH2.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
     }
 
     private void initializeHelp() {
@@ -597,14 +593,6 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
         } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMessage, true);
-        } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMessage, true);
-            // Set selected certificate
-            String fingerprint = this.partner.getAuthenticationCredentialsMessage().getCertificateFingerprint();
-            if (fingerprint != null && !fingerprint.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage,
-                    this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprint));
-            }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
         }
@@ -614,14 +602,6 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMDN, true);
         } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMDN, true);
-        } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMDN, true);
-            // Set selected certificate
-            String fingerprintMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint();
-            if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN,
-                    this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN));
-            }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
         }
@@ -629,27 +609,6 @@ public class JPanelPartner extends JPanel {
         this.jPasswordFieldHttpAuthMessagePass.setText(this.partner.getAuthenticationCredentialsMessage().getPassword());
         this.jTextFieldHttpAuthAsyncMDNUser.setText(this.partner.getAuthenticationCredentialsAsyncMDN().getUser());
         this.jPasswordFieldHttpPassAsyncMDN.setText(this.partner.getAuthenticationCredentialsAsyncMDN().getPassword());
-
-        // Load Inbound Auth (for local stations only)
-        if (partner.isLocalStation()) {
-            HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
-            int authMode = inboundAuth.getAuthMode();
-
-            this.setUIValueWithoutEvent(this.jCheckBoxInboundAuthBasic, (authMode & 1) != 0);
-            this.setUIValueWithoutEvent(this.jCheckBoxInboundAuthCert, (authMode & 2) != 0);
-
-            this.jTextFieldInboundAuthUser.setText(inboundAuth.getUser() != null ? inboundAuth.getUser() : "");
-            this.jPasswordFieldInboundAuthPassword.setText(inboundAuth.getPassword() != null ? inboundAuth.getPassword() : "");
-
-            String certFingerprint = inboundAuth.getCertificateFingerprint();
-            if (certFingerprint != null && !certFingerprint.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxInboundAuthCert,
-                    this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(certFingerprint));
-            }
-
-            updateInboundAuthState();
-        }
-
         this.setUIValueWithoutEvent(this.switchKeepFilenameOnReceipt, this.partner.getKeepOriginalFilenameOnReceipt());
         if (this.partner.getComment() != null && !this.partner.getComment().isEmpty()) {
             this.setUIValueWithoutEvent(this.jTextPanePartnerComment,
@@ -699,17 +658,32 @@ public class JPanelPartner extends JPanel {
         this.setUIValueWithoutEvent(this.switchEnableDirPoll, partner.isEnableDirPoll());
         this.handleVisibilityStateOfWidgets();
         this.disableEnableWidgets();
-        if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
+        if (this.partner.usesOAuth2Message() && this.isPluginActivated(ServerPlugins.PLUGIN_OAUTH2)) {
+            OAuth2Config config = this.partner.getOAuth2Message();
+            if (config.getRFCMethod() == OAuth2Config.METHOD_RFC6749_4_1) {
+                this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage, true);
+            } else {
+                this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMessage, true);
+            }
+        } else if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
         }
-        if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
+        if (this.partner.usesOAuth2MDN() && this.isPluginActivated(ServerPlugins.PLUGIN_OAUTH2)) {
+            OAuth2Config config = this.partner.getOAuth2Message();
+            if (config.getRFCMethod() == OAuth2Config.METHOD_RFC6749_4_1) {
+                this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN, true);
+            } else {
+                this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMDN, true);
+            }
+        } else if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMDN, true);
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
         }
         this.updateHttpAuthState();
+        this.displayOAuth2();
         this.setPanelVisiblilityState();
         this.renderEvents();
         try {
@@ -729,7 +703,6 @@ public class JPanelPartner extends JPanel {
      */
     private void handleVisibilityStateOfWidgets() {
         this.jTextFieldMDNURL.setVisible(this.partner.isLocalStation());
-        this.jPanelMDNURLButtons.setVisible(this.partner.isLocalStation());
         this.jLabelMDNDescription.setVisible(!this.partner.isLocalStation());
         this.jPanelUIHelpLabelSignedMDN.setVisible(!this.partner.isLocalStation());
         this.jPanelUIHelpAsyncMDN.setVisible(!this.partner.isLocalStation());
@@ -767,10 +740,6 @@ public class JPanelPartner extends JPanel {
             this.jTabbedPane.addTab(rb.getResourceString("tab.send"), this.jPanelSend);
         }
         this.jTabbedPane.addTab(rb.getResourceString("tab.mdn"), this.jPanelMDN);
-        if (this.partner.isLocalStation()) {
-            // Inbound Auth tab only for local stations
-            this.jTabbedPane.addTab(rb.getResourceString("tab.inboundauth"), this.jPanelInboundAuth);
-        }
         if (!this.partner.isLocalStation()) {
             this.jTabbedPane.addTab(rb.getResourceString("tab.dirpoll"), this.jPanelDirPoll);
             this.jTabbedPane.addTab(rb.getResourceString("tab.receipt"), this.jPanelReceipt);
@@ -781,7 +750,9 @@ public class JPanelPartner extends JPanel {
             if (this.displayNotificationPanel) {
                 this.jTabbedPane.addTab(rb.getResourceString("tab.notification"), this.jPanelNotification);
             }
-            // Visibility tab removed - partners are user-specific
+            // Add Visibility tab for remote partners
+            this.jPanelVisibility = new JPanelPartnerVisibility(this.baseClient, this.partner);
+            this.jTabbedPane.addTab(rb.getResourceString("tab.visibility"), this.jPanelVisibility);
             this.jTabbedPane.addTab(rb.getResourceString("tab.events"), this.jPanelEvents);
             this.jTabbedPane.addTab(rb.getResourceString("tab.partnersystem"), this.jPanelPartnerSystem);
         }
@@ -799,143 +770,19 @@ public class JPanelPartner extends JPanel {
         this.jTextFieldHttpAuthAsyncMDNUser.setEnabled(this.jRadioButtonHttpAuthCredentialsMDN.isSelected());
         this.jPasswordFieldHttpPassAsyncMDN.setEditable(this.jRadioButtonHttpAuthCredentialsMDN.isSelected());
         this.jPasswordFieldHttpPassAsyncMDN.setEnabled(this.jRadioButtonHttpAuthCredentialsMDN.isSelected());
-        // Enable/disable certificate combo boxes
-        this.jComboBoxHttpAuthCertMessage.setEnabled(
-            this.jRadioButtonHttpAuthCertificateMessage != null &&
-            this.jRadioButtonHttpAuthCertificateMessage.isSelected()
-        );
-        this.jComboBoxHttpAuthCertMDN.setEnabled(
-            this.jRadioButtonHttpAuthCertificateMDN != null &&
-            this.jRadioButtonHttpAuthCertificateMDN.isSelected()
-        );
-    }
-
-    /**
-     * Initialize the Inbound Auth panel for local stations
-     */
-    private void initializeInboundAuthPanel() {
-        jPanelInboundAuth = new javax.swing.JPanel();
-        jPanelInboundAuth.setLayout(new java.awt.GridBagLayout());
-
-        // Info label
-        jLabelInboundAuthInfo = new javax.swing.JLabel();
-        jLabelInboundAuthInfo.setText("<html>" + rb.getResourceString("inboundauth.info") + "</html>");
-        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 0;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthInfo, gridBagConstraints);
-
-        // Basic auth checkbox
-        jCheckBoxInboundAuthBasic = new javax.swing.JCheckBox();
-        jCheckBoxInboundAuthBasic.setText(rb.getResourceString("label.inboundauth.basic"));
-        jCheckBoxInboundAuthBasic.addActionListener(evt -> jCheckBoxInboundAuthBasicActionPerformed(evt));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
-        jPanelInboundAuth.add(jCheckBoxInboundAuthBasic, gridBagConstraints);
-
-        // Username label
-        jLabelInboundAuthUser = new javax.swing.JLabel();
-        jLabelInboundAuthUser.setText(rb.getResourceString("label.inboundauth.basic.username"));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthUser, gridBagConstraints);
-
-        // Username field
-        jTextFieldInboundAuthUser = new javax.swing.JTextField();
-        jTextFieldInboundAuthUser.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jTextFieldInboundAuthUserKeyReleased(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jTextFieldInboundAuthUser, gridBagConstraints);
-
-        // Password label
-        jLabelInboundAuthPassword = new javax.swing.JLabel();
-        jLabelInboundAuthPassword.setText(rb.getResourceString("label.inboundauth.basic.password"));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthPassword, gridBagConstraints);
-
-        // Password field
-        jPasswordFieldInboundAuthPassword = new javax.swing.JPasswordField();
-        jPasswordFieldInboundAuthPassword.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jPasswordFieldInboundAuthPasswordKeyReleased(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jPasswordFieldInboundAuthPassword, gridBagConstraints);
-
-        // Certificate auth checkbox
-        jCheckBoxInboundAuthCert = new javax.swing.JCheckBox();
-        jCheckBoxInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert"));
-        jCheckBoxInboundAuthCert.addActionListener(evt -> jCheckBoxInboundAuthCertActionPerformed(evt));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(15, 10, 5, 10);
-        jPanelInboundAuth.add(jCheckBoxInboundAuthCert, gridBagConstraints);
-
-        // Certificate label
-        jLabelInboundAuthCert = new javax.swing.JLabel();
-        jLabelInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert.select"));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 5;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthCert, gridBagConstraints);
-
-        // Certificate combo box
-        jComboBoxInboundAuthCert = new javax.swing.JComboBox<>();
-        jComboBoxInboundAuthCert.setRenderer(new ListCellRendererCertificates());
-        jComboBoxInboundAuthCert.addActionListener(evt -> jComboBoxInboundAuthCertActionPerformed(evt));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 5;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jComboBoxInboundAuthCert, gridBagConstraints);
-
-        // Spacer at bottom
-        javax.swing.JPanel jPanelSpacer = new javax.swing.JPanel();
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.weighty = 1.0;
-        jPanelInboundAuth.add(jPanelSpacer, gridBagConstraints);
+        boolean oAuth2Enabled = this.isPluginActivated(ServerPlugins.PLUGIN_OAUTH2);
+        this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.setEnabled(oAuth2Enabled);
+        this.jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.setEnabled(oAuth2Enabled);
+        this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.setEnabled(oAuth2Enabled);
+        this.jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.setEnabled(oAuth2Enabled);
+        this.jButtonOAuth2AuthorizationCodeMessage.setEnabled(
+                oAuth2Enabled && this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.isSelected());
+        this.jButtonOAuth2ClientCredentialsMessage.setEnabled(
+                oAuth2Enabled && this.jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.isSelected());
+        this.jButtonOAuth2AuthorizationCodeMDN.setEnabled(
+                oAuth2Enabled && this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.isSelected());
+        this.jButtonOAuth2ClientCredentialsMDN.setEnabled(
+                oAuth2Enabled && this.jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.isSelected());
     }
 
     /**
@@ -1194,6 +1041,150 @@ public class JPanelPartner extends JPanel {
         this.renderEvents();
     }
 
+    private void setupOAuth2ClientCredentialsMessage() {
+        JFrame parentFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
+        if (this.partner != null) {
+            OAuth2Config config = null;
+            if (this.partner.getOAuth2Message() == null) {
+                config = new OAuth2Config();
+            } else {
+                try {
+                    config = (OAuth2Config) (this.partner.getOAuth2Message().clone());
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                }
+            }
+            JDialogOAuth2ConfigClientCredentials dialog
+                    = new JDialogOAuth2ConfigClientCredentials(parentFrame,
+                            this.baseClient,
+                            config,
+                            AS2ServerVersion.getProductName()
+                    );
+            dialog.setVisible(true);
+            if (dialog.okPressed()) {
+                this.partner.setOAuth2Message(config);
+            }
+            dialog.dispose();
+            this.displayOAuth2();
+        }
+    }
+
+    private void setupOAuth2AuthorizationCodeMessage() {
+        JFrame parentFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
+        if (this.partner != null) {
+            OAuth2Config config = null;
+            if (this.partner.getOAuth2Message() == null) {
+                config = new OAuth2Config();
+            } else {
+                try {
+                    config = (OAuth2Config) (this.partner.getOAuth2Message().clone());
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                }
+            }
+            String displayMode = this.preferences.get(PreferencesAS2.DISPLAY_MODE_CLIENT);
+            JDialogOAuth2Config dialog = new JDialogOAuth2Config(parentFrame,
+                    this.baseClient,
+                    config,
+                    AS2ServerVersion.getProductName(),
+                    JDialogOAuth2Config.DIALOG_TYPE_HTTP,
+                    displayMode
+            );
+            dialog.setVisible(true);
+            if (dialog.okPressed()) {
+                this.partner.setOAuth2Message(config);
+            }
+            dialog.dispose();
+            this.displayOAuth2();
+        }
+    }
+
+    private void setupOAuth2AuthorizationCodeMDN() {
+        JFrame parentFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
+        if (this.partner != null) {
+            OAuth2Config config = null;
+            if (this.partner.getOAuth2MDN() == null) {
+                config = new OAuth2Config();
+            } else {
+                try {
+                    config = (OAuth2Config) (this.partner.getOAuth2MDN().clone());
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                }
+            }
+            String displayMode = this.preferences.get(PreferencesAS2.DISPLAY_MODE_CLIENT);
+            JDialogOAuth2Config dialog = new JDialogOAuth2Config(parentFrame,
+                    this.baseClient,
+                    config,
+                    AS2ServerVersion.getProductName(),
+                    JDialogOAuth2Config.DIALOG_TYPE_HTTP,
+                    displayMode
+            );
+            dialog.setVisible(true);
+            if (dialog.okPressed()) {
+                this.partner.setOAuth2MDN(config);
+            }
+            dialog.dispose();
+            this.displayOAuth2();
+        }
+    }
+
+    private void setupOAuth2ClientCredentialsMDN() {
+        JFrame parentFrame = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
+        if (this.partner != null) {
+            OAuth2Config config = null;
+            if (this.partner.getOAuth2MDN() == null) {
+                config = new OAuth2Config();
+            } else {
+                try {
+                    config = (OAuth2Config) (this.partner.getOAuth2MDN().clone());
+                } catch (Exception e) {
+                    UINotification.instance().addNotification(e);
+                }
+            }
+            JDialogOAuth2ConfigClientCredentials dialog
+                    = new JDialogOAuth2ConfigClientCredentials(parentFrame,
+                            this.baseClient,
+                            config,
+                            AS2ServerVersion.getProductName()
+                    );
+            dialog.setVisible(true);
+            if (dialog.okPressed()) {
+                this.partner.setOAuth2MDN(config);
+            }
+            dialog.dispose();
+            this.displayOAuth2();
+        }
+    }
+
+    private void displayOAuth2() {
+        if (this.partner == null || this.partner.getOAuth2Message() == null) {
+            this.jTextFieldOAuth2AuthorizationCodeMessage.setText("--");
+            this.jTextFieldOAuth2ClientCredentialsMessage.setText("--");
+        } else {
+            OAuth2Config config = this.partner.getOAuth2Message();
+            if (config.getRFCMethod() == OAuth2Config.METHOD_RFC6749_4_1) {
+                this.jTextFieldOAuth2AuthorizationCodeMessage.setText(config.toString());
+                this.jTextFieldOAuth2ClientCredentialsMessage.setText("--");
+            } else {
+                this.jTextFieldOAuth2AuthorizationCodeMessage.setText("--");
+                this.jTextFieldOAuth2ClientCredentialsMessage.setText(config.toString());
+            }
+        }
+        if (this.partner == null || this.partner.getOAuth2MDN() == null) {
+            this.jTextFieldOAuth2AuthorizationCodeMDN.setText("--");
+            this.jTextFieldOAuth2ClientCredentialsMDN.setText("--");
+        } else {
+            OAuth2Config config = this.partner.getOAuth2Message();
+            if (config.getRFCMethod() == OAuth2Config.METHOD_RFC6749_4_1) {
+                this.jTextFieldOAuth2AuthorizationCodeMDN.setText(config.toString());
+                this.jTextFieldOAuth2ClientCredentialsMDN.setText("--");
+            } else {
+                this.jTextFieldOAuth2AuthorizationCodeMDN.setText("--");
+                this.jTextFieldOAuth2ClientCredentialsMDN.setText(config.toString());
+            }
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -1234,7 +1225,6 @@ public class JPanelPartner extends JPanel {
         jPanelMDN = new javax.swing.JPanel();
         jPanelMDNMain = new javax.swing.JPanel();
         jTextFieldMDNURL = new javax.swing.JTextField();
-        jPanelMDNURLButtons = new javax.swing.JPanel();
         jButtonMDNURLHttp = new javax.swing.JButton();
         jButtonMDNURLHttps = new javax.swing.JButton();
         jPanelSpace99 = new javax.swing.JPanel();
@@ -1284,12 +1274,8 @@ public class JPanelPartner extends JPanel {
         jRadioButtonHttpAuthNoneMessage = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthCredentialsMessage = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthUserPreferenceMessage = new javax.swing.JRadioButton();
-        jRadioButtonHttpAuthCertificateMessage = new javax.swing.JRadioButton();
-        jComboBoxHttpAuthCertMessage = new javax.swing.JComboBox<>();
         jRadioButtonHttpAuthCredentialsMDN = new javax.swing.JRadioButton();
         jRadioButtonHttpAuthUserPreferenceMDN = new javax.swing.JRadioButton();
-        jRadioButtonHttpAuthCertificateMDN = new javax.swing.JRadioButton();
-        jComboBoxHttpAuthCertMDN = new javax.swing.JComboBox<>();
         jRadioButtonHttpAuthNoneMDN = new javax.swing.JRadioButton();
         jPanelHTTPAuthCredentialsMessage = new javax.swing.JPanel();
         jLabelHttpAuth = new javax.swing.JLabel();
@@ -1305,9 +1291,23 @@ public class JPanelPartner extends JPanel {
         HttpAuthNoneMDN = new javax.swing.JLabel();
         jPanelSpace345 = new javax.swing.JPanel();
         jPanelSpace485 = new javax.swing.JPanel();
+        jPanelOAuth2AuthorizationCodeMDN = new javax.swing.JPanel();
+        jTextFieldOAuth2AuthorizationCodeMDN = new javax.swing.JTextField();
+        jButtonOAuth2AuthorizationCodeMDN = new javax.swing.JButton();
         jPanelSpaceX11 = new javax.swing.JPanel();
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN = new javax.swing.JRadioButton();
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMDN = new javax.swing.JRadioButton();
+        jTextFieldOAuth2ClientCredentialsMDN = new javax.swing.JTextField();
+        jButtonOAuth2ClientCredentialsMDN = new javax.swing.JButton();
         jPanelSpaceX14 = new javax.swing.JPanel();
+        jPanelOAuth2AuthorizationCodeMessage = new javax.swing.JPanel();
+        jTextFieldOAuth2AuthorizationCodeMessage = new javax.swing.JTextField();
+        jButtonOAuth2AuthorizationCodeMessage = new javax.swing.JButton();
         jPanelSpaceX12 = new javax.swing.JPanel();
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage = new javax.swing.JRadioButton();
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMessage = new javax.swing.JRadioButton();
+        jTextFieldOAuth2ClientCredentialsMessage = new javax.swing.JTextField();
+        jButtonOAuth2ClientCredentialsMessage = new javax.swing.JButton();
         jPanelSpaceX13 = new javax.swing.JPanel();
         jPanelHTTPHeader = new javax.swing.JPanel();
         jScrollPaneHttpHeader = new javax.swing.JScrollPane();
@@ -1410,9 +1410,6 @@ public class JPanelPartner extends JPanel {
         jPanelSpace455 = new javax.swing.JPanel();
         switchUseAlgorithmIdentifierProtectionAttribute = new de.mendelson.util.toggleswitch.ToggleSwitch();
         jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
-
-        // Initialize Inbound Auth panel
-        initializeInboundAuthPanel();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -1658,9 +1655,6 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMDNMain.add(jTextFieldMDNURL, gridBagConstraints);
 
-        // Create a container panel for HTTP and HTTPS buttons
-        jPanelMDNURLButtons.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 0, 0));
-
         jButtonMDNURLHttp.setText("HTTP");
         jButtonMDNURLHttp.setToolTipText("Fill with HTTP endpoint URL");
         jButtonMDNURLHttp.addActionListener(new java.awt.event.ActionListener() {
@@ -1668,7 +1662,11 @@ public class JPanelPartner extends JPanel {
                 jButtonMDNURLHttpActionPerformed(evt);
             }
         });
-        jPanelMDNURLButtons.add(jButtonMDNURLHttp);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMDNMain.add(jButtonMDNURLHttp, gridBagConstraints);
 
         jButtonMDNURLHttps.setText("HTTPS");
         jButtonMDNURLHttps.setToolTipText("Fill with HTTPS endpoint URL");
@@ -1677,16 +1675,11 @@ public class JPanelPartner extends JPanel {
                 jButtonMDNURLHttpsActionPerformed(evt);
             }
         });
-        jPanelMDNURLButtons.add(jButtonMDNURLHttps);
-
-        // Add the button container panel to the main panel
         gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 2;
-        gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanelMDNMain.add(jPanelMDNURLButtons, gridBagConstraints);
+        jPanelMDNMain.add(jButtonMDNURLHttps, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 12;
@@ -2127,36 +2120,6 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHttpAuthData.add(jRadioButtonHttpAuthCredentialsMessage, gridBagConstraints);
 
-        // Certificate authentication option for message
-        buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthCertificateMessage);
-        jRadioButtonHttpAuthCertificateMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.certificate.message"));
-        jRadioButtonHttpAuthCertificateMessage.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                jRadioButtonHttpAuthCredentialsMessageItemStateChanged(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanelHttpAuthData.add(jRadioButtonHttpAuthCertificateMessage, gridBagConstraints);
-
-        // Certificate combo box for message
-        jComboBoxHttpAuthCertMessage.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxHttpAuthCertMessageActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.gridwidth = 6;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanelHttpAuthData.add(jComboBoxHttpAuthCertMessage, gridBagConstraints);
-
         // Hidden radio button for AUTH_MODE_USER_PREFERENCE (backward compatibility)
         buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthUserPreferenceMessage);
         jRadioButtonHttpAuthUserPreferenceMessage.setVisible(false);
@@ -2174,36 +2137,6 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelHttpAuthData.add(jRadioButtonHttpAuthCredentialsMDN, gridBagConstraints);
-
-        // Certificate authentication option for MDN
-        buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthCertificateMDN);
-        jRadioButtonHttpAuthCertificateMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.certificate.asyncmdn"));
-        jRadioButtonHttpAuthCertificateMDN.addItemListener(new java.awt.event.ItemListener() {
-            public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                jRadioButtonHttpAuthCredentialsMDNItemStateChanged(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 18;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanelHttpAuthData.add(jRadioButtonHttpAuthCertificateMDN, gridBagConstraints);
-
-        // Certificate combo box for MDN
-        jComboBoxHttpAuthCertMDN.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBoxHttpAuthCertMDNActionPerformed(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 18;
-        gridBagConstraints.gridwidth = 6;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        jPanelHttpAuthData.add(jComboBoxHttpAuthCertMDN, gridBagConstraints);
 
         // Hidden radio button for AUTH_MODE_USER_PREFERENCE (backward compatibility)
         buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthUserPreferenceMDN);
@@ -2385,6 +2318,221 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
         jPanelHttpAuthData.add(jPanelSpace485, gridBagConstraints);
+
+        jPanelOAuth2AuthorizationCodeMDN.setLayout(new java.awt.GridBagLayout());
+
+        jTextFieldOAuth2AuthorizationCodeMDN.setEditable(false);
+        jTextFieldOAuth2AuthorizationCodeMDN.setText("--");
+        jTextFieldOAuth2AuthorizationCodeMDN.setMinimumSize(new java.awt.Dimension(200, 22));
+        jTextFieldOAuth2AuthorizationCodeMDN.setPreferredSize(new java.awt.Dimension(200, 22));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMDN.add(jTextFieldOAuth2AuthorizationCodeMDN, gridBagConstraints);
+
+        jButtonOAuth2AuthorizationCodeMDN.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
+        jButtonOAuth2AuthorizationCodeMDN.setMargin(new java.awt.Insets(2, 2, 2, 2));
+        jButtonOAuth2AuthorizationCodeMDN.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonOAuth2AuthorizationCodeMDNActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelOAuth2AuthorizationCodeMDN.add(jButtonOAuth2AuthorizationCodeMDN, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
+        jPanelOAuth2AuthorizationCodeMDN.add(jPanelSpaceX11, gridBagConstraints);
+
+        buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN);
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.authorizationcode.asyncmdn"));
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonHttpAuthOAuth2AuthorizationCodeMDNItemStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMDN.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN, gridBagConstraints);
+
+        buttonGroupAuthenticationMDN.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMDN);
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.clientcredentials.asyncmdn"));
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonHttpAuthOAuth2ClientCredentialsMDNItemStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMDN.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMDN, gridBagConstraints);
+
+        jTextFieldOAuth2ClientCredentialsMDN.setEditable(false);
+        jTextFieldOAuth2ClientCredentialsMDN.setText("--");
+        jTextFieldOAuth2ClientCredentialsMDN.setMinimumSize(new java.awt.Dimension(200, 22));
+        jTextFieldOAuth2ClientCredentialsMDN.setPreferredSize(new java.awt.Dimension(200, 22));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMDN.add(jTextFieldOAuth2ClientCredentialsMDN, gridBagConstraints);
+
+        jButtonOAuth2ClientCredentialsMDN.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
+        jButtonOAuth2ClientCredentialsMDN.setMargin(new java.awt.Insets(2, 2, 2, 2));
+        jButtonOAuth2ClientCredentialsMDN.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonOAuth2ClientCredentialsMDNActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelOAuth2AuthorizationCodeMDN.add(jButtonOAuth2ClientCredentialsMDN, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 4;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
+        jPanelOAuth2AuthorizationCodeMDN.add(jPanelSpaceX14, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 19;
+        gridBagConstraints.gridwidth = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelHttpAuthData.add(jPanelOAuth2AuthorizationCodeMDN, gridBagConstraints);
+
+        jPanelOAuth2AuthorizationCodeMessage.setLayout(new java.awt.GridBagLayout());
+
+        jTextFieldOAuth2AuthorizationCodeMessage.setEditable(false);
+        jTextFieldOAuth2AuthorizationCodeMessage.setText("--");
+        jTextFieldOAuth2AuthorizationCodeMessage.setMinimumSize(new java.awt.Dimension(200, 22));
+        jTextFieldOAuth2AuthorizationCodeMessage.setPreferredSize(new java.awt.Dimension(200, 22));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMessage.add(jTextFieldOAuth2AuthorizationCodeMessage, gridBagConstraints);
+
+        jButtonOAuth2AuthorizationCodeMessage.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
+        jButtonOAuth2AuthorizationCodeMessage.setMargin(new java.awt.Insets(2, 2, 2, 2));
+        jButtonOAuth2AuthorizationCodeMessage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonOAuth2AuthorizationCodeMessageActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelOAuth2AuthorizationCodeMessage.add(jButtonOAuth2AuthorizationCodeMessage, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
+        jPanelOAuth2AuthorizationCodeMessage.add(jPanelSpaceX12, gridBagConstraints);
+
+        buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage);
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.authorizationcode.message"));
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageItemStateChanged(evt);
+            }
+        });
+        jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 4;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMessage.add(jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage, gridBagConstraints);
+
+        buttonGroupAuthenticationMessage.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMessage);
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.setText(JPanelPartner.rb.getResourceString("label.httpauth.oauth2.clientcredentials.message"));
+        jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jRadioButtonHttpAuthOAuth2ClientCredentialsMessageItemStateChanged(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMessage.add(jRadioButtonHttpAuthOAuth2ClientCredentialsMessage, gridBagConstraints);
+
+        jTextFieldOAuth2ClientCredentialsMessage.setEditable(false);
+        jTextFieldOAuth2ClientCredentialsMessage.setText("--");
+        jTextFieldOAuth2ClientCredentialsMessage.setMinimumSize(new java.awt.Dimension(200, 22));
+        jTextFieldOAuth2ClientCredentialsMessage.setPreferredSize(new java.awt.Dimension(200, 22));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 3;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelOAuth2AuthorizationCodeMessage.add(jTextFieldOAuth2ClientCredentialsMessage, gridBagConstraints);
+
+        jButtonOAuth2ClientCredentialsMessage.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/preferences/missing_image24x24.gif"))); // NOI18N
+        jButtonOAuth2ClientCredentialsMessage.setMargin(new java.awt.Insets(2, 2, 2, 2));
+        jButtonOAuth2ClientCredentialsMessage.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonOAuth2ClientCredentialsMessageActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelOAuth2AuthorizationCodeMessage.add(jButtonOAuth2ClientCredentialsMessage, gridBagConstraints);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 10;
+        gridBagConstraints.gridwidth = 5;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(1, 1, 1, 1);
+        jPanelOAuth2AuthorizationCodeMessage.add(jPanelSpaceX13, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.gridwidth = 7;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        jPanelHttpAuthData.add(jPanelOAuth2AuthorizationCodeMessage, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
@@ -3850,13 +3998,27 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
                 this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
             } else if (this.jRadioButtonHttpAuthUserPreferenceMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
-            } else if (this.jRadioButtonHttpAuthCertificateMessage.isSelected()) {
-                this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_CERTIFICATE);
             }
             this.informTreeModelNodeChanged();
         }
         this.updateHttpAuthState();
     }//GEN-LAST:event_jRadioButtonHttpAuthCredentialsMessageItemStateChanged
+
+    private void jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageItemStateChanged
+        if (this.partner != null) {
+            this.partner.setUseOAuth2Message(this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage.isSelected());
+            this.informTreeModelNodeChanged();
+        }
+        this.updateHttpAuthState();
+    }//GEN-LAST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageItemStateChanged
+
+    private void jRadioButtonHttpAuthOAuth2AuthorizationCodeMDNItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMDNItemStateChanged
+        if (this.partner != null) {
+            this.partner.setUseOAuth2MDN(this.jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN.isSelected());
+            this.informTreeModelNodeChanged();
+        }
+        this.updateHttpAuthState();
+    }//GEN-LAST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMDNItemStateChanged
 
     private void jRadioButtonHttpAuthCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
         if (this.partner != null) {
@@ -3866,8 +4028,6 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
             } else if (this.jRadioButtonHttpAuthUserPreferenceMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
-            } else if (this.jRadioButtonHttpAuthCertificateMDN.isSelected()) {
-                this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_CERTIFICATE);
             }
             this.informTreeModelNodeChanged();
         }
@@ -3882,6 +4042,42 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         this.updateHttpAuthState();
     }//GEN-LAST:event_jRadioButtonHttpAuthNoneMessageItemStateChanged
 
+    private void jButtonOAuth2AuthorizationCodeMDNActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOAuth2AuthorizationCodeMDNActionPerformed
+        this.setupOAuth2AuthorizationCodeMDN();
+    }//GEN-LAST:event_jButtonOAuth2AuthorizationCodeMDNActionPerformed
+
+    private void jButtonOAuth2AuthorizationCodeMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOAuth2AuthorizationCodeMessageActionPerformed
+        this.setupOAuth2AuthorizationCodeMessage();
+    }//GEN-LAST:event_jButtonOAuth2AuthorizationCodeMessageActionPerformed
+
+    private void jButtonOAuth2ClientCredentialsMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOAuth2ClientCredentialsMessageActionPerformed
+        this.setupOAuth2ClientCredentialsMessage();
+    }//GEN-LAST:event_jButtonOAuth2ClientCredentialsMessageActionPerformed
+
+    private void jRadioButtonHttpAuthOAuth2ClientCredentialsMessageItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthOAuth2ClientCredentialsMessageItemStateChanged
+        if (this.partner != null) {
+            this.partner.setUseOAuth2Message(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMessage.isSelected());
+            this.informTreeModelNodeChanged();
+        }
+        this.updateHttpAuthState();
+    }//GEN-LAST:event_jRadioButtonHttpAuthOAuth2ClientCredentialsMessageItemStateChanged
+
+    private void jButtonOAuth2ClientCredentialsMDNActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOAuth2ClientCredentialsMDNActionPerformed
+        this.setupOAuth2ClientCredentialsMDN();
+    }//GEN-LAST:event_jButtonOAuth2ClientCredentialsMDNActionPerformed
+
+    private void jRadioButtonHttpAuthOAuth2ClientCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthOAuth2ClientCredentialsMDNItemStateChanged
+        if (this.partner != null) {
+            this.partner.setUseOAuth2MDN(this.jRadioButtonHttpAuthOAuth2ClientCredentialsMDN.isSelected());
+            this.informTreeModelNodeChanged();
+        }
+        this.updateHttpAuthState();
+    }//GEN-LAST:event_jRadioButtonHttpAuthOAuth2ClientCredentialsMDNItemStateChanged
+
+    private void jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageActionPerformed
+
+    }//GEN-LAST:event_jRadioButtonHttpAuthOAuth2AuthorizationCodeMessageActionPerformed
+
     private void jComboBoxOverwriteLocalStationCryptKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxOverwriteLocalStationCryptKeyActionPerformed
         if (this.partner != null && this.jComboBoxOverwriteLocalStationCryptKey.getSelectedItem() != null) {
             KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxOverwriteLocalStationCryptKey.getSelectedItem();
@@ -3893,26 +4089,6 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         }
         this.setButtonState();
     }//GEN-LAST:event_jComboBoxOverwriteLocalStationCryptKeyActionPerformed
-
-    private void jComboBoxHttpAuthCertMessageActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxHttpAuthCertMessageActionPerformed
-        if (this.partner != null && this.jComboBoxHttpAuthCertMessage.getSelectedItem() != null) {
-            KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMessage.getSelectedItem();
-            this.partner.getAuthenticationCredentialsMessage()
-                .setCertificateFingerprint(certificate.getFingerPrintSHA1());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }//GEN-LAST:event_jComboBoxHttpAuthCertMessageActionPerformed
-
-    private void jComboBoxHttpAuthCertMDNActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxHttpAuthCertMDNActionPerformed
-        if (this.partner != null && this.jComboBoxHttpAuthCertMDN.getSelectedItem() != null) {
-            KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMDN.getSelectedItem();
-            this.partner.getAuthenticationCredentialsAsyncMDN()
-                .setCertificateFingerprint(certificate.getFingerPrintSHA1());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }//GEN-LAST:event_jComboBoxHttpAuthCertMDNActionPerformed
 
     private void jComboBoxOverwriteLocalstationSignKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxOverwriteLocalstationSignKeyActionPerformed
         if (this.partner != null && this.jComboBoxOverwriteLocalstationSignKey.getSelectedItem() != null) {
@@ -3933,79 +4109,6 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         }
         this.setButtonState();
     }//GEN-LAST:event_jRadioButtonKeepLocalstationSecurityActionPerformed
-
-    // Inbound Auth event handlers
-    private void jCheckBoxInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null) {
-            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            int mode = inbound.getAuthMode();
-            if (this.jCheckBoxInboundAuthBasic.isSelected()) {
-                mode |= 1;  // Set basic auth bit
-            } else {
-                mode &= ~1; // Clear basic auth bit
-            }
-            inbound.setAuthMode(mode);
-            updateInboundAuthState();
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void jCheckBoxInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null) {
-            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            int mode = inbound.getAuthMode();
-            if (this.jCheckBoxInboundAuthCert.isSelected()) {
-                mode |= 2;  // Set cert auth bit
-            } else {
-                mode &= ~2; // Clear cert auth bit
-            }
-            inbound.setAuthMode(mode);
-            updateInboundAuthState();
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void jTextFieldInboundAuthUserKeyReleased(java.awt.event.KeyEvent evt) {
-        if (this.partner != null) {
-            this.partner.getInboundAuthCredentials().setUser(this.jTextFieldInboundAuthUser.getText());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void jPasswordFieldInboundAuthPasswordKeyReleased(java.awt.event.KeyEvent evt) {
-        if (this.partner != null) {
-            this.partner.getInboundAuthCredentials().setPassword(
-                new String(this.jPasswordFieldInboundAuthPassword.getPassword()));
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void jComboBoxInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null && this.jComboBoxInboundAuthCert.getSelectedItem() != null) {
-            KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxInboundAuthCert.getSelectedItem();
-            this.partner.getInboundAuthCredentials()
-                .setCertificateFingerprint(certificate.getFingerPrintSHA1());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void updateInboundAuthState() {
-        boolean basicEnabled = this.jCheckBoxInboundAuthBasic.isSelected();
-        boolean certEnabled = this.jCheckBoxInboundAuthCert.isSelected();
-
-        this.jTextFieldInboundAuthUser.setEnabled(basicEnabled);
-        this.jPasswordFieldInboundAuthPassword.setEnabled(basicEnabled);
-        this.jLabelInboundAuthUser.setEnabled(basicEnabled);
-        this.jLabelInboundAuthPassword.setEnabled(basicEnabled);
-
-        this.jComboBoxInboundAuthCert.setEnabled(certEnabled);
-        this.jLabelInboundAuthCert.setEnabled(certEnabled);
-    }
 
     private void jRadioButtonOverwriteLocalstationSecurityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonOverwriteLocalstationSecurityActionPerformed
         if (this.partner != null) {
@@ -4121,6 +4224,10 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JButton jButtonHttpHeaderRemove;
     private javax.swing.JButton jButtonMDNURLHttp;
     private javax.swing.JButton jButtonMDNURLHttps;
+    private javax.swing.JButton jButtonOAuth2AuthorizationCodeMDN;
+    private javax.swing.JButton jButtonOAuth2AuthorizationCodeMessage;
+    private javax.swing.JButton jButtonOAuth2ClientCredentialsMDN;
+    private javax.swing.JButton jButtonOAuth2ClientCredentialsMessage;
     private javax.swing.JButton jButtonTestConnection;
     private javax.swing.JCheckBox jCheckBoxEdiintFeaturesCEM;
     private javax.swing.JCheckBox jCheckBoxEdiintFeaturesCompression;
@@ -4132,8 +4239,6 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxCryptCert;
     private javax.swing.JComboBox<EncryptionDisplayImplAS2> jComboBoxEncryptionType;
     private javax.swing.JComboBox<String> jComboBoxHTTPProtocolVersion;
-    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxHttpAuthCertMessage;
-    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxHttpAuthCertMDN;
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxOverwriteLocalStationCryptKey;
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxOverwriteLocalstationSignKey;
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxSignCert;
@@ -4169,23 +4274,14 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JPanel jPanelHTTPAuthCredentialsMessage;
     private javax.swing.JPanel jPanelHTTPHeader;
     private javax.swing.JPanel jPanelHttpAuthData;
-    private javax.swing.JPanel jPanelInboundAuth;
-    private javax.swing.JCheckBox jCheckBoxInboundAuthBasic;
-    private javax.swing.JCheckBox jCheckBoxInboundAuthCert;
-    private javax.swing.JTextField jTextFieldInboundAuthUser;
-    private javax.swing.JPasswordField jPasswordFieldInboundAuthPassword;
-    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxInboundAuthCert;
-    private javax.swing.JLabel jLabelInboundAuthInfo;
-    private javax.swing.JLabel jLabelInboundAuthUser;
-    private javax.swing.JLabel jLabelInboundAuthPassword;
-    private javax.swing.JLabel jLabelInboundAuthCert;
     private javax.swing.JPanel jPanelMDN;
     private javax.swing.JPanel jPanelMDNMain;
-    private javax.swing.JPanel jPanelMDNURLButtons;
     private javax.swing.JPanel jPanelMisc;
     private javax.swing.JPanel jPanelMiscMain;
     private javax.swing.JPanel jPanelNotification;
     private javax.swing.JPanel jPanelNotificationMain;
+    private javax.swing.JPanel jPanelOAuth2AuthorizationCodeMDN;
+    private javax.swing.JPanel jPanelOAuth2AuthorizationCodeMessage;
     private javax.swing.JPanel jPanelOverwriteLocalStationSecurity;
     private javax.swing.JPanel jPanelPartnerSystem;
     private javax.swing.JPanel jPanelPartnerSystemMain;
@@ -4272,12 +4368,14 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JRadioButton jRadioButtonAsyncMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthCredentialsMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthCredentialsMessage;
-    private javax.swing.JRadioButton jRadioButtonHttpAuthCertificateMDN;
-    private javax.swing.JRadioButton jRadioButtonHttpAuthCertificateMessage;
     private javax.swing.JRadioButton jRadioButtonHttpAuthNoneMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthNoneMessage;
     private javax.swing.JRadioButton jRadioButtonHttpAuthUserPreferenceMDN;
     private javax.swing.JRadioButton jRadioButtonHttpAuthUserPreferenceMessage;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2AuthorizationCodeMDN;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2AuthorizationCodeMessage;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2ClientCredentialsMDN;
+    private javax.swing.JRadioButton jRadioButtonHttpAuthOAuth2ClientCredentialsMessage;
     private javax.swing.JRadioButton jRadioButtonKeepLocalstationSecurity;
     private javax.swing.JRadioButton jRadioButtonOverwriteLocalstationSecurity;
     private javax.swing.JRadioButton jRadioButtonSyncMDN;
@@ -4304,6 +4402,10 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JTextField jTextFieldNotifyReceive;
     private javax.swing.JTextField jTextFieldNotifySend;
     private javax.swing.JTextField jTextFieldNotifySendReceive;
+    private javax.swing.JTextField jTextFieldOAuth2AuthorizationCodeMDN;
+    private javax.swing.JTextField jTextFieldOAuth2AuthorizationCodeMessage;
+    private javax.swing.JTextField jTextFieldOAuth2ClientCredentialsMDN;
+    private javax.swing.JTextField jTextFieldOAuth2ClientCredentialsMessage;
     private javax.swing.JTextField jTextFieldPollDir;
     private javax.swing.JTextField jTextFieldPollInterval;
     private javax.swing.JTextField jTextFieldPollMaxFiles;

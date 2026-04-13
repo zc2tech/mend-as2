@@ -282,81 +282,165 @@ public class HttpReceiver extends HttpServlet {
     }
 
     /**
-     * Validate inbound authentication based on system preferences.
+     * Validate inbound authentication based on per-partner configuration.
      * Returns true if authentication passes or is disabled, false otherwise.
-     * Implements OR logic: message accepted if it matches ANY configured credential.
+     * Implements OR logic: message accepted if it matches ANY enabled auth method.
      *
      * This validates EXTERNAL partner authentication, not internal client-server communication.
      */
     private boolean validateInboundAuthentication(LinkedHashMap<String, String> headerMap, HttpServletRequest request) {
-        PreferencesAS2 preferences = new PreferencesAS2();
-        int authMode = preferences.getInt(PreferencesAS2.INBOUND_AUTH_MODE);
         Logger logger = Logger.getLogger("de.mendelson.as2.server");
+
+        // Get target username from request attribute (set in doPost)
+        String targetUsername = (String) request.getAttribute("targetUsername");
+        if (targetUsername == null) {
+            logger.severe("No username in request path - endpoint requires /as2/HttpReceiver/{username}");
+            return false;
+        }
+
+        // Load local station partner by username/AS2 ID
+        // Convention: local station AS2 ID should match username
+        de.mendelson.comm.as2.partner.PartnerAccessDB partnerAccess =
+            new de.mendelson.comm.as2.partner.PartnerAccessDB(AS2Server.getActivatedDBDriverManager());
+        de.mendelson.comm.as2.partner.Partner localStation =
+            partnerAccess.getPartnerByAS2Id(targetUsername,
+                de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
+
+        if (localStation == null || !localStation.isLocalStation()) {
+            logger.warning("No local station found for username: " + targetUsername);
+            return false;
+        }
+
+        de.mendelson.comm.as2.partner.HTTPAuthentication inboundAuth = localStation.getInboundAuthCredentials();
+        int authMode = inboundAuth.getAuthMode();
 
         // Mode 0: No authentication required
         if (authMode == 0) {
             return true;
         }
 
-        // Mode 1: Basic Authentication - validate against configured credentials
-        if (authMode == 1) {
+        boolean basicAuthRequired = (authMode & 1) != 0;
+        boolean certAuthRequired = (authMode & 2) != 0;
+
+        boolean basicAuthPassed = false;
+        boolean certAuthPassed = false;
+
+        // Check basic authentication
+        if (basicAuthRequired) {
             String authHeader = headerMap.get("authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                logger.warning("Inbound message rejected: Missing Basic Auth header from " + request.getRemoteAddr());
-                return false;
+            if (authHeader != null && authHeader.startsWith("Basic ")) {
+                try {
+                    String base64Credentials = authHeader.substring(6);
+                    byte[] decoded = Base64.getDecoder().decode(base64Credentials);
+                    String credentials = new String(decoded, StandardCharsets.UTF_8);
+                    String[] parts = credentials.split(":", 2);
+
+                    if (parts.length == 2) {
+                        String username = parts[0];
+                        String password = parts[1];
+
+                        // Match against configured credentials
+                        if (username.equals(inboundAuth.getUser()) &&
+                            password.equals(inboundAuth.getPassword())) {
+                            basicAuthPassed = true;
+                            logger.info("Inbound Basic Auth accepted for local station: " + targetUsername +
+                                       " from " + request.getRemoteAddr());
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Inbound Basic Auth parsing failed: " + e.getMessage());
+                }
             }
 
-            try {
-                String base64Credentials = authHeader.substring(6);
-                byte[] decoded = Base64.getDecoder().decode(base64Credentials);
-                String credentials = new String(decoded, StandardCharsets.UTF_8);
-                String[] parts = credentials.split(":", 2);
-
-                if (parts.length != 2) {
-                    logger.warning("Inbound message rejected: Invalid Basic Auth format from " + request.getRemoteAddr());
-                    return false;
-                }
-
-                String username = parts[0];
-                String password = parts[1];
-
-                // Validate against inbound credentials stored in preferences
-                // For now, accept any non-empty credentials
-                // TODO: Implement proper credential validation against stored values
-                if (username != null && !username.trim().isEmpty() &&
-                    password != null && !password.trim().isEmpty()) {
-                    logger.info("Inbound Basic Auth accepted - username: " + username + " from " + request.getRemoteAddr());
-                    return true;
-                }
-
-                logger.warning("Inbound message rejected: Invalid credentials from " + request.getRemoteAddr());
-                return false;
-
-            } catch (Exception e) {
-                logger.warning("Inbound message rejected: Basic Auth parsing failed - " + e.getMessage());
-                return false;
+            if (!basicAuthPassed) {
+                logger.warning("Inbound Basic Auth failed for local station: " + targetUsername +
+                              " from " + request.getRemoteAddr());
             }
         }
 
-        // Mode 2: Certificate Authentication - validate client certificate
-        if (authMode == 2) {
-            // Certificate authentication requires reverse proxy to extract client cert
-            // The proxy should pass cert info via custom headers
-            String clientCertSerial = headerMap.get("x-client-cert-serial");
-            String clientCertSubject = headerMap.get("x-client-cert-subject");
-
-            if (clientCertSerial == null || clientCertSubject == null) {
-                logger.warning("Inbound message rejected: No client certificate from " + request.getRemoteAddr());
-                return false;
+        // Check certificate authentication
+        if (certAuthRequired) {
+            // Get client certificate from SSL session
+            String sslSessionAttributeKey = null;
+            java.util.Enumeration<String> attributeEnumeration = request.getAttributeNames();
+            while (attributeEnumeration.hasMoreElements()) {
+                String attributeKey = attributeEnumeration.nextElement();
+                if (attributeKey.toLowerCase().contains(".ssl_session")) {
+                    sslSessionAttributeKey = attributeKey;
+                    break;
+                }
             }
 
-            // TODO: Validate certificate against stored trusted certificates
-            logger.info("Inbound Certificate Auth accepted - cert subject: " + clientCertSubject + " from " + request.getRemoteAddr());
-            return true;
+            if (sslSessionAttributeKey != null) {
+                javax.net.ssl.SSLSession sslSession = (javax.net.ssl.SSLSession) request.getAttribute(sslSessionAttributeKey);
+                if (sslSession != null) {
+                    try {
+                        java.security.cert.Certificate[] certs = sslSession.getPeerCertificates();
+                        if (certs != null && certs.length > 0) {
+                            java.security.cert.X509Certificate clientCert = (java.security.cert.X509Certificate) certs[0];
+                            String certFingerprint = calculateFingerprint(clientCert);
+
+                            // Match against configured certificate
+                            String configuredFingerprint = inboundAuth.getCertificateFingerprint();
+                            if (configuredFingerprint != null &&
+                                certFingerprint.replace(":", "").equalsIgnoreCase(
+                                    configuredFingerprint.replace(":", ""))) {
+                                certAuthPassed = true;
+                                logger.info("Inbound Certificate Auth accepted for local station: " + targetUsername +
+                                           " from " + request.getRemoteAddr());
+                            }
+                        }
+                    } catch (javax.net.ssl.SSLPeerUnverifiedException e) {
+                        // No client certificate presented
+                        logger.warning("No client certificate presented from " + request.getRemoteAddr());
+                    } catch (Exception e) {
+                        logger.warning("Certificate validation failed: " + e.getMessage());
+                    }
+                }
+            }
+
+            if (!certAuthPassed) {
+                logger.warning("Inbound Certificate Auth failed for local station: " + targetUsername +
+                              " from " + request.getRemoteAddr());
+            }
         }
 
-        // Unknown auth mode - reject
-        logger.warning("Inbound message rejected: Unknown auth mode " + authMode);
-        return false;
+        // OR logic: pass if ANY required auth method succeeds
+        if (basicAuthRequired && !basicAuthPassed) {
+            return false;
+        }
+        if (certAuthRequired && !certAuthPassed) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Helper method to calculate SHA-1 fingerprint of a certificate
+     */
+    private String calculateFingerprint(java.security.cert.X509Certificate cert) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] der = cert.getEncoded();
+            md.update(der);
+            byte[] digest = md.digest();
+
+            // Convert to hex string with colons
+            StringBuilder hexString = new StringBuilder();
+            for (int i = 0; i < digest.length; i++) {
+                String hex = Integer.toHexString(0xFF & digest[i]);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex.toUpperCase());
+                if (i < digest.length - 1) {
+                    hexString.append(':');
+                }
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 }

@@ -37,7 +37,6 @@ import de.mendelson.comm.as2.preferences.PreferencesPanelLog;
 import de.mendelson.comm.as2.preferences.PreferencesPanelMDN;
 import de.mendelson.comm.as2.preferences.PreferencesPanelNotification;
 import de.mendelson.comm.as2.preferences.PreferencesPanelProxy;
-import de.mendelson.comm.as2.preferences.PreferencesPanelInboundAuth;
 import de.mendelson.comm.as2.preferences.PreferencesPanelSystemMaintenance;
 import de.mendelson.comm.as2.preferences.ResourceBundlePreferencesAS2;
 import de.mendelson.comm.as2.server.EventBus;
@@ -1516,6 +1515,56 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         GUIClient.submit(runnable);
     }
 
+    /**
+     * Display user-specific TLS certificate management dialog
+     * Allows users to import trusted certificates for inbound authentication
+     */
+    private void displayMyTLSCertificates() {
+        final String uniqueId = this.getClass().getName() + ".displayMyTLSCertificates." + System.currentTimeMillis();
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                JDialogCertificates dialog = null;
+                // display wait indicator
+                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
+                        AS2Gui.this.rb.getResourceString("menu.file.certificates.tls.my"), uniqueId);
+                try {
+                    // Get current user ID (0 = admin, >0 = other users)
+                    int currentUserId = AS2Gui.this.userId;
+
+                    // Create user-specific keystore storage
+                    KeystoreStorage keystoreStorage = new KeystoreStorageImplClientServer(
+                        AS2Gui.this.getBaseClient(),
+                        KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
+                        KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS,
+                        currentUserId);  // User-specific (0=admin, >0=users)
+
+                    // Create and show dialog
+                    dialog = new JDialogCertificates(
+                        AS2Gui.this,
+                        AS2Gui.this.getLogger(),
+                        AS2Gui.this,
+                        AS2Gui.this.rb.getResourceString("menu.file.certificates.tls.my"),
+                        AS2ServerVersion.getFullProductName(),
+                        false,
+                        ModuleLock.MODULE_SSL_KEYSTORE,
+                        null);
+                    dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
+                    dialog.initialize(keystoreStorage);
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    UINotification.instance().addNotification(e);
+                } finally {
+                    AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
+                    if (dialog != null) {
+                        dialog.setVisible(true);
+                    }
+                }
+            }
+        };
+        GUIClient.submit(runnable);
+    }
+
     private void displayHelpSystem() {
         // Oracle JavaHelp removed - incompatible with JDK 17+
         // Show simple message dialog with GitHub link instead
@@ -1550,11 +1599,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
                     CertificateManager certificateManagerEncSign = new CertificateManager(AS2Gui.this.getLogger());
                     certificateManagerEncSign.loadKeystoreCertificates(storageEncSign);
-                    panelList.add(new PreferencesPanelInboundAuth(
-                            AS2Gui.this.getBaseClient(),
-                            certificateManagerEncSign,
-                            null,  // IDBDriverManager not available in client, will be handled server-side
-                            AS2Gui.logger));
+                    // Inbound Auth panel removed - now per-partner configuration in Local Station settings
                     // modifying the underlaying keystore settings makes only sense if HA is enabled
                     AS2Gui.this.getBaseClient()
                             .sendSync(new ServerInfoRequest());
@@ -1564,7 +1609,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             new PreferencesPanelNotification(AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar));
                     panelList.add(new PreferencesPanelInterface(AS2Gui.this.getBaseClient()));
                     panelList.add(new PreferencesPanelLog(AS2Gui.this.getBaseClient()));
-                    // HTTP Auth panel moved to separate User Preference menu
+                    // HTTP Auth panel moved to separate My Preferences menu
                     dialog = new JDialogPreferences(AS2Gui.this, panelList, selectedTab, "");
                 } catch (Throwable e) {
                     UINotification.instance().addNotification(e);
@@ -1575,39 +1620,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         dialog.setVisible(true);
                     }
                     AS2Gui.this.jMenuItemFilePreferences.setEnabled(true);
-                }
-            }
-        };
-        GUIClient.submit(prefRunner);
-    }
-
-    /**
-     * Display HTTP Authentication preferences dialog
-     */
-    public void displayHttpAuthPreferences() {
-        final String uniqueId = this.getClass().getName() + ".displayHttpAuthPreferences." + System.currentTimeMillis();
-        Runnable prefRunner = new Runnable() {
-            @Override
-            public void run() {
-                JDialogUserPreferences dialog = null;
-                // display wait indicator
-                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
-                        AS2Gui.this.rb.getResourceString("menu.userpreference.httpauth"), uniqueId);
-                try {
-                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(false);
-                    List<PreferencesPanel> panelList = new ArrayList<PreferencesPanel>();
-                    // Add only HTTP Auth panel
-                    panelList.add(new PreferencesPanelHttpAuth(AS2Gui.this.getBaseClient()));
-                    dialog = new JDialogUserPreferences(AS2Gui.this, panelList, "httpauth", "");
-                } catch (Exception e) {
-                    UINotification.instance().addNotification(e);
-                    e.printStackTrace();
-                } finally {
-                    AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
-                    if (dialog != null) {
-                        dialog.setVisible(true);
-                    }
-                    AS2Gui.this.jMenuItemUserPrefHttpAuth.setEnabled(true);
                 }
             }
         };
@@ -1768,14 +1780,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemFileSend = new javax.swing.JMenuItem();
         jMenuItemFilePreferences = new javax.swing.JMenuItem();
         jMenuItemPartner = new javax.swing.JMenuItem();
-        jSeparator6 = new javax.swing.JSeparator();
         jMenuItemCertificatesSignCrypt = new javax.swing.JMenuItem();
         jMenuItemCertificatesSSL = new javax.swing.JMenuItem();
         jSeparator3 = new javax.swing.JSeparator();
         jMenuItemHTTPServerInfo = new javax.swing.JMenuItem();
         jMenuItemSystemEvents = new javax.swing.JMenuItem();
         jMenuUserPreference = new javax.swing.JMenu();
-        jMenuItemUserPrefHttpAuth = new javax.swing.JMenuItem();
+        jMenuItemMyTLSCertificates = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
         jMenuItemSwitchUser = new javax.swing.JMenuItem();
         jMenuItemFileExit = new javax.swing.JMenuItem();
@@ -2415,7 +2426,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         jMenuBar.add(jMenuTracker);
 
-        // User Preference menu
+        // My Preferences menu
         jMenuUserPreference.setText(this.rb.getResourceString("menu.userpreference"));
 
         // Send file to partner
@@ -2454,16 +2465,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jMenuUserPreference.add(jMenuItemCertificatesSignCrypt);
-        jMenuUserPreference.add(jSeparator6);
 
-        // HTTP Auth preferences
-        jMenuItemUserPrefHttpAuth.setText(this.rb.getResourceString("menu.userpreference.httpauth"));
-        jMenuItemUserPrefHttpAuth.addActionListener(new java.awt.event.ActionListener() {
+        // My TLS Certificates menu item
+        jMenuItemMyTLSCertificates.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
+        jMenuItemMyTLSCertificates.setText(this.rb.getResourceString("menu.file.certificates.tls.my"));
+        jMenuItemMyTLSCertificates.setAccelerator(KeyboardShortcutUtil
+                .createMenuShortcut(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
+        jMenuItemMyTLSCertificates.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemUserPrefHttpAuthActionPerformed(evt);
+                displayMyTLSCertificates();
             }
         });
-        jMenuUserPreference.add(jMenuItemUserPrefHttpAuth);
+        jMenuUserPreference.add(jMenuItemMyTLSCertificates);
 
         jMenuBar.add(jMenuUserPreference);
 
@@ -2554,10 +2567,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void jMenuItemPartnerActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jMenuItemPartnerActionPerformed
         this.displayPartnerManager(null);
     }// GEN-LAST:event_jMenuItemPartnerActionPerformed
-
-    private void jMenuItemUserPrefHttpAuthActionPerformed(java.awt.event.ActionEvent evt) {
-        this.displayHttpAuthPreferences();
-    }
 
     private void jMenuItemTrackerConfigActionPerformed(java.awt.event.ActionEvent evt) {
         de.mendelson.comm.as2.tracker.gui.JDialogTrackerConfig dialog =
@@ -2706,7 +2715,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuSystem;
     private javax.swing.JMenu jMenuUserPreference;
-    private javax.swing.JMenuItem jMenuItemUserPrefHttpAuth;
+    private javax.swing.JMenuItem jMenuItemMyTLSCertificates;
     private javax.swing.JMenu jMenuTracker;
     private javax.swing.JMenuItem jMenuItemTrackerConfig;
     private javax.swing.JMenuItem jMenuItemTrackerMessage;
@@ -2738,7 +2747,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JSeparator jSeparator11;
     private javax.swing.JSeparator jSeparator3;
     private javax.swing.JSeparator jSeparator4;
-    private javax.swing.JSeparator jSeparator6;
     private javax.swing.JPopupMenu.Separator jSeparator9;
     private javax.swing.JSplitPane jSplitPane;
     private de.mendelson.util.tables.JTableSortable jTableMessageOverview;
@@ -3289,7 +3297,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         this.jMenuItemSwitchUser.setVisible(this.permissionManager.hasPermission(Permissions.USER_SWITCH));
 
-        // User Preference Menu items
+        // My Preferences Menu items
         this.jMenuItemFileSend.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
 
         this.jMenuItemPartner.setEnabled(this.permissionManager.hasPermission(Permissions.PARTNER_READ));
@@ -3302,7 +3310,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         // this.jMenuItemTrackerConfig.setEnabled(this.permissionManager.hasPermission(Permissions.TRACKER_CONFIG_READ));
         // this.jMenuItemTrackerMessage.setEnabled(this.permissionManager.hasPermission(Permissions.TRACKER_MESSAGE_READ));
 
-        // Message actions
         this.jButtonDeleteMessage.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
         this.jMenuItemPopupDeleteMessage.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));
         this.jMenuItemPopupSendAgain.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));

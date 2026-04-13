@@ -87,7 +87,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
     /**
      * MDNs to this partner should be signed?
      */
-    private boolean signedMDN = true;
+    private boolean signedMDN = false;
     /**
      * Stores an async MDN HTTP authentication if requested
      */
@@ -141,6 +141,11 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * ID of the WebUI user who created this partner (0 = created via SwingUI/admin)
      */
     private int createdByUserId = 0;
+    /**
+     * Inbound authentication credentials for local station only.
+     * Used to validate incoming AS2 messages to this local station.
+     */
+    private HTTPAuthentication inboundAuthCredentials = new HTTPAuthentication();
 
     public Partner() {
     }
@@ -573,6 +578,14 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
         this.authenticationCredentialsMessage = authenticationCredentialsMessage;
     }
 
+    public HTTPAuthentication getInboundAuthCredentials() {
+        return inboundAuthCredentials;
+    }
+
+    public void setInboundAuthCredentials(HTTPAuthentication inboundAuthCredentials) {
+        this.inboundAuthCredentials = inboundAuthCredentials;
+    }
+
     public void setKeepOriginalFilenameOnReceipt(boolean keepFilenameOnReceipt) {
         this.keepFilenameOnReceipt = keepFilenameOnReceipt;
     }
@@ -835,6 +848,9 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
         if (this.authenticationCredentialsAsyncMDN != null) {
             builder.append(this.authenticationCredentialsAsyncMDN.toXML(level + 1, "asyncmdn"));
         }
+        if (this.localStation && this.inboundAuthCredentials != null) {
+            builder.append(this.inboundAuthCredentials.toXML(level + 1, "inbound"));
+        }
         if (this.oauth2Message != null) {
             builder.append(this.oauth2Message.toXML(level + 1, "standard", this.useOAuth2Message));
         }
@@ -998,6 +1014,8 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
                 partner.setAuthentication(HTTPAuthentication.fromXML(authenticationElement));
             } else if (authenticationElement.getAttribute("type").equalsIgnoreCase("asyncmdn")) {
                 partner.setAuthenticationAsyncMDN(HTTPAuthentication.fromXML(authenticationElement));
+            } else if (authenticationElement.getAttribute("type").equalsIgnoreCase("inbound")) {
+                partner.setInboundAuthCredentials(HTTPAuthentication.fromXML(authenticationElement));
             }
         }
         //deserialize the oauth2 authentications

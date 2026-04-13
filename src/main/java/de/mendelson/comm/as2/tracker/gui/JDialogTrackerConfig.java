@@ -41,6 +41,7 @@ public class JDialogTrackerConfig extends JDialog {
 
     private MecResourceBundle rb;
     private PreferencesAS2 preferences;
+    private BaseClient baseClient;
 
     // UI Components
     private ToggleSwitch toggleEnabled;
@@ -54,6 +55,7 @@ public class JDialogTrackerConfig extends JDialog {
 
     public JDialogTrackerConfig(JFrame parent, BaseClient baseClient) {
         super(parent, true);
+        this.baseClient = baseClient;
 
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -101,9 +103,19 @@ public class JDialogTrackerConfig extends JDialog {
         gbc.gridx = 0;
         gbc.gridy = row++;
         gbc.gridwidth = 2;
-        gbc.insets = new Insets(5, 5, 15, 5);
+        gbc.insets = new Insets(5, 5, 10, 5);
         jPanelMain.add(jLabelTitle, gbc);
 
+        // Tracker URL info panel
+        JPanel urlInfoPanel = createTrackerUrlInfoPanel();
+        gbc.gridx = 0;
+        gbc.gridy = row++;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 5, 15, 5);
+        gbc.fill = GridBagConstraints.BOTH;
+        jPanelMain.add(urlInfoPanel, gbc);
+
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridwidth = 1;
         gbc.insets = new Insets(5, 5, 5, 5);
 
@@ -239,6 +251,86 @@ public class JDialogTrackerConfig extends JDialog {
             KeyStroke.getKeyStroke(KeyEvent.VK_W, modifierKey),
             JComponent.WHEN_IN_FOCUSED_WINDOW
         );
+    }
+
+    private JPanel createTrackerUrlInfoPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        panel.setBackground(new Color(245, 245, 245));
+
+        // Get username from BaseClient
+        String username = this.baseClient.getUsername();
+        if (username == null || username.isEmpty()) {
+            username = "admin";
+        }
+
+        // Get HTTP server info to build tracker URL
+        String trackerUrl = getTrackerUrl(username);
+
+        // Info icon and text
+        JLabel infoIcon = new JLabel("ℹ️");
+        infoIcon.setFont(infoIcon.getFont().deriveFont(16f));
+        infoIcon.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel infoLabel = new JLabel(rb.getResourceString("label.tracker.url.info"));
+        infoLabel.setFont(infoLabel.getFont().deriveFont(Font.BOLD));
+        infoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JTextField urlField = new JTextField(trackerUrl);
+        urlField.setEditable(false);
+        urlField.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        urlField.setBackground(Color.WHITE);
+        urlField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        urlField.setMaximumSize(new Dimension(Integer.MAX_VALUE, urlField.getPreferredSize().height));
+
+        panel.add(infoLabel);
+        panel.add(Box.createVerticalStrut(5));
+        panel.add(urlField);
+
+        return panel;
+    }
+
+    private String getTrackerUrl(String username) {
+        // Build tracker URL using server configuration
+        // Format: {protocol}://{host}:{port}/as2/tracker/{username}
+
+        String protocol = "https";
+        String host = "localhost";
+        int port = 8443;
+
+        // Try to get HTTPS port first, fallback to HTTP port
+        try {
+            String httpsPortStr = preferences.get(PreferencesAS2.HTTPS_LISTEN_PORT);
+            if (httpsPortStr != null && !httpsPortStr.isEmpty()) {
+                try {
+                    port = Integer.parseInt(httpsPortStr);
+                    protocol = "https";
+                } catch (NumberFormatException e) {
+                    // Use default HTTPS port
+                }
+            } else {
+                // Try HTTP port
+                String httpPortStr = preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
+                if (httpPortStr != null && !httpPortStr.isEmpty()) {
+                    try {
+                        port = Integer.parseInt(httpPortStr);
+                        protocol = "http";
+                    } catch (NumberFormatException e) {
+                        // Use default HTTP port
+                        port = 8080;
+                        protocol = "http";
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Use defaults if preference retrieval fails
+        }
+
+        return protocol + "://" + host + ":" + port + "/as2/tracker/" + username;
     }
 
     private void loadSettings() {

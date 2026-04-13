@@ -82,6 +82,10 @@ CREATE TABLE partner(
     oauth2idmdn INTEGER,
     overwritelocalsecurity INTEGER DEFAULT 0 NOT NULL,
     created_by_user_id INTEGER DEFAULT 0,
+    inbound_auth_mode INTEGER DEFAULT 0 NOT NULL,
+    inbound_auth_user VARCHAR(256),
+    inbound_auth_password VARCHAR(256),
+    inbound_auth_cert_fingerprint VARCHAR(255),
     FOREIGN KEY(oauth2idmessage) REFERENCES oauth2(id),
     FOREIGN KEY(oauth2idmdn) REFERENCES oauth2(id)
 );

@@ -186,6 +186,8 @@ import de.mendelson.util.security.cert.clientserver.CertificateExportRequest;
 import de.mendelson.util.security.cert.clientserver.CertificateExportResponse;
 import de.mendelson.util.security.cert.clientserver.DownloadRequestKeystore;
 import de.mendelson.util.security.cert.clientserver.DownloadResponseKeystore;
+import de.mendelson.util.security.cert.KeystoreStorage;
+import de.mendelson.util.security.cert.KeystoreStorageImplDB;
 import de.mendelson.util.security.cert.clientserver.ExportRequestKeystore;
 import de.mendelson.util.security.cert.clientserver.ExportRequestPrivateKey;
 import de.mendelson.util.security.cert.clientserver.ExportResponseKeystore;
@@ -1603,13 +1605,34 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         List<KeystoreCertificate> certificateList;
         CertificateManager relatedCertificateManager = null;
         try {
-            if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
-                relatedCertificateManager = this.certificateManagerEncSign;
-            } else if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
-                relatedCertificateManager = this.certificateManagerTLS;
+            int userId = request.getUserId();
+
+            // If userId is specified, load user-specific keystore from database
+            if (userId > 0) {
+                if (request.getKeystoreUsage() != DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    throw new IllegalArgumentException("User-specific keystores are only supported for TLS");
+                }
+
+                // Create user-specific certificate manager
+                relatedCertificateManager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    userId);
+                relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
             } else {
-                throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
+                // System-wide keystores (userId = 0 or not specified)
+                if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
+                    relatedCertificateManager = this.certificateManagerEncSign;
+                } else if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    relatedCertificateManager = this.certificateManagerTLS;
+                } else {
+                    throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
+                }
             }
+
             certificateList = relatedCertificateManager.getKeyStoreCertificateList();
             //do not send private keys to the client - just generate dummy keys
             List<KeystoreCertificate> displayList = new ArrayList<KeystoreCertificate>();
@@ -1641,18 +1664,41 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         String storageType = null;
         List<KeystoreCertificate> existingCertificateList = new ArrayList<KeystoreCertificate>();
         CertificateManager relatedCertificateManager = null;
-        if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
-            relatedCertificateManager = this.certificateManagerTLS;
-        } else if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
-            relatedCertificateManager = this.certificateManagerEncSign;
-        } else {
-            throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
-        }
-        storageType = relatedCertificateManager.getStorageType();
-        existingCertificateList.addAll(relatedCertificateManager.getKeyStoreCertificateList());
-        String keystoreTypeForLog = this.rbCertificateManager.getResourceString("keystore." + storageType);
-        CertificateManager newManager = null;
+        KeystoreStorage keystoreStorage = null;
+        int userId = request.getUserId();
+
         try {
+            // If userId is specified, load user-specific keystore from database
+            if (userId > 0) {
+                if (request.getKeystoreUsage() != UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    throw new IllegalArgumentException("User-specific keystores are only supported for TLS");
+                }
+
+                // Create user-specific certificate manager and keystore storage
+                keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    userId);
+                relatedCertificateManager = new CertificateManager(this.logger);
+                relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
+            } else {
+                // System-wide keystores
+                if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    relatedCertificateManager = this.certificateManagerTLS;
+                } else if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
+                    relatedCertificateManager = this.certificateManagerEncSign;
+                } else {
+                    throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
+                }
+            }
+
+            storageType = relatedCertificateManager.getStorageType();
+            existingCertificateList.addAll(relatedCertificateManager.getKeyStoreCertificateList());
+            String keystoreTypeForLog = this.rbCertificateManager.getResourceString("keystore." + storageType);
+            CertificateManager newManager = null;
+
             List<KeystoreCertificate> uploadedCertificateList = request.getCertificateList();
             List<KeystoreCertificate> certificateListWithKeys = new ArrayList<KeystoreCertificate>();
             //replace display mode entries - these are the key entries that do already exist
@@ -1677,22 +1723,34 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     certificateListWithKeys.add(uploadedEntry);
                 }
             }
-            if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
-                this.certificateManagerTLS.replaceAllEntriesAndSave(certificateListWithKeys);
-                newManager = this.certificateManagerTLS;
-            } else if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
-                this.certificateManagerEncSign.replaceAllEntriesAndSave(certificateListWithKeys);
-                newManager = this.certificateManagerEncSign;
+
+            // Save to user-specific or system-wide keystore
+            if (userId > 0) {
+                // User-specific keystore - create new manager with updated entries
+                relatedCertificateManager = new CertificateManager(this.logger);
+                relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
+                relatedCertificateManager.replaceAllEntriesAndSave(certificateListWithKeys);
+                newManager = relatedCertificateManager;
             } else {
-                throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
+                // System-wide keystore
+                if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    this.certificateManagerTLS.replaceAllEntriesAndSave(certificateListWithKeys);
+                    newManager = this.certificateManagerTLS;
+                } else if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
+                    this.certificateManagerEncSign.replaceAllEntriesAndSave(certificateListWithKeys);
+                    newManager = this.certificateManagerEncSign;
+                } else {
+                    throw new IllegalArgumentException("Unknown storage usage " + request.getKeystoreUsage());
+                }
+            }
+
+            if (newManager != null) {
+                //everything worked fine? Now check the changes and fire system events
+                this.analyzeCertificateChanges(userName, processOriginHost,
+                        keystoreTypeForLog, existingCertificateList, newManager.getKeyStoreCertificateList());
             }
         } catch (Throwable e) {
             response.setException(e);
-        }
-        if (response.getException() == null && newManager != null) {
-            //everything worked fine? Now check the changes and fire system events
-            this.analyzeCertificateChanges(userName, processOriginHost,
-                    keystoreTypeForLog, existingCertificateList, newManager.getKeyStoreCertificateList());
         }
         return response;
     }

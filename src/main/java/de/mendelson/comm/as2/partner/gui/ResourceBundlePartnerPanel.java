@@ -162,6 +162,7 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
         {"tab.dirpoll", "Directory polling"},
         {"tab.receipt", "Receipt"},
         {"tab.httpauth", "HTTP authentication"},
+        {"tab.inboundauth", "Inbound Auth"},
         {"tab.httpheader", "HTTP header"},
         {"tab.notification", "Notification"},
         {"tab.visibility", "Visibility"},
@@ -232,12 +233,14 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
         {"label.httpauth.credentials.message.pass", "Password"},
         {"label.httpauth.oauth2.authorizationcode.message", "OAuth2 (Authorization code)"},
         {"label.httpauth.oauth2.clientcredentials.message", "OAuth2 (Client credentials)"},
+        {"label.httpauth.certificate.message", "Certificate authentication"},
         {"label.httpauth.asyncmdn", "Authentication for outbound async MDN"},
         {"label.httpauth.credentials.asyncmdn", "Basic authentication"},
         {"label.httpauth.credentials.asyncmdn.user", "Username"},
         {"label.httpauth.credentials.asyncmdn.pass", "Password"},
         {"label.httpauth.oauth2.authorizationcode.asyncmdn", "OAuth2 (Authorization code)"},
         {"label.httpauth.oauth2.clientcredentials.asyncmdn", "OAuth2 (Client credentials)"},
+        {"label.httpauth.certificate.asyncmdn", "Certificate authentication"},
         {"label.notify.send", "Notify if send message quota exceeds"},
         {"label.notify.receive", "Notify if receive message quota exceeds"},
         {"label.notify.sendreceive", "Notify if receive and send message quota exceeds"},
@@ -298,6 +301,13 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
         {"label.overwrite.sign", "Sign outgoing messages"},
         {"label.overwrite.sign.help", "<HTML><strong>Sign outgoing messages</strong><br><br>"
             + "This key is used to sign outgoing messages to this partner - instead of the set key of the respective local station."
-            + "</HTML>"},        
+            + "</HTML>"},
+        // Inbound Auth tab
+        {"label.inboundauth.basic", "Enable Basic Authentication"},
+        {"label.inboundauth.basic.username", "Username:"},
+        {"label.inboundauth.basic.password", "Password:"},
+        {"label.inboundauth.cert", "Enable Certificate Authentication"},
+        {"label.inboundauth.cert.select", "Client Certificate:"},
+        {"inboundauth.info", "Configure authentication required for incoming AS2 messages to this local station."},
     };
 }

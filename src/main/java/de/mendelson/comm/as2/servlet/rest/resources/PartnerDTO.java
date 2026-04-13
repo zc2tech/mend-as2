@@ -83,6 +83,10 @@ public class PartnerDTO {
     @JsonProperty("authenticationCredentialsAsyncMDN")
     private HTTPAuthentication authenticationCredentialsAsyncMDN;
 
+    // Inbound Authentication (for local stations only)
+    @JsonProperty("inboundAuthCredentials")
+    private HTTPAuthentication inboundAuthCredentials;
+
     // Contact tab
     private String contactAS2;
     private String contactCompany;
@@ -136,6 +140,11 @@ public class PartnerDTO {
 
         this.authenticationCredentialsMessage = partner.getAuthenticationCredentialsMessage();
         this.authenticationCredentialsAsyncMDN = partner.getAuthenticationCredentialsAsyncMDN();
+
+        // Only include inbound auth for local stations
+        if (partner.isLocalStation()) {
+            this.inboundAuthCredentials = partner.getInboundAuthCredentials();
+        }
 
         this.contactAS2 = partner.getContactAS2();
         this.contactCompany = partner.getContactCompany();
@@ -216,6 +225,11 @@ public class PartnerDTO {
         }
         if (this.authenticationCredentialsAsyncMDN != null) {
             partner.setAuthenticationAsyncMDN(this.authenticationCredentialsAsyncMDN);
+        }
+
+        // Inbound Auth (for local stations only)
+        if (partner.isLocalStation() && this.inboundAuthCredentials != null) {
+            partner.setInboundAuthCredentials(this.inboundAuthCredentials);
         }
 
         // Contact tab
@@ -340,4 +354,7 @@ public class PartnerDTO {
 
     public boolean isNotifySendReceiveEnabled() { return notifySendReceiveEnabled; }
     public void setNotifySendReceiveEnabled(boolean notifySendReceiveEnabled) { this.notifySendReceiveEnabled = notifySendReceiveEnabled; }
+
+    public HTTPAuthentication getInboundAuthCredentials() { return inboundAuthCredentials; }
+    public void setInboundAuthCredentials(HTTPAuthentication inboundAuthCredentials) { this.inboundAuthCredentials = inboundAuthCredentials; }
 }

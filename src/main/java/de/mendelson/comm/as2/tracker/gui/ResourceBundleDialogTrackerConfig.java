@@ -38,6 +38,7 @@ public class ResourceBundleDialogTrackerConfig extends MecResourceBundle {
 
     private static final Object[][] CONTENTS = {
         {"title", "Tracker Configuration"},
+        {"label.tracker.url.info", "Your Tracker Endpoint URL:"},
         {"label.enabled", "Enable Tracker Endpoint:"},
         {"label.auth.required", "Require Authentication:"},
         {"label.maxsize", "Max Message Size (MB):"},
