@@ -774,6 +774,17 @@ public class CertificateManager {
     }
 
     /**
+     * Returns the userId for user-specific keystores (0 = admin/system, >0 = specific user)
+     * Only works if the storage is KeystoreStorageImplClientServer, otherwise returns 0
+     */
+    public int getUserId() {
+        if (this.storage instanceof de.mendelson.util.security.cert.clientserver.KeystoreStorageImplClientServer) {
+            return ((de.mendelson.util.security.cert.clientserver.KeystoreStorageImplClientServer) this.storage).getUserId();
+        }
+        return 0;  // Default to admin/system for non-client-server storages
+    }
+
+    /**
      * Compute the whole trust chain of a given alias and returns it as list
      */
     public List<X509Certificate> computeTrustChain(String alias) {

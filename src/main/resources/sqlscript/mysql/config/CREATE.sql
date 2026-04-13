@@ -61,9 +61,11 @@ CREATE TABLE partner(
     authmodehttp INT DEFAULT 0 NOT NULL,
     httpauthuser VARCHAR(256),
     httpauthpass VARCHAR(256),
+    httpauth_cert_fingerprint_message VARCHAR(255),
     authmodehttpasynmdn INT DEFAULT 0 NOT NULL,
     httpauthuserasnymdn VARCHAR(256),
     httpauthpassasnymdn VARCHAR(256),
+    httpauth_cert_fingerprint_mdn VARCHAR(255),
     keeporiginalfilenameonreceipt INT,
     partnercomment TEXT,
     notifysend INT,
@@ -361,8 +363,12 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 ('CERT_TLS_WRITE', 'Manage TLS/SSL certificates', 'Certificates - TLS');
 
 -- Default admin user (password: "admin" - MUST be changed on first login)
-INSERT INTO webui_users (username, password_hash, full_name, enabled, must_change_password) VALUES
-('admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+-- Explicitly set id=0 for admin to match code convention that userId=0 means admin
+INSERT INTO webui_users (id, username, password_hash, full_name, enabled, must_change_password) VALUES
+(0, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+
+-- Reset auto_increment to start from 1 for regular users
+ALTER TABLE webui_users AUTO_INCREMENT = 1;
 
 -- Grant ALL permissions to ADMIN role
 INSERT INTO webui_role_permissions (role_id, permission_id)
@@ -378,9 +384,7 @@ FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'USER'
   AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE', 'CERT_READ', 'CERT_WRITE',
-                 'MESSAGE_READ', 'MESSAGE_WRITE', 'SYSTEM_READ',
-                 'SYSTEM_CONFIG_INTERFACE', 'SYSTEM_INFO_READ',
-                 'TRACKER_MESSAGE_READ', 'CERT_TLS_READ');
+                 'MESSAGE_READ', 'MESSAGE_WRITE', 'TRACKER_MESSAGE_READ');
 
 -- Assign ADMIN role to default admin user
 INSERT INTO webui_user_roles (user_id, role_id)

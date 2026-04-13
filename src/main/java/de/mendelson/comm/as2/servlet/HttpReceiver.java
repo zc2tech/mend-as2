@@ -95,15 +95,31 @@ public class HttpReceiver extends HttpServlet {
                 // Remove leading slash
                 targetUsername = pathInfo.substring(1);
 
-                // Lookup user ID (would need UserManagementAccessDB here)
-                // For now, set to 0 (admin) - will be enhanced later
-                targetUserId = 0;  // TODO: Implement user lookup
-
-                if (targetUserId == 0 && !"admin".equals(targetUsername)) {
-                    // User not found
-                    response.sendError(HttpServletResponse.SC_NOT_FOUND,
-                        "User not found: " + targetUsername);
-                    return;
+                // Lookup user ID from database
+                if ("admin".equals(targetUsername)) {
+                    targetUserId = 0;  // Admin user
+                } else {
+                    // Look up non-admin user
+                    try {
+                        de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                            new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                                AS2Server.getActivatedDBDriverManager(),
+                                Logger.getLogger(AS2Server.SERVER_LOGGER_NAME));
+                        de.mendelson.comm.as2.usermanagement.WebUIUser user = userAccess.getUserByUsername(targetUsername);
+                        if (user != null) {
+                            targetUserId = user.getId();
+                        } else {
+                            // User not found
+                            response.sendError(HttpServletResponse.SC_NOT_FOUND,
+                                "User not found: " + targetUsername);
+                            return;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            "Error looking up user: " + e.getMessage());
+                        return;
+                    }
                 }
             } else {
                 // No path info - use system/admin (backward compatibility)
@@ -298,16 +314,64 @@ public class HttpReceiver extends HttpServlet {
             return false;
         }
 
-        // Load local station partner by username/AS2 ID
-        // Convention: local station AS2 ID should match username
+        // Get AS2-To header to identify which local station this message is for
+        String as2To = headerMap.get("as2-to");
+        if (as2To == null || as2To.isEmpty()) {
+            logger.warning("No AS2-To header found in request from " + request.getRemoteAddr());
+            return false;
+        }
+
+        // Unescape AS2-To header value
+        as2To = de.mendelson.comm.as2.message.AS2MessageParser.unescapeFromToHeader(as2To);
+
+        // Look up user by username
+        de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+            new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                AS2Server.getActivatedDBDriverManager(), logger);
+        de.mendelson.comm.as2.usermanagement.WebUIUser user = null;
+        int userId = 0;
+
+        try {
+            user = userAccess.getUserByUsername(targetUsername);
+            if (user != null) {
+                userId = user.getId();
+                // For backward compatibility: treat username "admin" as super-user (userId=0)
+                if ("admin".equals(targetUsername)) {
+                    userId = 0;
+                }
+            } else if ("admin".equals(targetUsername)) {
+                // Admin user (backward compatibility)
+                userId = 0;
+            } else {
+                logger.warning("User not found: " + targetUsername);
+                return false;
+            }
+        } catch (Exception e) {
+            logger.severe("Failed to lookup user: " + e.getMessage());
+            return false;
+        }
+
+        // Find local station matching both user_id and AS2 ID
         de.mendelson.comm.as2.partner.PartnerAccessDB partnerAccess =
             new de.mendelson.comm.as2.partner.PartnerAccessDB(AS2Server.getActivatedDBDriverManager());
-        de.mendelson.comm.as2.partner.Partner localStation =
-            partnerAccess.getPartnerByAS2Id(targetUsername,
+
+        // Get all local stations owned by this user
+        java.util.List<de.mendelson.comm.as2.partner.Partner> userLocalStations =
+            partnerAccess.getPartnersOwnedByUser(userId,
                 de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
 
-        if (localStation == null || !localStation.isLocalStation()) {
-            logger.warning("No local station found for username: " + targetUsername);
+        // Find the local station with matching AS2 ID
+        de.mendelson.comm.as2.partner.Partner localStation = null;
+        for (de.mendelson.comm.as2.partner.Partner partner : userLocalStations) {
+            if (partner.isLocalStation() && as2To.equals(partner.getAS2Identification())) {
+                localStation = partner;
+                break;
+            }
+        }
+
+        if (localStation == null) {
+            logger.warning("No local station found for user '" + targetUsername +
+                         "' with AS2-To: " + as2To + " (checked " + userLocalStations.size() + " partners)");
             return false;
         }
 

@@ -78,7 +78,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * Allows to disable the dir poll - the send orders have to be placed using
      * the command line interface if enabled
      */
-    private boolean enableDirPoll = true;
+    private boolean enableDirPoll = false;  // Default to OFF
     /**
      * Compression type for this partner, used if you send messages to the
      * partner
@@ -230,7 +230,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * Returns the default URL where to connect to
      */
     public String getDefaultURL() {
-        return ("http://localhost:8080/as2/HttpReceiver");
+        return ("<protocol>://<host>:<port>/<context>");
     }
 
     /**

@@ -84,7 +84,7 @@ public class PartnerResource {
                         : PartnerAccessDB.DATA_COMPLETENESS_FULL;
 
                 PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
-                partners = partnerDB.getPartnersVisibleToUser(visibleToUserId, dataCompleteness);
+                partners = partnerDB.getPartnersOwnedByUser(visibleToUserId, dataCompleteness);
             } else {
                 // Use existing logic
                 int listOption = PartnerListRequest.LIST_ALL;
@@ -251,16 +251,7 @@ public class PartnerResource {
                         .build();
             }
 
-            // Check if AS2 ID is being changed to a duplicate
-            String newAS2Id = partnerDTO.getAs2Identification();
-            if (newAS2Id != null && !newAS2Id.equals(existingPartner.getAS2Identification())) {
-                Partner duplicateCheck = partnerAccess.getPartner(newAS2Id);
-                if (duplicateCheck != null && duplicateCheck.getDBId() != dbId) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(new ErrorResponse("A partner with AS2 ID '" + newAS2Id + "' already exists"))
-                            .build();
-                }
-            }
+            // Note: AS2 ID duplication is allowed because users have separate endpoints /as2/HttpReceiver/{username}
 
             // Update existing partner with values from DTO (preserves fields not in DTO)
             updatePartnerFromDTO(existingPartner, partnerDTO);

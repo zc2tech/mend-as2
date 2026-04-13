@@ -71,20 +71,44 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
         this.systemEventManager = systemEventManager;
         this.dbDriverManager = dbDriverManager;
         this.userId = userId;
-        KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
-        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE, userId);
-        if (keystoreData == null) {
-            throw new Exception("Unable to access keystore data (DB, usage="
-                    + this.getKeystoreUsage()
-                    + ", storageType=" + this.getKeystoreStorageType()
-                    + ", userId=" + userId + ")");
-        }
         this.keystoreUsage = KEYSTORE_USAGE;
         this.keystoreStorageType = KEYSTORE_STORAGE_TYPE;
+
+        KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
+        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE, userId);
+
         BCCryptoHelper cryptoHelper = new BCCryptoHelper();
-        this.keystore = cryptoHelper.createKeyStoreInstance(keystoreData.getStorageTypeAsStr(),
-                keystoreData.getSecurityProvider());
-        KeyStoreUtil.loadKeyStore(this.keystore, keystoreData.getData(), this.getKeystorePass());
+
+        if (keystoreData == null) {
+            // No keystore exists for this user - create an empty one
+            System.out.println("INFO: Creating empty keystore for userId=" + userId +
+                ", usage=" + KEYSTORE_USAGE + ", storageType=" + KEYSTORE_STORAGE_TYPE);
+
+            // Determine security provider based on keystore type
+            String securityProvider = KEYSTORE_STORAGE_TYPE.equals(KEYSTORE_STORAGE_TYPE_PKCS12) ?
+                org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME : "SUN";
+
+            // Create empty keystore with the specified storage type
+            this.keystore = cryptoHelper.createKeyStoreInstance(KEYSTORE_STORAGE_TYPE);
+
+            // Load empty keystore (pass null to KeyStore.load() to create empty keystore)
+            this.keystore.load(null, this.getKeystorePass());
+
+            // Save the empty keystore to database using INSERT (not UPDATE)
+            byte[] keyData;
+            try (java.io.ByteArrayOutputStream memOut = new java.io.ByteArrayOutputStream()) {
+                KeyStoreUtil.saveKeyStore(this.keystore, this.getKeystorePass(), memOut);
+                keyData = memOut.toByteArray();
+            }
+
+            // Insert the keystore data into database
+            dataAccessDB.insertEmptyKeydata(keyData, KEYSTORE_STORAGE_TYPE, KEYSTORE_USAGE, securityProvider, userId);
+        } else {
+            // Load existing keystore from database
+            this.keystore = cryptoHelper.createKeyStoreInstance(keystoreData.getStorageTypeAsStr(),
+                    keystoreData.getSecurityProvider());
+            KeyStoreUtil.loadKeyStore(this.keystore, keystoreData.getData(), this.getKeystorePass());
+        }
     }
 
     @Override
@@ -117,9 +141,14 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
                 //internal error, should not happen
                 throw new Exception(rb.getResourceString("error.save.notloaded"));
             }
+            // Collect all aliases first to avoid ConcurrentModificationException
+            List<String> aliasesToDelete = new ArrayList<>();
             Enumeration<String> enumeration = this.keystore.aliases();
             while (enumeration.hasMoreElements()) {
-                String alias = enumeration.nextElement();
+                aliasesToDelete.add(enumeration.nextElement());
+            }
+            // Now delete all entries
+            for (String alias : aliasesToDelete) {
                 this.keystore.deleteEntry(alias);
             }
             //ensure that there are not two same aliases in the new list

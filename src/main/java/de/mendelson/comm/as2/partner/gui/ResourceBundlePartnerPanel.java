@@ -303,10 +303,11 @@ public class ResourceBundlePartnerPanel extends MecResourceBundle {
             + "This key is used to sign outgoing messages to this partner - instead of the set key of the respective local station."
             + "</HTML>"},
         // Inbound Auth tab
-        {"label.inboundauth.basic", "Enable Basic Authentication"},
+        {"label.inboundauth.none", "None"},
+        {"label.inboundauth.basic", "Basic Authentication"},
         {"label.inboundauth.basic.username", "Username:"},
         {"label.inboundauth.basic.password", "Password:"},
-        {"label.inboundauth.cert", "Enable Certificate Authentication"},
+        {"label.inboundauth.cert", "Certificate Authentication"},
         {"label.inboundauth.cert.select", "Client Certificate:"},
         {"inboundauth.info", "Configure authentication required for incoming AS2 messages to this local station."},
     };

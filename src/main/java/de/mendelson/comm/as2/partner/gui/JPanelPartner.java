@@ -188,7 +188,7 @@ public class JPanelPartner extends JPanel {
         this.setMultiresolutionIcons();
         ButtonUtil.reformatButtonText(this.jButtonTestConnection);
         this.initializeHelp();
-        this.buttonOk.initialize(tree, this.jTextFieldName, 
+        this.buttonOk.initialize(tree, this.jTextFieldName,
                 this.jTextFieldId, this.jTextFieldReceiptURL, this.jTextFieldMDNURL,
                 changesAllowed, this.jPanelConfigurationWarning);
         //some disabled checkboxes should still have black text: wrapp their text in html tags
@@ -536,13 +536,15 @@ public class JPanelPartner extends JPanel {
             if (url != null && !url.equals(partner.getDefaultURL())) {
                 this.jTextFieldReceiptURL.setText(url);
             } else {
-                this.jTextFieldReceiptURL.setText("");
+                this.jTextFieldReceiptURL.setText(partner.getDefaultURL());
             }
         }
 
         this.jTextFieldMDNURL.setText(partner.getMdnURL());
         this.jTextFieldEMail.setText(partner.getEmail());
         this.setUIValueWithoutEvent(this.switchLocalStation, partner.isLocalStation());
+        // Refresh certificate dropdowns based on local station status (must be before setting cert values)
+        this.refreshCertificateDropdowns();
         this.setUIValueWithoutEvent(this.jComboBoxSignCert, this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(
                 partner.getSignFingerprintSHA1()));
         this.setUIValueWithoutEvent(this.jComboBoxCryptCert, this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(
@@ -635,8 +637,17 @@ public class JPanelPartner extends JPanel {
             HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
             int authMode = inboundAuth.getAuthMode();
 
-            this.setUIValueWithoutEvent(this.jCheckBoxInboundAuthBasic, (authMode & 1) != 0);
-            this.setUIValueWithoutEvent(this.jCheckBoxInboundAuthCert, (authMode & 2) != 0);
+            // Select the appropriate radio button based on auth mode
+            if (authMode == 0) {
+                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthNone, true);
+            } else if (authMode == 1) {
+                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthBasic, true);
+            } else if (authMode == 2) {
+                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthCert, true);
+            } else {
+                // Default to None for any other value
+                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthNone, true);
+            }
 
             this.jTextFieldInboundAuthUser.setText(inboundAuth.getUser() != null ? inboundAuth.getUser() : "");
             this.jPasswordFieldInboundAuthPassword.setText(inboundAuth.getPassword() != null ? inboundAuth.getPassword() : "");
@@ -699,16 +710,8 @@ public class JPanelPartner extends JPanel {
         this.setUIValueWithoutEvent(this.switchEnableDirPoll, partner.isEnableDirPoll());
         this.handleVisibilityStateOfWidgets();
         this.disableEnableWidgets();
-        if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
-        } else {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
-        }
-        if (this.partner.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC) {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMDN, true);
-        } else {
-            this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
-        }
+        // HTTP Auth radio buttons are already set correctly above (lines 596-639)
+        // No need to set them again here - this old code was overwriting certificate/user-preference modes
         this.updateHttpAuthState();
         this.setPanelVisiblilityState();
         this.renderEvents();
@@ -830,24 +833,41 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
         jPanelInboundAuth.add(jLabelInboundAuthInfo, gridBagConstraints);
 
-        // Basic auth checkbox
-        jCheckBoxInboundAuthBasic = new javax.swing.JCheckBox();
-        jCheckBoxInboundAuthBasic.setText(rb.getResourceString("label.inboundauth.basic"));
-        jCheckBoxInboundAuthBasic.addActionListener(evt -> jCheckBoxInboundAuthBasicActionPerformed(evt));
+        // Button group for mutually exclusive radio buttons
+        buttonGroupInboundAuth = new javax.swing.ButtonGroup();
+
+        // None radio button
+        jRadioButtonInboundAuthNone = new javax.swing.JRadioButton();
+        jRadioButtonInboundAuthNone.setText(rb.getResourceString("label.inboundauth.none"));
+        jRadioButtonInboundAuthNone.addActionListener(evt -> jRadioButtonInboundAuthNoneActionPerformed(evt));
+        buttonGroupInboundAuth.add(jRadioButtonInboundAuthNone);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
-        jPanelInboundAuth.add(jCheckBoxInboundAuthBasic, gridBagConstraints);
+        jPanelInboundAuth.add(jRadioButtonInboundAuthNone, gridBagConstraints);
+
+        // Basic auth radio button
+        jRadioButtonInboundAuthBasic = new javax.swing.JRadioButton();
+        jRadioButtonInboundAuthBasic.setText(rb.getResourceString("label.inboundauth.basic"));
+        jRadioButtonInboundAuthBasic.addActionListener(evt -> jRadioButtonInboundAuthBasicActionPerformed(evt));
+        buttonGroupInboundAuth.add(jRadioButtonInboundAuthBasic);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
+        jPanelInboundAuth.add(jRadioButtonInboundAuthBasic, gridBagConstraints);
 
         // Username label
         jLabelInboundAuthUser = new javax.swing.JLabel();
         jLabelInboundAuthUser.setText(rb.getResourceString("label.inboundauth.basic.username"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
         jPanelInboundAuth.add(jLabelInboundAuthUser, gridBagConstraints);
@@ -861,7 +881,7 @@ public class JPanelPartner extends JPanel {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 2;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
@@ -872,7 +892,7 @@ public class JPanelPartner extends JPanel {
         jLabelInboundAuthPassword.setText(rb.getResourceString("label.inboundauth.basic.password"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
         jPanelInboundAuth.add(jLabelInboundAuthPassword, gridBagConstraints);
@@ -886,30 +906,31 @@ public class JPanelPartner extends JPanel {
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelInboundAuth.add(jPasswordFieldInboundAuthPassword, gridBagConstraints);
 
-        // Certificate auth checkbox
-        jCheckBoxInboundAuthCert = new javax.swing.JCheckBox();
-        jCheckBoxInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert"));
-        jCheckBoxInboundAuthCert.addActionListener(evt -> jCheckBoxInboundAuthCertActionPerformed(evt));
+        // Certificate auth radio button
+        jRadioButtonInboundAuthCert = new javax.swing.JRadioButton();
+        jRadioButtonInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert"));
+        jRadioButtonInboundAuthCert.addActionListener(evt -> jRadioButtonInboundAuthCertActionPerformed(evt));
+        buttonGroupInboundAuth.add(jRadioButtonInboundAuthCert);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(15, 10, 5, 10);
-        jPanelInboundAuth.add(jCheckBoxInboundAuthCert, gridBagConstraints);
+        jPanelInboundAuth.add(jRadioButtonInboundAuthCert, gridBagConstraints);
 
         // Certificate label
         jLabelInboundAuthCert = new javax.swing.JLabel();
         jLabelInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert.select"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridy = 6;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
         jPanelInboundAuth.add(jLabelInboundAuthCert, gridBagConstraints);
@@ -920,17 +941,20 @@ public class JPanelPartner extends JPanel {
         jComboBoxInboundAuthCert.addActionListener(evt -> jComboBoxInboundAuthCertActionPerformed(evt));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 5;
+        gridBagConstraints.gridy = 6;
         gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
         jPanelInboundAuth.add(jComboBoxInboundAuthCert, gridBagConstraints);
 
+        // Set "None" as default selection
+        jRadioButtonInboundAuthNone.setSelected(true);
+
         // Spacer at bottom
         javax.swing.JPanel jPanelSpacer = new javax.swing.JPanel();
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridy = 7;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
@@ -965,15 +989,28 @@ public class JPanelPartner extends JPanel {
      */
     private void updatePollDirDisplay(final Partner finalPartner) {
         StringBuilder pollDirStr = new StringBuilder();
-        // Show relative path instead of absolute path
+
+        // Get current username and include it in the path
+        String username = this.baseClient.getUsername();
+        if (username == null || username.isEmpty()) {
+            username = "admin";
+        }
+
+        // Build path: {username}-{partnerName}/outbox/{localstation}
+        pollDirStr.append(username);
+        pollDirStr.append("-");
         pollDirStr.append(AS2Tools.convertToValidFilename(finalPartner.getName()));
         pollDirStr.append(this.serverSideFileSeparator);
         pollDirStr.append("outbox");
         //for single local stations display add the name of the local station, else display <localstation>
         List<Partner> localStations = this.tree.getLocalStations();
-        String localStationDir = "<localstation>";
-        if (localStations.size() == 1) {
+        String localStationDir;
+        if (localStations.isEmpty()) {
+            localStationDir = "<create-local-station-first>";
+        } else if (localStations.size() == 1) {
             localStationDir = AS2Tools.convertToValidFilename(localStations.get(0).getName());
+        } else {
+            localStationDir = "<localstation>";
         }
         this.jTextFieldPollDir.setText(pollDirStr + serverSideFileSeparator + localStationDir);
     }
@@ -3935,32 +3972,30 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     }//GEN-LAST:event_jRadioButtonKeepLocalstationSecurityActionPerformed
 
     // Inbound Auth event handlers
-    private void jCheckBoxInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
+    private void jRadioButtonInboundAuthNoneActionPerformed(java.awt.event.ActionEvent evt) {
         if (this.partner != null) {
             HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            int mode = inbound.getAuthMode();
-            if (this.jCheckBoxInboundAuthBasic.isSelected()) {
-                mode |= 1;  // Set basic auth bit
-            } else {
-                mode &= ~1; // Clear basic auth bit
-            }
-            inbound.setAuthMode(mode);
+            inbound.setAuthMode(0);  // None
             updateInboundAuthState();
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
         }
     }
 
-    private void jCheckBoxInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
+    private void jRadioButtonInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
         if (this.partner != null) {
             HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            int mode = inbound.getAuthMode();
-            if (this.jCheckBoxInboundAuthCert.isSelected()) {
-                mode |= 2;  // Set cert auth bit
-            } else {
-                mode &= ~2; // Clear cert auth bit
-            }
-            inbound.setAuthMode(mode);
+            inbound.setAuthMode(1);  // Basic auth only
+            updateInboundAuthState();
+            this.buttonOk.computeErrorState();
+            this.informTreeModelNodeChanged();
+        }
+    }
+
+    private void jRadioButtonInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.partner != null) {
+            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
+            inbound.setAuthMode(2);  // Certificate auth only
             updateInboundAuthState();
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
@@ -3995,8 +4030,8 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     }
 
     private void updateInboundAuthState() {
-        boolean basicEnabled = this.jCheckBoxInboundAuthBasic.isSelected();
-        boolean certEnabled = this.jCheckBoxInboundAuthCert.isSelected();
+        boolean basicEnabled = this.jRadioButtonInboundAuthBasic.isSelected();
+        boolean certEnabled = this.jRadioButtonInboundAuthCert.isSelected();
 
         this.jTextFieldInboundAuthUser.setEnabled(basicEnabled);
         this.jPasswordFieldInboundAuthPassword.setEnabled(basicEnabled);
@@ -4022,6 +4057,67 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         }
     }//GEN-LAST:event_switchCompressActionPerformed
 
+    /**
+     * Refresh certificate dropdowns based on whether this is a local station or remote partner.
+     * Local stations need private keys (key pairs) for signing/decryption.
+     * Remote partners only need public certificates for verification/encryption.
+     */
+    private void refreshCertificateDropdowns() {
+        if (this.partner == null) {
+            return;
+        }
+
+        boolean isLocalStation = this.partner.isLocalStation();
+
+        // Remember current selections
+        KeystoreCertificate currentSignCert = (KeystoreCertificate) this.jComboBoxSignCert.getSelectedItem();
+        KeystoreCertificate currentCryptCert = (KeystoreCertificate) this.jComboBoxCryptCert.getSelectedItem();
+
+        // Clear the dropdowns
+        this.jComboBoxSignCert.removeAllItems();
+        this.jComboBoxCryptCert.removeAllItems();
+
+        // Get all certificates and sort them
+        List<KeystoreCertificate> encSignCertificateList = this.certificateManagerEncSign.getKeyStoreCertificateList();
+        List<KeystoreCertificate> sortedList = new ArrayList<>(encSignCertificateList);
+        Collections.sort(sortedList);
+
+        // Populate dropdowns
+        for (KeystoreCertificate cert : sortedList) {
+            if (isLocalStation) {
+                // Local Station: only add key pairs (certificates with private keys)
+                if (cert.getIsKeyPair()) {
+                    this.jComboBoxSignCert.addItem(cert);
+                    this.jComboBoxCryptCert.addItem(cert);
+                }
+            } else {
+                // Remote Partner: add all certificates (public keys are OK)
+                this.jComboBoxSignCert.addItem(cert);
+                this.jComboBoxCryptCert.addItem(cert);
+            }
+        }
+
+        // Try to restore previous selections if they're still available
+        if (currentSignCert != null) {
+            for (int i = 0; i < this.jComboBoxSignCert.getItemCount(); i++) {
+                KeystoreCertificate cert = this.jComboBoxSignCert.getItemAt(i);
+                if (cert.getFingerPrintSHA1().equals(currentSignCert.getFingerPrintSHA1())) {
+                    this.jComboBoxSignCert.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        if (currentCryptCert != null) {
+            for (int i = 0; i < this.jComboBoxCryptCert.getItemCount(); i++) {
+                KeystoreCertificate cert = this.jComboBoxCryptCert.getItemAt(i);
+                if (cert.getFingerPrintSHA1().equals(currentCryptCert.getFingerPrintSHA1())) {
+                    this.jComboBoxCryptCert.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+    }
+
     private void switchLocalStationItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_switchLocalStationItemStateChanged
         if (this.partner != null) {
             this.partner.setLocalStation(this.switchLocalStation.isSelected());
@@ -4034,6 +4130,8 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
             this.disableEnableWidgets();
             this.buttonOk.computeErrorState();
             this.updatePollDirDisplay(this.partner);
+            // Refresh certificate dropdowns based on local station status
+            this.refreshCertificateDropdowns();
         }
         this.setButtonState();
     }//GEN-LAST:event_switchLocalStationItemStateChanged
@@ -4170,8 +4268,10 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JPanel jPanelHTTPHeader;
     private javax.swing.JPanel jPanelHttpAuthData;
     private javax.swing.JPanel jPanelInboundAuth;
-    private javax.swing.JCheckBox jCheckBoxInboundAuthBasic;
-    private javax.swing.JCheckBox jCheckBoxInboundAuthCert;
+    private javax.swing.ButtonGroup buttonGroupInboundAuth;
+    private javax.swing.JRadioButton jRadioButtonInboundAuthNone;
+    private javax.swing.JRadioButton jRadioButtonInboundAuthBasic;
+    private javax.swing.JRadioButton jRadioButtonInboundAuthCert;
     private javax.swing.JTextField jTextFieldInboundAuthUser;
     private javax.swing.JPasswordField jPasswordFieldInboundAuthPassword;
     private javax.swing.JComboBox<KeystoreCertificate> jComboBoxInboundAuthCert;

@@ -848,9 +848,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
     }
 
     protected void performGenericExport() {
-        if (!isOperationAllowed(false)) {
-            return;
-        }
+        // Export is a READ operation - don't check write permissions
         KeystoreCertificate entry = this.getSelectedCertificate();
         if (entry == null) {
             return;
@@ -1019,7 +1017,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridy = 4;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
@@ -1029,13 +1027,13 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         jLabelTrustAnchor.setText(JPanelCertificates.rb.getResourceString( "label.trustanchor"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
         add(jLabelTrustAnchor, gridBagConstraints);
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 4;
+        gridBagConstraints.gridy = 5;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
@@ -1062,9 +1060,37 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 35, 5, 5);
         add(switchShowCACertificates, gridBagConstraints);
+
+        // Show All Users toggle (admin only - will be made visible later if needed)
+        jLabelShowAllUsers = new javax.swing.JLabel();
+        jLabelShowAllUsers.setText("Show All Users:");
+        jLabelShowAllUsers.setVisible(false); // Hidden by default
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        add(jLabelShowAllUsers, gridBagConstraints);
+
+        switchShowAllUsers = new de.mendelson.util.toggleswitch.ToggleSwitch();
+        switchShowAllUsers.setDisplayStatusText(true);
+        switchShowAllUsers.setHorizontalTextPosition(SwingConstants.LEFT);
+        switchShowAllUsers.setVisible(false); // Hidden by default
+        switchShowAllUsers.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                switchShowAllUsersActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 35, 5, 5);
+        add(switchShowAllUsers, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.insets = new java.awt.Insets(0, 5, 0, 5);
@@ -1124,6 +1150,7 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JEditorPane jEditorPaneInfo;
     private javax.swing.JLabel jLabelShowCACertificates;
+    private javax.swing.JLabel jLabelShowAllUsers;
     private javax.swing.JLabel jLabelTrustAnchor;
     private javax.swing.JLabel jLabelTrustAnchorValue;
     private javax.swing.JMenuItem jMenuItemPopupDeleteEntry;
@@ -1145,7 +1172,16 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
     private javax.swing.JTextArea jTextAreaInfoExtension;
     private de.mendelson.util.security.cert.gui.JTreeTrustChain jTreeTrustChain;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchShowCACertificates;
+    private de.mendelson.util.toggleswitch.ToggleSwitch switchShowAllUsers;
     // End of variables declaration//GEN-END:variables
+
+    // Admin mode fields
+    private de.mendelson.util.clientserver.BaseClient baseClient;
+    private int currentUserId = 0;
+    private boolean adminModeEnabled = false;
+    private boolean showingAllUsers = false;
+    private java.util.List<de.mendelson.util.security.cert.CertificateWithOwner> allUsersCertificatesCache = null;
+    private int keystoreType = de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN; // Default to ENC_SIGN
 
     /**
      * Makes this a popup menu listener
@@ -1220,5 +1256,157 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
      */
     public void setClientsideOutputConsumer(Consumer<String> clientsideOutputConsumer) {
         this.clientsideOutputConsumer = clientsideOutputConsumer;
+    }
+
+    /**
+     * Enable admin mode and show the "Show All Users" toggle
+     */
+    public void enableAdminMode(de.mendelson.util.clientserver.BaseClient baseClient, int currentUserId, int keystoreType) {
+        this.baseClient = baseClient;
+        this.currentUserId = currentUserId;
+        this.adminModeEnabled = true;
+        this.keystoreType = keystoreType;
+
+        // Make the toggle visible
+        this.jLabelShowAllUsers.setVisible(true);
+        this.switchShowAllUsers.setVisible(true);
+    }
+
+    /**
+     * Handler for Show All Users toggle
+     */
+    private void switchShowAllUsersActionPerformed(java.awt.event.ActionEvent evt) {
+        if (!this.adminModeEnabled || this.baseClient == null) {
+            return;
+        }
+
+        boolean showAllUsers = this.switchShowAllUsers.isSelected();
+
+        if (showAllUsers) {
+            // Request all users' certificates from server
+            try {
+                de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest request =
+                    new de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest(this.keystoreType);
+
+                de.mendelson.util.security.cert.clientserver.AllUsersCertificatesResponse response =
+                    (de.mendelson.util.security.cert.clientserver.AllUsersCertificatesResponse)
+                    this.baseClient.sendSync(request, 60000);
+
+                if (response.getException() != null) {
+                    throw response.getException();
+                }
+
+                this.setAllUsersCertificates(response.getCertificates());
+            } catch (Throwable e) {
+                de.mendelson.util.uinotification.UINotification.instance().addNotification(
+                    null,
+                    de.mendelson.util.uinotification.UINotification.TYPE_ERROR,
+                    "Certificate View Toggle",
+                    "Failed to load all users' certificates: " + e.getMessage());
+                e.printStackTrace();
+
+                // Revert toggle
+                this.switchShowAllUsers.setSelected(false);
+            }
+        } else {
+            // Switch back to single user mode
+            this.setSingleUserMode();
+            this.refreshData();
+        }
+    }
+
+    /**
+     * Switch to show all users' certificates with owner column (admin mode)
+     * @param certificates List of certificates with owner information
+     */
+    public void setAllUsersCertificates(java.util.List<de.mendelson.util.security.cert.CertificateWithOwner> certificates) {
+        this.showingAllUsers = true;
+        this.allUsersCertificatesCache = certificates;
+
+        // Switch to the extended table model that includes Owner column
+        de.mendelson.util.security.cert.TableModelCertificatesWithOwner extendedModel =
+            new de.mendelson.util.security.cert.TableModelCertificatesWithOwner();
+
+        // Copy certificate manager and in-use checkers from current model
+        if (this.jTable.getModel() instanceof de.mendelson.util.security.cert.TableModelCertificates) {
+            de.mendelson.util.security.cert.TableModelCertificates currentModel =
+                (de.mendelson.util.security.cert.TableModelCertificates) this.jTable.getModel();
+            extendedModel.setCertificateManager(this.manager);
+            // Note: in-use checkers are not copied as they are user-specific
+        }
+
+        // Set the new model
+        this.jTable.setModel(extendedModel);
+
+        // Restore row sorter with new model
+        javax.swing.RowSorter<javax.swing.table.TableModel> sorter =
+            new de.mendelson.util.tables.PersistentTableRowSorter<javax.swing.table.TableModel>(
+                this.jTable.getModel(),
+                this.getClass().getName() + "_" + this.moduleName);
+        this.jTable.setRowSorter(sorter);
+
+        // Restore selection mode and listeners
+        this.jTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        this.jTable.getSelectionModel().addListSelectionListener(this);
+
+        // Restore column settings for icon columns (0 and 1)
+        this.jTable.getColumnModel().getColumn(0).setMaxWidth(de.mendelson.util.security.cert.TableModelCertificates.ROW_HEIGHT
+                + this.jTable.getRowMargin() * 2);
+        this.jTable.getColumnModel().getColumn(1).setMaxWidth(de.mendelson.util.security.cert.TableModelCertificates.ROW_HEIGHT
+                + this.jTable.getRowMargin() * 2);
+
+        // Configure Owner column (column 8) width
+        this.jTable.getColumnModel().getColumn(8).setPreferredWidth(100);
+        this.jTable.getColumnModel().getColumn(8).setMinWidth(80);
+
+        // Populate with data
+        extendedModel.setNewDataWithOwner(certificates);
+
+        // Update the display
+        this.jTable.repaint();
+    }
+
+    /**
+     * Switch back to single user mode (hide owner column)
+     */
+    public void setSingleUserMode() {
+        this.showingAllUsers = false;
+        this.allUsersCertificatesCache = null;
+
+        // Switch back to the standard table model (without Owner column)
+        de.mendelson.util.security.cert.TableModelCertificates standardModel =
+            new de.mendelson.util.security.cert.TableModelCertificates();
+
+        // Copy certificate manager and in-use checkers from current model
+        standardModel.setCertificateManager(this.manager);
+        synchronized (this.inUseCheckerList) {
+            for (de.mendelson.util.security.cert.CertificateInUseChecker checker : this.inUseCheckerList) {
+                standardModel.addCertificateInUseChecker(checker);
+            }
+        }
+
+        // Set the new model
+        this.jTable.setModel(standardModel);
+
+        // Restore row sorter with new model
+        javax.swing.RowSorter<javax.swing.table.TableModel> sorter =
+            new de.mendelson.util.tables.PersistentTableRowSorter<javax.swing.table.TableModel>(
+                this.jTable.getModel(),
+                this.getClass().getName() + "_" + this.moduleName);
+        this.jTable.setRowSorter(sorter);
+
+        // Restore column settings
+        this.jTable.getColumnModel().getColumn(0).setMaxWidth(de.mendelson.util.security.cert.TableModelCertificates.ROW_HEIGHT
+                + this.jTable.getRowMargin() * 2);
+        this.jTable.getColumnModel().getColumn(1).setMaxWidth(de.mendelson.util.security.cert.TableModelCertificates.ROW_HEIGHT
+                + this.jTable.getRowMargin() * 2);
+    }
+
+    /**
+     * Notify that certificates have been reloaded
+     */
+    public void certificatesHaveBeenReloaded() {
+        // Refresh the table display
+        this.refreshData();
     }
 }

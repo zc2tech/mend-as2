@@ -162,6 +162,11 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private JPanelCertificates panelCertificates = null;
     private CertificateManager manager;
     private final Logger logger;
+
+    // Admin mode fields for viewing all users' certificates
+    private de.mendelson.util.clientserver.BaseClient baseClient;
+    private int currentUserId = 0;
+    private boolean adminModeEnabled = false;
     private final GUIClient guiClient;
     private final String productName;
     private final List<AllowModificationCallback> allowModificationCallbackList = new ArrayList<AllowModificationCallback>();
@@ -383,6 +388,26 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         this.panelCertificates.addCertificateInUseChecker(checker);
     }
 
+    /**
+     * Enable admin mode to allow viewing all users' certificates
+     * @param baseClient The client for server communication
+     * @param currentUserId The current user's ID
+     * @param keystoreType The keystore type (KEYSTORE_TYPE_TLS or KEYSTORE_TYPE_ENC_SIGN)
+     */
+    public void setAdminMode(de.mendelson.util.clientserver.BaseClient baseClient, int currentUserId, int keystoreType) {
+        this.baseClient = baseClient;
+        this.currentUserId = currentUserId;
+        this.adminModeEnabled = true;
+
+        // Enable admin mode on the panel to show the toggle
+        if (this.panelCertificates != null) {
+            this.panelCertificates.enableAdminMode(baseClient, currentUserId, keystoreType);
+        }
+    }
+
+    /**
+     * Handler for toggle switch to show all users' certificates
+     */
     /**
      * Checks if the operation is possible because the keystore is R/O and
      * displayes a message if not It's also possible to set the module into a
@@ -1434,6 +1459,10 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JToolBar jToolBar;
     // End of variables declaration//GEN-END:variables
+
+    // Admin mode toggle components (not generated)
+    private javax.swing.JLabel jLabelShowAllUsers;
+    private de.mendelson.util.toggleswitch.ToggleSwitch toggleShowAllUsers;
 
     /**
      * Let this class listen to the underlaying table liste events, makes it a

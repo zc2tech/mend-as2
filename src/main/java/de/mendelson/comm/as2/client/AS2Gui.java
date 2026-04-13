@@ -1427,17 +1427,35 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     AS2Gui.this.jMenuItemCertificatesSSL.setEnabled(false);
                     AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
                     AS2Gui.this.jButtonCertificatesTLS.setEnabled(false);
+
+                    // Get current user ID for user-specific keystore
+                    int currentUserId = AS2Gui.this.userId;
+
+                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
+                    boolean isAdmin = (currentUserId == 0) ||
+                                     (AS2Gui.this.permissionManager != null &&
+                                      AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+
                     dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this,
                             AS2Gui.this.rbCertGui.getResourceString("title.ssl"),
                             AS2ServerVersion.getFullProductName(), false,
                             ModuleLock.MODULE_SSL_KEYSTORE, null);
                     dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
                     dialog.setSelectionByAlias(selectedAlias);
+
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
                             KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
                     dialog.initialize(storage);
+
+                    // Enable admin mode to show toggle for viewing all users' certificates
+                    // Must be called AFTER initialize() so the panel is fully set up
+                    if (isAdmin) {
+                        dialog.setAdminMode(AS2Gui.this.getBaseClient(), currentUserId,
+                            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_TLS);
+                    }
+
                     KeyCopyHandler keycopyHandler = new DefaultKeyCopyHandler(
                             AS2Gui.this.getBaseClient(),
                             KeyCopyRequest.KEYSTORE_USAGE_TLS,
@@ -1476,16 +1494,35 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 AS2Gui.this.jButtonCertificatesSignEncrypt.setEnabled(false);
                 AS2Gui.this.jButtonCertificatesTLS.setEnabled(false);
                 try {
+                    // Get current user ID for user-specific keystore
+                    int currentUserId = AS2Gui.this.userId;
+
+                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
+                    boolean isAdmin = (currentUserId == 0) ||
+                                     (AS2Gui.this.permissionManager != null &&
+                                      AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+
+
                     dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this,
                             AS2Gui.this.rbCertGui.getResourceString("title.signencrypt"),
                             AS2ServerVersion.getFullProductName(), false,
                             ModuleLock.MODULE_ENCSIGN_KEYSTORE, null);
                     dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
+
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12,
+                            currentUserId);  // User-specific keystore
                     dialog.initialize(storage);
+
+                    // Enable admin mode to show toggle for viewing all users' certificates
+                    // Must be called AFTER initialize() so the panel is fully set up
+                    if (isAdmin) {
+                        dialog.setAdminMode(AS2Gui.this.getBaseClient(), currentUserId,
+                            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN);
+                    }
+
                     CertificateUsedByPartnerChecker checker = new CertificateUsedByPartnerChecker(
                             AS2Gui.this.getBaseClient());
                     dialog.addCertificateInUseChecker(checker);
@@ -1532,6 +1569,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     // Get current user ID (0 = admin, >0 = other users)
                     int currentUserId = AS2Gui.this.userId;
 
+                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
+                    boolean isAdmin = (currentUserId == 0) ||
+                                     (AS2Gui.this.permissionManager != null &&
+                                      AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+
                     // Create user-specific keystore storage
                     KeystoreStorage keystoreStorage = new KeystoreStorageImplClientServer(
                         AS2Gui.this.getBaseClient(),
@@ -1551,6 +1593,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         null);
                     dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
                     dialog.initialize(keystoreStorage);
+
+                    // Enable admin mode to show toggle for viewing all users' certificates
+                    // Must be called AFTER initialize() so the panel is fully set up
+                    if (isAdmin) {
+                        dialog.setAdminMode(AS2Gui.this.getBaseClient(), currentUserId,
+                            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_TLS);
+                    }
                 } catch (Throwable e) {
                     e.printStackTrace();
                     UINotification.instance().addNotification(e);
@@ -1596,7 +1645,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     KeystoreStorage storageEncSign = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12,
+                            AS2Gui.this.userId);  // Load user-specific certificates
                     CertificateManager certificateManagerEncSign = new CertificateManager(AS2Gui.this.getLogger());
                     certificateManagerEncSign.loadKeystoreCertificates(storageEncSign);
                     // Inbound Auth panel removed - now per-partner configuration in Local Station settings
@@ -1656,13 +1706,15 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_ENC_SIGN,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12);
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12,
+                            AS2Gui.this.userId);  // Load user-specific certificates
                     certificateManagerEncSign.loadKeystoreCertificates(storage);
                     CertificateManager certificateManagerSLL = new CertificateManager(AS2Gui.logger);
                     storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS,
+                            AS2Gui.this.userId);  // Load user-specific TLS certificates
                     certificateManagerSLL.loadKeystoreCertificates(storage);
                     PartnerSystemResponse systemresponse = (PartnerSystemResponse) AS2Gui.this.getBaseClient().sendSync(
                             new PartnerSystemRequest(PartnerSystemRequest.TYPE_LIST_ALL));
@@ -1671,7 +1723,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             AS2Gui.this.as2StatusBar, hasLock, lockKeeper,
                             certificateManagerEncSign,
                             certificateManagerSLL, systemresponse.getPartnerSystems(),
-                            "");
+                            "",
+                            AS2Gui.this.userId);
                     if (partnername != null) {
                         dialog.setPreselectedPartner(partnername);
                     }
@@ -3001,8 +3054,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                 int countSelected = 0;
                 // The response will be null if the server could not answer in the set timeout -
                 // bad connection or system under heavy load?
-                MessageOverviewResponse response = ((MessageOverviewResponse) AS2Gui.this.sendSync(
-                        new MessageOverviewRequest(filter)));
+                MessageOverviewRequest messageRequest = new MessageOverviewRequest(filter);
+                messageRequest.setUserId(AS2Gui.this.userId);
+                messageRequest.setHasUserManagePermission(
+                    AS2Gui.this.permissionManager != null &&
+                    AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+                MessageOverviewResponse response = ((MessageOverviewResponse) AS2Gui.this.sendSync(messageRequest));
                 if (response != null) {
                     List<AS2MessageInfo> overviewList = response.getList();
                     int countAll = response.getMessageSumOnServer();
@@ -3123,29 +3180,34 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Only available for admin role users with USER_SWITCH permission
      */
     private void switchUser() {
-        // Check permission first
-        if (!this.permissionManager.hasPermission(Permissions.USER_SWITCH)) {
-            JOptionPane.showMessageDialog(this,
-                    "You do not have permission to switch users",
-                    "Access Denied",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
+        // Check if currently impersonating another user - allow switch back without permission check
+        boolean isImpersonating = !this.username.equals(this.originalUsername);
+
+        if (!isImpersonating) {
+            // Not impersonating - check if current user has permission to switch
+            if (!this.permissionManager.hasPermission(Permissions.USER_SWITCH)) {
+                JOptionPane.showMessageDialog(this,
+                        "You do not have permission to switch users",
+                        "Access Denied",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
 
-        // Check if currently impersonating another user
-        if (!this.username.equals("admin") && this.originalUsername.equals("admin")) {
-            // Switch back to admin directly without confirmation
-            this.username = "admin";
-            this.userId = getUserIdFromUsername("admin");
+        // If impersonating, allow switch back to original user
+        if (isImpersonating) {
+            // Switch back to original user directly without confirmation
+            this.username = this.originalUsername;
+            this.userId = getUserIdFromUsername(this.originalUsername);
 
             // Update BaseClient username
-            this.getBaseClient().setUsername("admin");
+            this.getBaseClient().setUsername(this.originalUsername);
 
-            // CRITICAL: Refresh permissions for admin user
+            // CRITICAL: Refresh permissions for original user
             try {
                 this.permissionManager.refreshPermissions();
             } catch (Exception e) {
-                this.getLogger().severe("Failed to load permissions for admin: " + e.getMessage());
+                this.getLogger().severe("Failed to load permissions for " + this.originalUsername + ": " + e.getMessage());
                 JOptionPane.showMessageDialog(this,
                         "Failed to load permissions: " + e.getMessage(),
                         "Error",
@@ -3278,24 +3340,36 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
 
         // System Menu items
-        this.jMenuItemFilePreferences.setEnabled(this.permissionManager.hasAnyPermission(
+        // Hide System Preferences for users without system config permissions
+        boolean hasSystemConfigPermission = this.permissionManager.hasAnyPermission(
             Permissions.SYSTEM_CONFIG_CONNECTIVITY, Permissions.SYSTEM_CONFIG_INBOUND_AUTH,
             Permissions.SYSTEM_CONFIG_DIRECTORIES, Permissions.SYSTEM_CONFIG_MAINTENANCE,
             Permissions.SYSTEM_CONFIG_NOTIFICATIONS, Permissions.SYSTEM_CONFIG_INTERFACE,
             Permissions.SYSTEM_CONFIG_LOGGING
-        ));
+        );
+        // Disable (gray out) instead of hiding System > Preferences
+        this.jMenuItemFilePreferences.setEnabled(hasSystemConfigPermission);
 
         this.jMenuItemUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
         this.jButtonUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
-        this.jMenuItemCertificatesSSL.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_TLS_READ));
-        this.jButtonCertificatesTLS.setEnabled(this.permissionManager.hasPermission(Permissions.CERT_TLS_READ));
+        // Disable (gray out) instead of hiding Sys TLS certificates
+        boolean hasTLSPermission = this.permissionManager.hasPermission(Permissions.CERT_TLS_READ);
+        this.jMenuItemCertificatesSSL.setEnabled(hasTLSPermission);
+        this.jButtonCertificatesTLS.setEnabled(hasTLSPermission);
+
+        boolean hasUserManagePermission = this.permissionManager.hasPermission(Permissions.USER_MANAGE);
 
         this.jMenuItemHTTPServerInfo.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_INFO_READ));
         this.jMenuItemSystemEvents.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_EVENTS_READ));
         this.jMenuItemSearchInServerLog.setEnabled(this.permissionManager.hasPermission(Permissions.SYSTEM_LOGS_READ));
 
-        this.jMenuItemSwitchUser.setVisible(this.permissionManager.hasPermission(Permissions.USER_SWITCH));
+        // Keep "Switch User/Switch Back" menu visible if:
+        // 1. User has USER_SWITCH permission (admin can switch to other users), OR
+        // 2. User has already switched (allow switching back even if current user lacks permission)
+        boolean hasSwitched = !this.username.equals(this.originalUsername);
+        this.jMenuItemSwitchUser.setVisible(
+            this.permissionManager.hasPermission(Permissions.USER_SWITCH) || hasSwitched);
 
         // My Preferences Menu items
         this.jMenuItemFileSend.setEnabled(this.permissionManager.hasPermission(Permissions.MESSAGE_WRITE));

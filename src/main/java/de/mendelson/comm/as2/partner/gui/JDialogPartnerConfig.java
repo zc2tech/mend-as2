@@ -93,6 +93,7 @@ public class JDialogPartnerConfig extends JDialog {
     private final CertificateManager certificateManagerEncSign;
     private final CertificateManager certificateManagerSSL;
     private final GUIClient guiClient;
+    private final int userId;  // User ID for filtering partners
     private final static Logger logger = Logger.getLogger("de.mendelson.as2.client");
     private final AS2StatusBar status;
     private final List<AllowModificationCallback> allowModificationCallbackList
@@ -122,14 +123,16 @@ public class JDialogPartnerConfig extends JDialog {
             CertificateManager certificateManagerEncSign,
             CertificateManager certificateManagerSSL,
             List<PartnerSystem> partnerSystemList,
-            String activatedPlugins) {
+            String activatedPlugins,
+            int userId) {
         super(parent, true);
         this.status = status;
         this.guiClient = guiClient;
+        this.userId = userId;
         this.lockKeeper = lockKeeper;
         this.certificateManagerEncSign = certificateManagerEncSign;
         this.certificateManagerSSL = certificateManagerSSL;
-        this.jTreePartner = new JTreePartner(guiClient.getBaseClient());
+        this.jTreePartner = new JTreePartner(guiClient.getBaseClient(), userId);
         //create tree gap
         this.jTreePartner.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         this.initComponents();
@@ -298,6 +301,7 @@ public class JDialogPartnerConfig extends JDialog {
                 this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(signSerial);
                 this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(cryptSerial);
             } catch (Exception e) {
+                e.printStackTrace();
                 UINotification.instance().addNotification(e);
                 return (false);
             }
@@ -420,6 +424,7 @@ public class JDialogPartnerConfig extends JDialog {
                         if (newPartner.getDBId() != -1) {
                             PartnerListRequest request = new PartnerListRequest(PartnerListRequest.LIST_BY_DB_ID);
                             request.setAdditionalListOptionInt(newPartner.getDBId());
+                            request.setUserId(JDialogPartnerConfig.this.userId);  // Set user context
                             List<Partner> checkList = ((PartnerListResponse) JDialogPartnerConfig.this.guiClient.getBaseClient().
                                     sendSync(request, Partner.TIMEOUT_PARTNER_REQUEST)).getList();
                             if (checkList != null && !checkList.isEmpty() && !newPartner.getName().equals(checkList.get(0).getName())) {
@@ -428,8 +433,10 @@ public class JDialogPartnerConfig extends JDialog {
                         }
                     }
                     //detect if a partner has been deleted
+                    PartnerListRequest existingPartnerRequest = new PartnerListRequest(PartnerListRequest.LIST_ALL);
+                    existingPartnerRequest.setUserId(JDialogPartnerConfig.this.userId);  // Set user context
                     List<Partner> existingPartnerArray = ((PartnerListResponse) JDialogPartnerConfig.this.guiClient.getBaseClient().
-                            sendSync(new PartnerListRequest(PartnerListRequest.LIST_ALL), Partner.TIMEOUT_PARTNER_REQUEST)).getList();
+                            sendSync(existingPartnerRequest, Partner.TIMEOUT_PARTNER_REQUEST)).getList();
                     for (Partner existingPartner : existingPartnerArray) {
                         boolean doesStillExist = false;
                         for (Partner newPartner : JDialogPartnerConfig.this.partnerList) {
@@ -458,6 +465,7 @@ public class JDialogPartnerConfig extends JDialog {
                     PartnerConfigurationChanged signal = new PartnerConfigurationChanged();
                     JDialogPartnerConfig.this.guiClient.sendAsync(signal);
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     JDialogPartnerConfig.this.unlock();
                     JDialogPartnerConfig.this.status.stopProgressIfExists(uniqueId);
                     UINotification.instance().addNotification(e);

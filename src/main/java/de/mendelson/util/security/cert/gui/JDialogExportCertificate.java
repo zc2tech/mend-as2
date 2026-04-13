@@ -117,9 +117,10 @@ public class JDialogExportCertificate extends JDialog {
             KeystoreCertificate selectedCertificate
                     = (KeystoreCertificate) this.jComboBoxCertificates.getSelectedItem();
             ExportFormat exportFormat = (ExportFormat) this.jComboBoxExportFormat.getSelectedItem();
+            int userId = this.manager.getUserId();
             CertificateExportRequest request = new CertificateExportRequest(
                     this.manager.getStorageUsage(), selectedCertificate.getFingerPrintSHA1(),
-                    exportFormat.getType());
+                    exportFormat.getType(), userId);
             CertificateExportResponse response = (CertificateExportResponse) this.baseClient.sendSync(request);
             if (response.getException() != null) {
                 throw response.getException();

@@ -186,6 +186,9 @@ import de.mendelson.util.security.cert.clientserver.CertificateExportRequest;
 import de.mendelson.util.security.cert.clientserver.CertificateExportResponse;
 import de.mendelson.util.security.cert.clientserver.DownloadRequestKeystore;
 import de.mendelson.util.security.cert.clientserver.DownloadResponseKeystore;
+import de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest;
+import de.mendelson.util.security.cert.clientserver.AllUsersCertificatesResponse;
+import de.mendelson.util.security.cert.CertificateWithOwner;
 import de.mendelson.util.security.cert.KeystoreStorage;
 import de.mendelson.util.security.cert.KeystoreStorageImplDB;
 import de.mendelson.util.security.cert.clientserver.ExportRequestKeystore;
@@ -430,6 +433,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 return (true);
             } else if (message instanceof DownloadRequestKeystore msg) {
                 this.processDownloadRequestKeystore(session, msg);
+                return (true);
+            } else if (message instanceof de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest msg) {
+                this.processAllUsersCertificatesRequest(session, msg);
                 return (true);
             } else if (message instanceof FileRenameRequest msg) {
                 this.processFileRenameRequest(session, msg);
@@ -716,12 +722,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         SinglePartnerAddResponse response = new SinglePartnerAddResponse(request);
         try {
             Partner newPartner = request.getPartner();
-            //check if the partner with the passed AS2 id or AS2 name does already exist
-            Partner foundPartnerAS2Id = this.partnerAccess.getPartner(newPartner.getAS2Identification());
-            if (foundPartnerAS2Id != null) {
-                throw new Exception("The partner with the AS2 id " + newPartner.getAS2Identification()
-                        + " does already exist in the system.");
-            }
+            //check if the partner with the passed AS2 name does already exist
+            //Note: AS2 ID duplication is allowed because users have separate endpoints /as2/HttpReceiver/{username}
             Partner foundPartnerName = this.partnerAccess.getPartnerByName(newPartner.getName(), PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE);
             if (foundPartnerName != null) {
                 throw new Exception("The partner with the internal name " + newPartner.getName()
@@ -872,14 +874,43 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         CertificateExportResponse response = new CertificateExportResponse(request);
         try {
             CertificateManager manager;
-            if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
-                manager = this.certificateManagerEncSign;
-            } else if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_TLS) {
-                manager = this.certificateManagerTLS;
+
+            // Check if this is a user-specific request
+            if (request.getUserId() > 0) {
+                // User-specific keystore - create a temporary manager for this user
+                KeystoreStorageImplDB keystoreStorage;
+                if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
+                    keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        request.getUserId());
+                } else if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_TLS) {
+                    keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        request.getUserId());
+                } else {
+                    throw new IllegalArgumentException("processCertificateExportRequest: Unknown keystore usage "
+                            + request.getKeystoreUsage());
+                }
+                manager = new CertificateManager(this.logger);
+                manager.loadKeystoreCertificates(keystoreStorage);
             } else {
-                throw new IllegalArgumentException("processCertificateExportRequest: Unknown keystore usage "
-                        + request.getKeystoreUsage());
+                // System-wide keystore
+                if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
+                    manager = this.certificateManagerEncSign;
+                } else if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_TLS) {
+                    manager = this.certificateManagerTLS;
+                } else {
+                    throw new IllegalArgumentException("processCertificateExportRequest: Unknown keystore usage "
+                            + request.getKeystoreUsage());
+                }
             }
+
             KeystoreCertificate certificateEntry = manager.getKeystoreCertificateByFingerprintSHA1NonNull(request.getFingerprintSHA1());
             String alias = certificateEntry.getAlias();
             String exportFormat = request.getExportFormat();
@@ -1607,13 +1638,19 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         try {
             int userId = request.getUserId();
 
-            // If userId is specified, load user-specific keystore from database
-            if (userId > 0) {
-                if (request.getKeystoreUsage() != DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
-                    throw new IllegalArgumentException("User-specific keystores are only supported for TLS");
-                }
-
-                // Create user-specific certificate manager
+            // If userId is specified (including 0 for admin), load user-specific keystore from database
+            if (userId >= 0 && request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
+                // User-specific ENC_SIGN keystore
+                relatedCertificateManager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    userId);
+                relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
+            } else if (userId > 0 && request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                // User-specific TLS keystore
                 relatedCertificateManager = new CertificateManager(this.logger);
                 KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
@@ -1623,7 +1660,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     userId);
                 relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
             } else {
-                // System-wide keystores (userId = 0 or not specified)
+                // System-wide keystores (userId = 0 or not specified for TLS)
                 if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
                     relatedCertificateManager = this.certificateManagerEncSign;
                 } else if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
@@ -1652,6 +1689,87 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         return response;
     }
 
+    /**
+     * Process request to get all users' certificates (admin only)
+     */
+    private void processAllUsersCertificatesRequest(IoSession session, AllUsersCertificatesRequest request) {
+        AllUsersCertificatesResponse response = new AllUsersCertificatesResponse(request);
+        try {
+            List<CertificateWithOwner> allCertificates = new ArrayList<>();
+
+            // Get all users from database
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
+            List<de.mendelson.comm.as2.usermanagement.WebUIUser> users = userAccess.getAllUsers();
+
+            // Add admin user (userId = 0)
+            users.add(0, createAdminUser());
+
+            // For each user, load their keystore and extract certificates
+            for (de.mendelson.comm.as2.usermanagement.WebUIUser user : users) {
+                int userId = user.getId();
+                String username = user.getUsername();
+
+                try {
+                    // Create user-specific certificate manager
+                    CertificateManager userCertManager = new CertificateManager(this.logger);
+
+                    int keystoreUsage = request.getKeystoreUsage() == AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN
+                        ? KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN
+                        : KeystoreStorageImplDB.KEYSTORE_USAGE_TLS;
+
+                    String storageType = request.getKeystoreUsage() == AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN
+                        ? KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12
+                        : KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS;
+
+                    KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        keystoreUsage,
+                        storageType,
+                        userId);
+
+                    userCertManager.loadKeystoreCertificates(keystoreStorage);
+                    List<KeystoreCertificate> userCertificates = userCertManager.getKeyStoreCertificateList();
+
+                    // Add each certificate with owner information
+                    for (KeystoreCertificate cert : userCertificates) {
+                        // Clone and set to display mode (hide private keys)
+                        KeystoreCertificate displayCert = cert;
+                        if (cert.getIsKeyPair()) {
+                            displayCert = (KeystoreCertificate) cert.clone();
+                            displayCert.setToDisplayMode();
+                        }
+
+                        CertificateWithOwner certWithOwner = new CertificateWithOwner(
+                            displayCert, userId, username);
+                        allCertificates.add(certWithOwner);
+                    }
+                } catch (Exception e) {
+                    // If keystore doesn't exist for this user, skip
+                    this.logger.fine("No keystore found for user " + username + " (userId=" + userId + "): " + e.getMessage());
+                }
+            }
+
+            response.setCertificates(allCertificates);
+        } catch (Throwable e) {
+            response.setException(e);
+            this.logger.severe("Failed to get all users' certificates: " + e.getMessage());
+        }
+        session.write(response);
+    }
+
+    /**
+     * Create a dummy admin user object for userId=0
+     */
+    private de.mendelson.comm.as2.usermanagement.WebUIUser createAdminUser() {
+        de.mendelson.comm.as2.usermanagement.WebUIUser admin =
+            new de.mendelson.comm.as2.usermanagement.WebUIUser();
+        admin.setId(0);
+        admin.setUsername("admin");
+        return admin;
+    }
+
     private void processUploadRequestKeystore(IoSession session, UploadRequestKeystore request) {
         String processOriginHost = session.getRemoteAddress().toString();
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
@@ -1670,17 +1788,27 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         try {
             // If userId is specified, load user-specific keystore from database
             if (userId > 0) {
-                if (request.getKeystoreUsage() != UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
-                    throw new IllegalArgumentException("User-specific keystores are only supported for TLS");
+                // User-specific keystores (both TLS and ENC_SIGN are supported)
+                if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
+                    // User-specific TLS keystore
+                    keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        userId);
+                } else if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
+                    // User-specific ENC_SIGN keystore
+                    keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        userId);
+                } else {
+                    throw new IllegalArgumentException("Unknown keystore usage type: " + request.getKeystoreUsage());
                 }
 
-                // Create user-specific certificate manager and keystore storage
-                keystoreStorage = new KeystoreStorageImplDB(
-                    SystemEventManagerImplAS2.instance(),
-                    this.dbDriverManager,
-                    KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
-                    userId);
                 relatedCertificateManager = new CertificateManager(this.logger);
                 relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
             } else {
@@ -2218,6 +2346,21 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         String processOriginHost = session.getRemoteAddress().toString();
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
         String transactionName = "AS2ServerProcessing_processPartnerModificationMessage";
+
+        try {
+            // VALIDATION PHASE - Do this BEFORE acquiring locks to avoid deadlock
+            List<Partner> newPartnerList = request.getData();
+
+            // Note: AS2 ID duplication validation removed because users have separate endpoints
+            // /as2/HttpReceiver/{username} to distinguish between Local Stations with same AS2 ID
+
+        } catch (Throwable e) {
+            response.setException(e);
+            session.write(response);
+            return;
+        }
+
+        // TRANSACTION PHASE - Now acquire locks and perform inserts/updates
         try (Connection configConnectionNoAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
             configConnectionNoAutoCommit.setAutoCommit(false);
@@ -2273,11 +2416,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     }
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
                     this.dbDriverManager.rollbackTransaction(transactionStatement);
                 }
             }
         } catch (Throwable e) {
+            e.printStackTrace();
             response.setException(e);
         }
         //sync answer
@@ -2356,49 +2501,34 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             int userId = request.getUserId();
 
             if (request.getListOption() == PartnerListRequest.LIST_ALL) {
-                if (userId == 0) {
-                    // Admin sees all partners
-                    response.setList(this.partnerAccess.getAllPartner(request.getRequestedDataCompleteness()));
-                } else {
-                    // Regular user sees only their partners
-                    response.setList(this.partnerAccess.getPartnersVisibleToUser(userId, request.getRequestedDataCompleteness()));
-                }
+                // All users (including admin) only see their own partners
+                response.setList(this.partnerAccess.getPartnersOwnedByUser(userId, request.getRequestedDataCompleteness()));
             } else if (request.getListOption() == PartnerListRequest.LIST_LOCALSTATION) {
                 List<Partner> list = new ArrayList<Partner>();
                 List<Partner> allLocalStations = this.partnerAccess.getLocalStations(request.getRequestedDataCompleteness());
-                if (userId == 0) {
-                    // Admin sees all local stations
-                    list.addAll(allLocalStations);
-                } else {
-                    // Filter local stations by user visibility
-                    for (Partner partner : allLocalStations) {
-                        if (partner.getVisibleToUserIds().contains(userId)) {
-                            list.add(partner);
-                        }
+                // All users (including admin) only see local stations they created
+                for (Partner partner : allLocalStations) {
+                    if (partner.getCreatedByUserId() == userId) {
+                        list.add(partner);
                     }
                 }
                 response.setList(list);
             } else if (request.getListOption() == PartnerListRequest.LIST_NON_LOCALSTATIONS) {
                 List<Partner> allNonLocalStations = this.partnerAccess.getNonLocalStations(
                         request.getRequestedDataCompleteness());
-                if (userId == 0) {
-                    // Admin sees all non-local stations
-                    response.setList(allNonLocalStations);
-                } else {
-                    // Filter by user visibility
-                    List<Partner> filteredList = new ArrayList<Partner>();
-                    for (Partner partner : allNonLocalStations) {
-                        if (partner.getVisibleToUserIds().contains(userId)) {
-                            filteredList.add(partner);
-                        }
+                // All users (including admin) only see partners they created
+                List<Partner> filteredList = new ArrayList<Partner>();
+                for (Partner partner : allNonLocalStations) {
+                    if (partner.getCreatedByUserId() == userId) {
+                        filteredList.add(partner);
                     }
-                    response.setList(filteredList);
                 }
+                response.setList(filteredList);
             } else if (request.getListOption() == PartnerListRequest.LIST_BY_AS2_ID) {
                 List<Partner> list = new ArrayList<Partner>();
                 Partner partner = this.partnerAccess.getPartner(request.getAdditionalListOptionStr());
-                // Check user visibility
-                if (partner != null && (userId == 0 || partner.getVisibleToUserIds().contains(userId))) {
+                // All users only see their own partners (both local and remote)
+                if (partner != null && partner.getCreatedByUserId() == userId) {
                     list.add(partner);
                 }
                 response.setList(list);
@@ -2406,8 +2536,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 List<Partner> list = new ArrayList<Partner>();
                 Partner partner = this.partnerAccess.getPartnerByName(request.getAdditionalListOptionStr(),
                         PartnerListRequest.DATA_COMPLETENESS_FULL);
-                // Check user visibility
-                if (partner != null && (userId == 0 || partner.getVisibleToUserIds().contains(userId))) {
+                // All users only see their own partners (both local and remote)
+                if (partner != null && partner.getCreatedByUserId() == userId) {
                     list.add(partner);
                 }
                 response.setList(list);
@@ -2425,11 +2555,86 @@ public class AS2ServerProcessing implements ClientServerProcessing {
 
     public MessageOverviewResponse processMessageOverviewRequest(MessageOverviewRequest request) {
         MessageOverviewResponse response = new MessageOverviewResponse(request);
+
+        List<AS2MessageInfo> messageList;
         if (request.getFilter() != null) {
-            response.setList(this.messageAccess.getMessageOverview(request.getFilter()));
+            messageList = this.messageAccess.getMessageOverview(request.getFilter());
         } else {
-            response.setList(this.messageAccess.getMessageOverview(request.getMessageId()));
+            messageList = this.messageAccess.getMessageOverview(request.getMessageId());
         }
+
+        // Filter messages by user ownership (unless user has USER_MANAGE permission)
+        int userId = request.getUserId();
+        boolean hasUserManagePermission = request.hasUserManagePermission();
+
+        System.out.println("DEBUG: processMessageOverviewRequest - userId=" + userId
+            + ", hasUserManagePermission=" + hasUserManagePermission
+            + ", Total messages before filter=" + messageList.size());
+
+        if (userId > 0 && !hasUserManagePermission) {
+            // Regular user - filter to show only their own messages (based on owner_user_id)
+            List<AS2MessageInfo> filteredList = new java.util.ArrayList<>();
+            for (AS2MessageInfo message : messageList) {
+                System.out.println("DEBUG: Message " + message.getMessageId()
+                    + " owner_user_id=" + message.getOwnerUserId()
+                    + " (comparing with userId=" + userId + ")");
+                if (message.getOwnerUserId() == userId) {
+                    filteredList.add(message);
+                }
+            }
+            System.out.println("DEBUG: Filtered messages count=" + filteredList.size());
+            messageList = filteredList;
+        }
+        // else: admin (userId=0) or USER_MANAGE permission - see all messages
+
+        // Populate owner username for each message (for users with USER_MANAGE permission)
+        if (userId == 0 || hasUserManagePermission) {
+            // Load all users once for efficiency
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
+            java.util.Map<Integer, String> userIdToNameMap = new java.util.HashMap<>();
+            userIdToNameMap.put(0, "admin");  // Admin user
+
+            try {
+                List<de.mendelson.comm.as2.usermanagement.WebUIUser> allUsers = userAccess.getAllUsers();
+                for (de.mendelson.comm.as2.usermanagement.WebUIUser user : allUsers) {
+                    userIdToNameMap.put(user.getId(), user.getUsername());
+                }
+            } catch (Exception e) {
+                this.logger.warning("Failed to load user list for message owner display: " + e.getMessage());
+            }
+
+            // Set owner username for each message based on the local station's owner
+            for (AS2MessageInfo message : messageList) {
+                // Determine which partner is the local station (sender or receiver)
+                Partner sender = this.partnerAccess.getPartner(message.getSenderId());
+                Partner receiver = this.partnerAccess.getPartner(message.getReceiverId());
+
+                Partner localStation = null;
+                if (sender != null && sender.isLocalStation()) {
+                    localStation = sender;
+                } else if (receiver != null && receiver.isLocalStation()) {
+                    localStation = receiver;
+                }
+
+                if (localStation != null) {
+                    // Get the first user who has visibility to this local station
+                    List<Integer> visibleUserIds = localStation.getVisibleToUserIds();
+                    if (!visibleUserIds.isEmpty()) {
+                        int ownerId = visibleUserIds.get(0);
+                        String ownerName = userIdToNameMap.getOrDefault(ownerId, "user_" + ownerId);
+                        message.setOwnerUsername(ownerName);
+                        message.setOwnerUserId(ownerId);
+                    } else {
+                        // No specific owner - belongs to admin
+                        message.setOwnerUsername("admin");
+                        message.setOwnerUserId(0);
+                    }
+                }
+            }
+        }
+
+        response.setList(messageList);
         response.setMessageSumOnServer(this.messageAccess.getMessageCount());
         return response;
     }
@@ -2968,7 +3173,32 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             return (responseObject);
         }
         AS2MessageParser parser = new AS2MessageParser();
-        parser.setCertificateManager(this.certificateManagerEncSign, this.certificateManagerEncSign);
+
+        // Determine which certificate manager to use based on targetUserId
+        CertificateManager certManagerToUse;
+        if (requestObject.getTargetUserId() > 0) {
+            // User-specific request - load user's certificate manager
+            try {
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    requestObject.getTargetUserId());
+                certManagerToUse = new CertificateManager(this.logger);
+                certManagerToUse.loadKeystoreCertificates(keystoreStorage);
+            } catch (Exception e) {
+                this.logger.severe("Failed to load user-specific certificate manager for userId="
+                    + requestObject.getTargetUserId() + ": " + e.getMessage());
+                // Fall back to system-wide certificate manager
+                certManagerToUse = this.certificateManagerEncSign;
+            }
+        } else {
+            // System-wide request (backward compatibility)
+            certManagerToUse = this.certificateManagerEncSign;
+        }
+
+        parser.setCertificateManager(certManagerToUse, certManagerToUse);
         parser.setDBConnection(this.dbDriverManager);
         parser.setLogger(this.logger);
         byte[] incomingMessageData = Files.readAllBytes(Paths.get(requestObject.getMessageDataFilename()));
@@ -3006,6 +3236,20 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 } else {
                     messageInfo.setDispositionNotificationOptions(new DispositionNotificationOptions(""));
                 }
+
+                // Set message owner based on target user from URL or Local Station owner
+                int ownerUserId = requestObject.getTargetUserId();
+                if (ownerUserId == 0) {
+                    // No specific user in URL path - determine owner from Local Station
+                    String receiverId = messageInfo.getReceiverId();  // AS2-To header value
+                    Partner localStation = this.partnerAccess.getPartner(receiverId);
+                    if (localStation != null && localStation.isLocalStation()) {
+                        ownerUserId = localStation.getCreatedByUserId();
+                    }
+                    // If ownerUserId is still 0, message belongs to admin (backward compatibility)
+                }
+                messageInfo.setOwnerUserId(ownerUserId);
+
                 this.messageAccess.initializeOrUpdateMessage(messageInfo);
             } else {
                 //it is a MDN
@@ -3043,7 +3287,19 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     as2MessageInfo.setDispositionNotificationOptions(new DispositionNotificationOptions(""));
                 }
                 if (as2MessageInfo.getSenderId() != null && as2MessageInfo.getReceiverId() != null) {
-                    //this has to be performed because of the notification                    
+                    // Set message owner based on target user from URL or Local Station owner
+                    int ownerUserId = requestObject.getTargetUserId();
+                    if (ownerUserId == 0) {
+                        // No specific user in URL path - determine owner from Local Station
+                        String receiverId = as2MessageInfo.getReceiverId();
+                        Partner localStation = this.partnerAccess.getPartner(receiverId);
+                        if (localStation != null && localStation.isLocalStation()) {
+                            ownerUserId = localStation.getCreatedByUserId();
+                        }
+                    }
+                    as2MessageInfo.setOwnerUserId(ownerUserId);
+
+                    //this has to be performed because of the notification
                     this.messageAccess.initializeOrUpdateMessage(as2MessageInfo);
                     this.messageAccess.setMessageState(as2MessageInfo.getMessageId(), AS2Message.STATE_STOPPED);
                     if (((AS2MessageInfo) as2Info).requestsSyncMDN()) {

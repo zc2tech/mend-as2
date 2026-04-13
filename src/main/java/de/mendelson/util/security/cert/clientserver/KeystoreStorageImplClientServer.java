@@ -293,6 +293,13 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
         return (this.keystoreUsage);
     }
 
+    /**
+     * @return the userId for user-specific keystores (0 = admin/system, >0 = specific user)
+     */
+    public int getUserId() {
+        return (this.userId);
+    }
+
     @Override
     public boolean isReadOnly() {
         return (this.readonly);

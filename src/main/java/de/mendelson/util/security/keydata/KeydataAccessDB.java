@@ -251,6 +251,40 @@ public class KeydataAccessDB {
     }
 
     /**
+     * Insert empty keystore data for a new user
+     */
+    public void insertEmptyKeydata(byte[] keystoreData, String keystoreType, int purpose, String securityProvider, int userId) {
+        String transactionName = "insert_Keydata";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                //start transaction - these tables have to be locked first to forbit any write operation
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{"keydata"});
+                try (PreparedStatement insertStatement = configConnectionNoAutoCommit.prepareStatement(
+                        "INSERT INTO keydata(user_id,storagedata,storagetype,purpose,lastchanged,securityprovider) "
+                        + "VALUES(?,?,?,?,?,?)")) {
+                    insertStatement.setInt(1, userId);
+                    this.dbDriverManager.setBytesParameterAsJavaObject(insertStatement, 2, keystoreData);
+                    insertStatement.setInt(3, keystoreTypeStrToInt(keystoreType));
+                    insertStatement.setInt(4, purpose);
+                    insertStatement.setLong(5, System.currentTimeMillis());
+                    insertStatement.setString(6, securityProvider);
+                    insertStatement.executeUpdate();
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
      * Deletes the keydata entry of a special purpose
      */
     public void deleteKeydata(int purpose, int userId) {

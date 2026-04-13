@@ -71,9 +71,9 @@ public class UserHttpAuthPreferenceResource {
                         .build();
             }
 
-            // Get user's visible partners
+            // Get user's owned partners
             PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
-            List<Partner> visiblePartners = partnerDB.getPartnersVisibleToUser(
+            List<Partner> visiblePartners = partnerDB.getPartnersOwnedByUser(
                     user.getId(),
                     PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE
             );
@@ -82,7 +82,7 @@ public class UserHttpAuthPreferenceResource {
             UserHttpAuthPreferenceAccessDB prefDB = new UserHttpAuthPreferenceAccessDB(processing.getDBDriverManager(), logger);
             List<UserHttpAuthPreference> existingPrefs = prefDB.getPreferencesForUser(user.getId());
 
-            // Create a list with all visible partners (fill in missing ones)
+            // Create a list with all owned partners (fill in missing ones)
             List<UserHttpAuthPreference> allPrefs = new ArrayList<>();
             for (Partner partner : visiblePartners) {
                 if (partner.isLocalStation()) {

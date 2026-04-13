@@ -44,13 +44,27 @@ public class JTreePartner extends JTree {
      */
     private final SortableTreeNode root;
     private final BaseClient baseClient;
+    /**
+     * User ID for filtering partners (0 = admin sees all)
+     */
+    private int userId = 0;
 
     /**
      * Tree constructor
      */
     public JTreePartner(BaseClient baseClient) {
+        this(baseClient, 0);
+    }
+
+    /**
+     * Tree constructor with user filtering
+     * @param baseClient the base client for server communication
+     * @param userId the user ID for filtering partners (0 = admin sees all)
+     */
+    public JTreePartner(BaseClient baseClient, int userId) {
         super(new SortableTreeNode());
         this.baseClient = baseClient;
+        this.userId = userId;
         this.setRootVisible(false);
         this.root = (SortableTreeNode) this.getModel().getRoot();
         this.setCellRenderer(new TreeCellRendererPartner());
@@ -129,8 +143,10 @@ public class JTreePartner extends JTree {
     public List<Partner> buildTree() throws Exception {
         synchronized (this.getModel()) {
             this.root.removeAllChildren();
+            PartnerListRequest request = new PartnerListRequest(PartnerListRequest.LIST_ALL);
+            request.setUserId(this.userId);  // Set user context for filtering
             PartnerListResponse response = (PartnerListResponse) this.baseClient.sendSync(
-                    new PartnerListRequest(PartnerListRequest.LIST_ALL), Partner.TIMEOUT_PARTNER_REQUEST);
+                    request, Partner.TIMEOUT_PARTNER_REQUEST);
             List<Partner> partnerList = response.getList();
             SortableTreeNode nodePartner = null;
             SortableTreeNode firstNodePartner = null;
@@ -181,6 +197,7 @@ public class JTreePartner extends JTree {
         partner.setURL(partner.getDefaultURL());
         partner.setMdnURL(partner.getDefaultURL());
         partner.setLocalStation(false);
+        partner.setCreatedByUserId(this.userId);  // Set owner to current user
         List<KeystoreCertificate> list = certificateManagerEncSign.getKeyStoreCertificateList();
         if (!list.isEmpty()) {
             KeystoreCertificate certificate = list.get(0);

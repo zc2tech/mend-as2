@@ -199,7 +199,7 @@ public class TableModelMessageOverview extends AbstractTableModel {
      */
     @Override
     public int getColumnCount() {
-        return (13);
+        return (14);  // Added column 13 for User/Owner
     }
 
     /**
@@ -311,6 +311,13 @@ public class TableModelMessageOverview extends AbstractTableModel {
                 } else {
                     return (Boolean.FALSE);
                 }
+            case 13:
+                // Owner/User column
+                if (info.getOwnerUsername() != null) {
+                    return (info.getOwnerUsername());
+                } else {
+                    return ("--");
+                }
         }
         return (null);
     }
@@ -349,6 +356,8 @@ public class TableModelMessageOverview extends AbstractTableModel {
                 return (this.rb.getResourceString("header.subject"));
             case 12:
                 return (this.rb.getResourceString("header.compression"));
+            case 13:
+                return ("User");
         }
         return (null);
     }
@@ -373,6 +382,8 @@ public class TableModelMessageOverview extends AbstractTableModel {
             String.class,
             String.class,
             String.class,
-            Boolean.class,}[col]);
+            Boolean.class,
+            String.class,  // User column
+        }[col]);
     }
 }

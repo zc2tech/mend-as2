@@ -112,6 +112,10 @@ public class AS2MessageInfo implements AS2Info {
      * Owner user ID for message ownership (0 = admin/system, >0 = specific user)
      */
     private int ownerUserId = 0;
+    /**
+     * Owner username for display in UI
+     */
+    private String ownerUsername = null;
 
     /**
      * These are the disposition notification options
@@ -649,6 +653,20 @@ public class AS2MessageInfo implements AS2Info {
      */
     public void setOwnerUserId(int ownerUserId) {
         this.ownerUserId = ownerUserId;
+    }
+
+    /**
+     * @return the ownerUsername
+     */
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    /**
+     * @param ownerUsername the ownerUsername to set
+     */
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
     }
 
 }

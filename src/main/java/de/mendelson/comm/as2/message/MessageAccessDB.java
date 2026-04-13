@@ -323,6 +323,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         return (info);
                     }
                 }
@@ -378,6 +379,7 @@ public class MessageAccessDB {
                             info.setResendCounter(result.getInt("resendcounter"));
                             info.setUserdefinedId(result.getString("userdefinedid"));
                             info.setUsesTLS(result.getInt("secureconnection") == 1);
+                            info.setOwnerUserId(result.getInt("owner_user_id"));
                             // Load first payload's format and doctype
                             this.loadPayloadMetadata(runtimeConnectionNoAutoCommit, info);
                             messageList.add(info);
@@ -628,6 +630,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         // Load first payload's format and doctype
                         this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
                         // Append to list normally (MySQL/PostgreSQL handle ORDER BY DESC correctly)
@@ -1171,6 +1174,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1222,6 +1226,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1273,6 +1278,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }

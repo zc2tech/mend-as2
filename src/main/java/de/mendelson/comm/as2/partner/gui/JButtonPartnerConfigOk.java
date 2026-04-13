@@ -178,6 +178,8 @@ public class JButtonPartnerConfigOk extends JButton {
 
     /**
      * Checks if new name is unique and changes color in textfield if not
+     * Note: This only checks the local partner list (user-visible partners).
+     * Global AS2 ID uniqueness is enforced by the server during save.
      */
     private boolean checkForNonUniqueValues(Partner checkPartner, List<Partner> partnerList) {
         boolean error = false;
@@ -195,12 +197,15 @@ public class JButtonPartnerConfigOk extends JButton {
             }
             error = true;
         }
+
+        // Check AS2 ID uniqueness in local list only
+        // Global uniqueness will be enforced by server-side validation on save
         String newAS2Id = checkPartner.getAS2Identification();
         int idCount = this.getAS2IdCountInList(newAS2Id, partnerList);
         if (newAS2Id != null && !newAS2Id.trim().isEmpty() && idCount == 1) {
             //graphical modifications for current displayed partner only!
             if (this.remotePartner.equals(checkPartner)) {
-                this.markNoErrorInTextField(this.jTextFieldAS2Id);                
+                this.markNoErrorInTextField(this.jTextFieldAS2Id);
             }
         } else {
             //graphical modifications for current displayed partner only!
