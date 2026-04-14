@@ -528,6 +528,8 @@ public class AS2MessageCreation {
         info.setSignType(receiver.getSignType());
         info.setEncryptionType(receiver.getEncryptionType());
         info.setRequestsSyncMDN(receiver.isSyncMDN());
+        // Set owner_user_id from sender's created_by_user_id (sender is the local station for outbound messages)
+        info.setOwnerUserId(sender.getCreatedByUserId());
         if (!receiver.isSyncMDN()) {
             info.setAsyncMDNURL(sender.getMdnURL());
         }

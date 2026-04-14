@@ -324,6 +324,7 @@ public class MessageAccessDB {
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         return (info);
                     }
                 }
@@ -630,6 +631,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         info.setOwnerUserId(result.getInt("owner_user_id"));
                         // Load first payload's format and doctype
                         this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
@@ -1052,8 +1054,8 @@ public class MessageAccessDB {
                         "INSERT INTO messages(initdateutc,encryption,direction,messageid,rawfilename,receiverid,senderid,"
                         + "signature,state,syncmdn,headerfilename,rawdecryptedfilename,senderhost,useragent,"
                         + "contentmic,msgcompression,messagetype,asyncmdnurl,msgsubject,userdefinedid,"
-                        + "secureconnection)VALUES("
-                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        + "secureconnection,owner_user_id)VALUES("
+                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setTimestamp(1, new java.sql.Timestamp(info.getInitDate().getTime()), this.calendarUTC);
             preparedStatement.setInt(2, info.getEncryptionType());
             preparedStatement.setInt(3, info.getDirection());
@@ -1079,6 +1081,7 @@ public class MessageAccessDB {
                 preparedStatement.setNull(20, Types.VARCHAR);
             }
             preparedStatement.setInt(21, info.usesTLS() ? 1 : 0);
+            preparedStatement.setInt(22, info.getOwnerUserId());
             preparedStatement.executeUpdate();
             //insert payload and inc transaction counter
             AS2Message message = new AS2Message(info);
@@ -1175,6 +1178,7 @@ public class MessageAccessDB {
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1227,6 +1231,7 @@ public class MessageAccessDB {
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1278,6 +1283,7 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }

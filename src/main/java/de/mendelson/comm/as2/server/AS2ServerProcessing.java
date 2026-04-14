@@ -2567,71 +2567,38 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         int userId = request.getUserId();
         boolean hasUserManagePermission = request.hasUserManagePermission();
 
-        System.out.println("DEBUG: processMessageOverviewRequest - userId=" + userId
-            + ", hasUserManagePermission=" + hasUserManagePermission
-            + ", Total messages before filter=" + messageList.size());
-
         if (userId > 0 && !hasUserManagePermission) {
             // Regular user - filter to show only their own messages (based on owner_user_id)
             List<AS2MessageInfo> filteredList = new java.util.ArrayList<>();
             for (AS2MessageInfo message : messageList) {
-                System.out.println("DEBUG: Message " + message.getMessageId()
-                    + " owner_user_id=" + message.getOwnerUserId()
-                    + " (comparing with userId=" + userId + ")");
                 if (message.getOwnerUserId() == userId) {
                     filteredList.add(message);
                 }
             }
-            System.out.println("DEBUG: Filtered messages count=" + filteredList.size());
             messageList = filteredList;
         }
         // else: admin (userId=0) or USER_MANAGE permission - see all messages
 
-        // Populate owner username for each message (for users with USER_MANAGE permission)
-        if (userId == 0 || hasUserManagePermission) {
-            // Load all users once for efficiency
-            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
-                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
-            java.util.Map<Integer, String> userIdToNameMap = new java.util.HashMap<>();
-            userIdToNameMap.put(0, "admin");  // Admin user
+        // Populate owner username for each message (for display in UI)
+        de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+            new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
+        java.util.Map<Integer, String> userIdToNameMap = new java.util.HashMap<>();
+        userIdToNameMap.put(0, "admin");  // Admin user
 
-            try {
-                List<de.mendelson.comm.as2.usermanagement.WebUIUser> allUsers = userAccess.getAllUsers();
-                for (de.mendelson.comm.as2.usermanagement.WebUIUser user : allUsers) {
-                    userIdToNameMap.put(user.getId(), user.getUsername());
-                }
-            } catch (Exception e) {
-                this.logger.warning("Failed to load user list for message owner display: " + e.getMessage());
+        try {
+            List<de.mendelson.comm.as2.usermanagement.WebUIUser> allUsers = userAccess.getAllUsers();
+            for (de.mendelson.comm.as2.usermanagement.WebUIUser user : allUsers) {
+                userIdToNameMap.put(user.getId(), user.getUsername());
             }
+        } catch (Exception e) {
+            this.logger.warning("Failed to load user list for message owner display: " + e.getMessage());
+        }
 
-            // Set owner username for each message based on the local station's owner
-            for (AS2MessageInfo message : messageList) {
-                // Determine which partner is the local station (sender or receiver)
-                Partner sender = this.partnerAccess.getPartner(message.getSenderId());
-                Partner receiver = this.partnerAccess.getPartner(message.getReceiverId());
-
-                Partner localStation = null;
-                if (sender != null && sender.isLocalStation()) {
-                    localStation = sender;
-                } else if (receiver != null && receiver.isLocalStation()) {
-                    localStation = receiver;
-                }
-
-                if (localStation != null) {
-                    // Get the first user who has visibility to this local station
-                    List<Integer> visibleUserIds = localStation.getVisibleToUserIds();
-                    if (!visibleUserIds.isEmpty()) {
-                        int ownerId = visibleUserIds.get(0);
-                        String ownerName = userIdToNameMap.getOrDefault(ownerId, "user_" + ownerId);
-                        message.setOwnerUsername(ownerName);
-                        message.setOwnerUserId(ownerId);
-                    } else {
-                        // No specific owner - belongs to admin
-                        message.setOwnerUsername("admin");
-                        message.setOwnerUserId(0);
-                    }
-                }
-            }
+        // Set owner username for each message from owner_user_id
+        for (AS2MessageInfo message : messageList) {
+            int ownerId = message.getOwnerUserId();
+            String ownerName = userIdToNameMap.getOrDefault(ownerId, "user_" + ownerId);
+            message.setOwnerUsername(ownerName);
         }
 
         response.setList(messageList);
