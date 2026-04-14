@@ -148,7 +148,8 @@ public class JDialogPartnerConfig extends JDialog {
         this.jPanelPartner.add(this.panelEditPartner, BorderLayout.CENTER);
         this.getRootPane().setDefaultButton(this.jButtonPartnerConfigOk);
         try {
-            this.partnerList.addAll(this.jTreePartner.buildTree());
+            List<Partner> loadedPartners = this.jTreePartner.buildTree();
+            this.partnerList.addAll(loadedPartners);
         } catch (Exception e) {
             UINotification.instance().addNotification(e);
             return;
@@ -182,6 +183,8 @@ public class JDialogPartnerConfig extends JDialog {
     private void setupKeyboardShortcuts() {
         // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
         KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonPartnerConfigOk, this.jButtonCancel);
+        // Cmd+S (Mac) / Ctrl+S (Windows/Linux) to save
+        KeyboardShortcutUtil.addButtonShortcutWithTooltip(this.jButtonPartnerConfigOk, java.awt.event.KeyEvent.VK_S, "SAVE_PARTNER");
     }
 
     @Override
@@ -273,6 +276,24 @@ public class JDialogPartnerConfig extends JDialog {
     private void deleteSelectedPartner() {
         Partner partner = this.jTreePartner.getSelectedPartner();
         if (partner != null) {
+            // Check if this is the last local station - prevent deletion
+            if (partner.isLocalStation()) {
+                int localStationCount = 0;
+                for (Partner p : this.partnerList) {
+                    if (p.isLocalStation()) {
+                        localStationCount++;
+                    }
+                }
+                if (localStationCount <= 1) {
+                    UINotification.instance().addNotification(
+                        null,
+                        UINotification.TYPE_ERROR,
+                        "Cannot Delete Local Station",
+                        "You cannot delete the last local station. There must be at least one local station in the system.");
+                    return;
+                }
+            }
+
             //ask the user if the partner should be really deleted, all data is lost
             int requestValue = JOptionPane.showConfirmDialog(
                     this, rb.getResourceString("dialog.partner.delete.message", partner.getName()),
@@ -281,10 +302,12 @@ public class JDialogPartnerConfig extends JDialog {
             if (requestValue != JOptionPane.YES_OPTION) {
                 return;
             }
-            partner = this.jTreePartner.deleteSelectedPartner();
-            if (partner != null) {
-                this.partnerList.remove(partner);
-            }
+            // Store the partner reference before calling deleteSelectedPartner
+            // because deleteSelectedPartner may return null if it's the last node
+            Partner partnerToDelete = partner;
+            this.jTreePartner.deleteSelectedPartner();
+            // Always remove from partnerList, even if tree deletion returned null
+            this.partnerList.remove(partnerToDelete);
         }
     }
 

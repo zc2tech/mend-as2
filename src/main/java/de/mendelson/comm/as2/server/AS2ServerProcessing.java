@@ -642,21 +642,35 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         SinglePartnerModificationResponse response = new SinglePartnerModificationResponse(request);
         Partner newPartner = request.getPartner();
         try {
-            Partner foundPartnerAS2Id = this.partnerAccess.getPartner(newPartner.getAS2Identification());
+            int userId = newPartner.getCreatedByUserId();
+
+            // CRITICAL: Look up partner by AS2 ID within the user's scope only
+            // This prevents accidentally modifying another user's partner with the same AS2 ID
+            Partner foundPartnerAS2Id = this.partnerAccess.getPartnerByAS2IdForUser(
+                newPartner.getAS2Identification(),
+                userId,
+                PartnerAccessDB.DATA_COMPLETENESS_FULL);
+
             if (foundPartnerAS2Id == null) {
                 throw new Exception("The partner with the AS2 id "
-                        + request.getPartner().getAS2Identification() + " does not exist in the system.");
+                        + request.getPartner().getAS2Identification() + " does not exist in your account.");
             }
+
             newPartner.setDBId(foundPartnerAS2Id.getDBId());
+
             //does this modification contain a name change?
             if (!newPartner.getName().equals(foundPartnerAS2Id.getName())) {
-                Partner foundPartnerName = this.partnerAccess.getPartnerByName(newPartner.getName(),
+                // Check if new name already exists FOR THIS USER
+                Partner foundPartnerName = this.partnerAccess.getPartnerByNameForUser(
+                        newPartner.getName(),
+                        userId,
                         PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE);
-                if (foundPartnerName != null) {
-                    throw new Exception("A partner with the new name "
-                            + newPartner.getName() + " does already exist in the system.");
+                if (foundPartnerName != null && foundPartnerName.getDBId() != newPartner.getDBId()) {
+                    throw new Exception("You already have a partner with the name '"
+                            + newPartner.getName() + "'. Please choose a different name.");
                 }
             }
+
             this.partnerAccess.updatePartner(newPartner);
             this.dirPollManager.partnerConfigurationChanged();
         } catch (Throwable e) {
@@ -722,13 +736,20 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         SinglePartnerAddResponse response = new SinglePartnerAddResponse(request);
         try {
             Partner newPartner = request.getPartner();
-            //check if the partner with the passed AS2 name does already exist
+            int userId = newPartner.getCreatedByUserId();
+
+            //check if the partner with the passed name already exists FOR THIS USER
             //Note: AS2 ID duplication is allowed because users have separate endpoints /as2/HttpReceiver/{username}
-            Partner foundPartnerName = this.partnerAccess.getPartnerByName(newPartner.getName(), PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE);
+            //Note: Partner name must be unique per user, not globally
+            Partner foundPartnerName = this.partnerAccess.getPartnerByNameForUser(
+                newPartner.getName(),
+                userId,
+                PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE);
             if (foundPartnerName != null) {
-                throw new Exception("The partner with the internal name " + newPartner.getName()
-                        + " does already exist in the system.");
+                throw new Exception("You already have a partner with the internal name '" + newPartner.getName()
+                        + "'. Please choose a different name.");
             }
+
             this.partnerAccess.insertPartner(newPartner);
             this.dirPollManager.partnerConfigurationChanged();
         } catch (Throwable e) {
@@ -2377,22 +2398,38 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                             // "oauth2"
                         });
                 try {
-                    //first delete all partners that are in the DB but not in the new list
+                    List<Partner> newPartnerList = request.getData();
+
+                    // Determine which user is making this request
+                    // All partners in the new list should belong to the same user
+                    int requestingUserId = 0;
+                    if (!newPartnerList.isEmpty()) {
+                        requestingUserId = newPartnerList.get(0).getCreatedByUserId();
+                    }
+
+                    //CRITICAL: Only delete partners that belong to THIS user AND are not in the new list
+                    //DO NOT delete partners owned by other users!
                     List<Partner> existingPartnerList = this.partnerAccess.getAllPartner(
                             PartnerAccessDB.DATA_COMPLETENESS_FULL, configConnectionNoAutoCommit);
-                    List<Partner> newPartnerList = request.getData();
+
                     Set<Integer> newPartnerHashSet = new HashSet<Integer>();
                     for (Partner singleNewPartner : newPartnerList) {
                         if (singleNewPartner.getDBId() != -1) {
                             newPartnerHashSet.add(singleNewPartner.getDBId());
                         }
                     }
+
                     for (int i = 0; i < existingPartnerList.size(); i++) {
-                        if (!newPartnerHashSet.contains(existingPartnerList.get(i).getDBId())) {
-                            this.partnerAccess.deletePartner(existingPartnerList.get(i), configConnectionNoAutoCommit);
-                            this.fireEventPartnerDeleted(userName, processOriginHost, existingPartnerList.get(i));
+                        Partner existingPartner = existingPartnerList.get(i);
+                        // Only consider deleting partners that belong to the requesting user
+                        if (existingPartner.getCreatedByUserId() == requestingUserId) {
+                            if (!newPartnerHashSet.contains(existingPartner.getDBId())) {
+                                this.partnerAccess.deletePartner(existingPartner, configConnectionNoAutoCommit);
+                                this.fireEventPartnerDeleted(userName, processOriginHost, existingPartner);
+                            }
                         }
                     }
+
                     //insert all NEW partners and update the existing
                     for (int i = 0; i < newPartnerList.size(); i++) {
                         if (newPartnerList.get(i).getDBId() < 0) {

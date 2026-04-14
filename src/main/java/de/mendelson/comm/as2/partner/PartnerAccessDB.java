@@ -665,6 +665,199 @@ public class PartnerAccessDB {
     }
 
     /**
+     * Loads a specified partner from the DB for a specific user
+     * User-scoped version for user isolation
+     *
+     * @param partnerName Partner name to search for
+     * @param userId User ID who owns the partner
+     * @param dataCompleteness Level of data to load
+     * @return null if the partner does not exist for that user
+     */
+    public Partner getPartnerByNameForUser(String partnerName, int userId, int dataCompleteness) {
+        if (partnerName == null) {
+            return null;
+        }
+        String query = "SELECT * FROM partner WHERE upper(partnername)=? AND created_by_user_id=?";
+        List<Partner> partnerList = new ArrayList<Partner>();
+        String transactionName = "Partner_read_by_name_user";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            configConnectionNoAutoCommit.setReadOnly(true);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{
+                            "partner",
+                            "certificates",
+                            "httpheader",
+                            "partnerevent",
+                            "oauth2",
+                            "partner_user_visibility"
+                        });
+                try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
+                    preparedStatement.setString(1, partnerName.toUpperCase());
+                    preparedStatement.setInt(2, userId);
+                    try (ResultSet result = preparedStatement.executeQuery()) {
+                        partnerList = this.processPartnerResultSet(result, dataCompleteness, configConnectionNoAutoCommit);
+                    }
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+        if (partnerList == null || partnerList.isEmpty()) {
+            return null;
+        }
+        return partnerList.get(0);
+    }
+
+    /**
+     * Loads a specified partner from the DB by AS2 ID for a specific user
+     * User-scoped version for user isolation
+     *
+     * @param as2ident AS2 identifier to search for
+     * @param userId User ID who owns the partner
+     * @param dataCompleteness Level of data to load
+     * @return null if the partner does not exist for that user
+     */
+    public Partner getPartnerByAS2IdForUser(String as2ident, int userId, int dataCompleteness) {
+        if (as2ident == null) {
+            return null;
+        }
+        String query = "SELECT * FROM partner WHERE as2ident=? AND created_by_user_id=?";
+        List<Partner> partnerList = new ArrayList<Partner>();
+        String transactionName = "Partner_read_by_as2id_user";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            configConnectionNoAutoCommit.setReadOnly(true);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{
+                            "partner",
+                            "certificates",
+                            "httpheader",
+                            "partnerevent",
+                            "oauth2",
+                            "partner_user_visibility"
+                        });
+                try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
+                    preparedStatement.setString(1, as2ident);
+                    preparedStatement.setInt(2, userId);
+                    try (ResultSet result = preparedStatement.executeQuery()) {
+                        partnerList = this.processPartnerResultSet(result, dataCompleteness, configConnectionNoAutoCommit);
+                    }
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+        if (partnerList == null || partnerList.isEmpty()) {
+            return null;
+        }
+        return partnerList.get(0);
+    }
+
+    /**
+     * Process ResultSet into Partner list - extracted to avoid code duplication
+     */
+    private List<Partner> processPartnerResultSet(ResultSet result, int dataCompleteness,
+            Connection configConnectionNoAutoCommit) throws Exception {
+        List<Partner> partnerList = new ArrayList<Partner>();
+        while (result.next()) {
+            Partner partner = new Partner();
+            partner.setAS2Identification(result.getString("as2ident"));
+            partner.setName(result.getString("partnername"));
+            partner.setDBId(result.getInt("id"));
+            partner.setLocalStation(result.getInt("islocal") == 1);
+            //All partner data is requested - deliver it
+            if (dataCompleteness == DATA_COMPLETENESS_FULL) {
+                partner.setSignType(result.getInt("sign"));
+                partner.setEncryptionType(result.getInt("encrypt"));
+                partner.setEmail(result.getString("email"));
+                partner.setURL(result.getString("url"));
+                partner.setMdnURL(result.getString("mdnurl"));
+                partner.setSubject(result.getString("msgsubject"));
+                partner.setContentType(result.getString("contenttype"));
+                partner.setSyncMDN(result.getInt("syncmdn") == 1);
+                partner.setPollIgnoreListString(result.getString("pollignorelist"));
+                partner.setPollInterval(result.getInt("pollinterval"));
+                partner.setCompressionType(result.getInt("msgcompression"));
+                partner.setSignedMDN(result.getInt("signedmdn") == 1);
+                partner.setKeepOriginalFilenameOnReceipt(result.getInt("keeporiginalfilenameonreceipt") == 1);
+                HTTPAuthentication authentication = partner.getAuthenticationCredentialsMessage();
+                authentication.setUser(result.getString("httpauthuser"));
+                authentication.setPassword(result.getString("httpauthpass"));
+                authentication.setAuthMode(result.getInt("authmodehttp"));
+                authentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_message"));
+                HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
+                asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
+                asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));
+                asyncAuthentication.setAuthMode(result.getInt("authmodehttpasynmdn"));
+                asyncAuthentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_mdn"));
+                // Load inbound auth credentials for local stations
+                if (partner.isLocalStation()) {
+                    HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                    inboundAuth.setUser(result.getString("inbound_auth_user"));
+                    inboundAuth.setPassword(result.getString("inbound_auth_password"));
+                    inboundAuth.setAuthMode(result.getInt("inbound_auth_mode"));
+                    inboundAuth.setCertificateFingerprint(result.getString("inbound_auth_cert_fingerprint"));
+                }
+                partner.setComment(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercomment"));
+                partner.setContactAS2(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercontact"));
+                partner.setContactCompany(this.dbDriverManager.readTextStoredAsJavaObject(result, "partneraddress"));
+                partner.setNotifyReceive(result.getInt("notifyreceive"));
+                partner.setNotifySend(result.getInt("notifysend"));
+                partner.setNotifySendReceive(result.getInt("notifysendreceive"));
+                partner.setNotifyReceiveEnabled(result.getInt("notifyreceiveenabled") == 1);
+                partner.setNotifySendEnabled(result.getInt("notifysendenabled") == 1);
+                partner.setNotifySendReceiveEnabled(result.getInt("notifysendreceiveenabled") == 1);
+                partner.setContentTransferEncoding(result.getInt("contenttransferencoding"));
+                partner.setHttpProtocolVersion(result.getString("httpversion"));
+                partner.setMaxPollFiles(result.getInt("maxpollfiles"));
+                partner.setUseAlgorithmIdentifierProtectionAttribute(result.getInt("algidentprotatt") == 1);
+                partner.setEnableDirPoll(result.getInt("enabledirpoll") == 1);
+                partner.setOverwriteLocalStationSecurity(result.getInt("overwritelocalsecurity") == 1);
+                partner.setCreatedByUserId(result.getInt("created_by_user_id"));
+                //ensure to have a valid partner DB id before loading the releated data
+                this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
+                this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
+                this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
+                partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
+                int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
+                if (!result.wasNull()) {
+                    OAuth2Config oAuth2ConfigMessage = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMessage, configConnectionNoAutoCommit);
+                    partner.setOAuth2Message(oAuth2ConfigMessage);
+                }
+                partner.setUseOAuth2MDN(result.getInt("useoauth2mdn") == 1);
+                int oAuth2ReferenceMDN = result.getInt("oauth2idmdn");
+                if (!result.wasNull()) {
+                    OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
+                    partner.setOAuth2MDN(oAuth2ConfigMDN);
+                }
+                //load visibility settings (only for remote partners)
+                if (!partner.isLocalStation()) {
+                    List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
+                    partner.setVisibleToUserIds(visibleUsers);
+                }
+            }
+            partnerList.add(partner);
+        }
+        Collections.sort(partnerList);
+        return partnerList;
+    }
+
+    /**
      * Loads a specified partner from the DB
      *
      * @return null if the partner does not exist
