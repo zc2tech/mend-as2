@@ -1171,6 +1171,29 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     public ExportResponseKeystore processExportRequestKeystore(ExportRequestKeystore request) {
         ExportResponseKeystore response = new ExportResponseKeystore(request);
         try {
+            // Expand ~ to user home directory for Unix-like systems (macOS, Linux)
+            String targetPath = request.getServerSideFilename();
+            if (targetPath.startsWith("~" + java.io.File.separator) || targetPath.equals("~")) {
+                String userHome = System.getProperty("user.home");
+                if (targetPath.equals("~")) {
+                    targetPath = userHome;
+                } else {
+                    targetPath = userHome + targetPath.substring(1);
+                }
+            }
+
+            // Check if target directory exists before proceeding
+            Path targetDirectory = Paths.get(targetPath);
+            if (!Files.exists(targetDirectory)) {
+                throw new IllegalArgumentException("Export directory does not exist: " + targetDirectory.toAbsolutePath());
+            }
+            if (!Files.isDirectory(targetDirectory)) {
+                throw new IllegalArgumentException("Export path is not a directory: " + targetDirectory.toAbsolutePath());
+            }
+            if (!Files.isWritable(targetDirectory)) {
+                throw new IllegalArgumentException("Export directory is not writable: " + targetDirectory.toAbsolutePath());
+            }
+
             String extension = null;
             CertificateManager manager;
             if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
@@ -1186,10 +1209,10 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             KeyStore sourceKeystore = manager.getKeystore();
             DateFormat format = new SimpleDateFormat("yyyyMMdd");
             int counter = 1;
-            Path exportFile = Paths.get(request.getServerSideFilename(),
+            Path exportFile = Paths.get(targetPath,
                     "keystore_export" + format.format(new Date()) + extension);
             while (Files.exists(exportFile)) {
-                exportFile = Paths.get(request.getServerSideFilename(),
+                exportFile = Paths.get(targetPath,
                         "keystore_export" + format.format(new Date())
                         + "_" + counter
                         + extension);

@@ -712,6 +712,31 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Use a strong password to protect exported certificates
 - Password is required to import the keystore later
 
+**Certificate Selection Not Persisting (SwingUI)**
+- Fixed: Certificate selections in Partner → Security tab now persist correctly after save
+- Issue was caused by ActionListener events firing during UI refresh
+- Dropdowns now properly maintain selected values when reopening partner dialog
+
+**MDN URL Helper Buttons (SwingUI)**
+- Fixed: HTTP/HTTPS buttons now show correct ports in all modes
+- Supports custom ports via environment variables:
+  - `AS2_HTTP_PORT` - Override HTTP port (default: 8080 normal, 11080 test mode)
+  - `AS2_HTTPS_PORT` - Override HTTPS port (default: 8443 normal, 11443 test mode)
+- Can also configure via `config/as2.properties`:
+  - `jetty.http.port=9090`
+  - `jetty.ssl.port=9443`
+- Priority: Environment variables > Properties file > Test mode defaults > Normal defaults
+
+**File Path Tilde Expansion (SwingUI)**
+- Certificate import/export dialogs now support `~` for home directory on Mac/Linux
+- Examples:
+  - `~/certificates/mycert.p12` → `/Users/username/certificates/mycert.p12`
+  - `~/.certs/keystore.jks` → `/Users/username/.certs/keystore.jks`
+- Works in:
+  - Certificate export dialog
+  - JKS keystore import
+  - PKCS12 keystore import
+
 ---
 
 **Made with ❤️ by Julian Xu**

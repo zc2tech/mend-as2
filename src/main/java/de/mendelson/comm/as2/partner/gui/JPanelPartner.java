@@ -10,6 +10,7 @@ import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerCertificateInformation;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
 import de.mendelson.comm.as2.partner.PartnerHttpHeader;
+import de.mendelson.comm.as2.partner.PartnerInboundAuthCredential;
 import de.mendelson.comm.as2.partner.PartnerSystem;
 import de.mendelson.comm.as2.partner.gui.event.JDialogConfigureEventMoveToDir;
 import de.mendelson.comm.as2.partner.gui.event.JDialogConfigureEventMoveToPartner;
@@ -261,29 +262,36 @@ public class JPanelPartner extends JPanel {
         List<KeystoreCertificate> sortedEncSignCertificateList = new ArrayList<KeystoreCertificate>();
         sortedEncSignCertificateList.addAll(encSignCertificateList);
         Collections.sort(sortedEncSignCertificateList);
+
+        // Get TLS certificates for HTTP authentication
+        List<KeystoreCertificate> tlsCertificateList = this.certificateManagerSSL.getKeyStoreCertificateList();
+        List<KeystoreCertificate> sortedTLSCertificateList = new ArrayList<KeystoreCertificate>();
+        sortedTLSCertificateList.addAll(tlsCertificateList);
+        Collections.sort(sortedTLSCertificateList);
+
         this.jComboBoxSignCert.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxCryptCert.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxOverwriteLocalStationCryptKey.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxOverwriteLocalstationSignKey.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxHttpAuthCertMessage.setRenderer(new ListCellRendererCertificates());
         this.jComboBoxHttpAuthCertMDN.setRenderer(new ListCellRendererCertificates());
+
+        // Populate sign/encrypt certificate dropdowns
         for (KeystoreCertificate cert : sortedEncSignCertificateList) {
             this.jComboBoxSignCert.addItem(cert);
             this.jComboBoxCryptCert.addItem(cert);
             if (cert.getIsKeyPair()) {
                 this.jComboBoxOverwriteLocalStationCryptKey.addItem(cert);
                 this.jComboBoxOverwriteLocalstationSignKey.addItem(cert);
-                // Add to HTTP auth cert combos - only key pairs (need private key for client auth)
+            }
+        }
+
+        // Populate HTTP auth certificate dropdowns with TLS certificates (need private key for client auth)
+        for (KeystoreCertificate cert : sortedTLSCertificateList) {
+            if (cert.getIsKeyPair()) {
                 this.jComboBoxHttpAuthCertMessage.addItem(cert);
                 this.jComboBoxHttpAuthCertMDN.addItem(cert);
             }
-        }
-        // Populate inbound auth certificate combo with TLS certificates
-        List<KeystoreCertificate> tlsCertificateList = this.certificateManagerSSL.getKeyStoreCertificateList();
-        for (KeystoreCertificate cert : tlsCertificateList) {
-            // Only add certificates (public keys), not key pairs
-            // Inbound auth validates client certificates sent by remote partners
-            this.jComboBoxInboundAuthCert.addItem(cert);
         }
         this.jTableHttpHeader.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -601,11 +609,11 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMessage, true);
         } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMessage, true);
-            // Set selected certificate
+            // Set selected certificate (use TLS certificate manager for HTTP auth)
             String fingerprint = this.partner.getAuthenticationCredentialsMessage().getCertificateFingerprint();
             if (fingerprint != null && !fingerprint.isEmpty()) {
                 this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage,
-                    this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprint));
+                    this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint));
             }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
@@ -618,11 +626,11 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMDN, true);
         } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMDN, true);
-            // Set selected certificate
+            // Set selected certificate (use TLS certificate manager for HTTP auth)
             String fingerprintMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint();
             if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
                 this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN,
-                    this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN));
+                    this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN));
             }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);
@@ -634,31 +642,17 @@ public class JPanelPartner extends JPanel {
 
         // Load Inbound Auth (for local stations only)
         if (partner.isLocalStation()) {
-            HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
-            int authMode = inboundAuth.getAuthMode();
+            // Load credentials into both tables
+            modelInboundAuthBasic.passNewData(partner);
+            modelInboundAuthCert.passNewData(partner);
 
-            // Select the appropriate radio button based on auth mode
-            if (authMode == 0) {
-                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthNone, true);
-            } else if (authMode == 1) {
-                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthBasic, true);
-            } else if (authMode == 2) {
-                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthCert, true);
-            } else {
-                // Default to None for any other value
-                this.setUIValueWithoutEvent(this.jRadioButtonInboundAuthNone, true);
-            }
+            // Set toggle switches based on saved enabled state
+            boolean basicEnabled = partner.isInboundAuthBasicEnabled();
+            boolean certEnabled = partner.isInboundAuthCertEnabled();
+            this.setUIValueWithoutEvent(this.switchInboundAuthBasic, basicEnabled);
+            this.setUIValueWithoutEvent(this.switchInboundAuthCert, certEnabled);
 
-            this.jTextFieldInboundAuthUser.setText(inboundAuth.getUser() != null ? inboundAuth.getUser() : "");
-            this.jPasswordFieldInboundAuthPassword.setText(inboundAuth.getPassword() != null ? inboundAuth.getPassword() : "");
-
-            String certFingerprint = inboundAuth.getCertificateFingerprint();
-            if (certFingerprint != null && !certFingerprint.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxInboundAuthCert,
-                    this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(certFingerprint));
-            }
-
-            updateInboundAuthState();
+            updateInboundAuthButtonStates();
         }
 
         this.setUIValueWithoutEvent(this.switchKeepFilenameOnReceipt, this.partner.getKeepOriginalFilenameOnReceipt());
@@ -771,8 +765,9 @@ public class JPanelPartner extends JPanel {
         }
         this.jTabbedPane.addTab(rb.getResourceString("tab.mdn"), this.jPanelMDN);
         if (this.partner.isLocalStation()) {
-            // Inbound Auth tab only for local stations
-            this.jTabbedPane.addTab(rb.getResourceString("tab.inboundauth"), this.jPanelInboundAuth);
+            // Inbound Auth tabs only for local stations - split into two tabs
+            this.jTabbedPane.addTab(rb.getResourceString("tab.inboundauth.basic"), this.jPanelInboundAuthBasic);
+            this.jTabbedPane.addTab(rb.getResourceString("tab.inboundauth.cert"), this.jPanelInboundAuthCert);
         }
         if (!this.partner.isLocalStation()) {
             this.jTabbedPane.addTab(rb.getResourceString("tab.dirpoll"), this.jPanelDirPoll);
@@ -816,13 +811,13 @@ public class JPanelPartner extends JPanel {
     /**
      * Initialize the Inbound Auth panel for local stations
      */
-    private void initializeInboundAuthPanel() {
-        jPanelInboundAuth = new javax.swing.JPanel();
-        jPanelInboundAuth.setLayout(new java.awt.GridBagLayout());
+    private void initializeInboundAuthBasicPanel() {
+        jPanelInboundAuthBasic = new javax.swing.JPanel();
+        jPanelInboundAuthBasic.setLayout(new java.awt.GridBagLayout());
 
         // Info label
-        jLabelInboundAuthInfo = new javax.swing.JLabel();
-        jLabelInboundAuthInfo.setText("<html>" + rb.getResourceString("inboundauth.info") + "</html>");
+        jLabelInboundAuthBasicInfo = new javax.swing.JLabel();
+        jLabelInboundAuthBasicInfo.setText("<html>" + rb.getResourceString("inboundauth.basic.info") + "</html>");
         java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
@@ -831,135 +826,167 @@ public class JPanelPartner extends JPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthInfo, gridBagConstraints);
+        jPanelInboundAuthBasic.add(jLabelInboundAuthBasicInfo, gridBagConstraints);
 
-        // Button group for mutually exclusive radio buttons
-        buttonGroupInboundAuth = new javax.swing.ButtonGroup();
-
-        // None radio button
-        jRadioButtonInboundAuthNone = new javax.swing.JRadioButton();
-        jRadioButtonInboundAuthNone.setText(rb.getResourceString("label.inboundauth.none"));
-        jRadioButtonInboundAuthNone.addActionListener(evt -> jRadioButtonInboundAuthNoneActionPerformed(evt));
-        buttonGroupInboundAuth.add(jRadioButtonInboundAuthNone);
+        // Basic auth label and toggle switch
+        jLabelInboundAuthBasicEnable = new javax.swing.JLabel();
+        jLabelInboundAuthBasicEnable.setText(rb.getResourceString("label.inboundauth.basic"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
-        jPanelInboundAuth.add(jRadioButtonInboundAuthNone, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
+        jPanelInboundAuthBasic.add(jLabelInboundAuthBasicEnable, gridBagConstraints);
 
-        // Basic auth radio button
-        jRadioButtonInboundAuthBasic = new javax.swing.JRadioButton();
-        jRadioButtonInboundAuthBasic.setText(rb.getResourceString("label.inboundauth.basic"));
-        jRadioButtonInboundAuthBasic.addActionListener(evt -> jRadioButtonInboundAuthBasicActionPerformed(evt));
-        buttonGroupInboundAuth.add(jRadioButtonInboundAuthBasic);
+        switchInboundAuthBasic = new de.mendelson.util.toggleswitch.ToggleSwitch();
+        switchInboundAuthBasic.setDisplayStatusText(true);
+        switchInboundAuthBasic.addActionListener(evt -> switchInboundAuthBasicActionPerformed(evt));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 10);
+        jPanelInboundAuthBasic.add(switchInboundAuthBasic, gridBagConstraints);
+
+        // Initialize basic auth table model and table
+        modelInboundAuthBasic = new TableModelInboundAuthBasic();
+        jTableInboundAuthBasic = new javax.swing.JTable(modelInboundAuthBasic);
+        jTableInboundAuthBasic.setRowHeight(24);
+        jTableInboundAuthBasic.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTableInboundAuthBasic.setShowGrid(true);
+        jTableInboundAuthBasic.setGridColor(new java.awt.Color(220, 220, 220));
+        jTableInboundAuthBasic.setIntercellSpacing(new java.awt.Dimension(1, 1));
+        jTableInboundAuthBasic.setFillsViewportHeight(true);
+
+        // Configure column widths for basic auth table
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_USERNAME).setPreferredWidth(200);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_PASSWORD).setPreferredWidth(200);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_ENABLED).setPreferredWidth(70);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_ENABLED).setMaxWidth(80);
+
+        jScrollPaneInboundAuthBasic = new javax.swing.JScrollPane(jTableInboundAuthBasic);
+        jScrollPaneInboundAuthBasic.setPreferredSize(new java.awt.Dimension(600, 200));
+        jScrollPaneInboundAuthBasic.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180)));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
         gridBagConstraints.gridwidth = 2;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
-        jPanelInboundAuth.add(jRadioButtonInboundAuthBasic, gridBagConstraints);
+        jPanelInboundAuthBasic.add(jScrollPaneInboundAuthBasic, gridBagConstraints);
 
-        // Username label
-        jLabelInboundAuthUser = new javax.swing.JLabel();
-        jLabelInboundAuthUser.setText(rb.getResourceString("label.inboundauth.basic.username"));
+        // Button panel for Basic Auth Add/Delete
+        javax.swing.JPanel jPanelButtonsBasic = new javax.swing.JPanel();
+        jPanelButtonsBasic.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+
+        jButtonAddInboundAuthBasic = new javax.swing.JButton();
+        jButtonAddInboundAuthBasic.setText(rb.getResourceString("inboundauth.button.add"));
+        jButtonAddInboundAuthBasic.addActionListener(evt -> jButtonAddInboundAuthBasicActionPerformed(evt));
+        jPanelButtonsBasic.add(jButtonAddInboundAuthBasic);
+
+        jButtonDeleteInboundAuthBasic = new javax.swing.JButton();
+        jButtonDeleteInboundAuthBasic.setText(rb.getResourceString("inboundauth.button.delete"));
+        jButtonDeleteInboundAuthBasic.addActionListener(evt -> jButtonDeleteInboundAuthBasicActionPerformed(evt));
+        jPanelButtonsBasic.add(jButtonDeleteInboundAuthBasic);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthUser, gridBagConstraints);
-
-        // Username field
-        jTextFieldInboundAuthUser = new javax.swing.JTextField();
-        jTextFieldInboundAuthUser.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jTextFieldInboundAuthUserKeyReleased(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 3;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jTextFieldInboundAuthUser, gridBagConstraints);
-
-        // Password label
-        jLabelInboundAuthPassword = new javax.swing.JLabel();
-        jLabelInboundAuthPassword.setText(rb.getResourceString("label.inboundauth.basic.password"));
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 4;
-        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthPassword, gridBagConstraints);
-
-        // Password field
-        jPasswordFieldInboundAuthPassword = new javax.swing.JPasswordField();
-        jPasswordFieldInboundAuthPassword.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jPasswordFieldInboundAuthPasswordKeyReleased(evt);
-            }
-        });
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 4;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jPasswordFieldInboundAuthPassword, gridBagConstraints);
-
-        // Certificate auth radio button
-        jRadioButtonInboundAuthCert = new javax.swing.JRadioButton();
-        jRadioButtonInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert"));
-        jRadioButtonInboundAuthCert.addActionListener(evt -> jRadioButtonInboundAuthCertActionPerformed(evt));
-        buttonGroupInboundAuth.add(jRadioButtonInboundAuthCert);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 5;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(15, 10, 5, 10);
-        jPanelInboundAuth.add(jRadioButtonInboundAuthCert, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 10, 10);
+        jPanelInboundAuthBasic.add(jPanelButtonsBasic, gridBagConstraints);
+    }
 
-        // Certificate label
-        jLabelInboundAuthCert = new javax.swing.JLabel();
-        jLabelInboundAuthCert.setText(rb.getResourceString("label.inboundauth.cert.select"));
+    private void initializeInboundAuthCertPanel() {
+        jPanelInboundAuthCert = new javax.swing.JPanel();
+        jPanelInboundAuthCert.setLayout(new java.awt.GridBagLayout());
+
+        // Info label
+        jLabelInboundAuthCertInfo = new javax.swing.JLabel();
+        jLabelInboundAuthCertInfo.setText("<html>" + rb.getResourceString("inboundauth.cert.info") + "</html>");
+        java.awt.GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.NORTHWEST;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.insets = new java.awt.Insets(10, 10, 20, 10);
+        jPanelInboundAuthCert.add(jLabelInboundAuthCertInfo, gridBagConstraints);
+
+        // Certificate auth label and toggle switch
+        jLabelInboundAuthCertEnable = new javax.swing.JLabel();
+        jLabelInboundAuthCertEnable.setText(rb.getResourceString("label.inboundauth.cert"));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 6;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
-        gridBagConstraints.insets = new java.awt.Insets(5, 30, 5, 10);
-        jPanelInboundAuth.add(jLabelInboundAuthCert, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 5);
+        jPanelInboundAuthCert.add(jLabelInboundAuthCertEnable, gridBagConstraints);
 
-        // Certificate combo box
-        jComboBoxInboundAuthCert = new javax.swing.JComboBox<>();
-        jComboBoxInboundAuthCert.setRenderer(new ListCellRendererCertificates());
-        jComboBoxInboundAuthCert.addActionListener(evt -> jComboBoxInboundAuthCertActionPerformed(evt));
+        switchInboundAuthCert = new de.mendelson.util.toggleswitch.ToggleSwitch();
+        switchInboundAuthCert.setDisplayStatusText(true);
+        switchInboundAuthCert.addActionListener(evt -> switchInboundAuthCertActionPerformed(evt));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
-        gridBagConstraints.gridy = 6;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
-        gridBagConstraints.weightx = 1.0;
-        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 10);
-        jPanelInboundAuth.add(jComboBoxInboundAuthCert, gridBagConstraints);
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 10);
+        jPanelInboundAuthCert.add(switchInboundAuthCert, gridBagConstraints);
 
-        // Set "None" as default selection
-        jRadioButtonInboundAuthNone.setSelected(true);
+        // Initialize certificate auth table model and table
+        modelInboundAuthCert = new TableModelInboundAuthCert();
+        jTableInboundAuthCert = new javax.swing.JTable(modelInboundAuthCert);
+        jTableInboundAuthCert.setRowHeight(24);
+        jTableInboundAuthCert.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jTableInboundAuthCert.setShowGrid(true);
+        jTableInboundAuthCert.setGridColor(new java.awt.Color(220, 220, 220));
+        jTableInboundAuthCert.setIntercellSpacing(new java.awt.Dimension(1, 1));
+        jTableInboundAuthCert.setFillsViewportHeight(true);
 
-        // Spacer at bottom
-        javax.swing.JPanel jPanelSpacer = new javax.swing.JPanel();
+        // Configure column widths for cert auth table
+        jTableInboundAuthCert.getColumnModel().getColumn(TableModelInboundAuthCert.COL_CERT_ALIAS).setPreferredWidth(150);
+        jTableInboundAuthCert.getColumnModel().getColumn(TableModelInboundAuthCert.COL_CERT_FINGERPRINT).setPreferredWidth(300);
+        jTableInboundAuthCert.getColumnModel().getColumn(TableModelInboundAuthCert.COL_ENABLED).setPreferredWidth(70);
+        jTableInboundAuthCert.getColumnModel().getColumn(TableModelInboundAuthCert.COL_ENABLED).setMaxWidth(80);
+
+        jScrollPaneInboundAuthCert = new javax.swing.JScrollPane(jTableInboundAuthCert);
+        jScrollPaneInboundAuthCert.setPreferredSize(new java.awt.Dimension(600, 200));
+        jScrollPaneInboundAuthCert.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(180, 180, 180)));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
-        gridBagConstraints.gridy = 7;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.gridwidth = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 1.0;
         gridBagConstraints.weighty = 1.0;
-        jPanelInboundAuth.add(jPanelSpacer, gridBagConstraints);
+        gridBagConstraints.insets = new java.awt.Insets(5, 10, 5, 10);
+        jPanelInboundAuthCert.add(jScrollPaneInboundAuthCert, gridBagConstraints);
+
+        // Button panel for Certificate Auth Add/Delete
+        javax.swing.JPanel jPanelButtonsCert = new javax.swing.JPanel();
+        jPanelButtonsCert.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+
+        jButtonAddInboundAuthCert = new javax.swing.JButton();
+        jButtonAddInboundAuthCert.setText(rb.getResourceString("inboundauth.button.add"));
+        jButtonAddInboundAuthCert.addActionListener(evt -> jButtonAddInboundAuthCertActionPerformed(evt));
+        jPanelButtonsCert.add(jButtonAddInboundAuthCert);
+
+        jButtonDeleteInboundAuthCert = new javax.swing.JButton();
+        jButtonDeleteInboundAuthCert.setText(rb.getResourceString("inboundauth.button.delete"));
+        jButtonDeleteInboundAuthCert.addActionListener(evt -> jButtonDeleteInboundAuthCertActionPerformed(evt));
+        jPanelButtonsCert.add(jButtonDeleteInboundAuthCert);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.gridwidth = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(0, 10, 10, 10);
+        jPanelInboundAuthCert.add(jPanelButtonsCert, gridBagConstraints);
     }
 
     /**
@@ -1448,8 +1475,11 @@ public class JPanelPartner extends JPanel {
         switchUseAlgorithmIdentifierProtectionAttribute = new de.mendelson.util.toggleswitch.ToggleSwitch();
         jPanelUIHelpLabelUseAlgorithmIdentifierProtectionAttribute = new de.mendelson.util.balloontip.JPanelUIHelpLabel();
 
-        // Initialize Inbound Auth panel
-        initializeInboundAuthPanel();
+        // Initialize Inbound Auth panels
+        initializeInboundAuthBasicPanel();
+        initializeInboundAuthCertPanel();
+        // Update button states after both panels are initialized
+        updateInboundAuthButtonStates();
 
         setLayout(new java.awt.GridBagLayout());
 
@@ -3603,8 +3633,9 @@ public class JPanelPartner extends JPanel {
                 // Get username from baseClient
                 String username = this.baseClient.getUsername();
 
-                // Get actual HTTP port from server preferences
-                int httpPort = this.preferences.getInt(PreferencesAS2.HTTP_LISTEN_PORT);
+                // Get actual HTTP port - use AS2Config which handles test mode automatically
+                de.mendelson.comm.as2.AS2Config config = new de.mendelson.comm.as2.AS2Config();
+                int httpPort = config.getHttpPort();
 
                 // Get hostname - use InetAddress to get actual hostname, fallback to localhost
                 String hostname = "localhost";
@@ -3638,8 +3669,9 @@ public class JPanelPartner extends JPanel {
                 // Get username from baseClient
                 String username = this.baseClient.getUsername();
 
-                // Get actual HTTPS port from server preferences
-                int httpsPort = this.preferences.getInt(PreferencesAS2.HTTPS_LISTEN_PORT);
+                // Get actual HTTPS port - use AS2Config which handles test mode automatically
+                de.mendelson.comm.as2.AS2Config config = new de.mendelson.comm.as2.AS2Config();
+                int httpsPort = config.getHttpsPort();
 
                 // Get hostname - use InetAddress to get actual hostname, fallback to localhost
                 String hostname = "localhost";
@@ -3972,74 +4004,137 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     }//GEN-LAST:event_jRadioButtonKeepLocalstationSecurityActionPerformed
 
     // Inbound Auth event handlers
-    private void jRadioButtonInboundAuthNoneActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null) {
-            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            inbound.setAuthMode(0);  // None
-            updateInboundAuthState();
+    private void switchInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
+        updateInboundAuthButtonStates();
+    }
+
+    private void switchInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
+        updateInboundAuthButtonStates();
+    }
+
+    private void jButtonAddInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.partner == null || !this.partner.isLocalStation()) {
+            return;
+        }
+
+        PartnerInboundAuthCredential credential = new PartnerInboundAuthCredential();
+        credential.setAuthType(PartnerInboundAuthCredential.AUTH_TYPE_BASIC);
+        // Empty credentials - user will fill in username and password
+        credential.setUsername("");
+        credential.setPassword("");
+
+        modelInboundAuthBasic.addRow(credential);
+
+        // Select the newly added row (last row)
+        int newRowIndex = jTableInboundAuthBasic.getRowCount() - 1;
+        jTableInboundAuthBasic.setRowSelectionInterval(newRowIndex, newRowIndex);
+        jTableInboundAuthBasic.scrollRectToVisible(jTableInboundAuthBasic.getCellRect(newRowIndex, 0, true));
+
+        this.buttonOk.computeErrorState();
+        this.informTreeModelNodeChanged();
+    }
+
+    private void jButtonDeleteInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
+        int selectedRow = jTableInboundAuthBasic.getSelectedRow();
+        if (selectedRow >= 0) {
+            modelInboundAuthBasic.deleteRow(selectedRow);
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
         }
     }
 
-    private void jRadioButtonInboundAuthBasicActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null) {
-            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            inbound.setAuthMode(1);  // Basic auth only
-            updateInboundAuthState();
+    private void jButtonAddInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
+        if (this.partner == null || !this.partner.isLocalStation()) {
+            return;
+        }
+
+        // Show certificate selection dialog
+        JDialogSelectCertificate dialog = new JDialogSelectCertificate(
+            SwingUtilities.getWindowAncestor(this),
+            this.certificateManagerSSL,
+            rb.getResourceString("inboundauth.cert.select.title"),
+            rb.getResourceString("inboundauth.cert.select.message")
+        );
+        dialog.setVisible(true);
+
+        KeystoreCertificate selectedCert = dialog.getSelectedCertificate();
+        if (selectedCert != null) {
+            PartnerInboundAuthCredential credential = new PartnerInboundAuthCredential();
+            credential.setAuthType(PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE);
+            credential.setCertFingerprint(selectedCert.getFingerPrintSHA1());
+            credential.setCertAlias(selectedCert.getAlias());
+
+            modelInboundAuthCert.addRow(credential);
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
         }
     }
 
-    private void jRadioButtonInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null) {
-            HTTPAuthentication inbound = this.partner.getInboundAuthCredentials();
-            inbound.setAuthMode(2);  // Certificate auth only
-            updateInboundAuthState();
+    private void jButtonDeleteInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
+        int selectedRow = jTableInboundAuthCert.getSelectedRow();
+        if (selectedRow >= 0) {
+            modelInboundAuthCert.deleteRow(selectedRow);
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
         }
     }
 
-    private void jTextFieldInboundAuthUserKeyReleased(java.awt.event.KeyEvent evt) {
-        if (this.partner != null) {
-            this.partner.getInboundAuthCredentials().setUser(this.jTextFieldInboundAuthUser.getText());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
+    private void updateInboundAuthButtonStates() {
+        boolean basicEnabled = switchInboundAuthBasic.isSelected();
+        boolean certEnabled = switchInboundAuthCert.isSelected();
+
+        jButtonAddInboundAuthBasic.setEnabled(basicEnabled);
+        jButtonDeleteInboundAuthBasic.setEnabled(basicEnabled);
+        jTableInboundAuthBasic.setEnabled(basicEnabled);
+        jScrollPaneInboundAuthBasic.setEnabled(basicEnabled);
+
+        jButtonAddInboundAuthCert.setEnabled(certEnabled);
+        jButtonDeleteInboundAuthCert.setEnabled(certEnabled);
+        jTableInboundAuthCert.setEnabled(certEnabled);
+        jScrollPaneInboundAuthCert.setEnabled(certEnabled);
     }
 
-    private void jPasswordFieldInboundAuthPasswordKeyReleased(java.awt.event.KeyEvent evt) {
-        if (this.partner != null) {
-            this.partner.getInboundAuthCredentials().setPassword(
-                new String(this.jPasswordFieldInboundAuthPassword.getPassword()));
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
+    /**
+     * Force synchronization of inbound auth credentials from tables to partner object.
+     * Call this before saving the partner to ensure all table changes are persisted.
+     */
+    public void syncInboundAuthCredentials() {
+        if (this.partner != null && this.partner.isLocalStation()) {
+            // Save the toggle switch states (whether each auth type is enabled)
+            boolean basicEnabled = switchInboundAuthBasic.isSelected();
+            boolean certEnabled = switchInboundAuthCert.isSelected();
+            this.partner.setInboundAuthBasicEnabled(basicEnabled);
+            this.partner.setInboundAuthCertEnabled(certEnabled);
+
+            // Collect all credentials from both tables (regardless of toggle state)
+            // The toggles control whether the auth is USED, but we still save the credentials
+            List<PartnerInboundAuthCredential> allCredentials = new ArrayList<>();
+
+            // Collect basic auth credentials from table
+            synchronized (modelInboundAuthBasic) {
+                int basicRowCount = modelInboundAuthBasic.getRowCount();
+                for (int i = 0; i < basicRowCount; i++) {
+                    PartnerInboundAuthCredential cred = modelInboundAuthBasic.getRow(i);
+                    if (cred != null && !cred.isEmpty()) {
+                        allCredentials.add(cred);
+                    }
+                }
+            }
+
+            // Collect certificate credentials from table
+            synchronized (modelInboundAuthCert) {
+                int certRowCount = modelInboundAuthCert.getRowCount();
+                for (int i = 0; i < certRowCount; i++) {
+                    PartnerInboundAuthCredential cred = modelInboundAuthCert.getRow(i);
+                    if (cred != null && !cred.isEmpty()) {
+                        allCredentials.add(cred);
+                    }
+                }
+            }
+
+            // Update partner with all credentials
+            this.partner.setInboundAuthCredentialsList(allCredentials);
         }
-    }
-
-    private void jComboBoxInboundAuthCertActionPerformed(java.awt.event.ActionEvent evt) {
-        if (this.partner != null && this.jComboBoxInboundAuthCert.getSelectedItem() != null) {
-            KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxInboundAuthCert.getSelectedItem();
-            this.partner.getInboundAuthCredentials()
-                .setCertificateFingerprint(certificate.getFingerPrintSHA1());
-            this.buttonOk.computeErrorState();
-            this.informTreeModelNodeChanged();
-        }
-    }
-
-    private void updateInboundAuthState() {
-        boolean basicEnabled = this.jRadioButtonInboundAuthBasic.isSelected();
-        boolean certEnabled = this.jRadioButtonInboundAuthCert.isSelected();
-
-        this.jTextFieldInboundAuthUser.setEnabled(basicEnabled);
-        this.jPasswordFieldInboundAuthPassword.setEnabled(basicEnabled);
-        this.jLabelInboundAuthUser.setEnabled(basicEnabled);
-        this.jLabelInboundAuthPassword.setEnabled(basicEnabled);
-
-        this.jComboBoxInboundAuthCert.setEnabled(certEnabled);
-        this.jLabelInboundAuthCert.setEnabled(certEnabled);
     }
 
     private void jRadioButtonOverwriteLocalstationSecurityActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButtonOverwriteLocalstationSecurityActionPerformed
@@ -4073,6 +4168,16 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         KeystoreCertificate currentSignCert = (KeystoreCertificate) this.jComboBoxSignCert.getSelectedItem();
         KeystoreCertificate currentCryptCert = (KeystoreCertificate) this.jComboBoxCryptCert.getSelectedItem();
 
+        // Temporarily disable action listeners to prevent unwanted certificate changes
+        ActionListener[] signListeners = this.jComboBoxSignCert.getActionListeners();
+        ActionListener[] cryptListeners = this.jComboBoxCryptCert.getActionListeners();
+        for (ActionListener listener : signListeners) {
+            this.jComboBoxSignCert.removeActionListener(listener);
+        }
+        for (ActionListener listener : cryptListeners) {
+            this.jComboBoxCryptCert.removeActionListener(listener);
+        }
+
         // Clear the dropdowns
         this.jComboBoxSignCert.removeAllItems();
         this.jComboBoxCryptCert.removeAllItems();
@@ -4098,11 +4203,13 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
         }
 
         // Try to restore previous selections if they're still available
+        // Use setUIValueWithoutEvent to avoid triggering ActionListeners
         if (currentSignCert != null) {
             for (int i = 0; i < this.jComboBoxSignCert.getItemCount(); i++) {
                 KeystoreCertificate cert = this.jComboBoxSignCert.getItemAt(i);
                 if (cert.getFingerPrintSHA1().equals(currentSignCert.getFingerPrintSHA1())) {
-                    this.jComboBoxSignCert.setSelectedIndex(i);
+                    // Set directly without triggering events (listeners already removed)
+                    this.jComboBoxSignCert.setSelectedItem(cert);
                     break;
                 }
             }
@@ -4111,10 +4218,19 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
             for (int i = 0; i < this.jComboBoxCryptCert.getItemCount(); i++) {
                 KeystoreCertificate cert = this.jComboBoxCryptCert.getItemAt(i);
                 if (cert.getFingerPrintSHA1().equals(currentCryptCert.getFingerPrintSHA1())) {
-                    this.jComboBoxCryptCert.setSelectedIndex(i);
+                    // Set directly without triggering events (listeners already removed)
+                    this.jComboBoxCryptCert.setSelectedItem(cert);
                     break;
                 }
             }
+        }
+
+        // Re-enable action listeners
+        for (ActionListener listener : signListeners) {
+            this.jComboBoxSignCert.addActionListener(listener);
+        }
+        for (ActionListener listener : cryptListeners) {
+            this.jComboBoxCryptCert.addActionListener(listener);
         }
     }
 
@@ -4267,18 +4383,26 @@ private void jTextFieldPollMaxFilesKeyReleased(java.awt.event.KeyEvent evt) {//G
     private javax.swing.JPanel jPanelHTTPAuthCredentialsMessage;
     private javax.swing.JPanel jPanelHTTPHeader;
     private javax.swing.JPanel jPanelHttpAuthData;
-    private javax.swing.JPanel jPanelInboundAuth;
-    private javax.swing.ButtonGroup buttonGroupInboundAuth;
-    private javax.swing.JRadioButton jRadioButtonInboundAuthNone;
-    private javax.swing.JRadioButton jRadioButtonInboundAuthBasic;
-    private javax.swing.JRadioButton jRadioButtonInboundAuthCert;
-    private javax.swing.JTextField jTextFieldInboundAuthUser;
-    private javax.swing.JPasswordField jPasswordFieldInboundAuthPassword;
-    private javax.swing.JComboBox<KeystoreCertificate> jComboBoxInboundAuthCert;
-    private javax.swing.JLabel jLabelInboundAuthInfo;
-    private javax.swing.JLabel jLabelInboundAuthUser;
-    private javax.swing.JLabel jLabelInboundAuthPassword;
-    private javax.swing.JLabel jLabelInboundAuthCert;
+    // Basic Auth Tab
+    private javax.swing.JPanel jPanelInboundAuthBasic;
+    private javax.swing.JLabel jLabelInboundAuthBasicEnable;
+    private de.mendelson.util.toggleswitch.ToggleSwitch switchInboundAuthBasic;
+    private javax.swing.JLabel jLabelInboundAuthBasicInfo;
+    private TableModelInboundAuthBasic modelInboundAuthBasic;
+    private javax.swing.JTable jTableInboundAuthBasic;
+    private javax.swing.JScrollPane jScrollPaneInboundAuthBasic;
+    private javax.swing.JButton jButtonAddInboundAuthBasic;
+    private javax.swing.JButton jButtonDeleteInboundAuthBasic;
+    // Certificate Auth Tab
+    private javax.swing.JPanel jPanelInboundAuthCert;
+    private javax.swing.JLabel jLabelInboundAuthCertEnable;
+    private de.mendelson.util.toggleswitch.ToggleSwitch switchInboundAuthCert;
+    private javax.swing.JLabel jLabelInboundAuthCertInfo;
+    private TableModelInboundAuthCert modelInboundAuthCert;
+    private javax.swing.JTable jTableInboundAuthCert;
+    private javax.swing.JScrollPane jScrollPaneInboundAuthCert;
+    private javax.swing.JButton jButtonAddInboundAuthCert;
+    private javax.swing.JButton jButtonDeleteInboundAuthCert;
     private javax.swing.JPanel jPanelMDN;
     private javax.swing.JPanel jPanelMDNMain;
     private javax.swing.JPanel jPanelMDNURLButtons;

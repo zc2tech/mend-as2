@@ -249,7 +249,7 @@ public class PreferencesAS2 {
                     Map.entry(SHOW_QUOTA_NOTIFICATION_IN_PARTNER_CONFIG, "FALSE"),
                     Map.entry(CEM, "FALSE"),
                     Map.entry(WRITE_OUTBOUND_STATUS_FILE, "FALSE"),
-                    Map.entry(MAX_CONNECTION_RETRY_COUNT, "10"),
+                    Map.entry(MAX_CONNECTION_RETRY_COUNT, "1"),
                     Map.entry(CONNECTION_RETRY_WAIT_TIME_IN_S, "30"),
                     Map.entry(DATASHEET_RECEIPT_URL, "http://localhost:8080/as2/HttpReceiver"),
                     Map.entry(HIDDENCOLSDEFAULT, "11111111111001"),

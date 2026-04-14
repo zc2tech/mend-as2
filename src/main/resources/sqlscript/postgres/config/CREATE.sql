@@ -88,6 +88,8 @@ CREATE TABLE partner(
     inbound_auth_user VARCHAR(256),
     inbound_auth_password VARCHAR(256),
     inbound_auth_cert_fingerprint VARCHAR(255),
+    inbound_auth_basic_enabled BOOLEAN DEFAULT FALSE,
+    inbound_auth_cert_enabled BOOLEAN DEFAULT FALSE,
     FOREIGN KEY(oauth2idmessage) REFERENCES oauth2(id),
     FOREIGN KEY(oauth2idmdn) REFERENCES oauth2(id)
 );
@@ -247,6 +249,22 @@ CREATE TABLE httpheader(
     headervalue VARCHAR(255)
     -- ,FOREIGN KEY(partnerid) REFERENCES partner(id)
 );
+
+CREATE TABLE partner_inbound_auth_credentials(
+    id SERIAL PRIMARY KEY,
+    partner_id INTEGER NOT NULL,
+    auth_type INTEGER NOT NULL,  -- 1=basic, 2=certificate
+    username VARCHAR(256),       -- For basic auth (null for cert auth)
+    password VARCHAR(256),       -- For basic auth (null for cert auth)
+    cert_fingerprint VARCHAR(255), -- For certificate auth (null for basic auth)
+    cert_alias VARCHAR(255),     -- Certificate alias/name for display
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(partner_id) REFERENCES partner(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_partner_inbound_auth ON partner_inbound_auth_credentials(partner_id);
+
 CREATE TABLE certificates(
     id SERIAL PRIMARY KEY,
     partnerid INTEGER,

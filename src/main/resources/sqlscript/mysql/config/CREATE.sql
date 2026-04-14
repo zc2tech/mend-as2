@@ -91,6 +91,8 @@ CREATE TABLE partner(
     inbound_auth_user VARCHAR(256),
     inbound_auth_password VARCHAR(256),
     inbound_auth_cert_fingerprint VARCHAR(255),
+    inbound_auth_basic_enabled TINYINT(1) DEFAULT 0,
+    inbound_auth_cert_enabled TINYINT(1) DEFAULT 0,
     FOREIGN KEY(oauth2idmessage) REFERENCES oauth2(id),
     FOREIGN KEY(oauth2idmdn) REFERENCES oauth2(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -243,6 +245,21 @@ CREATE TABLE httpheader(
     headervalue VARCHAR(255)
     -- ,FOREIGN KEY(partnerid) REFERENCES partner(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE partner_inbound_auth_credentials(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    partner_id INT NOT NULL,
+    auth_type INT NOT NULL COMMENT '1=basic, 2=certificate',
+    username VARCHAR(256) COMMENT 'For basic auth (null for cert auth)',
+    password VARCHAR(256) COMMENT 'For basic auth (null for cert auth)',
+    cert_fingerprint VARCHAR(255) COMMENT 'For certificate auth (null for basic auth)',
+    cert_alias VARCHAR(255) COMMENT 'Certificate alias/name for display',
+    enabled TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(partner_id) REFERENCES partner(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_partner_inbound_auth ON partner_inbound_auth_credentials(partner_id);
 
 CREATE TABLE certificates(
     id INT AUTO_INCREMENT PRIMARY KEY,

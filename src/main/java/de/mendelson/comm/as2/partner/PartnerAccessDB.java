@@ -111,6 +111,9 @@ public class PartnerAccessDB {
                             inboundAuth.setPassword(result.getString("inbound_auth_password"));
                             inboundAuth.setAuthMode(result.getInt("inbound_auth_mode"));
                             inboundAuth.setCertificateFingerprint(result.getString("inbound_auth_cert_fingerprint"));
+                            // Load toggle switch states
+                            partner.setInboundAuthBasicEnabled(result.getBoolean("inbound_auth_basic_enabled"));
+                            partner.setInboundAuthCertEnabled(result.getBoolean("inbound_auth_cert_enabled"));
                         }
                         partner.setComment(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercomment"));
                         partner.setContactAS2(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercontact"));
@@ -131,6 +134,7 @@ public class PartnerAccessDB {
                         //ensure to have a valid partner DB id before loading the releated data
                         this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
                         this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
+                        this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
                         this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
                         partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
                         int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
@@ -287,6 +291,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "partnersystem",
                             "oauth2"
                         });
@@ -326,7 +331,8 @@ public class PartnerAccessDB {
                 + "maxpollfiles=?,partnercontact=?,partneraddress=?,algidentprotatt=?,"
                 + "enabledirpoll=?,useoauth2message=?,useoauth2mdn=?,"
                 + "oauth2idmessage=?,oauth2idmdn=?,overwritelocalsecurity=?,"
-                + "inbound_auth_mode=?,inbound_auth_user=?,inbound_auth_password=?,inbound_auth_cert_fingerprint=? "
+                + "inbound_auth_mode=?,inbound_auth_user=?,inbound_auth_password=?,inbound_auth_cert_fingerprint=?,"
+                + "inbound_auth_basic_enabled=?,inbound_auth_cert_enabled=? "
                 + "WHERE id=?")) {
             preparedStatement.setString(1, partner.getAS2Identification());
             preparedStatement.setString(2, partner.getName());
@@ -388,17 +394,22 @@ public class PartnerAccessDB {
                 preparedStatement.setString(45, inboundAuth.getUser());
                 preparedStatement.setString(46, inboundAuth.getPassword());
                 preparedStatement.setString(47, inboundAuth.getCertificateFingerprint());
+                preparedStatement.setBoolean(48, partner.isInboundAuthBasicEnabled());
+                preparedStatement.setBoolean(49, partner.isInboundAuthCertEnabled());
             } else {
                 // Set nulls for remote partners
                 preparedStatement.setInt(44, 0);
                 preparedStatement.setNull(45, Types.VARCHAR);
                 preparedStatement.setNull(46, Types.VARCHAR);
                 preparedStatement.setNull(47, Types.VARCHAR);
+                preparedStatement.setBoolean(48, false);
+                preparedStatement.setBoolean(49, false);
             }
             //where statement
-            preparedStatement.setInt(48, partner.getDBId());
+            preparedStatement.setInt(50, partner.getDBId());
             preparedStatement.executeUpdate();
             this.storeHTTPHeader(partner, configConnectionNoAutoCommit);
+            this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
             this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
             this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
             //update visibility settings (only for remote partners)
@@ -427,6 +438,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "partnersystem"
                         });
                 try {
@@ -448,6 +460,7 @@ public class PartnerAccessDB {
     public void deletePartner(Partner partner, Connection configConnectionNoAutoCommit) throws Exception {
         PartnerSystemAccessDB partnerSystemAccess = new PartnerSystemAccessDB(this.dbDriverManager);
         this.deleteHTTPHeader(partner, configConnectionNoAutoCommit);
+        this.deleteInboundAuthCredentials(partner, configConnectionNoAutoCommit);
         this.certificateAccess.deletePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
         this.eventAccess.deletePartnerEvents(partner, configConnectionNoAutoCommit);
         partnerSystemAccess.deletePartnerSystem(partner, configConnectionNoAutoCommit);
@@ -484,6 +497,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "oauth2"
                         });
                 try {
@@ -517,9 +531,10 @@ public class PartnerAccessDB {
                 + "contenttransferencoding,httpversion,"
                 + "maxpollfiles,partnercontact,partneraddress,algidentprotatt,enabledirpoll,"
                 + "useoauth2message,useoauth2mdn,oauth2idmessage,oauth2idmdn,overwritelocalsecurity,created_by_user_id,"
-                + "inbound_auth_mode,inbound_auth_user,inbound_auth_password,inbound_auth_cert_fingerprint"
+                + "inbound_auth_mode,inbound_auth_user,inbound_auth_password,inbound_auth_cert_fingerprint,"
+                + "inbound_auth_basic_enabled,inbound_auth_cert_enabled"
                 + ")VALUES("
-                + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setString(1, partner.getAS2Identification());
             preparedStatement.setString(2, partner.getName());
             preparedStatement.setInt(3, partner.isLocalStation() ? 1 : 0);
@@ -581,17 +596,22 @@ public class PartnerAccessDB {
                 preparedStatement.setString(46, inboundAuth.getUser());
                 preparedStatement.setString(47, inboundAuth.getPassword());
                 preparedStatement.setString(48, inboundAuth.getCertificateFingerprint());
+                preparedStatement.setBoolean(49, partner.isInboundAuthBasicEnabled());
+                preparedStatement.setBoolean(50, partner.isInboundAuthCertEnabled());
             } else {
                 // Set nulls for remote partners
                 preparedStatement.setInt(45, 0);
                 preparedStatement.setNull(46, Types.VARCHAR);
                 preparedStatement.setNull(47, Types.VARCHAR);
                 preparedStatement.setNull(48, Types.VARCHAR);
+                preparedStatement.setBoolean(49, false);
+                preparedStatement.setBoolean(50, false);
             }
             preparedStatement.executeUpdate();
         }
         partner.setDBId(this.getDBIdForPartner(partner.getAS2Identification(), configConnectionNoAutoCommit));
         this.storeHTTPHeader(partner, configConnectionNoAutoCommit);
+        this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
         this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
         this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
 
@@ -832,6 +852,7 @@ public class PartnerAccessDB {
                 //ensure to have a valid partner DB id before loading the releated data
                 this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
                 this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
+                this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
                 this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
                 partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
                 int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
@@ -921,6 +942,86 @@ public class PartnerAccessDB {
                     statement.setInt(1, partner.getDBId());
                     statement.setString(2, header.getKey());
                     statement.setString(3, header.getValue());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+        }
+    }
+
+    /**
+     * Loads the partner-specific inbound authentication credentials from the DB
+     * and assigns them to the passed partner (local stations only)
+     */
+    private void loadInboundAuthCredentialsIntoPartner(Partner partner, Connection configConnection) throws Exception {
+        if (!partner.isLocalStation()) {
+            return; // Only local stations have inbound auth
+        }
+
+        int partnerId = partner.getDBId();
+
+        try (PreparedStatement statement = configConnection.prepareStatement(
+                "SELECT * FROM partner_inbound_auth_credentials WHERE partner_id=? ORDER BY id")) {
+            statement.setInt(1, partnerId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    PartnerInboundAuthCredential credential = new PartnerInboundAuthCredential();
+                    credential.setDbId(result.getInt("id"));
+                    credential.setAuthType(result.getInt("auth_type"));
+                    credential.setUsername(result.getString("username"));
+                    credential.setPassword(result.getString("password"));
+                    credential.setCertFingerprint(result.getString("cert_fingerprint"));
+                    credential.setCertAlias(result.getString("cert_alias"));
+                    credential.setEnabled(result.getBoolean("enabled"));
+                    partner.addInboundAuthCredential(credential);
+                }
+            }
+        }
+    }
+
+    /**
+     * Deletes all inbound authentication credentials for a partner from the database.
+     * Requires DELETE lock on partner_inbound_auth_credentials
+     */
+    private void deleteInboundAuthCredentials(Partner partner, Connection configConnection) throws Exception {
+        int partnerId = partner.getDBId();
+
+        try (PreparedStatement statement = configConnection.prepareStatement(
+                "DELETE FROM partner_inbound_auth_credentials WHERE partner_id=?")) {
+            statement.setInt(1, partnerId);
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Updates inbound authentication credentials for a partner in the DB.
+     * Requires DELETE lock on partner_inbound_auth_credentials
+     */
+    private void storeInboundAuthCredentials(Partner partner, Connection configConnectionNoAutoCommit) throws Exception {
+        if (!partner.isLocalStation()) {
+            return; // Only local stations have inbound auth
+        }
+
+        // Delete existing credentials
+        this.deleteInboundAuthCredentials(partner, configConnectionNoAutoCommit);
+
+        // Remove empty entries
+        partner.deleteEmptyInboundAuthCredentials();
+
+        // Insert all current credentials
+        List<PartnerInboundAuthCredential> credentialList = partner.getInboundAuthCredentialsList();
+
+        if (!credentialList.isEmpty()) {
+            try (PreparedStatement statement = configConnectionNoAutoCommit.prepareStatement(
+                    "INSERT INTO partner_inbound_auth_credentials(partner_id, auth_type, username, password, cert_fingerprint, cert_alias, enabled) VALUES(?,?,?,?,?,?,?)")) {
+                for (PartnerInboundAuthCredential credential : credentialList) {
+                    statement.setInt(1, partner.getDBId());
+                    statement.setInt(2, credential.getAuthType());
+                    statement.setString(3, credential.getUsername());
+                    statement.setString(4, credential.getPassword());
+                    statement.setString(5, credential.getCertFingerprint());
+                    statement.setString(6, credential.getCertAlias());
+                    statement.setBoolean(7, credential.isEnabled());
                     statement.addBatch();
                 }
                 statement.executeBatch();
@@ -1061,10 +1162,13 @@ public class PartnerAccessDB {
                                     partner.setEnableDirPoll(result.getInt("enabledirpoll") == 1);
                                     partner.setOverwriteLocalStationSecurity(result.getInt("overwritelocalsecurity") == 1);
                                     partner.setCreatedByUserId(result.getInt("created_by_user_id"));
+                                    partner.setInboundAuthBasicEnabled(result.getBoolean("inbound_auth_basic_enabled"));
+                                    partner.setInboundAuthCertEnabled(result.getBoolean("inbound_auth_cert_enabled"));
                                     //ensure to have a valid partner DB id before loading the releated data
                                     this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
                                     this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
                                     this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
+                                    this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
                                     partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
                                     int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
                                     if (!result.wasNull()) {

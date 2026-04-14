@@ -230,14 +230,19 @@ public class JettyStarter {
                 }
             }
             );
-            //define the TLS system keystore for the jetty access 
+            //define the TLS system keystore for the jetty access
             Connector[] connector = tempHTTPServer.getConnectors();
             for (Connector conn : connector) {
                 if (conn.getConnectionFactory("ssl") != null) {
                     SslConnectionFactory sslConnectionFactory = (SslConnectionFactory) conn.getConnectionFactory("ssl");
-                    SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
+                    SslContextFactory.Server sslContextFactory = (SslContextFactory.Server) sslConnectionFactory.getSslContextFactory();
                     sslContextFactory.setKeyStore(this.tlsStorage.getKeystore());
                     sslContextFactory.setKeyStorePassword(new String(tlsStorage.getKeystorePass()));
+                    // Request client certificates (but don't require them)
+                    // This allows certificate authentication to work while still allowing
+                    // connections without client certs (for basic auth or no auth)
+                    sslContextFactory.setWantClientAuth(true);
+                    this.logger.info(MODULE_NAME + " Configured HTTPS connector to request client certificates (WantClientAuth=true)");
                     certificateRefreshController.addRefreshControl(sslContextFactory);
                 }
             }

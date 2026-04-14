@@ -822,6 +822,12 @@ public class MessageHttpUploader {
             }
             this.updateUploadHTTPHeaderWithUserDefinedHeaders(filePost, receiver);
             //Execute request
+            if (this.logger != null && receiver.getAuthenticationCredentialsMessage() != null
+                && receiver.getAuthenticationCredentialsMessage().getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
+                this.logger.log(Level.INFO,
+                    "[OUTBOUND CERT AUTH] About to execute HTTPS request. Client certificate should be sent during TLS handshake.",
+                    message.getAS2Info());
+            }
             httpClient.execute(filePost, response -> {
                 try {
                     if (response != null) {
@@ -972,6 +978,23 @@ public class MessageHttpUploader {
         // TrustStrategy for trusting self-signed certificates
         TrustStrategy trustSelfSignedStrategy = (chain, authType) -> true;
 
+        // Log HTTP authentication configuration
+        if (this.logger != null) {
+            if (httpAuthentication != null) {
+                this.logger.log(Level.INFO,
+                    "[OUTBOUND] HTTP Authentication mode: " +
+                    (httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE ? "CERTIFICATE" :
+                     httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC ? "BASIC" : "NONE") +
+                    ", Partner: " + as2Info.getSenderId() + " -> " + as2Info.getReceiverId(),
+                    as2Info);
+            } else {
+                this.logger.log(Level.INFO,
+                    "[OUTBOUND] HTTP Authentication is NULL, Partner: " +
+                    as2Info.getSenderId() + " -> " + as2Info.getReceiverId(),
+                    as2Info);
+            }
+        }
+
         if (connectionParameter.getTrustAllRemoteServerCertificates()) {
             SSLContextBuilder builder = SSLContexts.custom()
                     .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
@@ -985,10 +1008,25 @@ public class MessageHttpUploader {
                 httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
 
                 String fingerprint = httpAuthentication.getCertificateFingerprint();
+
+                if (this.logger != null) {
+                    this.logger.log(Level.INFO,
+                        "[OUTBOUND CERT AUTH] Certificate authentication requested. Configured fingerprint: " +
+                        (fingerprint != null ? fingerprint : "NULL"),
+                        as2Info);
+                }
+
                 if (fingerprint != null && !fingerprint.isEmpty()) {
                     // Find the alias for the certificate with this fingerprint
                     String targetAlias = this.findAliasByFingerprint(
                         this.certStore.getKeystore(), fingerprint);
+
+                    if (this.logger != null) {
+                        this.logger.log(Level.INFO,
+                            "[OUTBOUND CERT AUTH] Looking for certificate with fingerprint: " + fingerprint +
+                            ", Found alias: " + (targetAlias != null ? targetAlias : "NOT FOUND"),
+                            as2Info);
+                    }
 
                     if (targetAlias != null) {
                         // Create a KeyManagerFactory to get the default KeyManager
@@ -1002,6 +1040,12 @@ public class MessageHttpUploader {
                             if (keyManagers[i] instanceof X509KeyManager) {
                                 keyManagers[i] = new SingleCertificateKeyManager(
                                     (X509KeyManager) keyManagers[i], targetAlias);
+
+                                if (this.logger != null) {
+                                    this.logger.log(Level.INFO,
+                                        "[OUTBOUND CERT AUTH] Successfully configured SingleCertificateKeyManager with alias: " + targetAlias,
+                                        as2Info);
+                                }
                                 break;
                             }
                         }
@@ -1009,11 +1053,17 @@ public class MessageHttpUploader {
                         // Build SSL context with custom key manager
                         sslcontext = builder.build();
                         sslcontext.init(keyManagers, null, null);
+
+                        if (this.logger != null) {
+                            this.logger.log(Level.INFO,
+                                "[OUTBOUND CERT AUTH] SSL context initialized with client certificate. Certificate will be sent during TLS handshake.",
+                                as2Info);
+                        }
                     } else {
                         // Certificate not found - log warning and proceed without client cert
                         if (this.logger != null) {
                             this.logger.log(Level.WARNING,
-                                "Client certificate with fingerprint " + fingerprint +
+                                "[OUTBOUND CERT AUTH] Client certificate with fingerprint " + fingerprint +
                                 " not found in keystore. Proceeding without client certificate.",
                                 as2Info);
                         }
@@ -1027,7 +1077,7 @@ public class MessageHttpUploader {
                     // No fingerprint specified - log warning
                     if (this.logger != null) {
                         this.logger.log(Level.WARNING,
-                            "Certificate authentication mode selected but no certificate fingerprint specified.",
+                            "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no certificate fingerprint specified.",
                             as2Info);
                     }
                     builder.loadKeyMaterial(
@@ -1037,6 +1087,11 @@ public class MessageHttpUploader {
                 }
             } else {
                 // Not using certificate authentication - load all keys as before
+                if (this.logger != null) {
+                    this.logger.log(Level.INFO,
+                        "[OUTBOUND] Not using certificate authentication (mode is not CERTIFICATE or httpAuthentication is null)",
+                        as2Info);
+                }
                 builder.loadKeyMaterial(
                     this.certStore.getKeystore(),
                     this.certStore.getKeystorePass());

@@ -10,7 +10,7 @@ import de.mendelson.comm.as2.partner.PartnerSystem;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.clientserver.PartnerModificationRequest;
-import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
+// Removed: import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
@@ -199,7 +199,7 @@ public class JDialogPartnerConfig extends JDialog {
         this.jButtonDeletePartner.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
         this.jButtonClonePartner.setIcon(new ImageIcon(IMAGE_COPY.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
         this.jButtonNewPartner.setIcon(new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonGlobalSettings.setIcon(new ImageIcon(IMAGE_PARTNER_GROUP.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        // Removed: this.jButtonGlobalSettings.setIcon(...)
 
     }
 
@@ -473,6 +473,8 @@ public class JDialogPartnerConfig extends JDialog {
                         }
                     }
                     JDialogPartnerConfig.this.lock();
+                    //Sync inbound auth credentials from tables to partner objects before saving
+                    JDialogPartnerConfig.this.panelEditPartner.syncInboundAuthCredentials();
                     //display wait indicator
                     JDialogPartnerConfig.this.status.startProgressIndeterminate(
                             JDialogPartnerConfig.rb.getResourceString("saving"), uniqueId);
@@ -569,7 +571,7 @@ public class JDialogPartnerConfig extends JDialog {
         jButtonNewPartner = new javax.swing.JButton();
         jButtonClonePartner = new javax.swing.JButton();
         jButtonDeletePartner = new javax.swing.JButton();
-        jButtonGlobalSettings = new javax.swing.JButton();
+        // Removed: jButtonGlobalSettings = new javax.swing.JButton();
         jPanelMain = new javax.swing.JPanel();
         jPanelModuleLockWarning = new javax.swing.JPanel();
         jLabelModuleLockedWarning = new javax.swing.JLabel();
@@ -628,17 +630,8 @@ public class JDialogPartnerConfig extends JDialog {
         });
         jToolBar.add(jButtonDeletePartner);
 
-        jButtonGlobalSettings.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonGlobalSettings.setText(JDialogPartnerConfig.rb.getResourceString( "button.globalchange"));
-        jButtonGlobalSettings.setFocusable(false);
-        jButtonGlobalSettings.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButtonGlobalSettings.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jButtonGlobalSettings.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonGlobalSettingsActionPerformed(evt);
-            }
-        });
-        jToolBar.add(jButtonGlobalSettings);
+        // Removed Global Settings button
+        // jButtonGlobalSettings was here
 
         getContentPane().add(jToolBar, java.awt.BorderLayout.NORTH);
 
@@ -816,18 +809,13 @@ public class JDialogPartnerConfig extends JDialog {
         ModuleLock.displayDialogModuleLocked(parent, this.lockKeeper, ModuleLock.MODULE_PARTNER);
     }//GEN-LAST:event_jButtonModuleLockInfoActionPerformed
 
-    private void jButtonGlobalSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGlobalSettingsActionPerformed
-        JFrame parent = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
-        JDialog dialog = new JDialogGlobalChange(parent, this.partnerList);
-        dialog.setVisible(true);
-        this.displayPartnerValues();
-    }//GEN-LAST:event_jButtonGlobalSettingsActionPerformed
+    // Removed: jButtonGlobalSettingsActionPerformed method
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonClonePartner;
     private javax.swing.JButton jButtonDeletePartner;
-    private javax.swing.JButton jButtonGlobalSettings;
+    // Removed: private javax.swing.JButton jButtonGlobalSettings;
     private javax.swing.JButton jButtonModuleLockInfo;
     private javax.swing.JButton jButtonNewPartner;
     private de.mendelson.comm.as2.partner.gui.JButtonPartnerConfigOk jButtonPartnerConfigOk;

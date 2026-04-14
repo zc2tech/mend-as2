@@ -110,6 +110,24 @@ public class JDialogExportCertificate extends JDialog {
     }
 
     /**
+     * Expands ~ to user home directory for Unix-like systems (Mac/Linux)
+     */
+    private String expandTilde(String path) {
+        if (path == null) {
+            return null;
+        }
+        // Only expand if it starts with ~
+        if (path.startsWith("~" + java.io.File.separator) || path.equals("~")) {
+            String userHome = System.getProperty("user.home");
+            if (path.equals("~")) {
+                return userHome;
+            }
+            return userHome + path.substring(1);
+        }
+        return path;
+    }
+
+    /**
      * Finally exports the certificate
      */
     private void performCertificateExport() {
@@ -126,7 +144,8 @@ public class JDialogExportCertificate extends JDialog {
                 throw response.getException();
             }
             byte[] exportData = response.getExportData();
-            String exportFilename = this.jTextFieldExportFile.getText();
+            // Expand ~ to user home directory
+            String exportFilename = expandTilde(this.jTextFieldExportFile.getText());
             if (exportFormat.getType().equals(KeystoreCertificate.CERTIFICATE_FORMAT_PEM)) {
                 if (!exportFilename.toLowerCase().endsWith(".cer")) {
                     exportFilename += ".cer";

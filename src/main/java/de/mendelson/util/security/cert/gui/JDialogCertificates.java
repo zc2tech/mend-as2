@@ -246,6 +246,9 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private void setupKeyboardShortcuts() {
         // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
         KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
+
+        // Add Cmd+S / Ctrl+S shortcut to OK button (Save & Close)
+        KeyboardShortcutUtil.addButtonShortcutWithTooltip(this.jButtonOk, KeyEvent.VK_S, "SAVE");
     }
 
     /**
