@@ -49,35 +49,63 @@ public class JwtTokenProvider {
     }
 
     /**
-     * Generate an access token for the given username
+     * Generate an access token for the given username (normal login, not switched)
      */
     public String generateAccessToken(String username) {
+        return generateAccessToken(username, null);
+    }
+
+    /**
+     * Generate an access token for the given username
+     * @param username Username for the token
+     * @param switchedByAdmin Username of the admin who performed the switch (null if not switched)
+     */
+    public String generateAccessToken(String username, String switchedByAdmin) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + ACCESS_TOKEN_VALIDITY);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .claim("type", "access")
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+                .claim("type", "access");
+
+        // Only add switchedByAdmin claim if it's actually a switched session
+        if (switchedByAdmin != null && !switchedByAdmin.isEmpty()) {
+            builder.claim("switchedByAdmin", switchedByAdmin);
+        }
+
+        return builder.signWith(key, SignatureAlgorithm.HS256).compact();
     }
 
     /**
      * Generate a refresh token for the given username
      */
     public String generateRefreshToken(String username) {
+        return generateRefreshToken(username, null);
+    }
+
+    /**
+     * Generate a refresh token for the given username
+     * @param username Username for the token
+     * @param switchedByAdmin Username of the admin who performed the switch (null if not switched)
+     */
+    public String generateRefreshToken(String username, String switchedByAdmin) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + REFRESH_TOKEN_VALIDITY);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .claim("type", "refresh")
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+                .claim("type", "refresh");
+
+        // Only add switchedByAdmin claim if it's actually a switched session
+        if (switchedByAdmin != null && !switchedByAdmin.isEmpty()) {
+            builder.claim("switchedByAdmin", switchedByAdmin);
+        }
+
+        return builder.signWith(key, SignatureAlgorithm.HS256).compact();
     }
 
     /**
@@ -120,6 +148,32 @@ public class JwtTokenProvider {
             return "refresh".equals(claims.get("type"));
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Check if token was created during admin user switch (impersonation)
+     * @return true if this is a switched session
+     */
+    public boolean isSwitchedByAdmin(String token) {
+        String adminUsername = getSwitchedByAdminUsername(token);
+        return adminUsername != null && !adminUsername.isEmpty();
+    }
+
+    /**
+     * Get the username of the admin who performed the user switch
+     * @return Admin username if this is a switched session, null otherwise
+     */
+    public String getSwitchedByAdminUsername(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.get("switchedByAdmin", String.class);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

@@ -31,23 +31,49 @@ export default function TrackerMessageList() {
   const { user, hasPermission } = useAuth();
   const [trackerAuthRequired, setTrackerAuthRequired] = useState(false);
   const [downloading, setDownloading] = useState({});
+  const [trackerEndpointUrls, setTrackerEndpointUrls] = useState([]);
   const queryClient = useQueryClient();
 
   // Check if user has admin-like permissions (USER_MANAGE means they can see all users)
   const isAdmin = hasPermission('USER_MANAGE');
 
-  // Get tracker auth setting - now all authenticated users can access this
+  // Get tracker auth setting and build endpoint URLs
   useEffect(() => {
     const getTrackerAuth = async () => {
       try {
         const trackerConfig = await api.get('/system/tracker/config');
         setTrackerAuthRequired(trackerConfig.data.authRequired);
+
+        // Build tracker endpoint URLs using server configuration
+        const host = trackerConfig.data.hostname || window.location.hostname;
+        const username = user?.username || 'your-username';
+        const urls = [];
+
+        // Add HTTPS URL if configured
+        if (trackerConfig.data.httpsPort) {
+          urls.push({
+            protocol: 'https',
+            port: trackerConfig.data.httpsPort,
+            url: `https://${host}:${trackerConfig.data.httpsPort}/as2/tracker/${username}`
+          });
+        }
+
+        // Add HTTP URL if configured
+        if (trackerConfig.data.httpPort) {
+          urls.push({
+            protocol: 'http',
+            port: trackerConfig.data.httpPort,
+            url: `http://${host}:${trackerConfig.data.httpPort}/as2/tracker/${username}`
+          });
+        }
+
+        setTrackerEndpointUrls(urls);
       } catch (error) {
         // Silently fail - default to false (show user filter)
       }
     };
     getTrackerAuth();
-  }, []);
+  }, [user]);
   const defaultFilters = {
     startDate: format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
@@ -307,6 +333,60 @@ export default function TrackerMessageList() {
           Showing {messages.length} messages
         </p>
       </div>
+
+      {/* Tracker Endpoint URL Info Box */}
+      {trackerEndpointUrls.length > 0 && (
+        <div style={{
+          marginBottom: '1rem',
+          padding: '0.75rem 1rem',
+          backgroundColor: '#e7f3ff',
+          border: '1px solid #b3d9ff',
+          borderRadius: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <strong style={{ fontSize: '0.875rem', color: '#0056b3', marginRight: '0.5rem' }}>
+             Endpoint:
+            </strong>
+            {trackerEndpointUrls.map((urlInfo, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: '600' }}>
+                  {urlInfo.protocol.toUpperCase()} ({urlInfo.port}):
+                </span>
+                <code style={{
+                  fontSize: '0.875rem',
+                  padding: '0.375rem 0.5rem',
+                  backgroundColor: 'white',
+                  border: '1px solid #b3d9ff',
+                  borderRadius: '4px',
+                  display: 'inline-block',
+                  maxWidth: 'fit-content'
+                }}>
+                  {urlInfo.url}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(urlInfo.url);
+                    alert(`${urlInfo.protocol.toUpperCase()} Tracker URL copied to clipboard!`);
+                  }}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    backgroundColor: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  📋 Copy
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'white', borderRadius: '8px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

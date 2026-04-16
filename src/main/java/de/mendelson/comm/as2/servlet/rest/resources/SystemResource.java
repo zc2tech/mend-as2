@@ -525,6 +525,19 @@ public class SystemResource {
             config.setRateLimitWindowHours(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
             config.setRateLimitBlockMinutes(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES));
 
+            // Get hostname using helper
+            config.setHostname(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHostname());
+
+            // Get actual listening ports from HTTP server config (handles test mode automatically)
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server != null) {
+                HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+                if (configInfo != null) {
+                    config.setHttpsPort(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpsPort(configInfo));
+                    config.setHttpPort(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpPort(configInfo));
+                }
+            }
+
             return Response.ok(config).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -729,6 +742,9 @@ public class SystemResource {
         private int rateLimitFailures;
         private int rateLimitWindowHours;
         private int rateLimitBlockMinutes;
+        private Integer httpsPort;
+        private Integer httpPort;
+        private String hostname;
 
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -742,5 +758,101 @@ public class SystemResource {
         public void setRateLimitWindowHours(int rateLimitWindowHours) { this.rateLimitWindowHours = rateLimitWindowHours; }
         public int getRateLimitBlockMinutes() { return rateLimitBlockMinutes; }
         public void setRateLimitBlockMinutes(int rateLimitBlockMinutes) { this.rateLimitBlockMinutes = rateLimitBlockMinutes; }
+        public Integer getHttpsPort() { return httpsPort; }
+        public void setHttpsPort(Integer httpsPort) { this.httpsPort = httpsPort; }
+        public Integer getHttpPort() { return httpPort; }
+        public void setHttpPort(Integer httpPort) { this.httpPort = httpPort; }
+        public String getHostname() { return hostname; }
+        public void setHostname(String hostname) { this.hostname = hostname; }
+    }
+
+    /**
+     * Generate the local station URL based on server configuration and username
+     * GET /system/generate-local-station-url?username={username}&hostname={hostname}
+     */
+    @GET
+    @Path("/generate-local-station-url")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response generateLocalStationUrl(
+            @QueryParam("username") String username,
+            @QueryParam("hostname") String hostname) {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}").build();
+            }
+
+            HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+            if (configInfo == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"HTTP server config not available\"}").build();
+            }
+
+            // Get preferred listener (HTTPS first, then HTTP) using helper
+            HTTPServerConfigInfo.Listener listener =
+                de.mendelson.comm.as2.server.ServerConfigurationHelper.getPreferredListener(configInfo);
+
+            if (listener == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("{\"error\":\"No HTTP listener configured\"}").build();
+            }
+
+            // Determine protocol using helper
+            String protocol = de.mendelson.comm.as2.server.ServerConfigurationHelper.getProtocol(listener);
+
+            // Use provided hostname or fall back to adapter or auto-detected hostname
+            String host = hostname;
+            if (host == null || host.trim().isEmpty()) {
+                host = listener.getAdapter();
+                // If adapter is 0.0.0.0, use auto-detected hostname
+                if ("0.0.0.0".equals(host)) {
+                    host = de.mendelson.comm.as2.server.ServerConfigurationHelper.getHostname();
+                }
+            }
+
+            int port = listener.getPort();
+            String receiptPath = configInfo.getReceiptURLPath();
+
+            // Build URL: protocol://host:port/receiptPath/username
+            String url = String.format("%s://%s:%d%s/%s",
+                    protocol, host, port, receiptPath, username);
+
+            LocalStationUrlResponse response = new LocalStationUrlResponse();
+            response.setUrl(url);
+            response.setProtocol(protocol);
+            response.setHost(host);
+            response.setPort(port);
+            response.setReceiptPath(receiptPath);
+            response.setUsername(username);
+
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
+    public static class LocalStationUrlResponse {
+        private String url;
+        private String protocol;
+        private String host;
+        private int port;
+        private String receiptPath;
+        private String username;
+
+        public String getUrl() { return url; }
+        public void setUrl(String url) { this.url = url; }
+        public String getProtocol() { return protocol; }
+        public void setProtocol(String protocol) { this.protocol = protocol; }
+        public String getHost() { return host; }
+        public void setHost(String host) { this.host = host; }
+        public int getPort() { return port; }
+        public void setPort(int port) { this.port = port; }
+        public String getReceiptPath() { return receiptPath; }
+        public void setReceiptPath(String receiptPath) { this.receiptPath = receiptPath; }
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
     }
 }

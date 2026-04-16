@@ -3244,8 +3244,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
 
         try {
-            // Get list of all users
-            UserListResponse response = (UserListResponse) this.sendSync(new UserListRequest(), 10000);
+            // Get list of users, excluding admins and disabled users
+            UserListResponse response = (UserListResponse) this.sendSync(
+                new UserListRequest(true, true), // excludeAdmins=true, enabledOnly=true
+                10000);
             if (response == null || response.getUsers() == null || response.getUsers().isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "No users available for switching",

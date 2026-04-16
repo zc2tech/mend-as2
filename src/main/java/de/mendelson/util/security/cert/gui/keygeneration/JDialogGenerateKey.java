@@ -14,6 +14,7 @@ import de.mendelson.util.KeyboardShortcutUtil;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import de.mendelson.util.balloontip.BalloonToolTip;
+import de.mendelson.util.security.cert.KeystoreStorageImplFile;
 import de.mendelson.util.security.keygeneration.KeyGenerationValues;
 import de.mendelson.util.security.keygeneration.KeyGenerator;
 import de.mendelson.util.security.keylength.KeyLengthDisplay;
@@ -92,9 +93,27 @@ public class JDialogGenerateKey extends JDialog {
      *
      */
     public JDialogGenerateKey(JFrame parent) {
+        this(parent, KeystoreStorageImplFile.KEYSTORE_USAGE_ENC_SIGN);
+    }
+
+    /**
+     * Creates new form JDialogPartnerConfig with keystore usage
+     *
+     * @param parent Parent frame
+     * @param keystoreUsage KEYSTORE_USAGE_TLS or KEYSTORE_USAGE_ENC_SIGN
+     */
+    public JDialogGenerateKey(JFrame parent, int keystoreUsage) {
         super(parent, true);
         this.setTitle(rb.getResourceString("title"));
         initComponents();
+
+        // Set default checkboxes based on keystore usage
+        if (keystoreUsage == KeystoreStorageImplFile.KEYSTORE_USAGE_TLS) {
+            this.jCheckBoxExtensionTLS.setSelected(true);
+        } else if (keystoreUsage == KeystoreStorageImplFile.KEYSTORE_USAGE_ENC_SIGN) {
+            this.jCheckBoxExtensionSignEncrypt.setSelected(true);
+        }
+
         this.jComboBoxKeySignature.setRenderer(new ListCellRendererSignature(this.jComboBoxKeySignature));
         this.jComboBoxKeySize.setRenderer(new ListCellRendererKeyLength(this.jComboBoxKeySize));
         this.setMultiresolutionIcons();

@@ -61,8 +61,8 @@ public class JettyCertificateRefreshController {
         public void run() {
             try {
                 KeydataAccessDB keydataAccess = new KeydataAccessDB(dbDriverManager, SystemEventManagerImplAS2.instance());
-                // System/admin TLS keystore (user_id=0)
-                long foundModificationTimeTLS = keydataAccess.getLastChanged(KeystoreStorageImplDB.KEYSTORE_USAGE_TLS, 0);
+                // System-wide TLS keystore (user_id=-1, system-wide)
+                long foundModificationTimeTLS = keydataAccess.getLastChanged(KeystoreStorageImplDB.KEYSTORE_USAGE_TLS, KeydataAccessDB.SYSTEM_WIDE_USER_ID);
                 if (this.lastModificationTimeTLS == -1) {
                     //first run: take the change value
                     this.lastModificationTimeTLS = foundModificationTimeTLS;

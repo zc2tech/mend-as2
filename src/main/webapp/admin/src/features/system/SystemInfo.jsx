@@ -22,16 +22,18 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import HTTPServerConfig from './HTTPServerConfig';
-import InboundAuth from './InboundAuth';
 import TrackerConfig from './TrackerConfig';
 import SystemEvents from './SystemEvents';
 import ServerLogSearch from './ServerLogSearch';
 import MaintenanceSettings from './MaintenanceSettings';
 import NotificationSettings from './NotificationSettings';
+import SystemTLS from './SystemTLS';
+import { useAuth } from '../auth/useAuth';
 
 export default function SystemInfo() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('httpConfig');
+  const { hasPermission } = useAuth();
 
   // Check for tab parameter in URL on mount
   useEffect(() => {
@@ -40,6 +42,9 @@ export default function SystemInfo() {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Check if user has permission to view TLS tab
+  const hasTLSReadPermission = hasPermission('CERT_TLS_READ');
 
   const tabStyle = {
     display: 'flex',
@@ -72,12 +77,14 @@ export default function SystemInfo() {
         >
           HTTP Server Configuration
         </button>
-        <button
-          style={tabButtonStyle(activeTab === 'inboundAuth')}
-          onClick={() => setActiveTab('inboundAuth')}
-        >
-          Inb. AS2 Auth
-        </button>
+        {hasTLSReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'tls')}
+            onClick={() => setActiveTab('tls')}
+          >
+            TLS
+          </button>
+        )}
         <button
           style={tabButtonStyle(activeTab === 'tracker')}
           onClick={() => setActiveTab('tracker')}
@@ -111,12 +118,12 @@ export default function SystemInfo() {
       </div>
 
       {activeTab === 'httpConfig' && <HTTPServerConfig />}
-      {activeTab === 'inboundAuth' && <InboundAuth />}
       {activeTab === 'tracker' && <TrackerConfig />}
       {activeTab === 'events' && <SystemEvents />}
       {activeTab === 'serverlog' && <ServerLogSearch />}
       {activeTab === 'maintenance' && <MaintenanceSettings />}
       {activeTab === 'notification' && <NotificationSettings />}
+      {activeTab === 'tls' && <SystemTLS />}
     </div>
   );
 }

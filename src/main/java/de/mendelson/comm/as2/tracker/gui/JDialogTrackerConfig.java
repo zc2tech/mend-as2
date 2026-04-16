@@ -42,6 +42,7 @@ public class JDialogTrackerConfig extends JDialog {
     private MecResourceBundle rb;
     private PreferencesAS2 preferences;
     private BaseClient baseClient;
+    private boolean isAdmin;
 
     // UI Components
     private ToggleSwitch toggleEnabled;
@@ -56,6 +57,10 @@ public class JDialogTrackerConfig extends JDialog {
     public JDialogTrackerConfig(JFrame parent, BaseClient baseClient) {
         super(parent, true);
         this.baseClient = baseClient;
+
+        System.out.println("[DEBUG TrackerConfig] Dialog constructor starting...");
+        this.isAdmin = checkUserIsAdmin();
+        System.out.println("[DEBUG TrackerConfig] isAdmin result: " + this.isAdmin);
 
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -76,9 +81,68 @@ public class JDialogTrackerConfig extends JDialog {
             return;
         }
 
+        System.out.println("[DEBUG TrackerConfig] About to call initComponents...");
         initComponents();
+        System.out.println("[DEBUG TrackerConfig] initComponents completed");
         loadSettings();
+        System.out.println("[DEBUG TrackerConfig] loadSettings completed");
         this.getRootPane().setDefaultButton(this.jButtonOk);
+    }
+
+    /**
+     * Check if current user has USER_MANAGE permission (admin role)
+     */
+    private boolean checkUserIsAdmin() {
+        try {
+            String username = this.baseClient.getUsername();
+            System.out.println("[DEBUG TrackerConfig] Current username: " + username);
+
+            if (username == null || username.isEmpty()) {
+                System.out.println("[DEBUG TrackerConfig] Username is null/empty, returning false");
+                return false;
+            }
+
+            // Get AS2ServerProcessing from DirectServiceClient
+            de.mendelson.comm.as2.server.DirectServiceClient serviceClient =
+                de.mendelson.comm.as2.server.DirectServiceClient.getInstance();
+
+            if (serviceClient == null) {
+                System.out.println("[DEBUG TrackerConfig] DirectServiceClient instance is null, returning false");
+                return false;
+            }
+
+            de.mendelson.comm.as2.server.AS2ServerProcessing processing = serviceClient.getServerProcessing();
+            if (processing == null) {
+                System.out.println("[DEBUG TrackerConfig] AS2ServerProcessing instance is null, returning false");
+                return false;
+            }
+
+            de.mendelson.util.database.IDBDriverManager dbDriverManager = processing.getDBDriverManager();
+            if (dbDriverManager == null) {
+                System.out.println("[DEBUG TrackerConfig] DBDriverManager is null, returning false");
+                return false;
+            }
+
+            // Create UserManagementAccessDB with proper DBDriverManager
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userDB =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                    dbDriverManager,
+                    java.util.logging.Logger.getLogger("TrackerConfig"));
+
+            // Get user permissions (returns Set<String>)
+            java.util.Set<String> permissions = userDB.getUserPermissions(username);
+            System.out.println("[DEBUG TrackerConfig] User permissions: " + permissions);
+
+            // Check if user has USER_MANAGE permission (admin role)
+            boolean isAdmin = permissions != null && permissions.contains("USER_MANAGE");
+            System.out.println("[DEBUG TrackerConfig] Is admin: " + isAdmin);
+            return isAdmin;
+        } catch (Exception e) {
+            // If error checking permissions, assume not admin
+            System.out.println("[DEBUG TrackerConfig] Error checking permissions: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private void initComponents() {
@@ -106,7 +170,7 @@ public class JDialogTrackerConfig extends JDialog {
         gbc.insets = new Insets(5, 5, 10, 5);
         jPanelMain.add(jLabelTitle, gbc);
 
-        // Tracker URL info panel
+        // Tracker URL info panel (always visible)
         JPanel urlInfoPanel = createTrackerUrlInfoPanel();
         gbc.gridx = 0;
         gbc.gridy = row++;
@@ -115,98 +179,108 @@ public class JDialogTrackerConfig extends JDialog {
         gbc.fill = GridBagConstraints.BOTH;
         jPanelMain.add(urlInfoPanel, gbc);
 
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        System.out.println("[DEBUG TrackerConfig] URL info panel added, isAdmin = " + this.isAdmin);
 
-        // Enable tracker
-        JLabel jLabelEnabled = new JLabel(rb.getResourceString("label.enabled"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelEnabled, gbc);
+        // Only show configuration fields for admin users
+        if (this.isAdmin) {
+            System.out.println("[DEBUG TrackerConfig] User is admin, adding configuration fields...");
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.gridwidth = 1;
+            gbc.insets = new Insets(5, 5, 5, 5);
 
-        toggleEnabled = new ToggleSwitch();
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(toggleEnabled, gbc);
+            // Enable tracker
+            JLabel jLabelEnabled = new JLabel(rb.getResourceString("label.enabled"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelEnabled, gbc);
 
-        // Require authentication
-        JLabel jLabelAuthRequired = new JLabel(rb.getResourceString("label.auth.required"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelAuthRequired, gbc);
+            toggleEnabled = new ToggleSwitch();
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(toggleEnabled, gbc);
 
-        toggleAuthRequired = new ToggleSwitch();
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(toggleAuthRequired, gbc);
+            // Require authentication
+            JLabel jLabelAuthRequired = new JLabel(rb.getResourceString("label.auth.required"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelAuthRequired, gbc);
 
-        // Separator
-        JSeparator separator1 = new JSeparator();
-        gbc.gridx = 0;
-        gbc.gridy = row++;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 5, 15, 5);
-        jPanelMain.add(separator1, gbc);
+            toggleAuthRequired = new ToggleSwitch();
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(toggleAuthRequired, gbc);
 
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
+            // Separator
+            JSeparator separator1 = new JSeparator();
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            gbc.insets = new Insets(15, 5, 15, 5);
+            jPanelMain.add(separator1, gbc);
 
-        // Max message size
-        JLabel jLabelMaxSize = new JLabel(rb.getResourceString("label.maxsize"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelMaxSize, gbc);
+            gbc.gridwidth = 1;
+            gbc.insets = new Insets(5, 5, 5, 5);
 
-        jTextFieldMaxSize = new JTextField(10);
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(jTextFieldMaxSize, gbc);
+            // Max message size
+            JLabel jLabelMaxSize = new JLabel(rb.getResourceString("label.maxsize"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelMaxSize, gbc);
 
-        // Rate limit section label
-        JLabel jLabelRateLimit = new JLabel(rb.getResourceString("label.ratelimit.title"));
-        jLabelRateLimit.setFont(jLabelRateLimit.getFont().deriveFont(Font.BOLD));
-        gbc.gridx = 0;
-        gbc.gridy = row++;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 5, 5, 5);
-        jPanelMain.add(jLabelRateLimit, gbc);
+            jTextFieldMaxSize = new JTextField(10);
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(jTextFieldMaxSize, gbc);
 
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
+            // Rate limit section label
+            JLabel jLabelRateLimit = new JLabel(rb.getResourceString("label.ratelimit.title"));
+            jLabelRateLimit.setFont(jLabelRateLimit.getFont().deriveFont(Font.BOLD));
+            gbc.gridx = 0;
+            gbc.gridy = row++;
+            gbc.gridwidth = 2;
+            gbc.insets = new Insets(15, 5, 5, 5);
+            jPanelMain.add(jLabelRateLimit, gbc);
 
-        // Max failures
-        JLabel jLabelRateLimitFailures = new JLabel(rb.getResourceString("label.ratelimit.failures"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelRateLimitFailures, gbc);
+            gbc.gridwidth = 1;
+            gbc.insets = new Insets(5, 5, 5, 5);
 
-        jTextFieldRateLimitFailures = new JTextField(10);
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(jTextFieldRateLimitFailures, gbc);
+            // Max failures
+            JLabel jLabelRateLimitFailures = new JLabel(rb.getResourceString("label.ratelimit.failures"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelRateLimitFailures, gbc);
 
-        // Time window
-        JLabel jLabelRateLimitWindow = new JLabel(rb.getResourceString("label.ratelimit.window"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelRateLimitWindow, gbc);
+            jTextFieldRateLimitFailures = new JTextField(10);
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(jTextFieldRateLimitFailures, gbc);
 
-        jTextFieldRateLimitWindow = new JTextField(10);
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(jTextFieldRateLimitWindow, gbc);
+            // Time window
+            JLabel jLabelRateLimitWindow = new JLabel(rb.getResourceString("label.ratelimit.window"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelRateLimitWindow, gbc);
 
-        // Block duration
-        JLabel jLabelRateLimitBlock = new JLabel(rb.getResourceString("label.ratelimit.block"));
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        jPanelMain.add(jLabelRateLimitBlock, gbc);
+            jTextFieldRateLimitWindow = new JTextField(10);
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(jTextFieldRateLimitWindow, gbc);
 
-        jTextFieldRateLimitBlock = new JTextField(10);
-        gbc.gridx = 1;
-        gbc.gridy = row++;
-        jPanelMain.add(jTextFieldRateLimitBlock, gbc);
+            // Block duration
+            JLabel jLabelRateLimitBlock = new JLabel(rb.getResourceString("label.ratelimit.block"));
+            gbc.gridx = 0;
+            gbc.gridy = row;
+            jPanelMain.add(jLabelRateLimitBlock, gbc);
+
+            jTextFieldRateLimitBlock = new JTextField(10);
+            gbc.gridx = 1;
+            gbc.gridy = row++;
+            jPanelMain.add(jTextFieldRateLimitBlock, gbc);
+
+            System.out.println("[DEBUG TrackerConfig] All admin configuration fields added successfully");
+        } else {
+            System.out.println("[DEBUG TrackerConfig] User is NOT admin, skipping configuration fields");
+        }
 
         // Button panel
         JPanel jPanelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -215,9 +289,12 @@ public class JDialogTrackerConfig extends JDialog {
         jButtonOk.addActionListener(evt -> jButtonOkActionPerformed());
         jPanelButtons.add(jButtonOk);
 
-        jButtonCancel = new JButton(rb.getResourceString("button.cancel"));
-        jButtonCancel.addActionListener(evt -> dispose());
-        jPanelButtons.add(jButtonCancel);
+        // Only show Cancel button for admin users (non-admins just have OK to close)
+        if (this.isAdmin) {
+            jButtonCancel = new JButton(rb.getResourceString("button.cancel"));
+            jButtonCancel.addActionListener(evt -> dispose());
+            jPanelButtons.add(jButtonCancel);
+        }
 
         gbc.gridx = 0;
         gbc.gridy = row++;
@@ -295,54 +372,69 @@ public class JDialogTrackerConfig extends JDialog {
     }
 
     private String getTrackerUrl(String username) {
-        // Build tracker URL using server configuration
+        // Build tracker URL using actual server configuration (handles test mode)
         // Format: {protocol}://{host}:{port}/as2/tracker/{username}
 
+        // Get hostname using helper
+        String host = de.mendelson.comm.as2.server.ServerConfigurationHelper.getHostname();
+
         String protocol = "https";
-        String host = "localhost";
         int port = 8443;
 
-        // Try to get HTTPS port first, fallback to HTTP port
+        // Get actual listening ports from HTTP server config
         try {
-            String httpsPortStr = preferences.get(PreferencesAS2.HTTPS_LISTEN_PORT);
-            if (httpsPortStr != null && !httpsPortStr.isEmpty()) {
-                try {
-                    port = Integer.parseInt(httpsPortStr);
-                    protocol = "https";
-                } catch (NumberFormatException e) {
-                    // Use default HTTPS port
-                }
-            } else {
-                // Try HTTP port
-                String httpPortStr = preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
-                if (httpPortStr != null && !httpPortStr.isEmpty()) {
-                    try {
-                        port = Integer.parseInt(httpPortStr);
-                        protocol = "http";
-                    } catch (NumberFormatException e) {
-                        // Use default HTTP port
-                        port = 8080;
-                        protocol = "http";
+            de.mendelson.comm.as2.server.AS2Server server =
+                de.mendelson.comm.as2.server.AS2Server.getStaticServerReference();
+
+            if (server != null) {
+                de.mendelson.util.httpconfig.server.HTTPServerConfigInfo configInfo =
+                    server.getHTTPServerConfigInfo();
+
+                if (configInfo != null) {
+                    // Get HTTPS port first using helper
+                    Integer httpsPort = de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpsPort(configInfo);
+                    if (httpsPort != null) {
+                        port = httpsPort;
+                        protocol = "https";
+                    } else {
+                        // Try HTTP port using helper
+                        Integer httpPort = de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpPort(configInfo);
+                        if (httpPort != null) {
+                            port = httpPort;
+                            protocol = "http";
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            // Use defaults if preference retrieval fails
+            // Use defaults if we can't get actual config
+            System.err.println("Failed to get actual HTTP server config: " + e.getMessage());
         }
 
         return protocol + "://" + host + ":" + port + "/as2/tracker/" + username;
     }
 
     private void loadSettings() {
-        toggleEnabled.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_ENABLED)));
-        toggleAuthRequired.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_AUTH_REQUIRED)));
-        jTextFieldMaxSize.setText(preferences.get(PreferencesAS2.TRACKER_MAX_SIZE_MB));
-        jTextFieldRateLimitFailures.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES));
-        jTextFieldRateLimitWindow.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
-        jTextFieldRateLimitBlock.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES));
+        // Only load settings into fields for admin users
+        if (this.isAdmin) {
+            toggleEnabled.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_ENABLED)));
+            toggleAuthRequired.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_AUTH_REQUIRED)));
+            jTextFieldMaxSize.setText(preferences.get(PreferencesAS2.TRACKER_MAX_SIZE_MB));
+            jTextFieldRateLimitFailures.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES));
+            jTextFieldRateLimitWindow.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
+            jTextFieldRateLimitBlock.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES));
+        }
+        // Non-admin users only see the URL panel, no settings to load
     }
 
     private void jButtonOkActionPerformed() {
+        // For non-admin users, OK button just closes the dialog
+        if (!this.isAdmin) {
+            dispose();
+            return;
+        }
+
+        // For admin users, validate and save settings
         // Validate inputs
         try {
             int maxSize = Integer.parseInt(jTextFieldMaxSize.getText().trim());

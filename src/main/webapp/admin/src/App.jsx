@@ -25,6 +25,7 @@ import { AuthProvider } from './features/auth/useAuth';
 import { ToastProvider } from './components/Toast';
 import Login from './features/auth/Login';
 import ChangePassword from './features/auth/ChangePassword';
+import SwitchUser from './features/auth/SwitchUser';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import PermissionRoute from './features/auth/PermissionRoute';
 import Layout from './components/Layout';
@@ -69,6 +70,15 @@ function App() {
               {/* Change password within the app layout */}
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="preferences" element={<UserPreferences />} />
+              {/* Switch user - only accessible to admins */}
+              <Route
+                path="switch-user"
+                element={
+                  <PermissionRoute requiredPermissions={['USER_MANAGE']}>
+                    <SwitchUser />
+                  </PermissionRoute>
+                }
+              />
               <Route
                 path="partners"
                 element={

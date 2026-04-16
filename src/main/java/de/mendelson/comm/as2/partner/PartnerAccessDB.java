@@ -148,11 +148,6 @@ public class PartnerAccessDB {
                             OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
                             partner.setOAuth2MDN(oAuth2ConfigMDN);
                         }
-                        //load visibility settings (only for remote partners)
-                        if (!partner.isLocalStation()) {
-                            List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
-                            partner.setVisibleToUserIds(visibleUsers);
-                        }
                     }
                     partnerList.add(partner);
                 }
@@ -205,8 +200,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "httpheader",
                             "partnerevent",
-                            "oauth2",
-                            "partner_user_visibility"
+                            "oauth2"
                         });
                 try {
                     partnerList.addAll(this.getPartnerByQuery(query, parameter, dataCompleteness, configConnectionNoAutoCommit));
@@ -412,12 +406,6 @@ public class PartnerAccessDB {
             this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
             this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
             this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
-            //update visibility settings (only for remote partners)
-            if (!partner.isLocalStation()) {
-                // Ensure creator is always in visibility list if visibility is restricted
-                partner.ensureCreatorInVisibilityList();
-                this.updatePartnerVisibility(partner.getDBId(), partner.getVisibleToUserIds(), configConnectionNoAutoCommit);
-            }
         }
     }
 
@@ -614,10 +602,6 @@ public class PartnerAccessDB {
         this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
         this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
         this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
-
-        // Ensure creator is always in visibility list if visibility is restricted
-        partner.ensureCreatorInVisibilityList();
-        this.updatePartnerVisibility(partner.getDBId(), partner.getVisibleToUserIds(), configConnectionNoAutoCommit);
     }
 
     /**
@@ -712,8 +696,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "httpheader",
                             "partnerevent",
-                            "oauth2",
-                            "partner_user_visibility"
+                            "oauth2"
                         });
                 try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
                     preparedStatement.setString(1, partnerName.toUpperCase());
@@ -764,8 +747,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "httpheader",
                             "partnerevent",
-                            "oauth2",
-                            "partner_user_visibility"
+                            "oauth2"
                         });
                 try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
                     preparedStatement.setString(1, as2ident);
@@ -865,11 +847,6 @@ public class PartnerAccessDB {
                 if (!result.wasNull()) {
                     OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
                     partner.setOAuth2MDN(oAuth2ConfigMDN);
-                }
-                //load visibility settings (only for remote partners)
-                if (!partner.isLocalStation()) {
-                    List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
-                    partner.setVisibleToUserIds(visibleUsers);
                 }
             }
             partnerList.add(partner);
@@ -1030,49 +1007,6 @@ public class PartnerAccessDB {
     }
 
     /**
-     * Load the list of user IDs who can see this partner when sending messages.
-     * Empty list means visible to all users.
-     */
-    private List<Integer> loadPartnerVisibility(int partnerId, Connection configConnection) throws Exception {
-        List<Integer> userIds = new ArrayList<>();
-        try (PreparedStatement statement = configConnection.prepareStatement(
-                "SELECT user_id FROM partner_user_visibility WHERE partner_id=? ORDER BY user_id")) {
-            statement.setInt(1, partnerId);
-            try (ResultSet result = statement.executeQuery()) {
-                while (result.next()) {
-                    userIds.add(result.getInt("user_id"));
-                }
-            }
-        }
-        return userIds;
-    }
-
-    /**
-     * Update partner visibility settings.
-     * Replaces all existing visibility records for this partner.
-     */
-    public void updatePartnerVisibility(int partnerId, List<Integer> userIds, Connection configConnectionNoAutoCommit) throws Exception {
-        // Delete existing visibility records
-        try (PreparedStatement statementDelete = configConnectionNoAutoCommit.prepareStatement(
-                "DELETE FROM partner_user_visibility WHERE partner_id=?")) {
-            statementDelete.setInt(1, partnerId);
-            statementDelete.executeUpdate();
-        }
-
-        // Insert new records if specific users selected
-        if (userIds != null && !userIds.isEmpty()) {
-            try (PreparedStatement statementInsert = configConnectionNoAutoCommit.prepareStatement(
-                    "INSERT INTO partner_user_visibility(partner_id, user_id) VALUES (?,?)")) {
-                for (Integer userId : userIds) {
-                    statementInsert.setInt(1, partnerId);
-                    statementInsert.setInt(2, userId);
-                    statementInsert.addBatch();
-                }
-                statementInsert.executeBatch();
-            }
-        }
-    }
-
     /**
      * Get all partners owned by a specific user (filtered by created_by_user_id).
      * Returns all local stations + remote partners where created_by_user_id matches the given userId.
@@ -1180,11 +1114,6 @@ public class PartnerAccessDB {
                                     if (!result.wasNull()) {
                                         OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
                                         partner.setOAuth2MDN(oAuth2ConfigMDN);
-                                    }
-                                    //load visibility settings (only for remote partners)
-                                    if (!partner.isLocalStation()) {
-                                        List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
-                                        partner.setVisibleToUserIds(visibleUsers);
                                     }
                                 }
                                 partnerList.add(partner);

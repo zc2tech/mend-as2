@@ -30,12 +30,35 @@ import de.mendelson.util.clientserver.messages.ClientServerMessage;
 public class UserListRequest extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
+    private boolean excludeAdmins = false;
+    private boolean enabledOnly = false;
 
     public UserListRequest() {
     }
 
+    public UserListRequest(boolean excludeAdmins, boolean enabledOnly) {
+        this.excludeAdmins = excludeAdmins;
+        this.enabledOnly = enabledOnly;
+    }
+
+    public boolean isExcludeAdmins() {
+        return excludeAdmins;
+    }
+
+    public void setExcludeAdmins(boolean excludeAdmins) {
+        this.excludeAdmins = excludeAdmins;
+    }
+
+    public boolean isEnabledOnly() {
+        return enabledOnly;
+    }
+
+    public void setEnabledOnly(boolean enabledOnly) {
+        this.enabledOnly = enabledOnly;
+    }
+
     @Override
     public String toString() {
-        return "List users";
+        return "List users (excludeAdmins=" + excludeAdmins + ", enabledOnly=" + enabledOnly + ")";
     }
 }

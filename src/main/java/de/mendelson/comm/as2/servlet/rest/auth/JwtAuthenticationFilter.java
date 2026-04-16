@@ -88,7 +88,9 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
         String username = jwtTokenProvider.getUsernameFromToken(token);
 
         // Check if user must change password before accessing other endpoints
-        if (!isPasswordChangeEndpoint(path) && mustUserChangePassword(username)) {
+        // Skip this check if the session is an admin impersonation (switchedByAdmin=true)
+        boolean isSwitchedByAdmin = jwtTokenProvider.isSwitchedByAdmin(token);
+        if (!isSwitchedByAdmin && !isPasswordChangeEndpoint(path) && mustUserChangePassword(username)) {
             LOGGER.log(Level.WARNING, "User {0} must change password before accessing {1}",
                     new Object[]{username, path});
             requestContext.abortWith(

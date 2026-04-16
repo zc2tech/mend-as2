@@ -25,6 +25,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.HTTPAuthentication;
+import de.mendelson.comm.as2.partner.PartnerInboundAuthCredential;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Data Transfer Object for Partner REST API
@@ -83,9 +86,15 @@ public class PartnerDTO {
     @JsonProperty("authenticationCredentialsAsyncMDN")
     private HTTPAuthentication authenticationCredentialsAsyncMDN;
 
-    // Inbound Authentication (for local stations only)
-    @JsonProperty("inboundAuthCredentials")
-    private HTTPAuthentication inboundAuthCredentials;
+    // Inbound Authentication (for local stations only) - supports multiple credentials
+    @JsonProperty("inboundAuthCredentialsList")
+    private List<PartnerInboundAuthCredential> inboundAuthCredentialsList = new ArrayList<>();
+
+    @JsonProperty("inboundAuthBasicEnabled")
+    private boolean inboundAuthBasicEnabled = false;
+
+    @JsonProperty("inboundAuthCertEnabled")
+    private boolean inboundAuthCertEnabled = false;
 
     // Contact tab
     private String contactAS2;
@@ -141,9 +150,11 @@ public class PartnerDTO {
         this.authenticationCredentialsMessage = partner.getAuthenticationCredentialsMessage();
         this.authenticationCredentialsAsyncMDN = partner.getAuthenticationCredentialsAsyncMDN();
 
-        // Only include inbound auth for local stations
+        // Only include inbound auth credentials list for local stations
         if (partner.isLocalStation()) {
-            this.inboundAuthCredentials = partner.getInboundAuthCredentials();
+            this.inboundAuthCredentialsList = partner.getInboundAuthCredentialsList();
+            this.inboundAuthBasicEnabled = partner.isInboundAuthBasicEnabled();
+            this.inboundAuthCertEnabled = partner.isInboundAuthCertEnabled();
         }
 
         this.contactAS2 = partner.getContactAS2();
@@ -227,9 +238,15 @@ public class PartnerDTO {
             partner.setAuthenticationAsyncMDN(this.authenticationCredentialsAsyncMDN);
         }
 
-        // Inbound Auth (for local stations only)
-        if (partner.isLocalStation() && this.inboundAuthCredentials != null) {
-            partner.setInboundAuthCredentials(this.inboundAuthCredentials);
+        // Inbound Auth credentials list (for local stations only)
+        if (partner.isLocalStation() && this.inboundAuthCredentialsList != null && !this.inboundAuthCredentialsList.isEmpty()) {
+            partner.setInboundAuthCredentialsList(this.inboundAuthCredentialsList);
+        }
+
+        // Inbound Auth enable flags (for local stations only)
+        if (partner.isLocalStation()) {
+            partner.setInboundAuthBasicEnabled(this.inboundAuthBasicEnabled);
+            partner.setInboundAuthCertEnabled(this.inboundAuthCertEnabled);
         }
 
         // Contact tab
@@ -355,6 +372,12 @@ public class PartnerDTO {
     public boolean isNotifySendReceiveEnabled() { return notifySendReceiveEnabled; }
     public void setNotifySendReceiveEnabled(boolean notifySendReceiveEnabled) { this.notifySendReceiveEnabled = notifySendReceiveEnabled; }
 
-    public HTTPAuthentication getInboundAuthCredentials() { return inboundAuthCredentials; }
-    public void setInboundAuthCredentials(HTTPAuthentication inboundAuthCredentials) { this.inboundAuthCredentials = inboundAuthCredentials; }
+    public List<PartnerInboundAuthCredential> getInboundAuthCredentialsList() { return inboundAuthCredentialsList; }
+    public void setInboundAuthCredentialsList(List<PartnerInboundAuthCredential> inboundAuthCredentialsList) { this.inboundAuthCredentialsList = inboundAuthCredentialsList; }
+
+    public boolean isInboundAuthBasicEnabled() { return inboundAuthBasicEnabled; }
+    public void setInboundAuthBasicEnabled(boolean inboundAuthBasicEnabled) { this.inboundAuthBasicEnabled = inboundAuthBasicEnabled; }
+
+    public boolean isInboundAuthCertEnabled() { return inboundAuthCertEnabled; }
+    public void setInboundAuthCertEnabled(boolean inboundAuthCertEnabled) { this.inboundAuthCertEnabled = inboundAuthCertEnabled; }
 }

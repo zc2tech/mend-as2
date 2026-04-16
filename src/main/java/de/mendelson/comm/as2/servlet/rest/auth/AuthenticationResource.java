@@ -271,6 +271,161 @@ public class AuthenticationResource {
         }
     }
 
+    /**
+     * Switch user - allows admins to impersonate another user
+     * Only users with USER_MANAGE permission can switch users
+     * Users with switchedByAdmin=true in their token can switch back to admin
+     */
+    @POST
+    @Path("/switch-user")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response switchUser(SwitchUserRequest request, @Context HttpHeaders headers, @Context SecurityContext securityContext) {
+        try {
+            // Get current user from access token
+            Cookie accessCookie = headers.getCookies().get(ACCESS_TOKEN_COOKIE);
+            if (accessCookie == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(new ErrorResponse("Not authenticated"))
+                        .build();
+            }
+
+            String accessToken = accessCookie.getValue();
+            if (!jwtTokenProvider.validateToken(accessToken)) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(new ErrorResponse("Invalid token"))
+                        .build();
+            }
+
+            String currentUsername = jwtTokenProvider.getUsernameFromToken(accessToken);
+            String originalAdminUsername = jwtTokenProvider.getSwitchedByAdminUsername(accessToken);
+            boolean isSwitchedByAdmin = (originalAdminUsername != null && !originalAdminUsername.isEmpty());
+
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Service not available"))
+                        .build();
+            }
+
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                    processing.getDBDriverManager(), logger);
+
+            // Validate target user exists
+            String targetUsername = request.getTargetUsername();
+            if (targetUsername == null || targetUsername.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Target username is required"))
+                        .build();
+            }
+
+            WebUIUser targetUser = userMgmt.getUserByUsername(targetUsername);
+            if (targetUser == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("Target user not found"))
+                        .build();
+            }
+
+            if (!targetUser.isEnabled()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorResponse("Target user is disabled"))
+                        .build();
+            }
+
+            // Security check: Determine if this is a "switch back" or a "switch to" operation
+            boolean isSwitchingBack = isSwitchedByAdmin; // If current token has switchedByAdmin=true, user is switching back
+
+            if (isSwitchingBack) {
+                // Switching back: CRITICAL SECURITY CHECK
+                // 1. Validate target user IS the original admin who did the switch
+                if (!targetUsername.equals(originalAdminUsername)) {
+                    logger.warning("SECURITY: User " + currentUsername + " (switched by " + originalAdminUsername +
+                                 ") attempted to switch back to different user " + targetUsername);
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity(new ErrorResponse("Can only switch back to the original admin user: " + originalAdminUsername))
+                            .build();
+                }
+
+                // 2. Validate target user still has USER_MANAGE permission (is still an admin)
+                java.util.Set<String> targetUserPermissions = userMgmt.getUserPermissions(targetUsername);
+                if (targetUserPermissions == null || !targetUserPermissions.contains("USER_MANAGE")) {
+                    logger.warning("User " + currentUsername + " attempted to switch back to " + targetUsername +
+                                 " who no longer has admin permissions");
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity(new ErrorResponse("Target user no longer has administrator permissions"))
+                            .build();
+                }
+
+                // Generate normal tokens (no switchedByAdmin claim) for the admin user
+                String newAccessToken = jwtTokenProvider.generateAccessToken(targetUsername, null);
+                String newRefreshToken = jwtTokenProvider.generateRefreshToken(targetUsername, null);
+
+                NewCookie accessCookie1 = new NewCookie.Builder(ACCESS_TOKEN_COOKIE)
+                        .value(newAccessToken)
+                        .path("/")
+                        .maxAge(ACCESS_TOKEN_MAX_AGE)
+                        .secure(false)
+                        .httpOnly(true)
+                        .build();
+
+                NewCookie refreshCookie = new NewCookie.Builder(REFRESH_TOKEN_COOKIE)
+                        .value(newRefreshToken)
+                        .path("/")
+                        .maxAge(REFRESH_TOKEN_MAX_AGE)
+                        .secure(false)
+                        .httpOnly(true)
+                        .build();
+
+                logger.info("User " + currentUsername + " switched back to admin " + targetUsername);
+
+                return Response.ok(new LoginResponse(targetUser.getId(), targetUser.getUsername(), false))
+                        .cookie(accessCookie1, refreshCookie)
+                        .build();
+            } else {
+                // Switching to another user: Check if current user has USER_MANAGE permission
+                java.util.Set<String> currentUserPermissions = userMgmt.getUserPermissions(currentUsername);
+                if (currentUserPermissions == null || !currentUserPermissions.contains("USER_MANAGE")) {
+                    logger.warning("User " + currentUsername + " attempted to switch users without USER_MANAGE permission");
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity(new ErrorResponse("You do not have permission to switch users"))
+                            .build();
+                }
+
+                // Generate new tokens for target user with switchedByAdmin claim containing admin username
+                String newAccessToken = jwtTokenProvider.generateAccessToken(targetUsername, currentUsername);
+                String newRefreshToken = jwtTokenProvider.generateRefreshToken(targetUsername, currentUsername);
+
+                NewCookie accessCookie1 = new NewCookie.Builder(ACCESS_TOKEN_COOKIE)
+                        .value(newAccessToken)
+                        .path("/")
+                        .maxAge(ACCESS_TOKEN_MAX_AGE)
+                        .secure(false)
+                        .httpOnly(true)
+                        .build();
+
+                NewCookie refreshCookie = new NewCookie.Builder(REFRESH_TOKEN_COOKIE)
+                        .value(newRefreshToken)
+                        .path("/")
+                        .maxAge(REFRESH_TOKEN_MAX_AGE)
+                        .secure(false)
+                        .httpOnly(true)
+                        .build();
+
+                logger.info("Admin " + currentUsername + " switched to user " + targetUsername);
+
+                return Response.ok(new LoginResponse(targetUser.getId(), targetUser.getUsername(), false))
+                        .cookie(accessCookie1, refreshCookie)
+                        .build();
+            }
+
+        } catch (Exception e) {
+            logger.warning("Switch user failed: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Switch user failed: " + e.getMessage()))
+                    .build();
+        }
+    }
+
     // DTOs
 
     public static class LoginRequest {
@@ -362,6 +517,21 @@ public class AuthenticationResource {
 
         public void setMessage(String message) {
             this.message = message;
+        }
+    }
+
+    public static class SwitchUserRequest {
+        private String targetUsername;
+
+        public SwitchUserRequest() {
+        }
+
+        public String getTargetUsername() {
+            return targetUsername;
+        }
+
+        public void setTargetUsername(String targetUsername) {
+            this.targetUsername = targetUsername;
         }
     }
 }

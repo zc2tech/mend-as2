@@ -53,6 +53,13 @@ public class KeydataAccessDB {
     public static String KEYSTORE_JKS = BCCryptoHelper.KEYSTORE_JKS;
     public static String KEYSTORE_PKCS12 = BCCryptoHelper.KEYSTORE_PKCS12;
 
+    /**
+     * Special user_id value indicating system-wide keystores (not owned by any particular user).
+     * System-wide keystores are accessible based on permissions (CERT_TLS_READ, CERT_TLS_WRITE)
+     * rather than user ownership.
+     */
+    public static final int SYSTEM_WIDE_USER_ID = -1;
+
     public KeydataAccessDB(IDBDriverManager dbDriverManager, SystemEventManager systemEventManager) {
         this.dbDriverManager = dbDriverManager;
         this.systemEventManager = systemEventManager;

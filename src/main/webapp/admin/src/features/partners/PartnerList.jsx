@@ -106,7 +106,7 @@ export default function PartnerList() {
   return (
     <div>
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ margin: 0 }}>Partners</h1>
+        <h1 style={{ margin: 0 }}>My Partners</h1>
         <button
           style={{
             ...buttonStyle,

@@ -21,14 +21,26 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
+import { useAuth } from '../auth/useAuth';
 
 export function usePartners() {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['partners'],
+    queryKey: ['partners', user?.id],
     queryFn: async () => {
-      const response = await api.get('/partners');
+      // For filtering: use 0 for admin user (legacy compatibility), database ID for others
+      const filterUserId = user?.username === 'admin' ? 0 : user?.id;
+
+      // Fetch only partners visible to the current user
+      const response = await api.get('/partners', {
+        params: {
+          visibleToUser: filterUserId
+        }
+      });
       return response.data;
-    }
+    },
+    enabled: !!user?.id // Only run query if user ID is available
   });
 }
 

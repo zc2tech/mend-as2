@@ -21,14 +21,27 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
+import { useAuth } from '../auth/useAuth';
 
 export function useCertificates(keystoreType = 'sign') {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['certificates', keystoreType],
+    queryKey: ['certificates', keystoreType, user?.id],
     queryFn: async () => {
-      const response = await api.get(`/certificates?keystoreType=${keystoreType}`);
+      // For filtering: use 0 for admin user (legacy compatibility), database ID for others
+      const filterUserId = user?.username === 'admin' ? 0 : user?.id;
+
+      // Fetch only certificates visible to the current user
+      const response = await api.get('/certificates', {
+        params: {
+          keystoreType,
+          visibleToUser: filterUserId
+        }
+      });
       return response.data;
-    }
+    },
+    enabled: !!user?.id // Only run query if user ID is available
   });
 }
 

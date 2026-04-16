@@ -249,8 +249,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private void handleKeystoreSettings(boolean importTLS, boolean importSignEnc) throws Exception {
         KeydataAccessDB keydataAccessDB = new KeydataAccessDB(this.dbDriverManager,
                 SystemEventManagerImplAS2.instance());
-        // Import to system/admin user (user_id=0)
-        int adminUserId = 0;
+        // Import to system-wide keystore (user_id=-1)
+        int systemWideUserId = KeydataAccessDB.SYSTEM_WIDE_USER_ID;
         Path keystoreFileEncSign = Paths.get("certificates.p12");
         if (importSignEnc) {
             byte[] keystoreData = Files.readAllBytes(keystoreFileEncSign);
@@ -258,7 +258,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
                     BouncyCastleProviderSingleton.instance().getName(),
-                    adminUserId);
+                    systemWideUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileEncSign,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
@@ -270,7 +270,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
                     BouncyCastleProviderSingleton.instance().getName(),
-                    adminUserId);
+                    systemWideUserId);
         }
         Path keystoreFileTLS = Paths.get("jetty12/etc/keystore");
         if (importTLS) {
@@ -279,7 +279,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     BouncyCastleProviderSingleton.instance().getName(),
-                    adminUserId);
+                    systemWideUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileTLS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
@@ -291,7 +291,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     BouncyCastleProviderSingleton.instance().getName(),
-                    adminUserId);
+                    systemWideUserId);
         }
     }
 
@@ -415,14 +415,14 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         try {
             this.ensureRunningDBServer();
             this.handleKeystoreSettings(importTLS, importSignEnc);
-            // Create system/admin keystores (user_id=0)
+            // Create system-wide keystores (user_id=-1, system-wide)
             this.certificateManagerEncSign = new CertificateManager(this.logger);
             KeystoreStorage signEncStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
-                    0);  // user_id=0 (admin/system)
+                    KeydataAccessDB.SYSTEM_WIDE_USER_ID);  // user_id=-1 (system-wide)
             this.certificateManagerEncSign.loadKeystoreCertificates(signEncStorage);
             this.certificateManagerTLS = new CertificateManager(this.logger);
             KeystoreStorage tlsStorage = new KeystoreStorageImplDB(
@@ -430,7 +430,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
-                    0);  // user_id=0 (admin/system)
+                    KeydataAccessDB.SYSTEM_WIDE_USER_ID);  // user_id=-1 (system-wide)
             this.certificateManagerTLS.loadKeystoreCertificates(tlsStorage);
 
             // Start client-server BEFORE HTTP server to avoid race condition

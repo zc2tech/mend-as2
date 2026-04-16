@@ -3489,11 +3489,29 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         try {
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(this.dbDriverManager, this.logger);
             List<WebUIUser> users = userMgmt.getAllUsers();
-            // Remove password hashes for security
+
+            // Filter users if requested
+            List<WebUIUser> filteredUsers = new ArrayList<>();
             for (WebUIUser user : users) {
+                // Filter by enabled status
+                if (request.isEnabledOnly() && !user.isEnabled()) {
+                    continue;
+                }
+
+                // Filter by admin role (exclude users with USER_MANAGE permission)
+                if (request.isExcludeAdmins()) {
+                    Set<String> userPermissions = userMgmt.getUserPermissions(user.getUsername());
+                    if (userPermissions != null && userPermissions.contains("USER_MANAGE")) {
+                        continue; // Skip admin users
+                    }
+                }
+
+                // Remove password hash for security
                 user.setPasswordHash(null);
+                filteredUsers.add(user);
             }
-            response.setUsers(users);
+
+            response.setUsers(filteredUsers);
         } catch (Exception e) {
             response.setException(e);
             this.logger.log(Level.SEVERE, "Error processing user list request", e);

@@ -26,6 +26,7 @@ import { z } from 'zod';
 import { useCreatePartner, useUpdatePartner } from './usePartners';
 import { useCertificates } from '../certificates/useCertificates';
 import { useToast } from '../../components/Toast';
+import { useAuth } from '../auth/useAuth';
 import api from '../../api/client';
 
 const partnerSchema = z.object({
@@ -77,6 +78,10 @@ const partnerSchema = z.object({
   useHttpAuthAsyncMDN: z.boolean().default(false),
   httpAuthAsyncMDNUser: z.string().optional(),
   httpAuthAsyncMDNPassword: z.string().optional(),
+
+  // Inbound Authentication tab (for local stations)
+  inboundAuthBasicEnabled: z.boolean().default(false),
+  inboundAuthCertEnabled: z.boolean().default(false),
 
   // Contact tab
   contactAS2: z.string().optional(),
@@ -132,12 +137,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const updatePartner = useUpdatePartner();
   const toast = useToast();
   const isEdit = !!partner;
-
-  // Visibility control state
-  const [visibilityMode, setVisibilityMode] = useState('all');
-  const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const { user } = useAuth();
+  const [generatingUrl, setGeneratingUrl] = useState(false);
 
   // Fetch certificates for the dropdowns
   const { data: certificates, isLoading: certsLoading } = useCertificates('sign');
@@ -181,6 +182,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       useHttpAuthAsyncMDN: false,
       httpAuthAsyncMDNUser: '',
       httpAuthAsyncMDNPassword: '',
+      inboundAuthBasicEnabled: false,
+      inboundAuthCertEnabled: false,
       overwriteLocalStationSecurity: false,
       useAlgorithmIdentifierProtectionAttribute: true,
       signFingerprintSHA1: '',
@@ -189,6 +192,20 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       overwriteCryptFingerprintSHA1: ''
     }
   });
+
+  // State for inbound auth credentials
+  const [inboundAuthBasicList, setInboundAuthBasicList] = useState([]);
+  const [inboundAuthCertList, setInboundAuthCertList] = useState([]);
+
+  // Load credentials when editing existing partner
+  useEffect(() => {
+    if (isEdit && partner?.inboundAuthCredentialsList) {
+      const basicCreds = partner.inboundAuthCredentialsList.filter(c => c.authType === 1);
+      const certCreds = partner.inboundAuthCredentialsList.filter(c => c.authType === 2);
+      setInboundAuthBasicList(basicCreds);
+      setInboundAuthCertList(certCreds);
+    }
+  }, [isEdit, partner]);
 
   // REMOVED: This useEffect was causing form resets on every render
   // The initialPartnerData with useMemo handles initialization correctly
@@ -209,25 +226,45 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   // For new partners, determine localStation from the selection step
   const localStation = isEdit ? partner.localStation : localStationType;
 
-  // Fetch server URL when creating a new local station
-  useEffect(() => {
-    if (!isEdit && localStation) {
-      // Only fetch for new local stations
-      fetch('/as2/api/v1/system/server-url', {
-        credentials: 'include'
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.httpReceiverUrl) {
-            setValue('url', data.httpReceiverUrl);
-            setValue('mdnURL', data.httpReceiverUrl);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch server URL:', err);
-        });
+  // Function to generate URL with specified protocol
+  const handleGenerateUrl = async (protocol) => {
+    if (!user?.username) {
+      toast.error('User information not available');
+      return;
     }
-  }, [localStation, isEdit, setValue]);
+
+    setGeneratingUrl(true);
+    try {
+      const response = await api.get('/system/generate-local-station-url', {
+        params: {
+          username: user.username,
+          hostname: window.location.hostname
+        }
+      });
+
+      if (response.data.url) {
+        // Replace protocol in the generated URL
+        let generatedUrl = response.data.url;
+        if (protocol === 'http') {
+          generatedUrl = generatedUrl.replace('https://', 'http://');
+          // Also update port if default HTTPS port (8443) to default HTTP port (8080)
+          generatedUrl = generatedUrl.replace(':8443/', ':8080/');
+        } else if (protocol === 'https') {
+          generatedUrl = generatedUrl.replace('http://', 'https://');
+          // Also update port if default HTTP port (8080) to default HTTPS port (8443)
+          generatedUrl = generatedUrl.replace(':8080/', ':8443/');
+        }
+
+        setValue('url', generatedUrl);
+        setValue('mdnURL', generatedUrl);
+      }
+    } catch (err) {
+      console.error('Failed to generate local station URL:', err);
+      toast.error('Failed to generate URL. Please enter manually.');
+    } finally {
+      setGeneratingUrl(false);
+    }
+  };
 
   const handleLocalStationSelection = (isLocal) => {
     setLocalStationType(isLocal);
@@ -261,7 +298,9 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
         user: httpAuthAsyncMDNUser || '',
         password: httpAuthAsyncMDNPassword || '',
         enabled: useHttpAuthAsyncMDN
-      }
+      },
+      // Include inbound auth credentials list (for local stations)
+      inboundAuthCredentialsList: [...inboundAuthBasicList, ...inboundAuthCertList]
     };
 
     try {
@@ -284,69 +323,12 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
         toast.success('Partner created successfully');
       }
 
-      // Save visibility settings (only for remote partners)
-      if (!localStation && savedPartnerId) {
-        try {
-          await api.put(`/partners/${savedPartnerId}/visibility`, {
-            visibleToAll: visibilityMode === 'all',
-            userIds: visibilityMode === 'specific' ? selectedUserIds : []
-          });
-        } catch (error) {
-          toast.error('Partner saved, but failed to update visibility settings');
-        }
-      }
-
       onSuccess?.();
       onClose();
     } catch (error) {
       toast.error('Failed to save partner: ' + (error.response?.data?.error || error.message));
     }
   };
-
-  // Fetch users list when visibility tab is active
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (activeTab === 'visibility' && !localStation) {
-        setLoadingUsers(true);
-        try {
-          const response = await api.get('/users');
-          setUsers(response.data || []);
-        } catch (error) {
-          console.error('Failed to fetch users:', error);
-          toast.error('Failed to load users list');
-        } finally {
-          setLoadingUsers(false);
-        }
-      }
-    };
-    fetchUsers();
-  }, [activeTab, localStation, toast]);
-
-  // Load visibility settings when editing existing partner
-  useEffect(() => {
-    const fetchVisibility = async () => {
-      if (partner && partner.dbId && !localStation) {
-        try {
-          const response = await api.get(`/partners/${partner.dbId}/visibility`);
-          const data = response.data;
-
-          if (data.visibleToAll) {
-            setVisibilityMode('all');
-            setSelectedUserIds([]);
-          } else {
-            setVisibilityMode('specific');
-            setSelectedUserIds(data.visibleToUserIds || []);
-          }
-        } catch (error) {
-          console.error('Failed to fetch visibility settings:', error);
-          // Default to visible to all
-          setVisibilityMode('all');
-          setSelectedUserIds([]);
-        }
-      }
-    };
-    fetchVisibility();
-  }, [partner, localStation]);
 
   // Define all tabs, but filter based on localStation
   const allTabs = [
@@ -356,7 +338,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     { id: 'mdn', label: 'MDN', showForLocal: true, showForRemote: true },
     { id: 'dirpoll', label: 'Directory Poll', showForLocal: false, showForRemote: true },
     { id: 'httpauth', label: 'HTTP Authentication', showForLocal: false, showForRemote: true },
-    { id: 'visibility', label: 'Visibility', showForLocal: false, showForRemote: true },
+    { id: 'inboundauth-basic', label: 'Inbound Auth Basic', showForLocal: true, showForRemote: false },
+    { id: 'inboundauth-cert', label: 'Inbound Auth Cert', showForLocal: true, showForRemote: false },
     { id: 'contact', label: 'Contact', showForLocal: true, showForRemote: true }
   ];
 
@@ -620,6 +603,68 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                   {errors.as2Identification && <div style={errorStyle}>{errors.as2Identification.message}</div>}
                 </div>
 
+                {/* Show URL field for local stations */}
+                {localStation && (
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>
+                      Local Station URL *
+                      {generatingUrl && <span style={{ marginLeft: '0.5rem', fontSize: '0.875rem', color: '#666' }}>(Generating...)</span>}
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        {...register('url')}
+                        placeholder="https://yourserver.com:8443/as2/HttpReceiver/username"
+                        style={{ ...inputStyle, flex: 1 }}
+                        disabled={isSubmitting || generatingUrl}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateUrl('http')}
+                        disabled={isSubmitting || generatingUrl}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#6c757d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: isSubmitting || generatingUrl ? 'not-allowed' : 'pointer',
+                          fontSize: '0.875rem',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => !isSubmitting && !generatingUrl && (e.target.style.backgroundColor = '#5a6268')}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#6c757d'}
+                      >
+                        HTTP
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateUrl('https')}
+                        disabled={isSubmitting || generatingUrl}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: isSubmitting || generatingUrl ? 'not-allowed' : 'pointer',
+                          fontSize: '0.875rem',
+                          whiteSpace: 'nowrap'
+                        }}
+                        onMouseEnter={(e) => !isSubmitting && !generatingUrl && (e.target.style.backgroundColor = '#218838')}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}
+                      >
+                        HTTPS
+                      </button>
+                    </div>
+                    {errors.url && <div style={errorStyle}>{errors.url.message}</div>}
+                    <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                      Click HTTP or HTTPS to auto-generate the URL based on server configuration.
+                      Other partners will send messages to this URL.
+                    </div>
+                  </div>
+                )}
+
                 <div style={formGroupStyle}>
                   <label style={labelStyle}>Comment</label>
                   <textarea {...register('comment')} style={{...inputStyle, minHeight: '80px'}} disabled={isSubmitting} />
@@ -688,22 +733,37 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
             {/* MDN Tab */}
             {activeTab === 'mdn' && (
               <>
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>MDN URL</label>
-                  <input
-                    type="text"
-                    {...register('mdnURL')}
-                    placeholder="http://partner.com:8080/as2/HttpReceiver"
-                    style={inputStyle}
-                    disabled={isSubmitting}
-                  />
-                  {errors.mdnURL && <div style={errorStyle}>{errors.mdnURL.message}</div>}
-                  {localStation && (
+                {/* MDN URL - Only for Local Stations */}
+                {localStation && (
+                  <div style={formGroupStyle}>
+                    <label style={labelStyle}>MDN URL</label>
+                    <input
+                      type="text"
+                      {...register('mdnURL')}
+                      placeholder="https://your-server.com:8443/as2/HttpReceiver/username"
+                      style={inputStyle}
+                      disabled={isSubmitting}
+                    />
+                    {errors.mdnURL && <div style={errorStyle}>{errors.mdnURL.message}</div>}
                     <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.5rem' }}>
-                      For local station: Use your server's public URL (not localhost) if accessible from internet
+                      URL where you want to receive async MDN (acknowledgments) from remote partners.
+                      Use your server's public URL (not localhost) if accessible from internet.
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Remote Partner MDN Info */}
+                {!localStation && (
+                  <div style={{ padding: '1rem', backgroundColor: '#e7f3ff', borderRadius: '4px', marginBottom: '1rem', border: '1px solid #b3d9ff' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: '0.5rem', color: '#004085' }}>
+                      ℹ️ MDN URL for Remote Partners
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#004085' }}>
+                      For remote partners, the MDN URL is extracted from incoming message headers (Receipt-Delivery-Option).
+                      You don't need to configure it - the server automatically reads it from each message they send.
+                    </div>
+                  </div>
+                )}
 
                 <div style={formGroupStyle}>
                   <div style={checkboxContainerStyle}>
@@ -1043,6 +1103,282 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
               </>
             )}
 
+            {/* Inbound Auth Basic Tab - Only for Local Stations */}
+            {activeTab === 'inboundauth-basic' && localStation && (
+              <>
+                <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 600 }}>Basic Authentication Credentials</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>
+                    Configure multiple username/password pairs that remote partners can use when sending messages to this local station.
+                    Authentication passes if ANY credential matches.
+                  </p>
+                </div>
+
+                {/* Enable/Disable Toggle */}
+                <div style={formGroupStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <label style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        {...register('inboundAuthBasicEnabled')}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontWeight: 600 }}>Enable Basic Authentication</span>
+                    </label>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                    Turn on to require username/password authentication from remote partners
+                  </div>
+                </div>
+
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Username/Password Credentials</label>
+                  <div style={{ border: '1px solid #dee2e6', borderRadius: '4px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8f9fa' }}>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem' }}>Username</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem' }}>Password</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Enabled</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inboundAuthBasicList.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#6c757d', fontSize: '0.875rem' }}>
+                              No basic auth credentials configured. Click "Add Credential" below to add one.
+                            </td>
+                          </tr>
+                        ) : (
+                          inboundAuthBasicList.map((cred, index) => (
+                            <tr key={index} style={{ borderBottom: '1px solid #dee2e6' }}>
+                              <td style={{ padding: '0.75rem' }}>
+                                <input
+                                  type="text"
+                                  value={cred.username || ''}
+                                  onChange={(e) => {
+                                    const updated = [...inboundAuthBasicList];
+                                    updated[index] = { ...updated[index], username: e.target.value };
+                                    setInboundAuthBasicList(updated);
+                                  }}
+                                  style={{ width: '100%', padding: '0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                  placeholder="username"
+                                />
+                              </td>
+                              <td style={{ padding: '0.75rem' }}>
+                                <input
+                                  type="password"
+                                  value={cred.password || ''}
+                                  onChange={(e) => {
+                                    const updated = [...inboundAuthBasicList];
+                                    updated[index] = { ...updated[index], password: e.target.value };
+                                    setInboundAuthBasicList(updated);
+                                  }}
+                                  style={{ width: '100%', padding: '0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                  placeholder="password"
+                                />
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={cred.enabled !== false}
+                                  onChange={(e) => {
+                                    const updated = [...inboundAuthBasicList];
+                                    updated[index] = { ...updated[index], enabled: e.target.checked };
+                                    setInboundAuthBasicList(updated);
+                                  }}
+                                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm('Delete this credential?')) {
+                                      setInboundAuthBasicList(inboundAuthBasicList.filter((_, i) => i !== index));
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '0.25rem 0.5rem',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInboundAuthBasicList([...inboundAuthBasicList, { authType: 1, username: '', password: '', enabled: true }]);
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      + Add Credential
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Inbound Auth Cert Tab - Only for Local Stations */}
+            {activeTab === 'inboundauth-cert' && localStation && (
+              <>
+                <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px', marginBottom: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 600 }}>Certificate Authentication</h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6c757d' }}>
+                    Configure multiple certificate fingerprints that remote partners can use when sending messages to this local station.
+                    Authentication passes if ANY certificate matches.
+                  </p>
+                </div>
+
+                {/* Enable/Disable Toggle */}
+                <div style={formGroupStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <label style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        {...register('inboundAuthCertEnabled')}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontWeight: 600 }}>Enable Certificate Authentication</span>
+                    </label>
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                    Turn on to require client certificate authentication from remote partners
+                  </div>
+                </div>
+
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Certificate Credentials</label>
+                  <div style={{ border: '1px solid #dee2e6', borderRadius: '4px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#f8f9fa' }}>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '250px' }}>Certificate</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem' }}>Fingerprint (SHA-1)</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Enabled</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inboundAuthCertList.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#6c757d', fontSize: '0.875rem' }}>
+                              No certificate credentials configured. Click "Add Certificate" below to add one.
+                            </td>
+                          </tr>
+                        ) : (
+                          inboundAuthCertList.map((cred, index) => (
+                            <tr key={index} style={{ borderBottom: '1px solid #dee2e6' }}>
+                              <td style={{ padding: '0.75rem' }}>
+                                <select
+                                  value={cred.certFingerprint || ''}
+                                  onChange={(e) => {
+                                    const selectedCert = certificates?.find(c => c.fingerprintSHA1 === e.target.value);
+                                    const updated = [...inboundAuthCertList];
+                                    updated[index] = {
+                                      ...updated[index],
+                                      certFingerprint: e.target.value,
+                                      certAlias: selectedCert?.alias || ''
+                                    };
+                                    setInboundAuthCertList(updated);
+                                  }}
+                                  style={{ width: '100%', padding: '0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                >
+                                  <option value="">-- Select Certificate --</option>
+                                  {certificates?.map((cert) => (
+                                    <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                                      {cert.alias}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td style={{ padding: '0.75rem', fontSize: '0.75rem', fontFamily: 'monospace', color: '#6c757d' }}>
+                                {cred.certFingerprint || 'Not selected'}
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={cred.enabled !== false}
+                                  onChange={(e) => {
+                                    const updated = [...inboundAuthCertList];
+                                    updated[index] = { ...updated[index], enabled: e.target.checked };
+                                    setInboundAuthCertList(updated);
+                                  }}
+                                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm('Delete this certificate credential?')) {
+                                      setInboundAuthCertList(inboundAuthCertList.filter((_, i) => i !== index));
+                                    }
+                                  }}
+                                  style={{
+                                    padding: '0.25rem 0.5rem',
+                                    backgroundColor: '#dc3545',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75rem'
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInboundAuthCertList([...inboundAuthCertList, { authType: 2, certFingerprint: '', certAlias: '', enabled: true }]);
+                      }}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      + Add Certificate
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Contact Tab */}
             {activeTab === 'contact' && (
               <>
@@ -1058,101 +1394,6 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
               </>
             )}
 
-            {/* Visibility Tab */}
-            {activeTab === 'visibility' && (
-              <>
-                <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Partner Visibility</h3>
-                <p style={{ marginBottom: '1rem', color: '#666', fontSize: '0.875rem' }}>
-                  Control which WebUI users can see and use this partner when sending messages.
-                </p>
-
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>
-                    <input
-                      type="radio"
-                      checked={visibilityMode === 'all'}
-                      onChange={() => {
-                        setVisibilityMode('all');
-                        setSelectedUserIds([]);
-                      }}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    Visible to all WebUI users
-                  </label>
-                </div>
-
-                <div style={formGroupStyle}>
-                  <label style={labelStyle}>
-                    <input
-                      type="radio"
-                      checked={visibilityMode === 'specific'}
-                      onChange={() => setVisibilityMode('specific')}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    Visible to specific users only
-                  </label>
-                </div>
-
-                {visibilityMode === 'specific' && (
-                  <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-                    <label style={{ ...labelStyle, marginBottom: '0.75rem', display: 'block' }}>
-                      Select Users Who Can See This Partner:
-                    </label>
-                    {loadingUsers ? (
-                      <p style={{ color: '#666', fontSize: '0.875rem' }}>Loading users...</p>
-                    ) : (
-                      <div style={{
-                        maxHeight: '300px',
-                        overflowY: 'auto',
-                        border: '1px solid #dee2e6',
-                        borderRadius: '4px',
-                        padding: '0.5rem',
-                        backgroundColor: 'white'
-                      }}>
-                        {users.length === 0 ? (
-                          <p style={{ color: '#666', fontSize: '0.875rem', padding: '0.5rem' }}>
-                            No users available
-                          </p>
-                        ) : (
-                          users.map(user => (
-                            <div key={user.id} style={{ padding: '0.5rem', borderBottom: '1px solid #f0f0f0' }}>
-                              <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedUserIds.includes(user.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedUserIds([...selectedUserIds, user.id]);
-                                    } else {
-                                      setSelectedUserIds(selectedUserIds.filter(id => id !== user.id));
-                                    }
-                                  }}
-                                  style={{ marginRight: '0.75rem' }}
-                                />
-                                <div>
-                                  <div style={{ fontWeight: '600', fontSize: '0.875rem' }}>{user.username}</div>
-                                  {user.fullName && (
-                                    <div style={{ color: '#666', fontSize: '0.75rem' }}>{user.fullName}</div>
-                                  )}
-                                  {user.email && (
-                                    <div style={{ color: '#999', fontSize: '0.75rem' }}>{user.email}</div>
-                                  )}
-                                </div>
-                              </label>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                    {visibilityMode === 'specific' && selectedUserIds.length === 0 && (
-                      <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                        ⚠️ Warning: No users selected. Partner will not be visible to anyone when sending messages.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
           </div>
 
           {/* Footer Buttons */}

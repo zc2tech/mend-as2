@@ -60,10 +60,10 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
     private final String keystoreStorageType;
     private final SystemEventManager systemEventManager;
     private final IDBDriverManager dbDriverManager;
-    private final int userId;  // User ID for user-scoped keystores (0 = admin/system)
+    private final int userId;  // User ID for user-scoped keystores (-1 = system-wide, 0+ = specific user)
 
     /**
-     * @param userId User ID for user-scoped keystores (0 = admin/system, >0 = specific user)
+     * @param userId User ID for user-scoped keystores (-1 = system-wide, 0+ = specific user)
      */
     public KeystoreStorageImplDB(SystemEventManager systemEventManager,
             IDBDriverManager dbDriverManager, final int KEYSTORE_USAGE,

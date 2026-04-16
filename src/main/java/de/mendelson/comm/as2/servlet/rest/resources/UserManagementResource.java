@@ -53,10 +53,15 @@ public class UserManagementResource {
 
     /**
      * GET /api/v1/users - List all users
+     * Query parameters:
+     *   excludeAdmins: true/false - Exclude users with USER_MANAGE permission
+     *   enabledOnly: true/false - Only return enabled users
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllUsers() {
+    public Response getAllUsers(
+            @QueryParam("excludeAdmins") @DefaultValue("false") boolean excludeAdmins,
+            @QueryParam("enabledOnly") @DefaultValue("false") boolean enabledOnly) {
         try {
             UserManagementAccessDB userMgmt = getUserManagementAccess();
             if (userMgmt == null) {
@@ -66,12 +71,32 @@ public class UserManagementResource {
 
             List<WebUIUser> users = userMgmt.getAllUsers();
 
-            // Remove password hashes from response for security
+            // Apply filters
+            List<WebUIUser> filteredUsers = new java.util.ArrayList<>();
             for (WebUIUser user : users) {
+                // Filter by enabled status
+                if (enabledOnly && !user.isEnabled()) {
+                    continue;
+                }
+
+                // Filter out admins (users with USER_MANAGE permission)
+                if (excludeAdmins) {
+                    try {
+                        java.util.Set<String> userPermissions = userMgmt.getUserPermissions(user.getUsername());
+                        if (userPermissions != null && userPermissions.contains("USER_MANAGE")) {
+                            continue; // Skip admin users
+                        }
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Could not get permissions for user: " + user.getUsername(), e);
+                    }
+                }
+
+                // Remove password hashes from response for security
                 user.setPasswordHash(null);
+                filteredUsers.add(user);
             }
 
-            return Response.ok(users).build();
+            return Response.ok(filteredUsers).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error getting users", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

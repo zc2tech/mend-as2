@@ -44,6 +44,10 @@ public class DirectServiceClient {
         this.serverProcessing = serverProcessing;
     }
 
+    public AS2ServerProcessing getServerProcessing() {
+        return this.serverProcessing;
+    }
+
     /**
      * Process any ClientServerMessage request
      * @param request The request to process

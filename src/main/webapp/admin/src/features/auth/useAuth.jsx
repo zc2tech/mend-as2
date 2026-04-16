@@ -29,6 +29,7 @@ export function AuthProvider({ children }) {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [originalUser, setOriginalUser] = useState(null); // Store original admin user when switching
 
   useEffect(() => {
     // Only check auth if not on login page
@@ -102,7 +103,58 @@ export function AuthProvider({ children }) {
       setUser(null);
       setPermissions([]);
       setMustChangePassword(false);
+      setOriginalUser(null); // Clear original user on logout
       window.location.href = '/as2/webui/login';
+    }
+  };
+
+  const switchUser = async (targetUsername) => {
+    try {
+      // Store current user as original user before switching
+      if (!originalUser) {
+        setOriginalUser({ id: user.id, username: user.username });
+      }
+
+      // Call backend API to switch user
+      const response = await api.post('/auth/switch-user', { targetUsername });
+
+      // Fetch new user info and permissions
+      const userResponse = await api.get('/users/current');
+      const permissionsResponse = await api.get('/users/current/permissions');
+
+      // Update state with new user and permissions
+      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setPermissions(permissionsResponse.data);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const switchBack = async () => {
+    if (!originalUser) {
+      throw new Error('No original user to switch back to');
+    }
+
+    try {
+      // Switch back to original user
+      await api.post('/auth/switch-user', { targetUsername: originalUser.username });
+
+      // Fetch original user info and permissions
+      const userResponse = await api.get('/users/current');
+      const permissionsResponse = await api.get('/users/current/permissions');
+
+      // Update state
+      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setPermissions(permissionsResponse.data);
+
+      // Clear original user since we're back
+      setOriginalUser(null);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -133,8 +185,11 @@ export function AuthProvider({ children }) {
       permissions,
       loading,
       mustChangePassword,
+      originalUser,
       login,
       logout,
+      switchUser,
+      switchBack,
       clearMustChangePassword,
       refreshPermissions,
       hasPermission,

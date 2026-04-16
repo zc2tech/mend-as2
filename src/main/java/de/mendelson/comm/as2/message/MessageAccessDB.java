@@ -557,20 +557,10 @@ public class MessageAccessDB {
             if (filter.getUserId() != null && !filter.isAdmin()) {
                 try (Connection configConnectionAutoCommit = this.dbDriverManager
                         .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
-                    // Build subquery to get AS2 IDs of partners visible to this user
-                    // Include:
-                    // 1. All local stations (always visible)
-                    // 2. Remote partners with no visibility records (visible to all)
-                    // 3. Remote partners specifically assigned to this user
+                    // Build subquery to get AS2 IDs of partners owned by this user
+                    // Using ownership-based filtering via created_by_user_id
                     String visibilitySubquery =
-                        "(SELECT as2ident FROM partner WHERE islocal=1 " +
-                        "UNION " +
-                        "SELECT p.as2ident FROM partner p " +
-                        "WHERE p.islocal=0 AND NOT EXISTS (SELECT 1 FROM partner_user_visibility WHERE partner_id=p.id) " +
-                        "UNION " +
-                        "SELECT p.as2ident FROM partner p " +
-                        "INNER JOIN partner_user_visibility pv ON p.id=pv.partner_id " +
-                        "WHERE pv.user_id=?)";
+                        "(SELECT as2ident FROM partner WHERE created_by_user_id=?)";
 
                     if (queryCondition.length() == 0) {
                         queryCondition.append(" WHERE");

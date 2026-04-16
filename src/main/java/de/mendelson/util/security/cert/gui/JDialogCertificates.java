@@ -676,7 +676,9 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
             //take the main panel as anchor because it might be integrated in another swing program
             JFrame parent = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class,
                     this.jPanelMain);
-            JDialogGenerateKey dialog = new JDialogGenerateKey(parent);
+            // Pass keystore usage to the dialog so it can set default checkboxes
+            int keystoreUsage = this.manager.getStorageUsage();
+            JDialogGenerateKey dialog = new JDialogGenerateKey(parent, keystoreUsage);
             dialog.setVisible(true);
             KeyGenerationValues values = dialog.getValues();
             if (values == null) {
