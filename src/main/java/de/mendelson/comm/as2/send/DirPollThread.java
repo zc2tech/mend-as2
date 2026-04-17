@@ -75,6 +75,7 @@ public class DirPollThread implements Runnable {
     private final static Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
     private final ClientServer clientserver;
     private final CertificateManager certificateManagerEncSign;
+    private final SendOrderSender sendOrderSender; // Injected sender instance
     private ScheduledFuture<?> future = null;
     private final ExecutorService sendingTheadExecutor
             = Executors.newFixedThreadPool(3,
@@ -85,12 +86,14 @@ public class DirPollThread implements Runnable {
     private final PreferencesAS2 preferences;    
 
     public DirPollThread(IDBDriverManager dbDriverManager, ClientServer clientserver,
-            CertificateManager certificateManagerEncSign, Partner sender, Partner receiver) {
+            CertificateManager certificateManagerEncSign, Partner sender, Partner receiver,
+            SendOrderSender sendOrderSender) {
         Objects.requireNonNull(sender, "DirPollThread: sender must not be null");
         Objects.requireNonNull(receiver, "DirPollThread: receiver must not be null");
         this.dbDriverManager = dbDriverManager;
         this.clientserver = clientserver;
         this.certificateManagerEncSign = certificateManagerEncSign;
+        this.sendOrderSender = sendOrderSender;
         this.preferences = new PreferencesAS2(dbDriverManager);
         //if something happens outside of this thread to the partners this should not result in weird problems
         this.receiver = (Partner) receiver.clone();
@@ -338,8 +341,8 @@ public class DirPollThread implements Runnable {
                         this.sender.getName(),
                         this.receiver.getName()
                     }));
-            SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
-            AS2Message message = orderSender.send(this.certificateManagerEncSign, this.sender, this.receiver, file, null,
+            // Use injected sendOrderSender instead of creating new one
+            AS2Message message = this.sendOrderSender.send(this.certificateManagerEncSign, this.sender, this.receiver, file, null,
                     this.receiver.getSubject(), null);
             EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             try {

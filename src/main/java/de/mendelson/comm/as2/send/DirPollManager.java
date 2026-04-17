@@ -12,6 +12,7 @@ package de.mendelson.comm.as2.send;
 
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerAccessDB;
+import de.mendelson.comm.as2.sendorder.SendOrderSender;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
@@ -72,11 +73,14 @@ public class DirPollManager {
     private final MecResourceBundle rb;
     private final ClientServer clientserver;
     private final IDBDriverManager dbDriverManager;
+    private final SendOrderSender sendOrderSender; // Injected sender instance
 
     public DirPollManager(CertificateManager certificateManager,
-            ClientServer clientserver, IDBDriverManager dbDriverManager) throws Exception {
+            ClientServer clientserver, IDBDriverManager dbDriverManager,
+            SendOrderSender sendOrderSender) throws Exception {
         this.clientserver = clientserver;
         this.dbDriverManager = dbDriverManager;
+        this.sendOrderSender = sendOrderSender;
         //Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -285,7 +289,7 @@ public class DirPollManager {
     private DirPollThread addPartnerPollThread(Partner localStation, Partner partner) {
         DirPollThread thread = new DirPollThread(this.dbDriverManager,
                 this.clientserver, this.certificateManager,
-                localStation, partner);
+                localStation, partner, this.sendOrderSender);
         synchronized (this.mapPollThread) {
             this.mapPollThread.put(localStation.getDBId() + "_" + partner.getDBId(), thread);
             thread.initializeThread();

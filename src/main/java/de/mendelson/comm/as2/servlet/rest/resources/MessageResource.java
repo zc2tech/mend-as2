@@ -843,7 +843,7 @@ public class MessageResource {
             }
 
             // Send the message using SendOrderSender with userId
-            SendOrderSender orderSender = new SendOrderSender(processing.getDBDriverManager());
+            SendOrderSender orderSender = processing.getSendOrderSender();
 
             AS2Message message = orderSender.send(
                     processing.getCertificateManagerSignEncrypt(),

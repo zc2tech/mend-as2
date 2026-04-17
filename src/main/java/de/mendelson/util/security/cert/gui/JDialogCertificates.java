@@ -673,6 +673,10 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         KeyGenerator generator = new KeyGenerator();
 
         try {
+            System.out.println("[CERT-GEN-DEBUG] ===== Starting certificate generation =====");
+            System.out.println("[CERT-GEN-DEBUG] Manager: " + this.manager.getClass().getName());
+            System.out.println("[CERT-GEN-DEBUG] Keystore usage: " + this.manager.getStorageUsage());
+
             //take the main panel as anchor because it might be integrated in another swing program
             JFrame parent = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class,
                     this.jPanelMain);
@@ -682,23 +686,39 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
             dialog.setVisible(true);
             KeyGenerationValues values = dialog.getValues();
             if (values == null) {
+                System.out.println("[CERT-GEN-DEBUG] User cancelled generation");
                 //user break
                 return;
             }
+
+            System.out.println("[CERT-GEN-DEBUG] Generating key pair with common name: " + values.getCommonName());
             KeyGenerationResult result = generator.generateKeyPair(values);
+            System.out.println("[CERT-GEN-DEBUG] Key pair generated successfully");
+
             String alias = KeyStoreUtil.getProposalCertificateAliasForImport(result.getCertificate());
             alias = KeyStoreUtil.ensureUniqueAliasName(this.manager.getKeystore(), alias);
+            System.out.println("[CERT-GEN-DEBUG] Using alias: " + alias);
+
             this.manager.getKeystore().setKeyEntry(alias, result.getKeyPair().getPrivate(),
                     null, new X509Certificate[]{result.getCertificate()});
+            System.out.println("[CERT-GEN-DEBUG] Key entry added to keystore, alias: " + alias);
+
+            // IMPORTANT: Save keystore to persist the changes to database/disk
+            System.out.println("[CERT-GEN-DEBUG] Saving keystore to database...");
+            this.manager.saveKeystore();
+            System.out.println("[CERT-GEN-DEBUG] Keystore saved successfully");
+
             this.panelCertificates.refreshData();
             this.panelCertificates.certificateAdded(alias);
+            System.out.println("[CERT-GEN-DEBUG] Certificate generation complete");
         } catch (Throwable e) {
+            System.out.println("[CERT-GEN-DEBUG] ERROR during generation: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
             String message = e.getClass().getName() + ": " + e.getMessage();
             UINotification.instance().addNotification(null,
                     UINotification.TYPE_ERROR,
                     rb.getResourceString("generatekey.error.title"),
                     rb.getResourceString("generatekey.error.message", message));
-            e.printStackTrace();
         }
     }
 

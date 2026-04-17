@@ -20,6 +20,7 @@ import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.oauth2.OAuth2Util;
+import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -54,18 +55,22 @@ public class SendOrderReceiver {
 
     private final static Logger logger = Logger.getLogger(AS2Server.SERVER_LOGGER_NAME);
     private final MecResourceBundle rb;
-    private final SendOrderAccessDB sendOrderAccess;
+    private final SendOrderQueueInterface queue; // Use interface instead of concrete class
     private final ClientServer clientserver;
     private final PreferencesAS2 preferences;
     private final MessageStoreHandler messageStoreHandler;
     private final MessageAccessDB messageAccess;
     private final IDBDriverManager dbDriverManager;
+    private final PartnerAccessDB partnerAccess; // Need for reloading partners
+    private final de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertificateManager;
     private SendOrderReceiverThread sendOrderReceiverThread = null;
     private final ScheduledExecutorService scheduledExecutor
             = Executors.newSingleThreadScheduledExecutor(
-                    new NamedThreadFactory("sendorder-receiver"));    
+                    new NamedThreadFactory("sendorder-receiver"));
 
-    public SendOrderReceiver(ClientServer clientserver, IDBDriverManager dbDriverManager) throws Exception {
+    public SendOrderReceiver(SendOrderQueueInterface queue, ClientServer clientserver,
+                           IDBDriverManager dbDriverManager,
+                           de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertificateManager) throws Exception {
         //Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -75,10 +80,13 @@ public class SendOrderReceiver {
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
         this.dbDriverManager = dbDriverManager;
-        this.sendOrderAccess = new SendOrderAccessDB(dbDriverManager);
+        this.queue = queue; // Use injected queue
+        System.out.println("*** SendOrderReceiver created with queue: " + queue.getClass().getName() + "@" + System.identityHashCode(queue));
+        this.partnerAccess = new PartnerAccessDB(dbDriverManager);
         this.messageAccess = new MessageAccessDB(dbDriverManager);
         this.messageStoreHandler = new MessageStoreHandler(dbDriverManager);
         this.clientserver = clientserver;
+        this.multiUserCertificateManager = multiUserCertificateManager;
         preferences = new PreferencesAS2(dbDriverManager);
     }
 
@@ -128,27 +136,36 @@ public class SendOrderReceiver {
         public void run() {
             //this try is necessary because this thread must never stop. If it stops no more messages
             //and MDN are send!
-            //transactional connection to the database just to read the data from the poll queue - no auto commit            
-            final List<SendOrder> waitingOrders = new ArrayList<SendOrder>();
+            //transactional connection to the database just to read the data from the poll queue - no auto commit
+            final List<SendOrderItem> waitingOrders = new ArrayList<SendOrderItem>();
             //collect the waiting orders
             try {
                 this.detectModification();
                 //check if new outbound connection are currently possible. The Math.max value is taken because its possible that
                 //the number of active connections is already reduced in the afterExecute method of the queue but the thread does still exist.
-                int possibleNewConnections = this.maxOutboundConnections - Math.max(activeConnections.get(), 
+                int possibleNewConnections = this.maxOutboundConnections - Math.max(activeConnections.get(),
                         threadExecutor.getActiveCount());
-                if (possibleNewConnections > 0) {                    
+
+                logger.info("[SENDORDER-POLL] maxOutboundConnections=" + this.maxOutboundConnections +
+                           ", activeConnections=" + activeConnections.get() +
+                           ", threadExecutorActive=" + threadExecutor.getActiveCount() +
+                           ", possibleNewConnections=" + possibleNewConnections);
+
+                if (possibleNewConnections > 0) {
                     //Get max number of outbound send orders and pass them to the thread executor
-                    waitingOrders.addAll(sendOrderAccess.getNext(possibleNewConnections));
+                    waitingOrders.addAll(queue.dequeueAvailable(possibleNewConnections));
+                    logger.info("[SENDORDER-POLL] Dequeued " + waitingOrders.size() + " orders");
+                } else {
+                    logger.info("[SENDORDER-POLL] No new connections possible, skipping dequeue");
                 }
             } catch (Throwable e) {
                 SystemEventManagerImplAS2.instance().systemFailure(e);
             }
             //process the found orders
             try {
-                for (SendOrder order : waitingOrders) {
+                for (SendOrderItem order : waitingOrders) {
                     final int activeConnectionNumber = activeConnections.incrementAndGet();
-                    final SendOrder finalOrder = order;
+                    final SendOrderItem finalOrder = order;
                     final int finalMaxOutboundConnectionCount = maxOutboundConnections;
                     Runnable connectionRunner = new Runnable() {
                         @Override
@@ -200,24 +217,94 @@ public class SendOrderReceiver {
         /**
          * Processes a single send order
          */
-        private void processOrder(SendOrder order,
+        private void processOrder(SendOrderItem item,
                 int maxOutboundConnectionsCount,
                 int activeConnectionsCount) {
+            AS2Message message = null;
+            Partner sender = null;
+            Partner receiver = null;
+
             try {
+                // Step 1: Build AS2Message if needed (IN_MEMORY strategy)
+                // or use pre-built message (PERSISTENT strategy)
+                if (item.hasPrebuiltMessage()) {
+                    // PERSISTENT strategy: message already built
+                    message = item.getMessage();
+
+                    // Reload partners from DB (deprecated transient fields are null)
+                    sender = partnerAccess.getPartner(item.getSenderDBId());
+                    receiver = partnerAccess.getPartner(item.getReceiverDBId());
+
+                    System.out.println("DEBUG [SendOrderReceiver.processOrder]: PERSISTENT strategy");
+                    System.out.println("  Using pre-built AS2Message");
+                    System.out.println("  Sender reloaded: " + (sender != null ? sender.getName() : "null"));
+                    System.out.println("  Receiver reloaded: " + (receiver != null ? receiver.getName() : "null"));
+                } else {
+                    // IN_MEMORY strategy: build message on-demand
+                    logger.info("═════════════════════════════════════════════════");
+                    logger.info("[SENDORDER-DEBUG] Processing IN_MEMORY send order:");
+                    logger.info("[SENDORDER-DEBUG]   Order ID: " + item.getOrderId());
+                    logger.info("[SENDORDER-DEBUG]   Sender DB ID: " + item.getSenderDBId());
+                    logger.info("[SENDORDER-DEBUG]   Receiver DB ID: " + item.getReceiverDBId());
+                    logger.info("[SENDORDER-DEBUG]   User ID: " + item.getUserId());
+                    logger.info("[SENDORDER-DEBUG]   Files: " + (item.getFiles() != null ? item.getFiles().length : 0));
+                    logger.info("═════════════════════════════════════════════════");
+
+                    // Load partners
+                    sender = partnerAccess.getPartner(item.getSenderDBId());
+                    receiver = partnerAccess.getPartner(item.getReceiverDBId());
+
+                    if (sender == null || receiver == null) {
+                        throw new Exception("Could not load sender or receiver partner from database " +
+                                          "(senderDBId=" + item.getSenderDBId() +
+                                          ", receiverDBId=" + item.getReceiverDBId() + ")");
+                    }
+
+                    logger.info("[SENDORDER-DEBUG] Partners loaded:");
+                    logger.info("[SENDORDER-DEBUG]   Sender: " + sender.getName() + " (AS2 ID: " + sender.getAS2Identification() + ")");
+                    logger.info("[SENDORDER-DEBUG]   Receiver: " + receiver.getName() + " (AS2 ID: " + receiver.getAS2Identification() + ")");
+                    logger.info("[SENDORDER-DEBUG]   Sender sign cert fingerprint: " + sender.getSignFingerprintSHA1());
+                    logger.info("[SENDORDER-DEBUG]   Receiver crypt cert fingerprint: " + receiver.getCryptFingerprintSHA1());
+
+                    // Build AS2Message on-demand using multi-user certificate manager
+                    de.mendelson.comm.as2.message.AS2MessageCreationAdapter messageCreationAdapter =
+                        new de.mendelson.comm.as2.message.AS2MessageCreationAdapter(
+                            SendOrderReceiver.this.multiUserCertificateManager,
+                            logger
+                        );
+                    messageCreationAdapter.setServerResources(dbDriverManager);
+
+                    message = messageCreationAdapter.createMessage(
+                        sender, receiver,
+                        item.getFiles(),
+                        item.getOriginalFilenames(),
+                        item.getUserdefinedId(),
+                        item.getSubject(),
+                        item.getPayloadContentTypes(),
+                        item.getUserId()  // Use user ID from send order
+                    );
+
+                    logger.info("[SENDORDER-DEBUG] ✓ AS2Message created successfully for user " + item.getUserId());
+                }
+
+                if (sender == null || receiver == null || message == null) {
+                    throw new Exception("Failed to prepare message for sending");
+                }
+
                 boolean processingAllowed = true;
                 //before performing the send there has to be checked if the send process is still valid. The orders
                 //are queued, between scheduling and processing the orders the transmission time could expire
                 //or the user could cancel it
-                if (order.getMessage().isMDN()) {
-                    //if the MDN state is on failure then the related transmission is on failure state, too - 
+                if (message.isMDN()) {
+                    //if the MDN state is on failure then the related transmission is on failure state, too -
                     //checking this makes no sense here
-                    AS2MDNInfo mdnInfo = (AS2MDNInfo) order.getMessage().getAS2Info();
+                    AS2MDNInfo mdnInfo = (AS2MDNInfo) message.getAS2Info();
                     AS2MessageInfo relatedMessageInfo = messageAccess.getLastMessageEntry(mdnInfo.getRelatedMessageId());
                     if (relatedMessageInfo == null) {
                         processingAllowed = false;
                     }
                 } else {
-                    AS2MessageInfo messageInfo = (AS2MessageInfo) order.getMessage().getAS2Info();
+                    AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
                     if (messageInfo.getMessageType() == AS2Message.MESSAGETYPE_AS2) {
                         //update the message info from the database
                         messageInfo = messageAccess.getLastMessageEntry(messageInfo.getMessageId());
@@ -229,59 +316,9 @@ public class SendOrderReceiver {
                     }
                 }
                 if (processingAllowed) {
-                    // Reload partners from database using DB IDs stored in SendOrder
-                    // This ensures we always use current partner configuration
-                    System.out.println("=== SendOrderReceiver.processOrder() ===");
-
-                    PartnerAccessDB partnerAccess = new PartnerAccessDB(dbDriverManager);
-
-                    // Load sender
-                    int senderDBId = order.getSenderDBId();
-                    Partner sender = null;
-                    if (senderDBId > 0) {
-                        sender = partnerAccess.getPartner(senderDBId);
-                        if (sender != null) {
-                            System.out.println("Loaded sender from DB: " + sender.getName() +
-                                             ", dbId: " + sender.getDBId() +
-                                             ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
-                        } else {
-                            System.out.println("ERROR: Could not load sender with DB ID: " + senderDBId);
-                        }
-                    } else {
-                        // Backward compatibility: try legacy Partner object
-                        sender = order.getSender();
-                        if (sender != null) {
-                            System.out.println("Using legacy sender from SendOrder: " + sender.getName());
-                        }
-                    }
-
-                    // Load receiver
-                    int receiverDBId = order.getReceiverDBId();
-                    Partner receiver = null;
-                    if (receiverDBId > 0) {
-                        receiver = partnerAccess.getPartner(receiverDBId);
-                        if (receiver != null) {
-                            System.out.println("Loaded receiver from DB: " + receiver.getName() +
-                                             ", dbId: " + receiver.getDBId() +
-                                             ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
-                        } else {
-                            System.out.println("ERROR: Could not load receiver with DB ID: " + receiverDBId);
-                        }
-                    } else {
-                        // Backward compatibility: try legacy Partner object
-                        receiver = order.getReceiver();
-                        if (receiver != null) {
-                            System.out.println("Using legacy receiver from SendOrder: " + receiver.getName());
-                        }
-                    }
-
-                    if (sender == null || receiver == null) {
-                        throw new Exception("Could not load sender or receiver partner from database");
-                    }
-
                     //display some log information that the outbound connection is prepared
-                    if (order.getMessage().isMDN()) {
-                        AS2MDNInfo mdnInfo = (AS2MDNInfo) order.getMessage().getAS2Info();
+                    if (message.isMDN()) {
+                        AS2MDNInfo mdnInfo = (AS2MDNInfo) message.getAS2Info();
                         AS2MessageInfo relatedMessageInfo = messageAccess.getLastMessageEntry(mdnInfo.getRelatedMessageId());
                         String asyncMDNURL = relatedMessageInfo.getAsyncMDNURL();
                         logger.log(Level.INFO, rb.getResourceString("outbound.connection.prepare.mdn",
@@ -291,7 +328,7 @@ public class SendOrderReceiver {
                                     String.valueOf(maxOutboundConnectionsCount),}), mdnInfo);
                     } else {
                         //its a AS2 message that has been sent
-                        AS2MessageInfo messageInfo = (AS2MessageInfo) order.getMessage().getAS2Info();
+                        AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
                         if (receiver.getURL().toLowerCase().startsWith("https")) {
                             messageInfo.setUsesTLS(true);
                         }
@@ -303,7 +340,7 @@ public class SendOrderReceiver {
                                     String.valueOf(maxOutboundConnectionsCount),}), messageInfo);
                     }
                     //ensure that the OAuth2 access token is valid before starting the data upload
-                    if (order.getMessage().isMDN()) {
+                    if (message.isMDN()) {
                         if (receiver.usesOAuth2MDN() && receiver.getOAuth2MDN() != null) {
                             OAuth2Util.ensureValidAccessToken(dbDriverManager,
                                     SystemEventManagerImplAS2.instance(),
@@ -325,7 +362,7 @@ public class SendOrderReceiver {
                     messageUploader.setLogger(logger);
                     messageUploader.setAbstractServer(clientserver);
                     messageUploader.setDBConnection(dbDriverManager);
-                    messageUploader.setUserId(order.getUserId());
+                    messageUploader.setUserId(item.getUserId());
                     //configure the connection parameters
                     HttpConnectionParameter connectionParameter = new HttpConnectionParameter();
                     connectionParameter.setConnectionTimeoutMillis(preferences.getInt(PreferencesAS2.HTTP_SEND_TIMEOUT));
@@ -335,11 +372,11 @@ public class SendOrderReceiver {
                     connectionParameter.setProxy(messageUploader.createProxyObjectFromPreferences());
                     connectionParameter.setUseExpectContinue(true);
                     messageUploader.upload(connectionParameter,
-                            order.getMessage(), sender, receiver);
+                            message, sender, receiver);
                     //set error or finish state, remember that this send order could be
                     //also an MDN if async MDN is requested
-                    if (order.getMessage().isMDN()) {
-                        AS2MDNInfo mdnInfo = (AS2MDNInfo) order.getMessage().getAS2Info();
+                    if (message.isMDN()) {
+                        AS2MDNInfo mdnInfo = (AS2MDNInfo) message.getAS2Info();
                         if (mdnInfo.getState() == AS2Message.STATE_FINISHED) {
                             AS2MessageInfo relatedMessageInfo = messageAccess.getLastMessageEntry(mdnInfo.getRelatedMessageId());
                             messageStoreHandler.movePayloadToInbox(relatedMessageInfo.getMessageType(), mdnInfo.getRelatedMessageId(),
@@ -352,7 +389,7 @@ public class SendOrderReceiver {
                         messageAccess.setMessageState(mdnInfo.getRelatedMessageId(), mdnInfo.getState());
                     } else {
                         //its a AS2 message that has been sent
-                        AS2MessageInfo messageInfo = (AS2MessageInfo) order.getMessage().getAS2Info();
+                        AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
                         messageAccess.setMessageSendDate(messageInfo);
                         messageAccess.updateFilenames(messageInfo);
                         if (!messageInfo.requestsSyncMDN()) {
@@ -367,82 +404,91 @@ public class SendOrderReceiver {
                     }
                 }
                 //Either it is processed now or the entry in the queue was no longer valid - delete it in both cases
-                sendOrderAccess.delete(order.getDbId());
+                queue.markCompleted(item.getOrderId());
                 //send push messages to all clients that the number/state of transaction has been changed
                 EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } catch (NoConnectionException e) {
-                int retryCount = order.incRetryCount();
+                int retryCount = item.incRetryCount();
                 int maxRetryCount = preferences.getInt(PreferencesAS2.MAX_CONNECTION_RETRY_COUNT);
                 //to many retries: cancel the transaction
                 if (retryCount > maxRetryCount) {
                     if (e.getMessage() != null && !e.getMessage().trim().isEmpty()) {
-                        logger.log(Level.WARNING, e.getMessage(), order.getMessage().getAS2Info());
+                        logger.log(Level.WARNING, e.getMessage(), message != null ? message.getAS2Info() : null);
                     }
                     logger.log(Level.SEVERE, rb.getResourceString("max.retry.reached",
-                            String.valueOf(maxRetryCount)), order.getMessage().getAS2Info());
-                    sendOrderAccess.delete(order.getDbId());
-                    this.processUploadError(order);
+                            String.valueOf(maxRetryCount)), message != null ? message.getAS2Info() : null);
+                    queue.markCompleted(item.getOrderId());
+                    this.processUploadError(item, message);
                 } else {
                     if (e.getMessage() != null && !e.getMessage().trim().isEmpty()) {
-                        logger.log(Level.WARNING, e.getMessage(), order.getMessage().getAS2Info());
+                        logger.log(Level.WARNING, e.getMessage(), message != null ? message.getAS2Info() : null);
                     }
                     logger.log(Level.WARNING, rb.getResourceString("retry",
                             new Object[]{
                                 String.valueOf(preferences.getInt(PreferencesAS2.CONNECTION_RETRY_WAIT_TIME_IN_S)),
                                 String.valueOf(retryCount),
                                 String.valueOf(maxRetryCount)
-                            }), order.getMessage().getAS2Info());
-                    this.sendOrderToRetry(order);
+                            }), message != null ? message.getAS2Info() : null);
+                    this.sendOrderToRetry(item);
                 }
             } catch (Throwable e) {
                 e.printStackTrace();
-                logger.log(Level.SEVERE, e.getMessage(), order.getMessage().getAS2Info());
-                this.processUploadError(order);
+                logger.log(Level.SEVERE, e.getMessage(), message != null ? message.getAS2Info() : null);
+                this.processUploadError(item, message);
             }
         }
 
         /**
          * Update the order in the queue - with a new nextexecution time
          */
-        private void sendOrderToRetry(SendOrder order) {
-            SendOrderSender sender = null;
-            sender = new SendOrderSender(dbDriverManager);
-            sender.resend(order, System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(
-                    preferences.getInt(PreferencesAS2.CONNECTION_RETRY_WAIT_TIME_IN_S)));
+        private void sendOrderToRetry(SendOrderItem item) {
+            long nextExecutionTime = System.currentTimeMillis() +
+                TimeUnit.SECONDS.toMillis(preferences.getInt(PreferencesAS2.CONNECTION_RETRY_WAIT_TIME_IN_S));
+            queue.requeueForRetry(item.getOrderId(), nextExecutionTime - System.currentTimeMillis());
         }
 
         /**
          * The upload process of the data failed. Set the message state, execute
          * the command, ..
          */
-        private void processUploadError(SendOrder order) {
+        private void processUploadError(SendOrderItem item, AS2Message message) {
             try {
+                if (message == null) {
+                    logger.log(Level.SEVERE, "processUploadError: message is null");
+                    return;
+                }
+
+                // Reload partners for storing error message
+                Partner sender = partnerAccess.getPartner(item.getSenderDBId());
+                Partner receiver = partnerAccess.getPartner(item.getReceiverDBId());
+
                 //stores
-                messageStoreHandler.storeSentErrorMessage(
-                        order.getMessage(), order.getSender(), order.getReceiver());
-                if (!order.getMessage().isMDN()) {
+                messageStoreHandler.storeSentErrorMessage(message, sender, receiver);
+                if (!message.isMDN()) {
                     //message upload failure
-                    messageAccess.setMessageState(order.getMessage().getAS2Info().getMessageId(),
+                    messageAccess.setMessageState(message.getAS2Info().getMessageId(),
                             AS2Message.STATE_STOPPED);
                     //its important to set the state in the message info, too. An event exec is not performed
                     //for pending messages
-                    order.getMessage().getAS2Info().setState(AS2Message.STATE_STOPPED);
-                    messageAccess.updateFilenames((AS2MessageInfo) order.getMessage().getAS2Info());
+                    message.getAS2Info().setState(AS2Message.STATE_STOPPED);
+                    messageAccess.updateFilenames((AS2MessageInfo) message.getAS2Info());
                     ProcessingEvent.enqueueEventIfRequired(dbDriverManager,
-                            (AS2MessageInfo) order.getMessage().getAS2Info(), null);
+                            (AS2MessageInfo) message.getAS2Info(), null);
                     //write status file
-                    messageStoreHandler.writeOutboundStatusFile((AS2MessageInfo) order.getMessage().getAS2Info());
+                    messageStoreHandler.writeOutboundStatusFile((AS2MessageInfo) message.getAS2Info());
                 } else {
                     //MDN send failure, e.g. wrong URL for async MDN in message
-                    messageAccess.setMessageState(((AS2MDNInfo) order.getMessage().getAS2Info()).getRelatedMessageId(),
+                    messageAccess.setMessageState(((AS2MDNInfo) message.getAS2Info()).getRelatedMessageId(),
                             AS2Message.STATE_STOPPED);
                 }
                 EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             } catch (Exception ee) {
                 ee.printStackTrace();
                 logger.log(Level.SEVERE, "SendOrderReceiver.processUploadError(): " + ee.getMessage(),
-                        order.getMessage().getAS2Info());
-                messageAccess.setMessageState(order.getMessage().getAS2Info().getMessageId(), AS2Message.STATE_STOPPED);
+                        message != null ? message.getAS2Info() : null);
+                if (message != null) {
+                    messageAccess.setMessageState(message.getAS2Info().getMessageId(), AS2Message.STATE_STOPPED);
+                }
             }
         }
     }

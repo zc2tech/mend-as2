@@ -136,13 +136,16 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
 
         byte[] keyData;
         try (ByteArrayOutputStream memOut = new ByteArrayOutputStream()) {
+            System.out.println("[KEYSTORE-SAVE-DEBUG] Saving keystore for userId=" + this.userId + ", usage=" + this.keystoreUsage);
             KeyStoreUtil.saveKeyStore(this.keystore, this.getKeystorePass(), memOut);
             keyData = memOut.toByteArray();
+            System.out.println("[KEYSTORE-SAVE-DEBUG] Keystore serialized, size=" + keyData.length + " bytes");
         }
 
         KeydataAccessDB dataAccessDB = new KeydataAccessDB(this.dbDriverManager, this.systemEventManager);
         dataAccessDB.updateKeydata(keyData, this.keystoreStorageType, this.keystoreUsage,
                 this.keystore.getProvider().getName(), this.userId);
+        System.out.println("[KEYSTORE-SAVE-DEBUG] Keystore saved to database successfully");
     }
 
     @Override

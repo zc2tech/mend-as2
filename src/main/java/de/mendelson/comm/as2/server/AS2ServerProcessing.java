@@ -325,6 +325,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     private final HAAccessDB haAccess;
     private long serverProcessId = 0L;
     private final PartnerTLSCertificateChangedController partnerTLSCertificateChangedController;
+    private final SendOrderSender sendOrderSender; // Injected sender instance
 
     public AS2ServerProcessing(ClientServer clientserver, DirPollManager pollManager,
             CertificateManager certificateManagerEncSign,
@@ -333,7 +334,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             ConfigurationCheckController configurationCheckController,
             HTTPServerConfigInfo httpServerConfigInfo,
             DBServerInformation dbServerInformation,
-            DBClientInformation dbClientInformation) {
+            DBClientInformation dbClientInformation,
+            SendOrderSender sendOrderSender) {
         //Load default resourcebundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -374,6 +376,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         this.preferences = new PreferencesAS2(this.dbDriverManager);
         this.partnerTLSCertificateChangedController = new PartnerTLSCertificateChangedController(
                 this.dbDriverManager, this.certificateManagerTLS);
+        this.sendOrderSender = sendOrderSender; // Store injected sender
         if (this.preferences.getBoolean(PreferencesAS2.AUTO_IMPORT_CHANGED_PARTNER_TLS_CERTIFICATES)) {
             this.partnerTLSCertificateChangedController.startTLSCertificateChangedControl(false);
         }
@@ -2042,7 +2045,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      */
     private void processManualSendRequest(IoSession session, ManualSendRequest request) {
         ManualSendResponse response = new ManualSendResponse(request);
-        SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
+        // Use injected sendOrderSender instead of creating new one
         try {
             String[] originalFilenames = null;
             Path[] sendFiles = null;
@@ -2135,14 +2138,20 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 senderCertManager.loadKeystoreCertificates(senderStorage);
             }
 
-            AS2Message message = orderSender.send(senderCertManager, sender,
+            AS2Message message = this.sendOrderSender.send(senderCertManager, sender,
                     receiver, sendFiles, originalFilenames, request.getUserdefinedId(),
-                    request.getSubject(), payloadContentTypes);
+                    request.getSubject(), payloadContentTypes, senderUserId);  // Pass userId for multi-user certs
+
+            // For IN_MEMORY strategy, message is null because it's built on-demand
+            // For PERSISTENT strategy, message is pre-built and returned
             if (message == null) {
-                throw new Exception(this.rb.getResourceString("send.failed"));
+                // IN_MEMORY: Message enqueued successfully, will be built later
+                this.logger.info("Message enqueued successfully (IN_MEMORY strategy) from " +
+                               sender.getName() + " to " + receiver.getName());
             } else {
+                // PERSISTENT: Message already built
                 response.setAS2Info((AS2MessageInfo) message.getAS2Info());
-                //is this a resend? Then get the resend message id and increment the resend counter, also enter 
+                //is this a resend? Then get the resend message id and increment the resend counter, also enter
                 //a log entry
                 String resendMessageId = request.getResendMessageId();
                 if (resendMessageId != null) {
@@ -2172,8 +2181,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     event.setSubject(this.rb.getResourceString("message.resend.title"));
                     SystemEventManagerImplAS2.instance().newEvent(event);
                 }
-                EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             }
+            EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
         } catch (Exception e) {
             EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
             response.setException(e);
@@ -3199,8 +3208,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         order.setReceiver(receiver);
         order.setMessage(message);
         order.setSender(sender);
-        SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
-        orderSender.send(order);
+        this.sendOrderSender.send(order);
         EventBus.getInstance().publish(new RefreshClientMessageOverviewList());
     }
 
@@ -3868,6 +3876,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
      */
     public IDBDriverManager getDBDriverManager() {
         return this.dbDriverManager;
+    }
+
+    /**
+     * Get the send order sender
+     */
+    public SendOrderSender getSendOrderSender() {
+        return this.sendOrderSender;
     }
 
     /**

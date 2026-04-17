@@ -44,12 +44,12 @@ public class SendOrderSender {
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
     }
-    private final SendOrderAccessDB sendOrderAccess;
+    private final SendOrderQueueInterface queue; // Use interface instead of concrete class
     private final IDBDriverManager dbDriverManager;
 
-    public SendOrderSender(IDBDriverManager dbDriverManager) {
+    public SendOrderSender(SendOrderQueueInterface queue, IDBDriverManager dbDriverManager) {
+        this.queue = queue;
         this.dbDriverManager = dbDriverManager;
-        this.sendOrderAccess = new SendOrderAccessDB(dbDriverManager);
     }
 
     /**
@@ -70,42 +70,65 @@ public class SendOrderSender {
             String subject, String[] payloadContentTypes, int userId) {
         try {
             long startProcessTime = System.currentTimeMillis();
-            AS2MessageCreation messageCreation = new AS2MessageCreation(certificateManager, certificateManager);
-            messageCreation.setLogger(this.logger);
-            messageCreation.setServerResources(this.dbDriverManager);
-            AS2Message message = messageCreation.createMessage(sender, receiver,
-                        files, originalFilenames, userdefinedId, subject, payloadContentTypes);
-            StringBuilder filenames = new StringBuilder();
-            for (Path file : files) {
-                if (filenames.length() > 0) {
-                    filenames.append(", ");
+
+            // Check if we're using PERSISTENT or IN_MEMORY strategy
+            boolean isPersistentStrategy = (queue instanceof PersistentSendOrderQueue);
+
+            AS2Message message = null;
+
+            if (isPersistentStrategy) {
+                // PERSISTENT strategy: pre-build message
+                System.out.println("DEBUG [SendOrderSender]: PERSISTENT strategy - building message");
+                AS2MessageCreation messageCreation = new AS2MessageCreation(certificateManager, certificateManager);
+                messageCreation.setLogger(this.logger);
+                messageCreation.setServerResources(this.dbDriverManager);
+                message = messageCreation.createMessage(sender, receiver,
+                            files, originalFilenames, userdefinedId, subject, payloadContentTypes);
+                StringBuilder filenames = new StringBuilder();
+                for (Path file : files) {
+                    if (filenames.length() > 0) {
+                        filenames.append(", ");
+                    }
+                    filenames.append(file.getFileName().toString());
                 }
-                filenames.append(file.getFileName().toString());
+                this.logger.log(Level.INFO,
+                        rb.getResourceString("message.packed",
+                                new Object[]{
+                                    filenames.toString(),
+                                    receiver.getName(),
+                                    AS2Tools.getDataSizeDisplay(message.getRawDataSize()),
+                                    AS2Tools.getTimeDisplay(System.currentTimeMillis() - startProcessTime),
+                                    (userdefinedId == null ? "--" : userdefinedId)
+                                }),
+                        message.getAS2Info());
+                System.out.println("DEBUG [SendOrderSender]: Creating SendOrder for PERSISTENT");
+                SendOrder sendOrder = new SendOrder()
+                        .setReceiverDBId(receiver.getDBId())
+                        .setSenderDBId(sender.getDBId())
+                        .setMessage(message)
+                        .setUserdefinedId(userdefinedId)
+                        .setUserId(userId);
+                ((PersistentSendOrderQueue) queue).enqueueWithMessage(sendOrder);
+                return message;
+            } else {
+                // IN_MEMORY strategy: just enqueue metadata, message will be built on-demand
+                System.out.println("DEBUG [SendOrderSender]: IN_MEMORY strategy - enqueueing metadata only");
+                SendOrderRequest request = new SendOrderRequest()
+                        .setSenderDBId(sender.getDBId())
+                        .setReceiverDBId(receiver.getDBId())
+                        .setFiles(files)
+                        .setOriginalFilenames(originalFilenames)
+                        .setUserdefinedId(userdefinedId)
+                        .setSubject(subject)
+                        .setPayloadContentTypes(payloadContentTypes)
+                        .setUserId(userId);
+                int orderId = queue.enqueue(request);
+                this.logger.log(Level.INFO,
+                        "Enqueued send order " + orderId + " for " + sender.getName() + " -> " + receiver.getName());
+                // For IN_MEMORY, we don't return a message (it hasn't been built yet)
+                // Return null to indicate success
+                return null;
             }
-            this.logger.log(Level.INFO,
-                    rb.getResourceString("message.packed",
-                            new Object[]{
-                                filenames.toString(),
-                                receiver.getName(),
-                                AS2Tools.getDataSizeDisplay(message.getRawDataSize()),
-                                AS2Tools.getTimeDisplay(System.currentTimeMillis() - startProcessTime),
-                                (userdefinedId == null ? "--" : userdefinedId)
-                            }),
-                    message.getAS2Info());
-            System.out.println("DEBUG [SendOrderSender]: Creating SendOrder");
-            System.out.println("  Sender: " + sender.getName() + ", dbId: " + sender.getDBId());
-            System.out.println("  Receiver: " + receiver.getName() + ", dbId: " + receiver.getDBId());
-            SendOrder sendOrder = new SendOrder()
-                    .setReceiverDBId(receiver.getDBId())  // Store only DB ID, not full object
-                    .setSenderDBId(sender.getDBId())      // Store only DB ID, not full object
-                    .setMessage(message)
-                    .setUserdefinedId(userdefinedId)
-                    .setUserId(userId);
-            System.out.println("DEBUG [SendOrderSender]: SendOrder created with:");
-            System.out.println("  senderDBId: " + sendOrder.getSenderDBId());
-            System.out.println("  receiverDBId: " + sendOrder.getReceiverDBId());
-            this.send(sendOrder);
-            return (message);
         } catch (Throwable e) {
             logger.severe(rb.getResourceString("sendoder.sendfailed",
                     new Object[]{
@@ -153,13 +176,35 @@ public class SendOrderSender {
      * Enqueues an existing send order
      */
     public void resend(SendOrder order, long nextExecutionTime) {
-        this.sendOrderAccess.rescheduleOrder(order, nextExecutionTime);
+        if (queue instanceof PersistentSendOrderQueue) {
+            ((PersistentSendOrderQueue) queue).rescheduleOrder(order, nextExecutionTime);
+        } else {
+            // For IN_MEMORY strategy, this shouldn't be called since SendOrderReceiver
+            // now calls queue.requeueForRetry() directly
+            logger.warning("resend() called on IN_MEMORY strategy - should use requeueForRetry instead");
+        }
     }
 
     /**
-     * Enqueues a send order
+     * Enqueues an existing send order (PERSISTENT strategy specific)
+     * Public for use by AS2ServerProcessing and other components
+     */
+    public void enqueuePersistentOrder(SendOrder order) {
+        if (queue instanceof PersistentSendOrderQueue) {
+            ((PersistentSendOrderQueue) queue).enqueueWithMessage(order);
+        } else {
+            logger.warning("enqueuePersistentOrder() called on IN_MEMORY strategy - not supported");
+        }
+    }
+
+    /**
+     * Enqueues a send order (DEPRECATED - use interface methods directly)
      */
     public void send(SendOrder order) {
-        this.sendOrderAccess.add(order);
+        if (queue instanceof PersistentSendOrderQueue) {
+            ((PersistentSendOrderQueue) queue).enqueueWithMessage(order);
+        } else {
+            logger.warning("send(SendOrder) called on IN_MEMORY strategy - not supported");
+        }
     }
 }
