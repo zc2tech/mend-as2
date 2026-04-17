@@ -59,6 +59,16 @@ public interface SendOrderQueueInterface {
     void requeueForRetry(int orderId, long delayMs);
 
     /**
+     * Update cached AS2Message for an order (IN_MEMORY strategy only).
+     * After first send attempt, the built message is cached to ensure
+     * retries use the same message ID and encrypted bytes.
+     *
+     * @param orderId the order ID
+     * @param message the AS2Message to cache
+     */
+    void updateCachedMessage(int orderId, de.mendelson.comm.as2.message.AS2Message message);
+
+    /**
      * Called on server startup for crash recovery.
      * Implementations should:
      * - Restore queue state from persistent storage

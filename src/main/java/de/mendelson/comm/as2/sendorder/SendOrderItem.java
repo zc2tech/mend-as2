@@ -47,6 +47,11 @@ public class SendOrderItem {
     // Common fields
     private AtomicInteger retryCount = new AtomicInteger(0);
 
+    // Cached message for IN_MEMORY strategy retries
+    // After first send attempt, the built message is cached here to ensure
+    // retries use the same message ID and encrypted bytes (AS2 protocol requirement)
+    private AS2Message cachedMessage;
+
     /**
      * Constructor for PERSISTENT strategy (pre-built message)
      */
@@ -165,5 +170,13 @@ public class SendOrderItem {
 
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    public AS2Message getCachedMessage() {
+        return cachedMessage;
+    }
+
+    public void setCachedMessage(AS2Message cachedMessage) {
+        this.cachedMessage = cachedMessage;
     }
 }

@@ -47,6 +47,11 @@ public class LightweightSendOrder implements Serializable {
     private transient AtomicInteger retryCount;
     private volatile OrderState state;
 
+    // Cache for built AS2Message (after first send attempt)
+    // This ensures retries use the SAME encrypted message (AS2 protocol requirement)
+    // Note: NOT transient - must be serialized to checkpoint for crash recovery
+    private de.mendelson.comm.as2.message.AS2Message cachedMessage;
+
     public LightweightSendOrder() {
         this.retryCount = new AtomicInteger(0);
         this.state = OrderState.WAITING;
@@ -192,5 +197,13 @@ public class LightweightSendOrder implements Serializable {
 
     public void setState(OrderState state) {
         this.state = state;
+    }
+
+    public de.mendelson.comm.as2.message.AS2Message getCachedMessage() {
+        return cachedMessage;
+    }
+
+    public void setCachedMessage(de.mendelson.comm.as2.message.AS2Message cachedMessage) {
+        this.cachedMessage = cachedMessage;
     }
 }

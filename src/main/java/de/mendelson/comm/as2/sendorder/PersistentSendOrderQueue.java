@@ -123,4 +123,9 @@ public class PersistentSendOrderQueue implements SendOrderQueueInterface {
     public void shutdown() {
         // No-op: database persists automatically
     }
+
+    @Override
+    public void updateCachedMessage(int orderId, de.mendelson.comm.as2.message.AS2Message message) {
+        // No-op: PERSISTENT strategy pre-builds messages, no caching needed
+    }
 }

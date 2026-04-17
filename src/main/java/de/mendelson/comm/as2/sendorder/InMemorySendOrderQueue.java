@@ -171,6 +171,7 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
                 order.getUserId()
             );
             item.setRetryCount(order.getRetryCount().get());
+            item.setCachedMessage(order.getCachedMessage());  // Pass cached message for retries
 
             items.add(item);
             count++;
@@ -207,6 +208,17 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
             logger.fine("Requeued send order " + orderId +
                        " for retry (delay=" + delayMs + "ms, retryCount=" +
                        order.getRetryCount().get() + ")");
+        }
+    }
+
+    @Override
+    public void updateCachedMessage(int orderId, de.mendelson.comm.as2.message.AS2Message message) {
+        // Find order in processing map
+        LightweightSendOrder order = processingOrders.get(orderId);
+        if (order != null) {
+            order.setCachedMessage(message);
+            logger.fine("Cached AS2Message for order " + orderId +
+                       " (message ID: " + message.getAS2Info().getMessageId() + ")");
         }
     }
 

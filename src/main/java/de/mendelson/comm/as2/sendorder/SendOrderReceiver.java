@@ -240,13 +240,14 @@ public class SendOrderReceiver {
                     System.out.println("  Sender reloaded: " + (sender != null ? sender.getName() : "null"));
                     System.out.println("  Receiver reloaded: " + (receiver != null ? receiver.getName() : "null"));
                 } else {
-                    // IN_MEMORY strategy: build message on-demand
+                    // IN_MEMORY strategy: build message on-demand OR use cached message for retries
                     logger.info("═════════════════════════════════════════════════");
                     logger.info("[SENDORDER-DEBUG] Processing IN_MEMORY send order:");
                     logger.info("[SENDORDER-DEBUG]   Order ID: " + item.getOrderId());
                     logger.info("[SENDORDER-DEBUG]   Sender DB ID: " + item.getSenderDBId());
                     logger.info("[SENDORDER-DEBUG]   Receiver DB ID: " + item.getReceiverDBId());
                     logger.info("[SENDORDER-DEBUG]   User ID: " + item.getUserId());
+                    logger.info("[SENDORDER-DEBUG]   Retry count: " + item.getRetryCount());
                     logger.info("[SENDORDER-DEBUG]   Files: " + (item.getFiles() != null ? item.getFiles().length : 0));
                     logger.info("═════════════════════════════════════════════════");
 
@@ -266,25 +267,40 @@ public class SendOrderReceiver {
                     logger.info("[SENDORDER-DEBUG]   Sender sign cert fingerprint: " + sender.getSignFingerprintSHA1());
                     logger.info("[SENDORDER-DEBUG]   Receiver crypt cert fingerprint: " + receiver.getCryptFingerprintSHA1());
 
-                    // Build AS2Message on-demand using multi-user certificate manager
-                    de.mendelson.comm.as2.message.AS2MessageCreationAdapter messageCreationAdapter =
-                        new de.mendelson.comm.as2.message.AS2MessageCreationAdapter(
-                            SendOrderReceiver.this.multiUserCertificateManager,
-                            logger
+                    // Check if this is a retry with cached message
+                    if (item.getRetryCount() > 0 && item.getCachedMessage() != null) {
+                        // RETRY: Reuse cached message (same message ID, same encrypted bytes)
+                        message = item.getCachedMessage();
+                        logger.info("[SENDORDER-DEBUG] ✓ Reusing cached AS2Message for retry (message ID: " +
+                                   message.getAS2Info().getMessageId() + ")");
+                    } else {
+                        // FIRST ATTEMPT: Build new AS2Message
+                        logger.info("[SENDORDER-DEBUG] Building new AS2Message (first attempt)");
+
+                        de.mendelson.comm.as2.message.AS2MessageCreationAdapter messageCreationAdapter =
+                            new de.mendelson.comm.as2.message.AS2MessageCreationAdapter(
+                                SendOrderReceiver.this.multiUserCertificateManager,
+                                logger
+                            );
+                        messageCreationAdapter.setServerResources(dbDriverManager);
+
+                        message = messageCreationAdapter.createMessage(
+                            sender, receiver,
+                            item.getFiles(),
+                            item.getOriginalFilenames(),
+                            item.getUserdefinedId(),
+                            item.getSubject(),
+                            item.getPayloadContentTypes(),
+                            item.getUserId()  // Use user ID from send order
                         );
-                    messageCreationAdapter.setServerResources(dbDriverManager);
 
-                    message = messageCreationAdapter.createMessage(
-                        sender, receiver,
-                        item.getFiles(),
-                        item.getOriginalFilenames(),
-                        item.getUserdefinedId(),
-                        item.getSubject(),
-                        item.getPayloadContentTypes(),
-                        item.getUserId()  // Use user ID from send order
-                    );
+                        // Cache the message for future retries
+                        item.setCachedMessage(message);
+                        queue.updateCachedMessage(item.getOrderId(), message);
 
-                    logger.info("[SENDORDER-DEBUG] ✓ AS2Message created successfully for user " + item.getUserId());
+                        logger.info("[SENDORDER-DEBUG] ✓ AS2Message created and cached (message ID: " +
+                                   message.getAS2Info().getMessageId() + ")");
+                    }
                 }
 
                 if (sender == null || receiver == null || message == null) {
