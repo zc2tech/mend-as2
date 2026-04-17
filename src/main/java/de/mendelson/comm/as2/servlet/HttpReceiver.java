@@ -379,26 +379,43 @@ public class HttpReceiver extends HttpServlet {
         java.util.List<de.mendelson.comm.as2.partner.PartnerInboundAuthCredential> credentials =
             localStation.getInboundAuthCredentialsList();
 
-        // No credentials = no auth required
-        if (credentials.isEmpty()) {
-            return true;
-        }
+        // Check master toggles (from partner table)
+        boolean basicAuthMasterEnabled = localStation.isInboundAuthBasicEnabled();
+        boolean certAuthMasterEnabled = localStation.isInboundAuthCertEnabled();
 
+        // Count enabled credentials by type (only if master toggle is ON)
         boolean anyBasicCredential = false;
         boolean anyCertCredential = false;
         boolean basicAuthPassed = false;
         boolean certAuthPassed = false;
 
-        // Check what types of credentials are configured
-        for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
-            if (!credential.isEnabled()) {
-                continue;
+        // Check what types of credentials are configured AND enabled
+        // Only count them if the master toggle is ON
+        if (basicAuthMasterEnabled) {
+            for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                if (credential.isEnabled() &&
+                    credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
+                    anyBasicCredential = true;
+                    break;
+                }
             }
-            if (credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
-                anyBasicCredential = true;
-            } else if (credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE) {
-                anyCertCredential = true;
+        }
+
+        if (certAuthMasterEnabled) {
+            for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                if (credential.isEnabled() &&
+                    credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    anyCertCredential = true;
+                    break;
+                }
             }
+        }
+
+        // If no credentials are enabled, no auth is required - accept all
+        if (!anyBasicCredential && !anyCertCredential) {
+            logger.info("No authentication required for local station: " + targetUsername +
+                       " (all auth methods disabled)");
+            return true;
         }
 
         // Validate Basic Authentication (check ALL basic credentials)
