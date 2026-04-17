@@ -563,6 +563,15 @@ public class MessageHttpUploader {
                 basicAuthentication = receiver.getAuthenticationCredentialsMessage();
             }
 
+            // DEBUG: Log auth configuration
+            if (this.logger != null) {
+                this.logger.log(Level.INFO,
+                    "DEBUG: Partner '" + receiver.getName() + "' authMode=" + basicAuthentication.getAuthMode() +
+                    " (0=NONE, 1=BASIC, 2=USER_PREF, 3=CERT), user=[" + basicAuthentication.getUser() +
+                    "], pass=[" + basicAuthentication.getPassword() + "]",
+                    message.getAS2Info());
+            }
+
             // Resolve HTTP authentication based on authMode
             String authUsername = null;
             String authPassword = null;
@@ -636,9 +645,27 @@ public class MessageHttpUploader {
                 }
             }
 
+            // DEBUG: Log final resolved credentials
+            if (this.logger != null) {
+                this.logger.log(Level.INFO,
+                    "DEBUG: Resolved credentials - authUsername=[" + authUsername + "], authPassword=[" + authPassword + "]",
+                    message.getAS2Info());
+            }
+
             // Add Authorization header if credentials were resolved
             if (authUsername != null && authPassword != null) {
                 filePost.addHeader("Authorization", this.generateBasicAuth(authUsername, authPassword));
+                if (this.logger != null) {
+                    this.logger.log(Level.INFO,
+                        "DEBUG: Added Authorization header for basic auth",
+                        message.getAS2Info());
+                }
+            } else {
+                if (this.logger != null) {
+                    this.logger.log(Level.INFO,
+                        "DEBUG: No Authorization header added (credentials are null)",
+                        message.getAS2Info());
+                }
             }
             filePost.addHeader("as2-version", "1.2");
             filePost.addHeader("ediint-features", ediintFeatures);
@@ -976,6 +1003,9 @@ public class MessageHttpUploader {
 
             // For client certificate authentication:
             // Check if receiver requires certificate authentication
+            System.out.println("DEBUG: httpAuthentication = " + httpAuthentication);
+            System.out.println("DEBUG: httpAuthentication.getAuthMode() = " +
+                             (httpAuthentication != null ? httpAuthentication.getAuthMode() : "null"));
             boolean needsClientCertAuth = (httpAuthentication != null &&
                                           httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE);
             System.out.println("Receiver requires client cert auth: " + needsClientCertAuth);

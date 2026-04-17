@@ -690,6 +690,18 @@ public class JPanelPartner extends JPanel {
             if (fingerprint != null && !fingerprint.isEmpty()) {
                 this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage,
                         this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint));
+            } else {
+                // Fingerprint is empty - select first available certificate and set its fingerprint
+                if (this.jComboBoxHttpAuthCertMessage.getItemCount() > 0) {
+                    KeystoreCertificate firstCert = this.jComboBoxHttpAuthCertMessage.getItemAt(0);
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, firstCert);
+                    // Set the fingerprint to the partner object so it gets saved
+                    this.partner.getAuthenticationCredentialsMessage()
+                            .setCertificateFingerprint(firstCert.getFingerPrintSHA1());
+                    System.out.println("DEBUG [JPanelPartner]: Certificate auth mode with empty fingerprint - " +
+                                     "auto-selected first certificate: " + firstCert.getAlias() +
+                                     ", fingerprint: " + firstCert.getFingerPrintSHA1());
+                }
             }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMessage, true);
@@ -707,6 +719,18 @@ public class JPanelPartner extends JPanel {
             if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
                 this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN,
                         this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN));
+            } else {
+                // Fingerprint is empty - select first available certificate and set its fingerprint
+                if (this.jComboBoxHttpAuthCertMDN.getItemCount() > 0) {
+                    KeystoreCertificate firstCert = this.jComboBoxHttpAuthCertMDN.getItemAt(0);
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, firstCert);
+                    // Set the fingerprint to the partner object so it gets saved
+                    this.partner.getAuthenticationCredentialsAsyncMDN()
+                            .setCertificateFingerprint(firstCert.getFingerPrintSHA1());
+                    System.out.println("DEBUG [JPanelPartner]: MDN Certificate auth mode with empty fingerprint - " +
+                                     "auto-selected first certificate: " + firstCert.getAlias() +
+                                     ", fingerprint: " + firstCert.getFingerPrintSHA1());
+                }
             }
         } else {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthNoneMDN, true);

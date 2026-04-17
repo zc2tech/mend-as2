@@ -22,10 +22,20 @@ public class SendOrder implements Serializable {
     private static final long serialVersionUID = 1L;
     public static final int STATE_WAITING = 0;
     public static final int STATE_PROCESSING = 1;
-    
-    private Partner receiver;
+
+    // Store only partner DB IDs instead of full Partner objects for efficiency
+    // Partners will be reloaded from database when processing the order
+    private int receiverDBId = -1;
+    private int senderDBId = -1;
+
+    // Legacy fields - kept for backward compatibility with existing serialized SendOrders
+    // These will be null for newly created SendOrders
+    @Deprecated
+    private transient Partner receiver;
+    @Deprecated
+    private transient Partner sender;
+
     private AS2Message message;
-    private Partner sender;
     private transient AtomicInteger retryCount;
     private int dbId = -1;
     private String userdefinedId = null;
@@ -35,31 +45,71 @@ public class SendOrder implements Serializable {
         this.retryCount = new AtomicInteger(0);
     }
 
+    /**
+     * @deprecated Use getReceiverDBId() and reload from database instead
+     */
+    @Deprecated
     public Partner getReceiver() {
         return receiver;
     }
 
+    /**
+     * @deprecated Use setReceiverDBId() instead
+     */
+    @Deprecated
     public SendOrder setReceiver(Partner receiver) {
         this.receiver = receiver;
+        if (receiver != null) {
+            this.receiverDBId = receiver.getDBId();
+        }
         return( this );
+    }
+
+    public int getReceiverDBId() {
+        return receiverDBId;
+    }
+
+    public SendOrder setReceiverDBId(int receiverDBId) {
+        this.receiverDBId = receiverDBId;
+        return this;
     }
 
     public AS2Message getMessage() {
         return message;
     }
 
-    public SendOrder setMessage(AS2Message message) {        
+    public SendOrder setMessage(AS2Message message) {
         this.message = message;
         return( this );
     }
 
+    /**
+     * @deprecated Use getSenderDBId() and reload from database instead
+     */
+    @Deprecated
     public Partner getSender() {
         return sender;
     }
 
+    /**
+     * @deprecated Use setSenderDBId() instead
+     */
+    @Deprecated
     public SendOrder setSender(Partner sender) {
         this.sender = sender;
+        if (sender != null) {
+            this.senderDBId = sender.getDBId();
+        }
         return( this );
+    }
+
+    public int getSenderDBId() {
+        return senderDBId;
+    }
+
+    public SendOrder setSenderDBId(int senderDBId) {
+        this.senderDBId = senderDBId;
+        return this;
     }
 
     public int incRetryCount() {

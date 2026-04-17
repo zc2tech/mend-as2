@@ -421,6 +421,7 @@ public class HttpReceiver extends HttpServlet {
         // Validate Basic Authentication (check ALL basic credentials)
         if (anyBasicCredential) {
             String authHeader = headerMap.get("authorization");
+            logger.info("DEBUG: anyBasicCredential=true, authHeader=[" + authHeader + "]");
             if (authHeader != null && authHeader.startsWith("Basic ")) {
                 try {
                     String base64Credentials = authHeader.substring(6);
@@ -432,8 +433,15 @@ public class HttpReceiver extends HttpServlet {
                         String username = parts[0];
                         String password = parts[1];
 
+                        logger.info("DEBUG: Received basic auth - username: [" + username + "] password: [" + password + "]");
+
                         // Check against ALL basic auth credentials
                         for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                            if (credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
+                                logger.info("DEBUG: Comparing with credential - enabled: " + credential.isEnabled() +
+                                          " username: [" + credential.getUsername() + "] password: [" + credential.getPassword() + "]");
+                            }
+
                             if (credential.isEnabled() &&
                                 credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC &&
                                 username.equals(credential.getUsername()) &&

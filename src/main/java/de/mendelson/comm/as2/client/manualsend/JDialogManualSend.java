@@ -208,6 +208,10 @@ public class JDialogManualSend extends JDialog {
         }
         ManualSendRequest request = new ManualSendRequest();
         request.setResendMessageId(null);
+        // Use partner DB IDs (primary key) for reliable lookup
+        request.setReceiverDBId(receiver.getDBId());
+        request.setSenderDBId(sender.getDBId());
+        // Also set AS2 IDs for backward compatibility/fallback
         request.setReceiverAS2Id(receiver.getAS2Identification());
         request.setSenderAS2Id(sender.getAS2Identification());
         if (this.jRadioButtonSendTestMessage.isSelected()) {
@@ -278,8 +282,9 @@ public class JDialogManualSend extends JDialog {
             request.setResendMessageId(resendMessageId);
             request.setUploadHash(uploadHash);
             request.addFilename(originalFilename, null);
-            request.setReceiverAS2Id(receiver.getAS2Identification());
-            request.setSenderAS2Id(sender.getAS2Identification());
+            // Use partner DB IDs (primary key) for reliable lookup
+            request.setReceiverDBId(receiver.getDBId());
+            request.setSenderDBId(sender.getDBId());
             request.setSubject(subject);
             response = (ManualSendResponse) transferClient.uploadWaitInfinite(request);
             if (response.getException() != null) {

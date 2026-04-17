@@ -92,12 +92,18 @@ public class SendOrderSender {
                                 (userdefinedId == null ? "--" : userdefinedId)
                             }),
                     message.getAS2Info());
+            System.out.println("DEBUG [SendOrderSender]: Creating SendOrder");
+            System.out.println("  Sender: " + sender.getName() + ", dbId: " + sender.getDBId());
+            System.out.println("  Receiver: " + receiver.getName() + ", dbId: " + receiver.getDBId());
             SendOrder sendOrder = new SendOrder()
-                    .setReceiver(receiver)
+                    .setReceiverDBId(receiver.getDBId())  // Store only DB ID, not full object
+                    .setSenderDBId(sender.getDBId())      // Store only DB ID, not full object
                     .setMessage(message)
-                    .setSender(sender)
                     .setUserdefinedId(userdefinedId)
                     .setUserId(userId);
+            System.out.println("DEBUG [SendOrderSender]: SendOrder created with:");
+            System.out.println("  senderDBId: " + sendOrder.getSenderDBId());
+            System.out.println("  receiverDBId: " + sendOrder.getReceiverDBId());
             this.send(sendOrder);
             return (message);
         } catch (Throwable e) {

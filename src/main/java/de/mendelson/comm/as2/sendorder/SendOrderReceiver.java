@@ -7,6 +7,8 @@ import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.message.postprocessingevent.ProcessingEvent;
 import de.mendelson.comm.as2.message.store.MessageStoreHandler;
+import de.mendelson.comm.as2.partner.Partner;
+import de.mendelson.comm.as2.partner.PartnerAccessDB;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.send.HttpConnectionParameter;
 import de.mendelson.comm.as2.send.MessageHttpUploader;
@@ -227,6 +229,56 @@ public class SendOrderReceiver {
                     }
                 }
                 if (processingAllowed) {
+                    // Reload partners from database using DB IDs stored in SendOrder
+                    // This ensures we always use current partner configuration
+                    System.out.println("=== SendOrderReceiver.processOrder() ===");
+
+                    PartnerAccessDB partnerAccess = new PartnerAccessDB(dbDriverManager);
+
+                    // Load sender
+                    int senderDBId = order.getSenderDBId();
+                    Partner sender = null;
+                    if (senderDBId > 0) {
+                        sender = partnerAccess.getPartner(senderDBId);
+                        if (sender != null) {
+                            System.out.println("Loaded sender from DB: " + sender.getName() +
+                                             ", dbId: " + sender.getDBId() +
+                                             ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
+                        } else {
+                            System.out.println("ERROR: Could not load sender with DB ID: " + senderDBId);
+                        }
+                    } else {
+                        // Backward compatibility: try legacy Partner object
+                        sender = order.getSender();
+                        if (sender != null) {
+                            System.out.println("Using legacy sender from SendOrder: " + sender.getName());
+                        }
+                    }
+
+                    // Load receiver
+                    int receiverDBId = order.getReceiverDBId();
+                    Partner receiver = null;
+                    if (receiverDBId > 0) {
+                        receiver = partnerAccess.getPartner(receiverDBId);
+                        if (receiver != null) {
+                            System.out.println("Loaded receiver from DB: " + receiver.getName() +
+                                             ", dbId: " + receiver.getDBId() +
+                                             ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
+                        } else {
+                            System.out.println("ERROR: Could not load receiver with DB ID: " + receiverDBId);
+                        }
+                    } else {
+                        // Backward compatibility: try legacy Partner object
+                        receiver = order.getReceiver();
+                        if (receiver != null) {
+                            System.out.println("Using legacy receiver from SendOrder: " + receiver.getName());
+                        }
+                    }
+
+                    if (sender == null || receiver == null) {
+                        throw new Exception("Could not load sender or receiver partner from database");
+                    }
+
                     //display some log information that the outbound connection is prepared
                     if (order.getMessage().isMDN()) {
                         AS2MDNInfo mdnInfo = (AS2MDNInfo) order.getMessage().getAS2Info();
@@ -240,28 +292,28 @@ public class SendOrderReceiver {
                     } else {
                         //its a AS2 message that has been sent
                         AS2MessageInfo messageInfo = (AS2MessageInfo) order.getMessage().getAS2Info();
-                        if (order.getReceiver().getURL().toLowerCase().startsWith("https")) {
+                        if (receiver.getURL().toLowerCase().startsWith("https")) {
                             messageInfo.setUsesTLS(true);
                         }
                         messageAccess.initializeOrUpdateMessage(messageInfo);
                         logger.log(Level.INFO, rb.getResourceString("outbound.connection.prepare.message",
                                 new Object[]{
-                                    order.getReceiver().getURL(),
+                                    receiver.getURL(),
                                     String.valueOf(activeConnectionsCount),
                                     String.valueOf(maxOutboundConnectionsCount),}), messageInfo);
                     }
                     //ensure that the OAuth2 access token is valid before starting the data upload
                     if (order.getMessage().isMDN()) {
-                        if (order.getReceiver().usesOAuth2MDN() && order.getReceiver().getOAuth2MDN() != null) {
+                        if (receiver.usesOAuth2MDN() && receiver.getOAuth2MDN() != null) {
                             OAuth2Util.ensureValidAccessToken(dbDriverManager,
                                     SystemEventManagerImplAS2.instance(),
-                                    order.getReceiver().getOAuth2MDN());
+                                    receiver.getOAuth2MDN());
                         }
                     } else {
-                        if (order.getReceiver().usesOAuth2Message() && order.getReceiver().getOAuth2Message() != null) {
+                        if (receiver.usesOAuth2Message() && receiver.getOAuth2Message() != null) {
                             OAuth2Util.ensureValidAccessToken(dbDriverManager,
                                     SystemEventManagerImplAS2.instance(),
-                                    order.getReceiver().getOAuth2Message());
+                                    receiver.getOAuth2Message());
                         }
                     }
                     MessageHttpUploader messageUploader = new MessageHttpUploader();
@@ -279,11 +331,11 @@ public class SendOrderReceiver {
                     connectionParameter.setConnectionTimeoutMillis(preferences.getInt(PreferencesAS2.HTTP_SEND_TIMEOUT));
                     connectionParameter.setTrustAllRemoteServerCertificates(preferences.getBoolean(PreferencesAS2.TLS_TRUST_ALL_REMOTE_SERVER_CERTIFICATES));
                     connectionParameter.setStrictHostCheck(preferences.getBoolean(PreferencesAS2.TLS_STRICT_HOST_CHECK));
-                    connectionParameter.setHttpProtocolVersion(order.getReceiver().getHttpProtocolVersion());
+                    connectionParameter.setHttpProtocolVersion(receiver.getHttpProtocolVersion());
                     connectionParameter.setProxy(messageUploader.createProxyObjectFromPreferences());
                     connectionParameter.setUseExpectContinue(true);
                     messageUploader.upload(connectionParameter,
-                            order.getMessage(), order.getSender(), order.getReceiver());
+                            order.getMessage(), sender, receiver);
                     //set error or finish state, remember that this send order could be
                     //also an MDN if async MDN is requested
                     if (order.getMessage().isMDN()) {
@@ -291,7 +343,7 @@ public class SendOrderReceiver {
                         if (mdnInfo.getState() == AS2Message.STATE_FINISHED) {
                             AS2MessageInfo relatedMessageInfo = messageAccess.getLastMessageEntry(mdnInfo.getRelatedMessageId());
                             messageStoreHandler.movePayloadToInbox(relatedMessageInfo.getMessageType(), mdnInfo.getRelatedMessageId(),
-                                    order.getSender(), order.getReceiver());
+                                    sender, receiver);
                             //execute a shell command after send SUCCESS
                             ProcessingEvent.enqueueEventIfRequired(dbDriverManager,
                                     relatedMessageInfo, null);
