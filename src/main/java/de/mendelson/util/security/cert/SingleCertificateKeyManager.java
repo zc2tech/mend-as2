@@ -39,6 +39,8 @@ public class SingleCertificateKeyManager implements X509KeyManager {
     public SingleCertificateKeyManager(X509KeyManager delegate, String alias) {
         this.delegate = delegate;
         this.alias = alias;
+        System.out.println("=== SingleCertificateKeyManager created ===");
+        System.out.println("Target alias: " + alias);
     }
 
     @Override
@@ -58,6 +60,32 @@ public class SingleCertificateKeyManager implements X509KeyManager {
 
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
+        System.out.println("=== SingleCertificateKeyManager.chooseClientAlias() called ===");
+        System.out.println("KeyTypes: " + (keyType != null ? String.join(", ", keyType) : "NULL"));
+        System.out.println("Issuers count: " + (issuers != null ? issuers.length : 0));
+        if (issuers != null && issuers.length > 0) {
+            for (int i = 0; i < Math.min(issuers.length, 3); i++) {
+                System.out.println("  Issuer[" + i + "]: " + issuers[i]);
+            }
+        }
+        System.out.println("Socket: " + (socket != null ? socket.getRemoteSocketAddress() : "NULL"));
+        System.out.println("Returning alias: " + alias);
+
+        // Verify the certificate chain is available
+        X509Certificate[] chain = getCertificateChain(alias);
+        System.out.println("Certificate chain available: " + (chain != null));
+        if (chain != null) {
+            System.out.println("Certificate chain length: " + chain.length);
+            System.out.println("Certificate subject: " + chain[0].getSubjectX500Principal());
+        }
+
+        // Verify the private key is available
+        PrivateKey privateKey = getPrivateKey(alias);
+        System.out.println("Private key available: " + (privateKey != null));
+        if (privateKey != null) {
+            System.out.println("Private key algorithm: " + privateKey.getAlgorithm());
+        }
+
         // Always choose our specific alias
         return alias;
     }
@@ -74,11 +102,39 @@ public class SingleCertificateKeyManager implements X509KeyManager {
 
     @Override
     public X509Certificate[] getCertificateChain(String alias) {
-        return delegate.getCertificateChain(alias);
+        System.out.println("SingleCertificateKeyManager.getCertificateChain() called for: " + alias);
+        X509Certificate[] chain = delegate.getCertificateChain(alias);
+        System.out.println("  Chain from delegate: " + (chain != null ? chain.length + " cert(s)" : "NULL"));
+        if (chain != null && chain.length > 0) {
+            try {
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+                byte[] der = chain[0].getEncoded();
+                md.update(der);
+                byte[] digest = md.digest();
+                StringBuilder hexString = new StringBuilder();
+                for (int i = 0; i < digest.length; i++) {
+                    String hex = Integer.toHexString(0xFF & digest[i]);
+                    if (hex.length() == 1) {
+                        hexString.append('0');
+                    }
+                    hexString.append(hex.toUpperCase());
+                    if (i < digest.length - 1) {
+                        hexString.append(':');
+                    }
+                }
+                System.out.println("  Certificate fingerprint being sent: " + hexString.toString());
+            } catch (Exception e) {
+                System.out.println("  Error calculating fingerprint: " + e.getMessage());
+            }
+        }
+        return chain;
     }
 
     @Override
     public PrivateKey getPrivateKey(String alias) {
-        return delegate.getPrivateKey(alias);
+        System.out.println("SingleCertificateKeyManager.getPrivateKey() called for: " + alias);
+        PrivateKey key = delegate.getPrivateKey(alias);
+        System.out.println("  Private key from delegate: " + (key != null ? key.getAlgorithm() : "NULL"));
+        return key;
     }
 }

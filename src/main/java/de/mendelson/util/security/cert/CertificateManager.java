@@ -246,8 +246,11 @@ public class CertificateManager {
      * Stores the manages keystore
      */
     public void saveKeystore() throws Throwable {
+        this.logger.info("[DEBUG CertificateManager] saveKeystore() called");
         this.storage.save();
+        this.logger.info("[DEBUG CertificateManager] Storage saved, now rereading certificates...");
         this.rereadKeystoreCertificates();
+        this.logger.info("[DEBUG CertificateManager] Certificates reread successfully");
     }
 
     /**

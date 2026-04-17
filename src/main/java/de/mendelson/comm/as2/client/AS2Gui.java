@@ -302,7 +302,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     /**
      * Cached user ID for current user (0 = admin, >0 = specific user)
      */
-    private int userId = 0;
+    private int userId = 1;
     /**
      * Permission manager for checking user permissions
      */
@@ -448,8 +448,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.initializeUINotification();
 
         // Initialize userId from username
-        this.userId = this.getUserIdFromUsername(username);
-
+                this.userId = this.getUserIdFromUsername(username);
+        
         // Initialize permission manager and load permissions
         this.permissionManager = new SwingUIPermissionManager(this.getBaseClient());
         try {
@@ -1201,7 +1201,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         try {
             JDialogManualSend dialog = new JDialogManualSend(this,
                     this.getBaseClient(), this.as2StatusBar,
-                    this.rb.getResourceString("uploading.to.server"));
+                    this.rb.getResourceString("uploading.to.server"),
+                    this.userId);  // Pass current user ID
             dialog.setVisible(true);
         } catch (Exception e) {
             AS2Gui.logger.severe("[" + e.getClass().getSimpleName() + "] " + e.getMessage());
@@ -1248,7 +1249,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             // download the payload for the selected message
                             JDialogManualSend dialog = new JDialogManualSend(AS2Gui.this,
                                     AS2Gui.this.getBaseClient(), AS2Gui.this.as2StatusBar,
-                                    AS2Gui.this.rb.getResourceString("uploading.to.server"));
+                                    AS2Gui.this.rb.getResourceString("uploading.to.server"),
+                                    AS2Gui.this.userId);  // Pass current user ID
                             AS2Message message = ((TableModelMessageOverview) AS2Gui.this.jTableMessageOverview
                                     .getModel()).getRow(selectedRow);
                             if (message != null) {
@@ -1431,9 +1433,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     // Get current user ID for user-specific keystore
                     int currentUserId = AS2Gui.this.userId;
 
-                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
-                    boolean isAdmin = (currentUserId == 0) ||
-                                     (AS2Gui.this.permissionManager != null &&
+                    // Check if user has admin privileges (USER_MANAGE permission)
+                    boolean isAdmin = (AS2Gui.this.permissionManager != null &&
                                       AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
                     dialog = new JDialogCertificates(AS2Gui.this, AS2Gui.this.getLogger(), AS2Gui.this,
@@ -1443,18 +1444,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
                     dialog.setSelectionByAlias(selectedAlias);
 
+                    // For TLS certificates, admin users access system-wide keystore (user_id=-1)
+                    // Regular users have their own TLS keystores
+                    int tlsUserId = isAdmin ? de.mendelson.util.security.keydata.KeydataAccessDB.SYSTEM_WIDE_USER_ID : currentUserId;
+
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
                             KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS);
+                            KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS,
+                            tlsUserId);  // Use system-wide for admin, user-specific for others
                     dialog.initialize(storage);
 
-                    // Enable admin mode to show toggle for viewing all users' certificates
-                    // Must be called AFTER initialize() so the panel is fully set up
-                    if (isAdmin) {
-                        dialog.setAdminMode(AS2Gui.this.getBaseClient(), currentUserId,
-                            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_TLS);
-                    }
+                    // No "Show All Users" toggle for TLS - admins see system-wide keystore directly
 
                     KeyCopyHandler keycopyHandler = new DefaultKeyCopyHandler(
                             AS2Gui.this.getBaseClient(),
@@ -1497,9 +1498,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     // Get current user ID for user-specific keystore
                     int currentUserId = AS2Gui.this.userId;
 
-                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
-                    boolean isAdmin = (currentUserId == 0) ||
-                                     (AS2Gui.this.permissionManager != null &&
+                    // Check if user has admin privileges (USER_MANAGE permission)
+                    boolean isAdmin = (AS2Gui.this.permissionManager != null &&
                                       AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
 
@@ -1524,7 +1524,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     }
 
                     CertificateUsedByPartnerChecker checker = new CertificateUsedByPartnerChecker(
-                            AS2Gui.this.getBaseClient());
+                            AS2Gui.this.getBaseClient(), currentUserId);
                     dialog.addCertificateInUseChecker(checker);
                     dialog.addAllowModificationCallback(new AllowConfigurationModificationCallback((JFrame) AS2Gui.this,
                             AS2Gui.this.getBaseClient(),
@@ -1569,9 +1569,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                     // Get current user ID (0 = admin, >0 = other users)
                     int currentUserId = AS2Gui.this.userId;
 
-                    // Check if user has admin privileges (USER_MANAGE permission OR userId=0 for backward compatibility)
-                    boolean isAdmin = (currentUserId == 0) ||
-                                     (AS2Gui.this.permissionManager != null &&
+                                        
+                    // Check if user has admin privileges (USER_MANAGE permission)
+                    boolean isAdmin = (AS2Gui.this.permissionManager != null &&
                                       AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
                     // Create user-specific keystore storage
@@ -1581,6 +1581,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS,
                         currentUserId);  // User-specific (0=admin, >0=users)
 
+                    
                     // Create and show dialog
                     dialog = new JDialogCertificates(
                         AS2Gui.this,
@@ -1702,6 +1703,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         GUIClient.submit(lockRefresher);
                     }
                     PreferencesClient client = new PreferencesClient(AS2Gui.this.getBaseClient());
+
+                    
                     CertificateManager certificateManagerEncSign = new CertificateManager(logger);
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
@@ -1709,6 +1712,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_PKCS12,
                             AS2Gui.this.userId);  // Load user-specific certificates
                     certificateManagerEncSign.loadKeystoreCertificates(storage);
+
                     CertificateManager certificateManagerSLL = new CertificateManager(AS2Gui.logger);
                     storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
@@ -3152,14 +3156,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     /**
-     * Helper method to get user ID from username
+     * Helper method to get user ID from username by looking up in database
      * @param username Username to lookup
-     * @return User ID (0 for admin, >0 for specific users)
+     * @return User ID from webui_users table, or -1 if lookup fails
      */
     private int getUserIdFromUsername(String username) {
-        if ("admin".equals(username)) {
-            return 0;  // Admin is always user_id=0
-        }
         try {
             UserListResponse response = (UserListResponse) this.sendSync(new UserListRequest(), 10000);
             if (response != null && response.getUsers() != null) {
@@ -3172,7 +3173,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         } catch (Exception e) {
             this.getLogger().severe("Failed to lookup user ID for username: " + username);
         }
-        return 0;  // Default to admin if lookup fails
+        this.getLogger().warning("Could not find user ID for username: " + username + ", returning -1");
+        return -1;
     }
 
     /**
@@ -3244,9 +3246,19 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
 
         try {
-            // Get list of users, excluding admins and disabled users
+            // Determine if we should include admin users in the list
+            // Only the special admin user (user_id=1, username="admin") can switch to other admin users
+            // Other ADMIN role users can only switch to normal users
+            int originalUserId = getUserIdFromUsername(this.originalUsername);
+            boolean includeAdmins = (originalUserId == 1 && "admin".equals(this.originalUsername));
+
+            System.out.println("Switch User: originalUsername=" + this.originalUsername +
+                             ", originalUserId=" + originalUserId +
+                             ", includeAdmins=" + includeAdmins);
+
+            // Get list of users, optionally including admins, excluding disabled users
             UserListResponse response = (UserListResponse) this.sendSync(
-                new UserListRequest(true, true), // excludeAdmins=true, enabledOnly=true
+                new UserListRequest(!includeAdmins, true), // excludeAdmins=!includeAdmins, enabledOnly=true
                 10000);
             if (response == null || response.getUsers() == null || response.getUsers().isEmpty()) {
                 JOptionPane.showMessageDialog(this,

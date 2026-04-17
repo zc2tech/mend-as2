@@ -78,6 +78,19 @@
             </includes>
         </fileSet>
 
+        <!-- Development scripts (backup, restore, utilities) -->
+        <fileSet>
+            <directory>dev-scripts</directory>
+            <outputDirectory>dev-scripts</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>backups/**</exclude>
+            </excludes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
         <!-- Startup scripts -->
         <fileSet>
             <directory>src/assembly/scripts</directory>

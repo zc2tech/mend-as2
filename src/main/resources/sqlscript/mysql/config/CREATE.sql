@@ -27,12 +27,12 @@ CREATE TABLE oauth2(
 
 -- Keystore data storage - stores certificate keystores in database
 -- User-scoped: each user has their own keystores
--- user_id: 0=system/admin, >0=specific user
+-- user_id: -1=system-wide, 1=admin (default), >1=other users
 -- purpose: 1=TLS keystore, 2=ENC/SIGN keystore
 -- storagetype: 1=JKS, 2=PKCS12
 CREATE TABLE keydata(
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL DEFAULT 0,
+    user_id INT NOT NULL DEFAULT 1,
     purpose INT NOT NULL,
     storagedata LONGBLOB,
     storagetype INT,
@@ -86,7 +86,7 @@ CREATE TABLE partner(
     oauth2idmessage INT,
     oauth2idmdn INT,
     overwritelocalsecurity INT DEFAULT 0 NOT NULL,
-    created_by_user_id INT DEFAULT 0,
+    created_by_user_id INT DEFAULT 1,
     inbound_auth_mode INT DEFAULT 0 NOT NULL,
     inbound_auth_user VARCHAR(256),
     inbound_auth_password VARCHAR(256),
@@ -380,12 +380,12 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 ('CERT_TLS_WRITE', 'Manage TLS/SSL certificates', 'Certificates - TLS');
 
 -- Default admin user (password: "admin" - MUST be changed on first login)
--- Explicitly set id=0 for admin to match code convention that userId=0 means admin
+-- Admin is id=1 like any other user - no special hardcoded userId
 INSERT INTO webui_users (id, username, password_hash, full_name, enabled, must_change_password) VALUES
-(0, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+(1, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
 
--- Reset auto_increment to start from 1 for regular users
-ALTER TABLE webui_users AUTO_INCREMENT = 1;
+-- Reset auto_increment to start from 2 for additional users
+ALTER TABLE webui_users AUTO_INCREMENT = 2;
 
 -- Grant ALL permissions to ADMIN role
 INSERT INTO webui_role_permissions (role_id, permission_id)

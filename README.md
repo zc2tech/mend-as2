@@ -68,6 +68,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Partner-level visibility controls
   - Inbound message authentication (Basic + Certificate Auth)
   - Zero network attack surface for SwingUI (EventBus replaces Mina TCP)
+  - System-wide TLS certificate management (separate from user certificates)
+  - User-specific TLS certificates for local station authentication
 
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -81,6 +83,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Database selection via `as2.properties` or environment variable
   - Connection pooling with HikariCP for both databases
   - Automatic schema creation and migration
+  - System-wide keystores use `user_id=-1` (not associated with any user)
+  - User-specific keystores use actual user IDs for proper ownership
 
 - **Tracker Messages**
   - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
@@ -258,6 +262,14 @@ For all database properties:
 - Schema and tables are created automatically on first startup
 - Migration scripts run automatically when upgrading
 - Indexes are created for optimal query performance
+- **PostgreSQL**: Databases must be created manually first
+- **MySQL**: Databases are created automatically by the application
+
+**📖 Database Documentation:**
+- [Database Initialization Guide](DATABASE_INITIALIZATION.md) - How databases are created automatically
+- [PostgreSQL Configuration](config/POSTGRESQL-CONFIG.md) - PostgreSQL quick reference
+- [MySQL Configuration](config/MYSQL-CONFIG.md) - MySQL quick reference
+- [Backup & Restore Scripts](dev-scripts/README.md) - Automated backup/restore tools
 
 ## 🎯 Usage
 
@@ -417,7 +429,7 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
   - Messages sorted by timestamp (newest first)
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
-  - **Inb. AS2 Auth** - Configure incoming AS2 message authentication
+  - **TLS** - System-wide HTTPS server certificates (permission-based access)
   - **Tracker Conf** - Configure tracker endpoint settings
   - System Events
   - Search in Server Log
@@ -550,6 +562,45 @@ mend-as2/
 
 ## 🔄 Backup & Restore
 
+### Automated Scripts (Recommended)
+
+Use the provided scripts in `dev-scripts/` for easy backup and restore:
+
+**Backup:**
+```bash
+# Linux/Mac
+cd dev-scripts
+./backup.sh                    # Auto-generated name
+./backup.sh my_backup          # Custom name
+
+# Windows
+cd dev-scripts
+backup.bat
+backup.bat my_backup
+```
+
+**Restore:**
+```bash
+# Linux/Mac
+./restore.sh backup_20260416_120000.sql
+
+# Windows
+restore.bat backup_20260416_120000.sql
+```
+
+**Features:**
+- ✅ Automatic configuration detection from `config/` files
+- ✅ Backs up full config database (partners, certificates, users)
+- ✅ Backs up version table from runtime database
+- ✅ Supports both PostgreSQL and MySQL automatically
+- ✅ Cross-platform (Linux/Mac/Windows)
+- ✅ Safe restore with confirmation prompt
+- ✅ No manual configuration needed!
+
+**📖 Full Documentation:** [dev-scripts/README.md](dev-scripts/README.md)
+
+### Manual Backup (PostgreSQL)
+
 ```bash
 # Backup
 pg_dump -U as2user -d as2_db_config -f backup_config.sql
@@ -558,6 +609,18 @@ pg_dump -U as2user -d as2_db_runtime -f backup_runtime.sql
 # Restore
 psql -U as2user -d as2_db_config -f backup_config.sql
 psql -U as2user -d as2_db_runtime -f backup_runtime.sql
+```
+
+### Manual Backup (MySQL)
+
+```bash
+# Backup
+mysqldump -u as2user -p as2_db_config > backup_config.sql
+mysqldump -u as2user -p as2_db_runtime > backup_runtime.sql
+
+# Restore
+mysql -u as2user -p as2_db_config < backup_config.sql
+mysql -u as2user -p as2_db_runtime < backup_runtime.sql
 ```
 
 ## 🛠️ Development
@@ -639,6 +702,11 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Partner direction visual indicators
 - [x] Admin user protection (cannot disable/delete)
 - [x] Improved Tracker Config UI consistency
+- [x] System TLS certificates management (WebUI subtab)
+- [x] User-specific TLS certificates for local station auth
+- [x] System-wide keystore user_id migration (user_id=-1)
+- [x] MySQL configuration quick reference guide
+- [x] Automated backup/restore scripts (dev-scripts/)
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -736,6 +804,24 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
   - Certificate export dialog
   - JKS keystore import
   - PKCS12 keystore import
+
+**System TLS vs User TLS Certificates**
+- **System TLS** (System → TLS tab in WebUI):
+  - System-wide HTTPS server certificates for Jetty
+  - Used by all users for incoming HTTPS connections
+  - Requires CERT_TLS_READ to view, CERT_TLS_WRITE to modify
+  - Stored with user_id=-1 (not owned by any specific user)
+- **User TLS** (My Sign/Crypt/TLS → TLS tab):
+  - User-specific TLS certificates for local station authentication
+  - Each user can have their own TLS certificates
+  - Stored with actual user ID for proper ownership
+- Migration: Existing system-wide TLS certificates automatically migrated from user_id=0 to user_id=-1
+
+**Backup & Restore**
+- Use automated scripts in `dev-scripts/` folder
+- Scripts automatically detect database type and configuration
+- Backup includes full config database + version table from runtime
+- See [dev-scripts/README.md](dev-scripts/README.md) for usage
 
 ---
 

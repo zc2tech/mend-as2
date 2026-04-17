@@ -23,7 +23,7 @@ public class MessageOverviewRequest extends ClientServerMessage{
     private static final long serialVersionUID = 1L;
     private MessageOverviewFilter filter = null;
     private String messageId = null;
-    private int userId = 0;  // User ID for filtering (0 = admin)
+    private int userId = 1;  // User ID for filtering (0 = admin)
     private boolean hasUserManagePermission = false;  // If true, user sees all messages
 
     public MessageOverviewRequest(String messageId) {

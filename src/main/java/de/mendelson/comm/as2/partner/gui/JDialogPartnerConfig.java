@@ -315,17 +315,49 @@ public class JDialogPartnerConfig extends JDialog {
         List<Partner> localStations = this.jTreePartner.getLocalStations();
         //no local station? should not happen
         if (localStations == null || localStations.isEmpty()) {
-            return (false);
+                        return (false);
         }
+
+
         for (Partner localStation : localStations) {
             String signSerial = localStation.getSignFingerprintSHA1();
             String cryptSerial = localStation.getCryptFingerprintSHA1();
+
+                                    
             try {
                 this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(signSerial);
-                this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(cryptSerial);
-            } catch (Exception e) {
+                                this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(cryptSerial);
+                            } catch (Exception e) {
+                
+                // Find the certificate by fingerprint to show its alias
+                String problemAlias = "unknown";
+                for (de.mendelson.util.security.cert.KeystoreCertificate cert :
+                     this.certificateManagerEncSign.getKeyStoreCertificateList()) {
+                    if (cert.getFingerPrintSHA1().equals(signSerial) ||
+                        cert.getFingerPrintSHA1().equals(cryptSerial)) {
+                        problemAlias = cert.getAlias();
+                        break;
+                    }
+                }
+
+                String errorMessage = "The certificate '" + problemAlias + "' does not have a private key.\n\n" +
+                    "Local stations need certificates WITH private keys (key pairs) for signing and decryption.\n" +
+                    "Please select a certificate that shows a key icon (isKeyPair=true).\n\n" +
+                    "Available certificates with private keys:\n";
+
+                for (de.mendelson.util.security.cert.KeystoreCertificate cert :
+                     this.certificateManagerEncSign.getKeyStoreCertificateList()) {
+                    if (cert.getIsKeyPair()) {
+                        errorMessage += "  - " + cert.getAlias() + "\n";
+                    }
+                }
+
                 e.printStackTrace();
-                UINotification.instance().addNotification(e);
+                UINotification.instance().addNotification(
+                    null,
+                    UINotification.TYPE_ERROR,
+                    "Invalid certificate selection",
+                    errorMessage);
                 return (false);
             }
         }

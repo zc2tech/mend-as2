@@ -66,15 +66,23 @@ public class RestApplication extends ResourceConfig {
         register(AuthenticationResource.class);
         System.out.println("RestApplication: Registering SystemResource");
         register(SystemResource.class);
+        System.out.println("RestApplication: Registering PartnerResource");
         register(PartnerResource.class);
+        System.out.println("RestApplication: Registering CertificateResource");
         register(CertificateResource.class);
+        System.out.println("RestApplication: Registering MessageResource");
         register(MessageResource.class);
+        System.out.println("RestApplication: Registering StatisticsResource");
         register(StatisticsResource.class);
+        System.out.println("RestApplication: Registering PreferencesResource");
         register(PreferencesResource.class);
+        System.out.println("RestApplication: Registering NotificationResource");
         register(NotificationResource.class);
         System.out.println("RestApplication: Registering UserManagementResource");
         register(UserManagementResource.class);
+        System.out.println("RestApplication: Registering UserHttpAuthPreferenceResource");
         register(UserHttpAuthPreferenceResource.class);
+        System.out.println("RestApplication: Registering TrackerMessageResource");
         register(TrackerMessageResource.class);
 
         System.out.println("RestApplication: Jersey REST application initialized");

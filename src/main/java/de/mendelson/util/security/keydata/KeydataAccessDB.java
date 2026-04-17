@@ -110,24 +110,42 @@ public class KeydataAccessDB {
     /**
      * Returns the key storage of the requested purpose and user
      * @param purpose KEYSTORE_USAGE_TLS or KEYSTORE_USAGE_ENC_SIGN
-     * @param userId User ID (0 = admin/system, >0 = specific user)
+     * @param userId User ID (0 = admin/system, >0 = specific user, -1 = system-wide)
      */
     public KeystoreData getKeydata(int purpose, int userId) {
         try (Connection configConnectionAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
-            try (PreparedStatement selectStatement = configConnectionAutoCommit.prepareStatement(
-                    "SELECT * FROM keydata WHERE purpose=? AND user_id=?")) {
+
+            // Check if user_id column exists in keydata table
+            boolean hasUserIdColumn = false;
+            try (ResultSet rs = configConnectionAutoCommit.getMetaData().getColumns(null, null, "keydata", "user_id")) {
+                hasUserIdColumn = rs.next();
+            }
+
+            PreparedStatement selectStatement;
+            if (hasUserIdColumn) {
+                // New schema with user_id column
+                selectStatement = configConnectionAutoCommit.prepareStatement(
+                        "SELECT * FROM keydata WHERE purpose=? AND user_id=?");
                 selectStatement.setInt(1, purpose);
                 selectStatement.setInt(2, userId);
-                try (ResultSet result = selectStatement.executeQuery()) {
-                    if (result.next()) {
-                        byte[] keyData = this.dbDriverManager.readBytesStoredAsJavaObject(result, "storagedata");
-                        String securityProvider = result.getString("securityprovider");
-                        int storageType = result.getInt("storagetype");
-                        KeystoreData data = new KeystoreData(securityProvider, storageType, keyData);
-                        return (data);
-                    }
+            } else {
+                // Old schema without user_id column - only filter by purpose
+                selectStatement = configConnectionAutoCommit.prepareStatement(
+                        "SELECT * FROM keydata WHERE purpose=?");
+                selectStatement.setInt(1, purpose);
+            }
+
+            try (ResultSet result = selectStatement.executeQuery()) {
+                if (result.next()) {
+                    byte[] keyData = this.dbDriverManager.readBytesStoredAsJavaObject(result, "storagedata");
+                    String securityProvider = result.getString("securityprovider");
+                    int storageType = result.getInt("storagetype");
+                    KeystoreData data = new KeystoreData(securityProvider, storageType, keyData);
+                    return (data);
                 }
+            } finally {
+                selectStatement.close();
             }
         } catch (Throwable e) {
             this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);

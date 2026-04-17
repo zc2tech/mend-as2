@@ -140,8 +140,16 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const { user } = useAuth();
   const [generatingUrl, setGeneratingUrl] = useState(false);
 
-  // Fetch certificates for the dropdowns
-  const { data: certificates, isLoading: certsLoading } = useCertificates('sign');
+  // Fetch certificates from both keystores for the dropdowns
+  const { data: signCertificates, isLoading: signCertsLoading } = useCertificates('sign');
+  const { data: tlsCertificates, isLoading: tlsCertsLoading } = useCertificates('tls');
+
+  // Combine certificates from both keystores
+  const certificates = [
+    ...(signCertificates || []).map(cert => ({ ...cert, source: 'Sign/Crypt' })),
+    ...(tlsCertificates || []).map(cert => ({ ...cert, source: 'TLS' }))
+  ];
+  const certsLoading = signCertsLoading || tlsCertsLoading;
 
   const {
     register,
@@ -1308,8 +1316,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                                 >
                                   <option value="">-- Select Certificate --</option>
                                   {certificates?.map((cert) => (
-                                    <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
-                                      {cert.alias}
+                                    <option key={`${cert.source}-${cert.fingerprintSHA1}`} value={cert.fingerprintSHA1}>
+                                      {cert.alias} ({cert.source})
                                     </option>
                                   ))}
                                 </select>

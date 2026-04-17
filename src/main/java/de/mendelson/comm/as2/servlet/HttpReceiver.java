@@ -89,7 +89,7 @@ public class HttpReceiver extends HttpServlet {
             // Extract username from URL path for user-specific endpoints
             String pathInfo = request.getPathInfo();  // e.g., "/john" or null
             String targetUsername = null;
-            int targetUserId = 0;
+            int targetUserId = 1;
 
             if (pathInfo != null && pathInfo.length() > 1) {
                 // Remove leading slash
@@ -97,7 +97,7 @@ public class HttpReceiver extends HttpServlet {
 
                 // Lookup user ID from database
                 if ("admin".equals(targetUsername)) {
-                    targetUserId = 0;  // Admin user
+                    targetUserId = 1;  // Admin user
                 } else {
                     // Look up non-admin user
                     try {
@@ -124,7 +124,7 @@ public class HttpReceiver extends HttpServlet {
             } else {
                 // No path info - use system/admin (backward compatibility)
                 targetUsername = "admin";
-                targetUserId = 0;
+                targetUserId = 1;
             }
 
             // Store user context for processing
@@ -335,19 +335,13 @@ public class HttpReceiver extends HttpServlet {
             new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
                 AS2Server.getActivatedDBDriverManager(), logger);
         de.mendelson.comm.as2.usermanagement.WebUIUser user = null;
-        int userId = 0;
+        int userId = -1;  // Initialize to invalid user ID
 
         try {
             user = userAccess.getUserByUsername(targetUsername);
             if (user != null) {
                 userId = user.getId();
-                // For backward compatibility: treat username "admin" as super-user (userId=0)
-                if ("admin".equals(targetUsername)) {
-                    userId = 0;
-                }
-            } else if ("admin".equals(targetUsername)) {
-                // Admin user (backward compatibility)
-                userId = 0;
+                // Use actual user ID from database (admin should be 1)
             } else {
                 logger.warning("User not found: " + targetUsername);
                 return false;
@@ -448,97 +442,13 @@ public class HttpReceiver extends HttpServlet {
         // Validate Certificate Authentication (check ALL cert credentials)
         if (anyCertCredential) {
             // Get client certificate from request
-            // Method 1: Standard servlet API - javax.servlet.request.X509Certificate attribute
+            // Try jakarta.servlet.request.X509Certificate attribute (Jetty 12 / Jakarta EE 10)
             java.security.cert.X509Certificate[] clientCerts =
-                (java.security.cert.X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+                (java.security.cert.X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
 
-            // Method 2: Try Jetty-specific attribute org.eclipse.jetty.server.x509
-            if (clientCerts == null || clientCerts.length == 0) {
-                logger.info("Client certificates not found via standard attribute, trying Jetty-specific attribute...");
-                try {
-                    Object jettyX509 = request.getAttribute("org.eclipse.jetty.server.x509");
-                    if (jettyX509 instanceof java.security.cert.X509Certificate[]) {
-                        clientCerts = (java.security.cert.X509Certificate[]) jettyX509;
-                        logger.info("Found " + clientCerts.length + " client certificate(s) via Jetty attribute");
-                    } else if (jettyX509 != null) {
-                        // Jetty 12 wraps the certificate in org.eclipse.jetty.util.ssl.X509
-                        // Try to extract the certificate using reflection
-                        logger.info("org.eclipse.jetty.server.x509 is type: " + jettyX509.getClass().getName() + ", attempting to extract certificate...");
-                        try {
-                            // Call getCertificate() method on org.eclipse.jetty.util.ssl.X509
-                            java.lang.reflect.Method getCertMethod = jettyX509.getClass().getMethod("getCertificate");
-                            Object cert = getCertMethod.invoke(jettyX509);
-                            if (cert instanceof java.security.cert.X509Certificate) {
-                                clientCerts = new java.security.cert.X509Certificate[]{(java.security.cert.X509Certificate) cert};
-                                logger.info("Extracted 1 certificate from Jetty X509 wrapper");
-                            } else {
-                                logger.warning("getCertificate() returned unexpected type: " +
-                                    (cert != null ? cert.getClass().getName() : "null"));
-                            }
-                        } catch (NoSuchMethodException e) {
-                            logger.warning("Jetty X509 wrapper doesn't have getCertificate() method: " + e.getMessage());
-                        } catch (Exception e) {
-                            logger.warning("Failed to extract certificate from Jetty wrapper: " + e.getMessage());
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.warning("Failed to get Jetty x509 attribute: " + e.getMessage());
-                }
-            }
-
-            // Method 3: If not found, try SSL session attribute (for some servlet containers)
-            if (clientCerts == null || clientCerts.length == 0) {
-                logger.info("Client certificates not found via standard attribute, checking SSL session...");
-                String sslSessionAttributeKey = null;
-                java.util.Enumeration<String> attributeEnumeration = request.getAttributeNames();
-
-                // Log all available attributes for debugging
-                StringBuilder attrDebug = new StringBuilder("Available request attributes: ");
-                java.util.Enumeration<String> debugEnum = request.getAttributeNames();
-                while (debugEnum.hasMoreElements()) {
-                    String attrName = debugEnum.nextElement();
-                    attrDebug.append(attrName).append(", ");
-                }
-                logger.info(attrDebug.toString());
-
-                while (attributeEnumeration.hasMoreElements()) {
-                    String attributeKey = attributeEnumeration.nextElement();
-                    if (attributeKey.toLowerCase().contains(".ssl_session") ||
-                        attributeKey.toLowerCase().contains("sslsession")) {
-                        sslSessionAttributeKey = attributeKey;
-                        logger.info("Found SSL session attribute key: " + sslSessionAttributeKey);
-                        break;
-                    }
-                }
-
-                if (sslSessionAttributeKey != null) {
-                    try {
-                        Object attrValue = request.getAttribute(sslSessionAttributeKey);
-                        if (attrValue instanceof javax.net.ssl.SSLSession) {
-                            javax.net.ssl.SSLSession sslSession = (javax.net.ssl.SSLSession) attrValue;
-                            try {
-                                java.security.cert.Certificate[] certs = sslSession.getPeerCertificates();
-                                if (certs != null && certs.length > 0) {
-                                    clientCerts = new java.security.cert.X509Certificate[certs.length];
-                                    for (int i = 0; i < certs.length; i++) {
-                                        clientCerts[i] = (java.security.cert.X509Certificate) certs[i];
-                                    }
-                                }
-                            } catch (javax.net.ssl.SSLPeerUnverifiedException e) {
-                                logger.warning("No client certificate presented from " + request.getRemoteAddr());
-                            } catch (Exception e) {
-                                logger.warning("Failed to extract cert from SSL session: " + e.getMessage());
-                            }
-                        } else {
-                            logger.warning("SSL session attribute is not a javax.net.ssl.SSLSession: "
-                                + (attrValue != null ? attrValue.getClass().getName() : "null"));
-                        }
-                    } catch (Exception e) {
-                        logger.warning("Failed to retrieve SSL session: " + e.getMessage());
-                    }
-                } else {
-                    logger.warning("No SSL session attribute found in request. SSL client authentication may not be configured.");
-                }
+            // Fallback to javax variant for older containers
+            if (clientCerts == null) {
+                clientCerts = (java.security.cert.X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
             }
 
             // Now validate the certificate if we found one
@@ -546,7 +456,8 @@ public class HttpReceiver extends HttpServlet {
                 try {
                     java.security.cert.X509Certificate clientCert = clientCerts[0];
                     String certFingerprint = calculateFingerprint(clientCert);
-                    logger.info("Client certificate fingerprint: " + certFingerprint);
+                    logger.info("Inbound certificate authentication: Received client certificate with fingerprint: " + certFingerprint +
+                               " from " + request.getRemoteAddr());
 
                     // Check against ALL certificate credentials
                     for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
@@ -554,7 +465,6 @@ public class HttpReceiver extends HttpServlet {
                             credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE &&
                             credential.getCertFingerprint() != null) {
                             String configuredFingerprint = credential.getCertFingerprint();
-                            logger.info("Comparing with configured fingerprint: " + configuredFingerprint);
                             if (certFingerprint.replace(":", "").equalsIgnoreCase(
                                     configuredFingerprint.replace(":", ""))) {
                                 certAuthPassed = true;

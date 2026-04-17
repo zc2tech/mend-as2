@@ -350,8 +350,8 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                     "INSERT INTO keydata (user_id, purpose, storagedata, storagetype, lastchanged, securityprovider) " +
                     "VALUES (?, ?, ?, ?, ?, ?)")) {
 
-                // Insert ENC/SIGN keystore (purpose=2) for admin user (user_id=0)
-                stmt.setInt(1, 0);  // user_id = 0 (admin/system)
+                // Insert ENC/SIGN keystore (purpose=2) for admin user (user_id=1)
+                stmt.setInt(1, 1);  // user_id = 1 (admin)
                 stmt.setInt(2, 2);  // purpose = ENC/SIGN
                 stmt.setBytes(3, encSignData);
                 stmt.setInt(4, 2);  // storagetype = PKCS12
@@ -359,8 +359,8 @@ public class DBDriverManagerMySQL extends AbstractDBDriverManagerMySQL implement
                 stmt.setString(6, securityProvider);
                 stmt.executeUpdate();
 
-                // Insert TLS keystore (purpose=1) for admin user (user_id=0)
-                stmt.setInt(1, 0);  // user_id = 0 (admin/system)
+                // Insert TLS keystore (purpose=1) for admin user (user_id=1)
+                stmt.setInt(1, 1);  // user_id = 1 (admin)
                 stmt.setInt(2, 1);  // purpose = TLS
                 stmt.setBytes(3, tlsData);
                 stmt.setInt(4, 2);  // storagetype = PKCS12

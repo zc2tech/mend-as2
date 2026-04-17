@@ -24,12 +24,12 @@ CREATE TABLE oauth2(
 
 -- Keystore data storage - stores certificate keystores in database
 -- User-scoped: each user has their own keystores
--- user_id: 0=system/admin, >0=specific user
+-- user_id: -1=system-wide, 1=admin (default), >1=other users
 -- purpose: 1=TLS keystore, 2=ENC/SIGN keystore
 -- storagetype: 1=JKS, 2=PKCS12
 CREATE TABLE keydata(
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL DEFAULT 0,
+    user_id INTEGER NOT NULL DEFAULT 1,
     purpose INTEGER NOT NULL,
     storagedata BYTEA,
     storagetype INTEGER,
@@ -83,7 +83,7 @@ CREATE TABLE partner(
     oauth2idmessage INTEGER,
     oauth2idmdn INTEGER,
     overwritelocalsecurity INTEGER DEFAULT 0 NOT NULL,
-    created_by_user_id INTEGER DEFAULT 0,
+    created_by_user_id INTEGER DEFAULT 1,
     inbound_auth_mode INTEGER DEFAULT 0 NOT NULL,
     inbound_auth_user VARCHAR(256),
     inbound_auth_password VARCHAR(256),
@@ -389,12 +389,12 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 ('CERT_TLS_WRITE', 'Manage TLS/SSL certificates', 'Certificates - TLS');
 
 -- Default admin user (password: "admin" - MUST be changed on first login)
--- Explicitly set id=0 for admin to match code convention that userId=0 means admin
+-- Admin is id=1 like any other user - no special hardcoded userId
 INSERT INTO webui_users (id, username, password_hash, full_name, enabled, must_change_password) VALUES
-(0, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+(1, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
 
--- Reset sequence to start from 1 for regular users
-ALTER SEQUENCE webui_users_id_seq RESTART WITH 1;
+-- Reset sequence to start from 2 for additional users
+ALTER SEQUENCE webui_users_id_seq RESTART WITH 2;
 
 -- Grant ALL permissions to ADMIN role
 INSERT INTO webui_role_permissions (role_id, permission_id)
@@ -410,7 +410,8 @@ FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'USER'
   AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE', 'CERT_READ', 'CERT_WRITE',
-                 'MESSAGE_READ', 'MESSAGE_WRITE', 'TRACKER_MESSAGE_READ');
+                 'MESSAGE_READ', 'MESSAGE_WRITE', 'TRACKER_MESSAGE_READ',
+                 'CERT_TLS_READ');
 
 -- Assign ADMIN role to default admin user
 INSERT INTO webui_user_roles (user_id, role_id)

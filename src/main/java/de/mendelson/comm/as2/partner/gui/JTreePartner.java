@@ -47,7 +47,7 @@ public class JTreePartner extends JTree {
     /**
      * User ID for filtering partners (0 = admin sees all)
      */
-    private int userId = 0;
+    private int userId = 1;
 
     /**
      * Tree constructor
@@ -198,19 +198,31 @@ public class JTreePartner extends JTree {
         partner.setMdnURL(partner.getDefaultURL());
         partner.setLocalStation(false);
         partner.setCreatedByUserId(this.userId);  // Set owner to current user
+
+        // Auto-assign first certificate with private key (isKeyPair=true) if available
+        // For local stations, only certificates with private keys can be used for signing/encryption
         List<KeystoreCertificate> list = certificateManagerEncSign.getKeyStoreCertificateList();
-        if (!list.isEmpty()) {
-            KeystoreCertificate certificate = list.get(0);
-            //just take the first entry
+        KeystoreCertificate defaultCert = null;
+        for (KeystoreCertificate cert : list) {
+            if (cert.getIsKeyPair()) {
+                defaultCert = cert;
+                break;  // Use first certificate with private key
+            }
+        }
+
+        if (defaultCert != null) {
+            // Assign the first certificate with private key
             PartnerCertificateInformation signInfo = new PartnerCertificateInformation(
-                    certificate.getFingerPrintSHA1(),
+                    defaultCert.getFingerPrintSHA1(),
                     PartnerCertificateInformation.CATEGORY_SIGN);
             partner.setCertificateInformation(signInfo);
             PartnerCertificateInformation cryptInfo = new PartnerCertificateInformation(
-                    certificate.getFingerPrintSHA1(),
+                    defaultCert.getFingerPrintSHA1(),
                     PartnerCertificateInformation.CATEGORY_CRYPT);
             partner.setCertificateInformation(cryptInfo);
         }
+        // else: No certificate with private key available - partner will have no default cert
+
         this.addPartner(partner);
         return (partner);
     }

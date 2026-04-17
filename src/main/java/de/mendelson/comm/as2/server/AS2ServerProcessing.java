@@ -1693,7 +1693,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     userId);
                 relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
-            } else if (userId > 0 && request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
+            } else if (userId >= 0 && request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
                 // User-specific TLS keystore
                 relatedCertificateManager = new CertificateManager(this.logger);
                 KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
@@ -1704,7 +1704,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     userId);
                 relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
             } else {
-                // System-wide keystores (userId = 0 or not specified for TLS)
+                // System-wide keystores (userId = -1 for system-wide)
                 if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN) {
                     relatedCertificateManager = this.certificateManagerEncSign;
                 } else if (request.getKeystoreUsage() == DownloadRequestKeystore.KEYSTORE_TYPE_TLS) {
@@ -1746,8 +1746,8 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
             List<de.mendelson.comm.as2.usermanagement.WebUIUser> users = userAccess.getAllUsers();
 
-            // Add admin user (userId = 0)
-            users.add(0, createAdminUser());
+            // Admin user is already in the users list from database (user_id=1)
+            // No need to add fake admin user anymore
 
             // For each user, load their keystore and extract certificates
             for (de.mendelson.comm.as2.usermanagement.WebUIUser user : users) {
@@ -1803,17 +1803,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         session.write(response);
     }
 
-    /**
-     * Create a dummy admin user object for userId=0
-     */
-    private de.mendelson.comm.as2.usermanagement.WebUIUser createAdminUser() {
-        de.mendelson.comm.as2.usermanagement.WebUIUser admin =
-            new de.mendelson.comm.as2.usermanagement.WebUIUser();
-        admin.setId(0);
-        admin.setUsername("admin");
-        return admin;
-    }
-
     private void processUploadRequestKeystore(IoSession session, UploadRequestKeystore request) {
         String processOriginHost = session.getRemoteAddress().toString();
         String userName = (String) session.getAttribute(ClientServerSessionHandler.SESSION_ATTRIB_USER);
@@ -1831,7 +1820,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
 
         try {
             // If userId is specified, load user-specific keystore from database
-            if (userId > 0) {
+            if (userId >= 0) {
                 // User-specific keystores (both TLS and ENC_SIGN are supported)
                 if (request.getKeystoreUsage() == UploadRequestKeystore.KEYSTORE_TYPE_TLS) {
                     // User-specific TLS keystore
@@ -1897,7 +1886,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
 
             // Save to user-specific or system-wide keystore
-            if (userId > 0) {
+            if (userId >= 0) {
                 // User-specific keystore - create new manager with updated entries
                 relatedCertificateManager = new CertificateManager(this.logger);
                 relatedCertificateManager.loadKeystoreCertificates(keystoreStorage);
@@ -2107,7 +2096,27 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             if (receiver == null) {
                 throw new Exception("Undefined message receiver or message receiver does not exist.");
             }
-            AS2Message message = orderSender.send(this.certificateManagerEncSign, sender,
+
+            // Load sender's user-specific certificate manager
+            // Local station (sender) needs their own certificates to sign/encrypt
+            int senderUserId = sender.getCreatedByUserId();
+            CertificateManager senderCertManager;
+            if (senderUserId <= 0) {
+                // System-wide or invalid user_id - use system certificate manager
+                senderCertManager = this.certificateManagerEncSign;
+            } else {
+                // Load user-specific certificate manager for the sender
+                senderCertManager = new CertificateManager(this.logger);
+                KeystoreStorage senderStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        senderUserId);
+                senderCertManager.loadKeystoreCertificates(senderStorage);
+            }
+
+            AS2Message message = orderSender.send(senderCertManager, sender,
                     receiver, sendFiles, originalFilenames, request.getUserdefinedId(),
                     request.getSubject(), payloadContentTypes);
             if (message == null) {
@@ -2561,8 +2570,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             int userId = request.getUserId();
 
             if (request.getListOption() == PartnerListRequest.LIST_ALL) {
-                // All users (including admin) only see their own partners
-                response.setList(this.partnerAccess.getPartnersOwnedByUser(userId, request.getRequestedDataCompleteness()));
+                // Special case: userId=-1 means return ALL partners (for certificate usage checking)
+                if (userId == -1) {
+                    response.setList(this.partnerAccess.getAllPartner(request.getRequestedDataCompleteness()));
+                } else {
+                    // All users (including admin) only see their own partners
+                    response.setList(this.partnerAccess.getPartnersOwnedByUser(userId, request.getRequestedDataCompleteness()));
+                }
             } else if (request.getListOption() == PartnerListRequest.LIST_LOCALSTATION) {
                 List<Partner> list = new ArrayList<Partner>();
                 List<Partner> allLocalStations = this.partnerAccess.getLocalStations(request.getRequestedDataCompleteness());
@@ -2637,13 +2651,13 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
             messageList = filteredList;
         }
-        // else: admin (userId=0) or USER_MANAGE permission - see all messages
+        // else: admin (userId=1) or USER_MANAGE permission - see all messages
 
         // Populate owner username for each message (for display in UI)
         de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
             new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
         java.util.Map<Integer, String> userIdToNameMap = new java.util.HashMap<>();
-        userIdToNameMap.put(0, "admin");  // Admin user
+        // Admin user (and all other users) loaded from database
 
         try {
             List<de.mendelson.comm.as2.usermanagement.WebUIUser> allUsers = userAccess.getAllUsers();

@@ -167,6 +167,8 @@ public class JDialogExportCertificate extends JDialog {
                     exportFilename += ".pub";
                 }
             }
+            // Expand ~ to user home directory if present
+            exportFilename = MecFileChooser.expandTilde(exportFilename);
             Path file = Paths.get(exportFilename);
             if (exportData != null) {
                 try (OutputStream outStream = Files.newOutputStream(file)) {

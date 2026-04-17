@@ -180,6 +180,30 @@ public class MecFileChooser extends JFileChooser {
     }
 
     /**
+     * Expands ~ to user home directory in file paths
+     * This is a public utility method that can be used by other classes
+     * @param path Path that may contain ~ as the first character
+     * @return Expanded path with user home directory
+     */
+    public static String expandTilde(String path) {
+        if (path == null || path.isEmpty()) {
+            return path;
+        }
+
+        // Replace ~ at the beginning with user home directory
+        if (path.startsWith("~/") || path.equals("~")) {
+            String userHome = System.getProperty("user.home");
+            if (path.equals("~")) {
+                return userHome;
+            } else {
+                return userHome + path.substring(1);
+            }
+        }
+
+        return path;
+    }
+
+    /**
      * Browses for a filename and returns it
      *
      * @return null if the user cancels the action!
@@ -191,7 +215,7 @@ public class MecFileChooser extends JFileChooser {
         }
         File file = this.getSelectedFile();
         lastGoodSelectionMap.put(this.uniqueId, file);
-        return (file.getAbsolutePath());
+        return expandTilde(file.getAbsolutePath());
     }
 
     /**
@@ -210,7 +234,9 @@ public class MecFileChooser extends JFileChooser {
             //if there is something typed in in the text field the already predefined file
             //or directory should be ignored
             if (!textField.getText().isEmpty()) {
-                this.setPreselectedFile(new File(textField.getText()));
+                // Expand ~ before setting the file
+                String expandedPath = expandTilde(textField.getText());
+                this.setPreselectedFile(new File(expandedPath));
             }
         }
         this.showChooserDialog();
@@ -218,17 +244,18 @@ public class MecFileChooser extends JFileChooser {
             return (null);
         }
         File file = this.getSelectedFile();
+        String expandedPath = expandTilde(file.getAbsolutePath());
         if (component != null) {
             if (component instanceof JTextComponent) {
-                ((JTextComponent) component).setText(file.getAbsolutePath());
+                ((JTextComponent) component).setText(expandedPath);
             }
             if (component instanceof JComboBox) {
                 @SuppressWarnings("rawtypes")
                 JComboBox comboBox = (JComboBox) component;
-                this.setItem(comboBox, file.getAbsolutePath());
+                this.setItem(comboBox, expandedPath);
             }
         }
-        return (file.getAbsolutePath());
+        return expandedPath;
     }
 
     /**

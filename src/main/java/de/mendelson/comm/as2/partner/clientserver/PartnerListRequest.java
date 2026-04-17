@@ -40,7 +40,7 @@ public class PartnerListRequest extends ClientServerMessage{
     private int requestedDataCompleteness = DATA_COMPLETENESS_FULL;
 
     /**User ID to filter partners (0 = admin sees all, >0 = specific user's partners)*/
-    private int userId = 0;
+    private int userId = 1;
 
 
     public PartnerListRequest() {

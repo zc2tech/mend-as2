@@ -26,19 +26,28 @@ import { useAuth } from '../auth/useAuth';
 export function useCertificates(keystoreType = 'sign') {
   const { user } = useAuth();
 
+  console.log('[DEBUG useCertificates] Called with keystoreType:', keystoreType);
+  console.log('[DEBUG useCertificates] User:', user);
+  console.log('[DEBUG useCertificates] user?.id:', user?.id);
+  console.log('[DEBUG useCertificates] Query enabled:', !!user?.id);
+
   return useQuery({
     queryKey: ['certificates', keystoreType, user?.id],
     queryFn: async () => {
+      console.log('[DEBUG useCertificates] queryFn executing...');
       // For filtering: use 0 for admin user (legacy compatibility), database ID for others
       const filterUserId = user?.username === 'admin' ? 0 : user?.id;
+      console.log('[DEBUG useCertificates] filterUserId:', filterUserId);
 
       // Fetch only certificates visible to the current user
+      console.log('[DEBUG useCertificates] Calling API with params:', { keystoreType, visibleToUser: filterUserId });
       const response = await api.get('/certificates', {
         params: {
           keystoreType,
           visibleToUser: filterUserId
         }
       });
+      console.log('[DEBUG useCertificates] API response:', response.data);
       return response.data;
     },
     enabled: !!user?.id // Only run query if user ID is available

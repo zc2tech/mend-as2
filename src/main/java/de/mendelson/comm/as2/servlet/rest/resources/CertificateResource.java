@@ -51,6 +51,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -64,6 +65,13 @@ import java.util.logging.Logger;
 public class CertificateResource {
 
     private static final Logger logger = Logger.getLogger("de.mendelson.as2.server");
+
+    static {
+            }
+
+    public CertificateResource() {
+        logger.info("[DEBUG CertificateResource] Constructor called - instance created");
+    }
 
     /**
      * List certificates by keystore type
@@ -81,16 +89,17 @@ public class CertificateResource {
             @QueryParam("keystoreType") @DefaultValue("sign") String keystoreType,
             @QueryParam("visibleToUser") Integer visibleToUserId) {
         try {
+                        
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
             }
 
             // Get current user's ID from security context
             int currentUserId = getCurrentUserId(securityContext, processing);
-
+            
             int keystoreUsage;
             int userId; // User ID for keystore operations
 
@@ -98,56 +107,60 @@ public class CertificateResource {
                 // System-wide SSL/TLS keystore (user_id=-1, system-wide)
                 keystoreUsage = DownloadRequestKeystore.KEYSTORE_TYPE_TLS;
                 userId = KeydataAccessDB.SYSTEM_WIDE_USER_ID;
-            } else if ("tls".equals(keystoreType)) {
+                            } else if ("tls".equals(keystoreType)) {
                 // User-specific TLS keystore
                 keystoreUsage = DownloadRequestKeystore.KEYSTORE_TYPE_TLS;
                 userId = currentUserId; // Use current user's ID
-            } else {
+                            } else {
                 // User-specific sign/encrypt keystore
                 keystoreUsage = DownloadRequestKeystore.KEYSTORE_TYPE_ENC_SIGN;
                 userId = currentUserId; // Use current user's ID
-            }
+                            }
 
             DownloadRequestKeystore request = new DownloadRequestKeystore(keystoreUsage, userId);
-            DownloadResponseKeystore response = processing.processDownloadRequestKeystore(request);
+                        DownloadResponseKeystore response = processing.processDownloadRequestKeystore(request);
 
             if (response.getException() != null) {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new ErrorResponse(response.getException().getMessage()))
                         .build();
             }
 
             List<KeystoreCertificate> certificates = response.getCertificateList();
-
+            
             // Filter certificates by user ownership if requested
-            if (visibleToUserId != null && visibleToUserId > 0) {
-                // Get user's partners to determine which certificates they can see
+            // For user-specific keystores (where userId == currentUserId), certificates are owned by the user directly,
+            // not by partners, so we should NOT filter them by partner ownership
+            if (visibleToUserId != null && visibleToUserId > 0 && userId != currentUserId) {
+                                // Get user's partners to determine which certificates they can see
                 de.mendelson.comm.as2.partner.PartnerAccessDB partnerDB =
                     new de.mendelson.comm.as2.partner.PartnerAccessDB(processing.getDBDriverManager());
                 List<Partner> userPartners = partnerDB.getPartnersOwnedByUser(
                     visibleToUserId,
                     de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
 
-                // Extract partner IDs
+                                // Extract partner IDs
                 List<Integer> partnerIds = new ArrayList<>();
                 for (Partner partner : userPartners) {
                     partnerIds.add(partner.getDBId());
-                }
+                                    }
 
                 // Filter certificates to only those belonging to user's partners
                 List<KeystoreCertificate> filteredCertificates = new ArrayList<>();
                 for (KeystoreCertificate cert : certificates) {
-                    // Get partner ID for this certificate from database
+                                        // Get partner ID for this certificate from database
                     Integer certPartnerId = getCertificatePartnerId(
                         processing, cert.getFingerPrintSHA1(), keystoreUsage);
-
+                    
                     if (certPartnerId != null && partnerIds.contains(certPartnerId)) {
                         filteredCertificates.add(cert);
-                    }
+                                            } else {
+                                            }
                 }
 
                 certificates = filteredCertificates;
-            }
+                            } else if (userId == currentUserId) {
+                            }
 
             return Response.ok(certificates).build();
         } catch (Exception e) {
@@ -403,8 +416,14 @@ public class CertificateResource {
             @Context SecurityContext securityContext,
             KeyGenerationRequestDTO keyGenRequest) {
         try {
+            logger.info("[DEBUG] Starting key generation process...");
+            logger.info("[DEBUG] KeyGenRequest: keystoreType=" + keyGenRequest.getKeystoreType() +
+                       ", alias=" + keyGenRequest.getAlias() +
+                       ", CN=" + keyGenRequest.getCommonName());
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
+                logger.severe("[DEBUG] Server processing not available!");
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
@@ -412,6 +431,7 @@ public class CertificateResource {
 
             // Get current user's ID
             int currentUserId = getCurrentUserId(securityContext, processing);
+            logger.info("[DEBUG] Current user ID: " + currentUserId);
 
             // Get the appropriate certificate manager
             CertificateManager manager;
@@ -419,9 +439,11 @@ public class CertificateResource {
 
             if ("ssl".equals(keyGenRequest.getKeystoreType())) {
                 // System-wide SSL/TLS keystore
+                logger.info("[DEBUG] Using system-wide SSL/TLS keystore");
                 manager = processing.getCertificateManagerTLS();
             } else if ("tls".equals(keyGenRequest.getKeystoreType())) {
                 // User-specific TLS keystore
+                logger.info("[DEBUG] Creating user-specific TLS keystore for userId=" + currentUserId);
                 manager = new CertificateManager(logger);
                 keystoreStorage = new de.mendelson.util.security.cert.KeystoreStorageImplDB(
                     de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
@@ -429,13 +451,26 @@ public class CertificateResource {
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     currentUserId);
+                logger.info("[DEBUG] Loading keystore certificates from DB...");
                 manager.loadKeystoreCertificates(keystoreStorage);
+                logger.info("[DEBUG] Keystore loaded successfully");
             } else {
                 // User-specific sign/encrypt keystore
-                manager = processing.getCertificateManagerSignEncrypt();
+                logger.info("[DEBUG] Creating user-specific sign/encrypt keystore for userId=" + currentUserId);
+                manager = new CertificateManager(logger);
+                keystoreStorage = new de.mendelson.util.security.cert.KeystoreStorageImplDB(
+                    de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
+                    processing.getDBDriverManager(),
+                    de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                    de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    currentUserId);
+                logger.info("[DEBUG] Loading keystore certificates from DB...");
+                manager.loadKeystoreCertificates(keystoreStorage);
+                logger.info("[DEBUG] Keystore loaded successfully");
             }
 
             if (manager == null) {
+                logger.severe("[DEBUG] Certificate manager is null!");
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new ErrorResponse("Certificate manager not available"))
                         .build();
@@ -504,19 +539,36 @@ public class CertificateResource {
             }
 
             // Generate the key
+            logger.info("[DEBUG] Generating key pair with KeyGenerator...");
             de.mendelson.util.security.keygeneration.KeyGenerator generator =
                     new de.mendelson.util.security.keygeneration.KeyGenerator();
             de.mendelson.util.security.keygeneration.KeyGenerationResult result =
                     generator.generateKeyPair(values);
+            logger.info("[DEBUG] Key pair generated successfully");
 
             // Store in keystore
+            logger.info("[DEBUG] Storing key entry in keystore with alias: " + keyGenRequest.getAlias());
             manager.getKeystore().setKeyEntry(
                     keyGenRequest.getAlias(),
                     result.getKeyPair().getPrivate(),
                     manager.getKeystorePass(),
                     new java.security.cert.Certificate[]{result.getCertificate()}
             );
+            logger.info("[DEBUG] Key entry stored, now saving keystore...");
             manager.saveKeystore();
+            logger.info("[DEBUG] Keystore saved successfully!");
+
+            // Get certificate info for logging
+            X509Certificate cert = (X509Certificate) result.getCertificate();
+            String fingerprint = KeystoreCertificate.fingerprintBytesToStr(
+                java.security.MessageDigest.getInstance("SHA-1").digest(cert.getEncoded())
+            );
+            logger.info("[DEBUG] Generated certificate details:");
+            logger.info("[DEBUG]   - Alias: " + keyGenRequest.getAlias());
+            logger.info("[DEBUG]   - Subject DN: " + cert.getSubjectX500Principal().getName());
+            logger.info("[DEBUG]   - Fingerprint SHA-1: " + fingerprint);
+            logger.info("[DEBUG]   - Valid from: " + cert.getNotBefore());
+            logger.info("[DEBUG]   - Valid until: " + cert.getNotAfter());
 
             KeyGenerationResponseDTO response = new KeyGenerationResponseDTO();
             response.setAlias(keyGenRequest.getAlias());

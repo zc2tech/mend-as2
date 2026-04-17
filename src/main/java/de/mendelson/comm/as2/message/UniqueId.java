@@ -36,8 +36,6 @@ public class UniqueId {
         StringBuilder idBuffer = new StringBuilder();
         idBuffer.append(AS2ServerVersion.getProductNameShortcut().replace(' ', '_'))
                 .append("-")
-                .append(ServerInstance.ID)
-                .append("-")
                 .append(String.valueOf(System.currentTimeMillis()))
                 .append("-")
                 .append(String.valueOf(id))

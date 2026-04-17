@@ -58,10 +58,8 @@ public class JDialogTrackerConfig extends JDialog {
         super(parent, true);
         this.baseClient = baseClient;
 
-        System.out.println("[DEBUG TrackerConfig] Dialog constructor starting...");
-        this.isAdmin = checkUserIsAdmin();
-        System.out.println("[DEBUG TrackerConfig] isAdmin result: " + this.isAdmin);
-
+                this.isAdmin = checkUserIsAdmin();
+        
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
                     ResourceBundleDialogTrackerConfig.class.getName());
@@ -81,12 +79,9 @@ public class JDialogTrackerConfig extends JDialog {
             return;
         }
 
-        System.out.println("[DEBUG TrackerConfig] About to call initComponents...");
-        initComponents();
-        System.out.println("[DEBUG TrackerConfig] initComponents completed");
-        loadSettings();
-        System.out.println("[DEBUG TrackerConfig] loadSettings completed");
-        this.getRootPane().setDefaultButton(this.jButtonOk);
+                initComponents();
+                loadSettings();
+                this.getRootPane().setDefaultButton(this.jButtonOk);
     }
 
     /**
@@ -95,11 +90,9 @@ public class JDialogTrackerConfig extends JDialog {
     private boolean checkUserIsAdmin() {
         try {
             String username = this.baseClient.getUsername();
-            System.out.println("[DEBUG TrackerConfig] Current username: " + username);
-
+            
             if (username == null || username.isEmpty()) {
-                System.out.println("[DEBUG TrackerConfig] Username is null/empty, returning false");
-                return false;
+                                return false;
             }
 
             // Get AS2ServerProcessing from DirectServiceClient
@@ -107,20 +100,17 @@ public class JDialogTrackerConfig extends JDialog {
                 de.mendelson.comm.as2.server.DirectServiceClient.getInstance();
 
             if (serviceClient == null) {
-                System.out.println("[DEBUG TrackerConfig] DirectServiceClient instance is null, returning false");
-                return false;
+                                return false;
             }
 
             de.mendelson.comm.as2.server.AS2ServerProcessing processing = serviceClient.getServerProcessing();
             if (processing == null) {
-                System.out.println("[DEBUG TrackerConfig] AS2ServerProcessing instance is null, returning false");
-                return false;
+                                return false;
             }
 
             de.mendelson.util.database.IDBDriverManager dbDriverManager = processing.getDBDriverManager();
             if (dbDriverManager == null) {
-                System.out.println("[DEBUG TrackerConfig] DBDriverManager is null, returning false");
-                return false;
+                                return false;
             }
 
             // Create UserManagementAccessDB with proper DBDriverManager
@@ -131,16 +121,13 @@ public class JDialogTrackerConfig extends JDialog {
 
             // Get user permissions (returns Set<String>)
             java.util.Set<String> permissions = userDB.getUserPermissions(username);
-            System.out.println("[DEBUG TrackerConfig] User permissions: " + permissions);
-
+            
             // Check if user has USER_MANAGE permission (admin role)
             boolean isAdmin = permissions != null && permissions.contains("USER_MANAGE");
-            System.out.println("[DEBUG TrackerConfig] Is admin: " + isAdmin);
-            return isAdmin;
+                        return isAdmin;
         } catch (Exception e) {
             // If error checking permissions, assume not admin
-            System.out.println("[DEBUG TrackerConfig] Error checking permissions: " + e.getClass().getName() + " - " + e.getMessage());
-            e.printStackTrace();
+                        e.printStackTrace();
             return false;
         }
     }
@@ -179,12 +166,10 @@ public class JDialogTrackerConfig extends JDialog {
         gbc.fill = GridBagConstraints.BOTH;
         jPanelMain.add(urlInfoPanel, gbc);
 
-        System.out.println("[DEBUG TrackerConfig] URL info panel added, isAdmin = " + this.isAdmin);
-
+        
         // Only show configuration fields for admin users
         if (this.isAdmin) {
-            System.out.println("[DEBUG TrackerConfig] User is admin, adding configuration fields...");
-            gbc.fill = GridBagConstraints.HORIZONTAL;
+                        gbc.fill = GridBagConstraints.HORIZONTAL;
             gbc.gridwidth = 1;
             gbc.insets = new Insets(5, 5, 5, 5);
 
@@ -277,10 +262,8 @@ public class JDialogTrackerConfig extends JDialog {
             gbc.gridy = row++;
             jPanelMain.add(jTextFieldRateLimitBlock, gbc);
 
-            System.out.println("[DEBUG TrackerConfig] All admin configuration fields added successfully");
-        } else {
-            System.out.println("[DEBUG TrackerConfig] User is NOT admin, skipping configuration fields");
-        }
+                    } else {
+                    }
 
         // Button panel
         JPanel jPanelButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT));

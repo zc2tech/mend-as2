@@ -64,6 +64,7 @@ public class JDialogManualSend extends JDialog {
     //DB connection for the partner access
     private final BaseClient baseClient;
     private final AS2StatusBar statusbar;
+    private final int userId;  // User ID for filtering partners
     private final MendelsonMultiResolutionImage IMAGE_MANUAL_SEND
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/client/send.svg", 32, 48);
     /**
@@ -79,10 +80,11 @@ public class JDialogManualSend extends JDialog {
      * data to the server to send
      */
     public JDialogManualSend(JFrame parent, BaseClient baseClient,
-            AS2StatusBar statusbar, String uploadDisplay) {
+            AS2StatusBar statusbar, String uploadDisplay, int userId) {
         super(parent, true);
         this.statusbar = statusbar;
         this.uploadDisplay = uploadDisplay;
+        this.userId = userId;
         //load resource bundle
         try {
             this.rb = (MecResourceBundle) ResourceBundle.getBundle(
@@ -105,9 +107,11 @@ public class JDialogManualSend extends JDialog {
         this.setupKeyboardShortcuts();
         //fill in data
         try {
-            PartnerListResponse response = (PartnerListResponse) baseClient.sendSync(
-                    new PartnerListRequest(PartnerListRequest.LIST_ALL,
-                            PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE));
+            PartnerListRequest request = new PartnerListRequest(
+                    PartnerListRequest.LIST_ALL,
+                    PartnerListRequest.DATA_COMPLETENESS_NAME_AS2ID_TYPE);
+            request.setUserId(this.userId);  // Filter partners by current user
+            PartnerListResponse response = (PartnerListResponse) baseClient.sendSync(request);
             List<Partner> allPartnerList = response.getList();
             for (Partner partner : allPartnerList) {
                 if (partner.isLocalStation()) {

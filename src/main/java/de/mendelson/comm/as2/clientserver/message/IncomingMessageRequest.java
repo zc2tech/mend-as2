@@ -39,7 +39,7 @@ public class IncomingMessageRequest extends ClientServerMessage {
     /**
      * Target user ID for user-specific message processing (0 = admin/system, >0 = specific user)
      */
-    private int targetUserId = 0;
+    private int targetUserId = 1;
 
     public IncomingMessageRequest() {
     }

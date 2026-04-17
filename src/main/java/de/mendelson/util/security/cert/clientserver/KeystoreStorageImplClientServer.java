@@ -51,7 +51,7 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
     private final BaseClient baseClient;
     private int keystoreUsage = KEYSTORE_USAGE_ENC_SIGN;
     private String keystoreStorageType = KEYSTORE_STORAGE_TYPE_PKCS12;
-    private int userId = 0;  // User ID for user-specific keystores (0 = admin/system)
+    private int userId = 1;  // User ID for user-specific keystores (0 = admin/system)
     private final static MecResourceBundle rb;
 
     static {

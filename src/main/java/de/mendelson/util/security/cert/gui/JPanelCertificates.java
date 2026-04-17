@@ -342,6 +342,9 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
     }
 
     protected void refreshData() {
+        System.out.println("=== JPanelCertificates.refreshData() called ===");
+        System.out.println("  showingAllUsers: " + this.showingAllUsers);
+
         try {
             this.manager.rereadKeystoreCertificates();
         } catch (Exception e) {
@@ -354,6 +357,12 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
             selectedAlias = (((TableModelCertificates) this.jTable.getModel()).getParameter(selectedRow)).getAlias();
         }
         List<KeystoreCertificate> managersKeystoreCertificateList = this.manager.getKeyStoreCertificateList();
+
+        System.out.println("  Loaded " + managersKeystoreCertificateList.size() + " certificates from manager");
+        for (KeystoreCertificate cert : managersKeystoreCertificateList) {
+            System.out.println("    - " + cert.getAlias() + " | FP: " + cert.getFingerPrintSHA1());
+        }
+
         List<KeystoreCertificate> keystoreCertListWithoutCA = new ArrayList<KeystoreCertificate>();
         //do not show the CA certificates
         for (KeystoreCertificate cert : managersKeystoreCertificateList) {
@@ -1088,6 +1097,34 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         gridBagConstraints.insets = new java.awt.Insets(5, 35, 5, 5);
         add(switchShowAllUsers, gridBagConstraints);
 
+        // Owner filter label (shown when Show All Users is ON)
+        jLabelUserFilter = new javax.swing.JLabel();
+        jLabelUserFilter.setText("Owner:");
+        jLabelUserFilter.setVisible(false); // Hidden by default
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 150, 5, 5);
+        add(jLabelUserFilter, gridBagConstraints);
+
+        // Owner filter text field (shown when Show All Users is ON)
+        jTextFieldUserFilter = new javax.swing.JTextField();
+        jTextFieldUserFilter.setColumns(10);
+        jTextFieldUserFilter.setMinimumSize(new java.awt.Dimension(100, 25));
+        jTextFieldUserFilter.setVisible(false); // Hidden by default
+        jTextFieldUserFilter.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                ownerFilterChanged();
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 220, 5, 5);
+        add(jTextFieldUserFilter, gridBagConstraints);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 3;
@@ -1173,6 +1210,8 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
     private de.mendelson.util.security.cert.gui.JTreeTrustChain jTreeTrustChain;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchShowCACertificates;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchShowAllUsers;
+    private javax.swing.JLabel jLabelUserFilter;
+    private javax.swing.JTextField jTextFieldUserFilter;
     // End of variables declaration//GEN-END:variables
 
     // Admin mode fields
@@ -1270,6 +1309,9 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
         // Make the toggle visible
         this.jLabelShowAllUsers.setVisible(true);
         this.switchShowAllUsers.setVisible(true);
+        // Owner filter is hidden by default, shown when toggle is ON
+        this.jLabelUserFilter.setVisible(false);
+        this.jTextFieldUserFilter.setVisible(false);
     }
 
     /**
@@ -1282,9 +1324,12 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
 
         boolean showAllUsers = this.switchShowAllUsers.isSelected();
 
+        System.out.println("=== Show All Users Toggle Changed: " + (showAllUsers ? "ON" : "OFF") + " ===");
+
         if (showAllUsers) {
             // Request all users' certificates from server
             try {
+                System.out.println("Requesting all users' certificates from server...");
                 de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest request =
                     new de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest(this.keystoreType);
 
@@ -1296,7 +1341,22 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
                     throw response.getException();
                 }
 
+                System.out.println("Received " + response.getCertificates().size() +
+                                 " certificates from all users");
+
+                // Clear existing checkers and add new one that checks ALL users' partners (userId=-1)
+                System.out.println("Recreating certificate usage checker for ALL users' partners (userId=-1)");
+                this.inUseCheckerList.clear();
+                de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker allUsersChecker =
+                    new de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker(this.baseClient, -1);
+                this.inUseCheckerList.add(allUsersChecker);
+
                 this.setAllUsersCertificates(response.getCertificates());
+
+                // Show owner filter when "Show All Users" is ON
+                this.jLabelUserFilter.setVisible(true);
+                this.jTextFieldUserFilter.setVisible(true);
+                this.jTextFieldUserFilter.setText(""); // Clear filter
             } catch (Throwable e) {
                 de.mendelson.util.uinotification.UINotification.instance().addNotification(
                     null,
@@ -1310,8 +1370,50 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
             }
         } else {
             // Switch back to single user mode
+            System.out.println("Switching back to single user mode (userId=" + this.currentUserId + ")");
+
+            // Recreate checker for current user only
+            System.out.println("Recreating certificate usage checker for current user's partners");
+            this.inUseCheckerList.clear();
+            de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker userChecker =
+                new de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker(this.baseClient, this.currentUserId);
+            this.inUseCheckerList.add(userChecker);
+
             this.setSingleUserMode();
             this.refreshData();
+
+            // Hide owner filter when "Show All Users" is OFF
+            this.jLabelUserFilter.setVisible(false);
+            this.jTextFieldUserFilter.setVisible(false);
+        }
+    }
+
+    /**
+     * Handler for Owner filter text field changes
+     */
+    private void ownerFilterChanged() {
+        if (!this.showingAllUsers || this.allUsersCertificatesCache == null) {
+            return;
+        }
+
+        String filterText = this.jTextFieldUserFilter.getText().trim().toLowerCase();
+        System.out.println("Owner filter changed: '" + filterText + "'");
+
+        if (filterText.isEmpty()) {
+            // No filter - show all certificates
+            this.setAllUsersCertificates(this.allUsersCertificatesCache, false);
+        } else {
+            // Filter certificates by owner username
+            java.util.List<de.mendelson.util.security.cert.CertificateWithOwner> filtered =
+                new java.util.ArrayList<>();
+            for (de.mendelson.util.security.cert.CertificateWithOwner cert : this.allUsersCertificatesCache) {
+                if (cert.getUsername().toLowerCase().contains(filterText)) {
+                    filtered.add(cert);
+                }
+            }
+            System.out.println("Filtered " + this.allUsersCertificatesCache.size() +
+                             " certificates to " + filtered.size() + " matching owner filter");
+            this.setAllUsersCertificates(filtered, false);
         }
     }
 
@@ -1320,8 +1422,21 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
      * @param certificates List of certificates with owner information
      */
     public void setAllUsersCertificates(java.util.List<de.mendelson.util.security.cert.CertificateWithOwner> certificates) {
+        setAllUsersCertificates(certificates, true);
+    }
+
+    /**
+     * Switch to show all users' certificates with owner column (admin mode)
+     * @param certificates List of certificates with owner information
+     * @param updateCache Whether to update the cache (false when filtering)
+     */
+    private void setAllUsersCertificates(java.util.List<de.mendelson.util.security.cert.CertificateWithOwner> certificates, boolean updateCache) {
         this.showingAllUsers = true;
-        this.allUsersCertificatesCache = certificates;
+
+        // Only update cache when not filtering
+        if (updateCache) {
+            this.allUsersCertificatesCache = certificates;
+        }
 
         // Switch to the extended table model that includes Owner column
         de.mendelson.util.security.cert.TableModelCertificatesWithOwner extendedModel =
@@ -1332,7 +1447,12 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
             de.mendelson.util.security.cert.TableModelCertificates currentModel =
                 (de.mendelson.util.security.cert.TableModelCertificates) this.jTable.getModel();
             extendedModel.setCertificateManager(this.manager);
-            // Note: in-use checkers are not copied as they are user-specific
+            // Copy in-use checkers to the new model
+            synchronized (this.inUseCheckerList) {
+                for (de.mendelson.util.security.cert.CertificateInUseChecker checker : this.inUseCheckerList) {
+                    extendedModel.addCertificateInUseChecker(checker);
+                }
+            }
         }
 
         // Set the new model

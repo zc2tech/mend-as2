@@ -97,7 +97,8 @@ public class PartnerAccessDB {
                         HTTPAuthentication authentication = partner.getAuthenticationCredentialsMessage();
                         authentication.setUser(result.getString("httpauthuser"));
                         authentication.setPassword(result.getString("httpauthpass"));
-                        authentication.setAuthMode(result.getInt("authmodehttp"));
+                        int authModeFromDB = result.getInt("authmodehttp");
+                        authentication.setAuthMode(authModeFromDB);
                         authentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_message"));
                         HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
                         asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
@@ -343,7 +344,11 @@ public class PartnerAccessDB {
             preparedStatement.setInt(13, partner.getPollInterval());
             preparedStatement.setInt(14, partner.getCompressionType());
             preparedStatement.setInt(15, partner.isSignedMDN() ? 1 : 0);
-            preparedStatement.setInt(16, partner.getAuthenticationCredentialsMessage().getAuthMode());
+
+            // Log HTTP authentication mode being saved
+            int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
+           
+            preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
             preparedStatement.setString(18, partner.getAuthenticationCredentialsMessage().getPassword());
             preparedStatement.setString(19, partner.getAuthenticationCredentialsMessage().getCertificateFingerprint());
@@ -538,7 +543,11 @@ public class PartnerAccessDB {
             preparedStatement.setInt(13, partner.getPollInterval());
             preparedStatement.setInt(14, partner.getCompressionType());
             preparedStatement.setInt(15, partner.isSignedMDN() ? 1 : 0);
-            preparedStatement.setInt(16, partner.getAuthenticationCredentialsMessage().getAuthMode());
+
+            // Log HTTP authentication mode being saved
+            int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
+          
+            preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
             preparedStatement.setString(18, partner.getAuthenticationCredentialsMessage().getPassword());
             preparedStatement.setString(19, partner.getAuthenticationCredentialsMessage().getCertificateFingerprint());

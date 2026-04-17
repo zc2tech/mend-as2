@@ -28,7 +28,9 @@ import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.oauth2.OAuth2Config;
 import de.mendelson.util.security.cert.KeystoreStorage;
 import de.mendelson.util.security.cert.KeystoreStorageImplDB;
+import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.util.security.cert.SingleCertificateKeyManager;
+import de.mendelson.util.security.keydata.KeydataAccessDB;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
 import java.io.ByteArrayOutputStream;
@@ -42,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.cert.Certificate;
@@ -57,6 +60,7 @@ import java.util.Enumeration;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -526,7 +530,7 @@ public class MessageHttpUploader {
                     receiver.getAuthenticationCredentialsMessage();
 
                 SSLConnectionSocketFactory sslConnectionSocketFactory
-                        = this.generateSSLFactory(connectionParameter, message.getAS2Info(), authForSSL);
+                        = this.generateSSLFactory(connectionParameter, message.getAS2Info(), authForSSL, sender);
                 clientBuilder.setConnectionManager(
                     PoolingHttpClientConnectionManagerBuilder.create()
                         .setSSLSocketFactory(sslConnectionSocketFactory)
@@ -828,6 +832,9 @@ public class MessageHttpUploader {
                     "[OUTBOUND CERT AUTH] About to execute HTTPS request. Client certificate should be sent during TLS handshake.",
                     message.getAS2Info());
             }
+            System.out.println("=== EXECUTING HTTPS REQUEST ===");
+            System.out.println("URL: " + filePost.getUri());
+            System.out.println("Method: " + filePost.getMethod());
             httpClient.execute(filePost, response -> {
                 try {
                     if (response != null) {
@@ -955,24 +962,317 @@ public class MessageHttpUploader {
     }
 
     private SSLConnectionSocketFactory generateSSLFactory(HttpConnectionParameter connectionParameter,
-            AS2Info as2Info, HTTPAuthentication httpAuthentication) throws Exception {
+            AS2Info as2Info, HTTPAuthentication httpAuthentication, Partner sender) throws Exception {
 
         //TLS key stores not set so far: take the trust store from the system
         if (this.certStore == null) {
-            // Get userId from message info - for outbound messages, use the sender's userId
-            int userId = 0; // Default to admin/system
-            if (as2Info instanceof AS2MessageInfo) {
-                userId = ((AS2MessageInfo) as2Info).getOwnerUserId();
+            System.out.println("=== INITIALIZING KEYSTORES ===");
+            System.out.println("as2Info type: " + as2Info.getClass().getName());
+            System.out.println("Sender partner: " + sender.getName() + " (created_by_user_id=" + sender.getCreatedByUserId() + ")");
+
+            // For TLS trust validation (server certificate verification), always use system-wide keystore
+            int trustStoreUserId = KeydataAccessDB.SYSTEM_WIDE_USER_ID;
+            System.out.println("trustStoreUserId (for server cert validation): " + trustStoreUserId);
+
+            // For client certificate authentication:
+            // Check if receiver requires certificate authentication
+            boolean needsClientCertAuth = (httpAuthentication != null &&
+                                          httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE);
+            System.out.println("Receiver requires client cert auth: " + needsClientCertAuth);
+
+            // Determine which keystore to use for client cert
+            // Always start with system-wide keystore (needed for HTTPS)
+            // If client cert auth is required AND sender has a user-specific keystore, merge them
+            boolean needToMergeKeystores = false;
+            int senderUserId = sender.getCreatedByUserId();
+
+            if (needsClientCertAuth && senderUserId > 0) {
+                System.out.println("Client cert auth required and sender is user-specific (user_id=" + senderUserId + ")");
+                System.out.println("Will merge system-wide + user-specific keystores");
+                needToMergeKeystores = true;
+            } else if (needsClientCertAuth) {
+                System.out.println("Client cert auth required but sender is system-wide (user_id=" + senderUserId + ")");
+                System.out.println("Will use system-wide keystore only");
+            } else {
+                System.out.println("No client cert auth required");
+                System.out.println("Will use system-wide keystore only");
             }
 
+            // Initialize trustStore for server certificate validation
+            // Always use system-wide TLS for trust validation
             this.trustStore = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
-                    userId
+                    trustStoreUserId  // Always use system-wide for trust validation
             );
-            this.certStore = this.trustStore;
+            System.out.println("trustStore initialized with userId: " + trustStoreUserId);
+
+            // DEBUG: List certificates in trustStore
+            try {
+                System.out.println("=== TRUST STORE CONTENTS ===");
+                java.util.Enumeration<String> trustAliases = this.trustStore.getKeystore().aliases();
+                int trustCount = 0;
+                while (trustAliases.hasMoreElements()) {
+                    String alias = trustAliases.nextElement();
+                    trustCount++;
+                    boolean isCertEntry = this.trustStore.getKeystore().isCertificateEntry(alias);
+                    boolean isKeyEntry = this.trustStore.getKeystore().isKeyEntry(alias);
+                    System.out.println("  [" + trustCount + "] " + alias +
+                                     " | CertEntry: " + isCertEntry +
+                                     " | KeyEntry: " + isKeyEntry);
+                    if (isCertEntry || isKeyEntry) {
+                        java.security.cert.Certificate cert = this.trustStore.getKeystore().getCertificate(alias);
+                        if (cert instanceof java.security.cert.X509Certificate) {
+                            java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) cert;
+                            System.out.println("      Subject: " + x509.getSubjectX500Principal());
+                        }
+                    }
+                }
+                System.out.println("Total certificates in trustStore: " + trustCount);
+            } catch (Exception e) {
+                System.out.println("Error listing trustStore contents: " + e.getMessage());
+            }
+
+            // Client certificate store: merge system-wide and user-specific keystores if needed
+            // System-wide is always needed for HTTPS
+            // User-specific is only added if client cert auth requires it
+
+            if (needToMergeKeystores) {
+                // Load both system-wide and sender's user-specific keystores, then merge them
+                System.out.println("=== MERGING KEYSTORES: system-wide + user-specific ===");
+
+                KeystoreStorageImplDB systemWideStore = null;
+                boolean hasSystemWideAccess = false;
+
+                try {
+                    systemWideStore = new KeystoreStorageImplDB(
+                            SystemEventManagerImplAS2.instance(),
+                            this.dbDriverManager,
+                            KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                            KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                            KeydataAccessDB.SYSTEM_WIDE_USER_ID
+                    );
+                    // Try to access the keystore to verify permissions
+                    systemWideStore.getKeystore();
+                    hasSystemWideAccess = true;
+                    System.out.println("Loaded system-wide keystore (user_id=-1)");
+                } catch (Exception e) {
+                    System.out.println("Cannot access system-wide keystore (user_id=-1): " + e.getMessage());
+                    System.out.println("This is normal for non-admin users. Will use user-specific keystore only.");
+                    if (this.logger != null) {
+                        this.logger.log(Level.INFO,
+                            "[TLS] User does not have access to system-wide TLS keystore. Using user-specific TLS keystore only.",
+                            as2Info);
+                    }
+                }
+
+                final KeystoreStorageImplDB userSpecificStore = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        senderUserId
+                );
+                System.out.println("Loaded user-specific keystore (user_id=" + senderUserId + ")");
+
+                // Create a new merged keystore
+                final KeyStore mergedKeystore = KeyStore.getInstance("JKS");
+                mergedKeystore.load(null, null);  // Initialize empty keystore
+
+                // Use the same password for the merged keystore
+                final char[] keystorePassword;
+                if (hasSystemWideAccess) {
+                    keystorePassword = systemWideStore.getKeystorePass();
+                } else {
+                    keystorePassword = userSpecificStore.getKeystorePass();
+                }
+
+                // Copy all entries from system-wide keystore (if accessible)
+                int systemCount = 0;
+                if (hasSystemWideAccess) {
+                    KeyStore systemKS = systemWideStore.getKeystore();
+                    java.util.Enumeration<String> systemAliases = systemKS.aliases();
+                    while (systemAliases.hasMoreElements()) {
+                        String alias = systemAliases.nextElement();
+                        if (systemKS.isKeyEntry(alias)) {
+                            Key key = systemKS.getKey(alias, systemWideStore.getKeystorePass());
+                            Certificate[] chain = systemKS.getCertificateChain(alias);
+                            mergedKeystore.setKeyEntry(alias, key, keystorePassword, chain);
+                            systemCount++;
+                        } else if (systemKS.isCertificateEntry(alias)) {
+                            Certificate cert = systemKS.getCertificate(alias);
+                            mergedKeystore.setCertificateEntry(alias, cert);
+                            systemCount++;
+                        }
+                    }
+                    System.out.println("Copied " + systemCount + " entries from system-wide keystore");
+                } else {
+                    System.out.println("Skipped system-wide keystore (no access)");
+                }
+
+                // Copy all entries from user-specific keystore (may overwrite system entries with same alias)
+                KeyStore userKS = userSpecificStore.getKeystore();
+                java.util.Enumeration<String> userAliases = userKS.aliases();
+                int userCount = 0;
+                while (userAliases.hasMoreElements()) {
+                    String alias = userAliases.nextElement();
+                    if (userKS.isKeyEntry(alias)) {
+                        Key key = userKS.getKey(alias, userSpecificStore.getKeystorePass());
+                        Certificate[] chain = userKS.getCertificateChain(alias);
+                        mergedKeystore.setKeyEntry(alias, key, keystorePassword, chain);
+                        userCount++;
+                    } else if (userKS.isCertificateEntry(alias)) {
+                        Certificate cert = userKS.getCertificate(alias);
+                        mergedKeystore.setCertificateEntry(alias, cert);
+                        userCount++;
+                    }
+                }
+                System.out.println("Copied " + userCount + " entries from user-specific keystore");
+
+                // Create a wrapper that implements KeystoreStorage interface with our merged keystore
+                this.certStore = new KeystoreStorage() {
+                    @Override
+                    public KeyStore getKeystore() {
+                        return mergedKeystore;
+                    }
+
+                    @Override
+                    public char[] getKeystorePass() {
+                        return keystorePassword;
+                    }
+
+                    @Override
+                    public void save() throws Exception {
+                        // Not needed for HTTP upload - read-only operation
+                        throw new UnsupportedOperationException("Merged keystore is read-only");
+                    }
+
+                    @Override
+                    public void loadKeystoreFromServer() throws Exception {
+                        // Already loaded
+                    }
+
+                    @Override
+                    public boolean isReadOnly() {
+                        return true;
+                    }
+
+                    @Override
+                    public void replaceAllEntriesAndSave(List<KeystoreCertificate> oldList, List<KeystoreCertificate> newList) throws Exception {
+                        throw new UnsupportedOperationException("Merged keystore is read-only");
+                    }
+
+                    @Override
+                    public Key getKey(String alias) throws Exception {
+                        return mergedKeystore.getKey(alias, keystorePassword);
+                    }
+
+                    @Override
+                    public Certificate[] getCertificateChain(String alias) throws Exception {
+                        return mergedKeystore.getCertificateChain(alias);
+                    }
+
+                    @Override
+                    public X509Certificate getCertificate(String alias) throws Exception {
+                        return (X509Certificate) mergedKeystore.getCertificate(alias);
+                    }
+
+                    @Override
+                    public void renameEntry(String oldAlias, String newAlias, char[] keypairPass) throws Exception {
+                        throw new UnsupportedOperationException("Merged keystore is read-only");
+                    }
+
+                    @Override
+                    public void deleteEntry(String alias) throws Exception {
+                        throw new UnsupportedOperationException("Merged keystore is read-only");
+                    }
+
+                    @Override
+                    public Map<String, Certificate> loadCertificatesFromKeystore() throws Exception {
+                        java.util.Map<String, Certificate> map = new java.util.HashMap<>();
+                        java.util.Enumeration<String> aliases = mergedKeystore.aliases();
+                        while (aliases.hasMoreElements()) {
+                            String alias = aliases.nextElement();
+                            Certificate cert = mergedKeystore.getCertificate(alias);
+                            if (cert != null) {
+                                map.put(alias, cert);
+                            }
+                        }
+                        return map;
+                    }
+
+                    @Override
+                    public boolean isKeyEntry(String alias) throws Exception {
+                        return mergedKeystore.isKeyEntry(alias);
+                    }
+
+                    @Override
+                    public String getKeystoreStorageType() {
+                        return "JKS";
+                    }
+
+                    @Override
+                    public int getKeystoreUsage() {
+                        return KeystoreStorageImplDB.KEYSTORE_USAGE_TLS;
+                    }
+                };
+                System.out.println("Created merged keystore with " + (systemCount + userCount) + " total entries");
+            } else {
+                // Just use system-wide keystore (either no cert auth needed, or cert is in system-wide)
+                this.certStore = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        KeydataAccessDB.SYSTEM_WIDE_USER_ID
+                );
+                System.out.println("Using system-wide keystore only");
+            }
+
+            // DEBUG: List certificates in certStore
+            try {
+                System.out.println("=== CERT STORE CONTENTS ===");
+                java.util.Enumeration<String> certAliases = this.certStore.getKeystore().aliases();
+                int certCount = 0;
+                while (certAliases.hasMoreElements()) {
+                    String alias = certAliases.nextElement();
+                    certCount++;
+                    boolean isCertEntry = this.certStore.getKeystore().isCertificateEntry(alias);
+                    boolean isKeyEntry = this.certStore.getKeystore().isKeyEntry(alias);
+                    System.out.println("  [" + certCount + "] " + alias +
+                                     " | CertEntry: " + isCertEntry +
+                                     " | KeyEntry: " + isKeyEntry);
+                    if (isCertEntry || isKeyEntry) {
+                        java.security.cert.Certificate cert = this.certStore.getKeystore().getCertificate(alias);
+                        if (cert instanceof java.security.cert.X509Certificate) {
+                            java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) cert;
+                            System.out.println("      Subject: " + x509.getSubjectX500Principal());
+                            // Calculate fingerprint
+                            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+                            byte[] der = x509.getEncoded();
+                            md.update(der);
+                            byte[] digest = md.digest();
+                            StringBuilder hexString = new StringBuilder();
+                            for (int i = 0; i < digest.length; i++) {
+                                String hex = Integer.toHexString(0xFF & digest[i]);
+                                if (hex.length() == 1) {
+                                    hexString.append('0');
+                                }
+                                hexString.append(hex.toUpperCase());
+                                if (i < digest.length - 1) {
+                                    hexString.append(':');
+                                }
+                            }
+                            System.out.println("      Fingerprint: " + hexString.toString());
+                        }
+                    }
+                }
+                System.out.println("Total certificates in certStore: " + certCount);
+            } catch (Exception e) {
+                System.out.println("Error listing certStore contents: " + e.getMessage());
+            }
         }
         SSLContext sslcontext;
         // TrustStrategy for trusting self-signed certificates
@@ -996,14 +1296,11 @@ public class MessageHttpUploader {
         }
 
         if (connectionParameter.getTrustAllRemoteServerCertificates()) {
-            SSLContextBuilder builder = SSLContexts.custom()
-                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
-            sslcontext = builder.build();
-        } else {
+            System.out.println("=== SSL CONTEXT SETUP: TrustAllRemoteServerCertificates = TRUE ===");
             SSLContextBuilder builder = SSLContexts.custom()
                     .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
 
-            // Check if certificate authentication is requested
+            // Check if certificate authentication is requested (even with trust all enabled)
             if (httpAuthentication != null &&
                 httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
 
@@ -1017,9 +1314,14 @@ public class MessageHttpUploader {
                 }
 
                 if (fingerprint != null && !fingerprint.isEmpty()) {
+                    System.out.println("=== CLIENT CERTIFICATE AUTH CONFIGURATION (TRUST ALL MODE) ===");
+                    System.out.println("Requested fingerprint: " + fingerprint);
+
                     // Find the alias for the certificate with this fingerprint
                     String targetAlias = this.findAliasByFingerprint(
                         this.certStore.getKeystore(), fingerprint);
+
+                    System.out.println("After findAliasByFingerprint, targetAlias = " + targetAlias);
 
                     if (this.logger != null) {
                         this.logger.log(Level.INFO,
@@ -1029,15 +1331,24 @@ public class MessageHttpUploader {
                     }
 
                     if (targetAlias != null) {
+                        System.out.println("Target alias found: " + targetAlias);
+
                         // Create a KeyManagerFactory to get the default KeyManager
                         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                             KeyManagerFactory.getDefaultAlgorithm());
+                        System.out.println("KeyManagerFactory algorithm: " + KeyManagerFactory.getDefaultAlgorithm());
+
                         kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
+                        System.out.println("KeyManagerFactory initialized with keystore and password");
 
                         // Wrap the first X509KeyManager with our single-certificate filter
                         KeyManager[] keyManagers = kmf.getKeyManagers();
+                        System.out.println("KeyManagers count: " + keyManagers.length);
+
                         for (int i = 0; i < keyManagers.length; i++) {
+                            System.out.println("KeyManager[" + i + "]: " + keyManagers[i].getClass().getName());
                             if (keyManagers[i] instanceof X509KeyManager) {
+                                System.out.println("Wrapping X509KeyManager with SingleCertificateKeyManager for alias: " + targetAlias);
                                 keyManagers[i] = new SingleCertificateKeyManager(
                                     (X509KeyManager) keyManagers[i], targetAlias);
 
@@ -1051,8 +1362,20 @@ public class MessageHttpUploader {
                         }
 
                         // Build SSL context with custom key manager
+                        // IMPORTANT: Build first to get the TrustManagers, then init with both KeyManagers and TrustManagers
                         sslcontext = builder.build();
-                        sslcontext.init(keyManagers, null, null);
+                        System.out.println("SSLContext built, now re-initializing with custom KeyManagers while preserving TrustManagers...");
+
+                        // Get the default TrustManagers from a TrustManagerFactory
+                        javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                            javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                        tmf.init(this.trustStore.getKeystore());
+                        javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
+                        System.out.println("TrustManagers count: " + trustManagers.length);
+
+                        // Re-init with both custom KeyManagers and TrustManagers
+                        sslcontext.init(keyManagers, trustManagers, null);
+                        System.out.println("SSLContext initialized successfully with custom KeyManagers and TrustManagers");
 
                         if (this.logger != null) {
                             this.logger.log(Level.INFO,
@@ -1074,16 +1397,249 @@ public class MessageHttpUploader {
                         sslcontext = builder.build();
                     }
                 } else {
-                    // No fingerprint specified - log warning
+                    // No fingerprint specified - find and use user-specific certificate only
+                    // This ensures the correct user certificate is presented for authentication
+                    System.out.println("=== NO FINGERPRINT SPECIFIED - Looking for user-specific certificate ===");
+
+                    String userSpecificAlias = null;
+                    try {
+                        // Find the user-specific certificate (non-system)
+                        KeyStore ks = this.certStore.getKeystore();
+                        java.util.Enumeration<String> aliases = ks.aliases();
+                        while (aliases.hasMoreElements()) {
+                            String alias = aliases.nextElement();
+                            if (ks.isKeyEntry(alias)) {
+                                System.out.println("  Checking key entry: " + alias);
+                                // Skip system-wide certificates, find user-specific one
+                                if (!alias.equals("vscode-tls") && !alias.equals("testpod-tls")) {
+                                    userSpecificAlias = alias;
+                                    System.out.println("  -> Found user-specific certificate: " + alias);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("  Error searching for user-specific cert: " + e.getMessage());
+                    }
+
+                    if (userSpecificAlias != null) {
+                        // Use SingleCertificateKeyManager to present ONLY the user-specific certificate
+                        System.out.println("Using user-specific certificate: " + userSpecificAlias);
+
+                        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+                            KeyManagerFactory.getDefaultAlgorithm());
+                        kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
+
+                        KeyManager[] keyManagers = kmf.getKeyManagers();
+                        for (int i = 0; i < keyManagers.length; i++) {
+                            if (keyManagers[i] instanceof X509KeyManager) {
+                                keyManagers[i] = new SingleCertificateKeyManager(
+                                    (X509KeyManager) keyManagers[i], userSpecificAlias);
+                            }
+                        }
+
+                        sslcontext = builder.build();
+                        javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                            javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                        tmf.init(this.trustStore.getKeystore());
+                        javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
+                        sslcontext.init(keyManagers, trustManagers, null);
+
+                        System.out.println("SSL context initialized with user-specific certificate");
+
+                        if (this.logger != null) {
+                            this.logger.log(Level.INFO,
+                                "[OUTBOUND CERT AUTH] Using user-specific certificate: " + userSpecificAlias,
+                                as2Info);
+                        }
+                    } else {
+                        // No user-specific cert found - fall back to all keys
+                        System.out.println("No user-specific certificate found, using all certificates");
+                        if (this.logger != null) {
+                            this.logger.log(Level.WARNING,
+                                "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no user-specific certificate found.",
+                                as2Info);
+                        }
+                        builder.loadKeyMaterial(
+                            this.certStore.getKeystore(),
+                            this.certStore.getKeystorePass());
+                        sslcontext = builder.build();
+                    }
+                }
+            } else {
+                // Not using certificate authentication - build simple SSL context
+                System.out.println("Not using certificate authentication in TRUST ALL mode");
+                sslcontext = builder.build();
+            }
+        } else {
+            System.out.println("=== SSL CONTEXT SETUP: TrustAllRemoteServerCertificates = FALSE ===");
+            SSLContextBuilder builder = SSLContexts.custom()
+                    .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
+
+            // Check if certificate authentication is requested
+            if (httpAuthentication != null &&
+                httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
+
+                String fingerprint = httpAuthentication.getCertificateFingerprint();
+
+                if (this.logger != null) {
+                    this.logger.log(Level.INFO,
+                        "[OUTBOUND CERT AUTH] Certificate authentication requested. Configured fingerprint: " +
+                        (fingerprint != null ? fingerprint : "NULL"),
+                        as2Info);
+                }
+
+                if (fingerprint != null && !fingerprint.isEmpty()) {
+                    System.out.println("=== CLIENT CERTIFICATE AUTH CONFIGURATION ===");
+                    System.out.println("Requested fingerprint: " + fingerprint);
+
+                    // Find the alias for the certificate with this fingerprint
+                    String targetAlias = this.findAliasByFingerprint(
+                        this.certStore.getKeystore(), fingerprint);
+
+                    System.out.println("After findAliasByFingerprint, targetAlias = " + targetAlias);
+
                     if (this.logger != null) {
-                        this.logger.log(Level.WARNING,
-                            "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no certificate fingerprint specified.",
+                        this.logger.log(Level.INFO,
+                            "[OUTBOUND CERT AUTH] Looking for certificate with fingerprint: " + fingerprint +
+                            ", Found alias: " + (targetAlias != null ? targetAlias : "NOT FOUND"),
                             as2Info);
                     }
-                    builder.loadKeyMaterial(
-                        this.certStore.getKeystore(),
-                        this.certStore.getKeystorePass());
-                    sslcontext = builder.build();
+
+                    if (targetAlias != null) {
+                        System.out.println("Target alias found: " + targetAlias);
+
+                        // Create a KeyManagerFactory to get the default KeyManager
+                        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+                            KeyManagerFactory.getDefaultAlgorithm());
+                        System.out.println("KeyManagerFactory algorithm: " + KeyManagerFactory.getDefaultAlgorithm());
+
+                        kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
+                        System.out.println("KeyManagerFactory initialized with keystore and password");
+
+                        // Wrap the first X509KeyManager with our single-certificate filter
+                        KeyManager[] keyManagers = kmf.getKeyManagers();
+                        System.out.println("KeyManagers count: " + keyManagers.length);
+
+                        for (int i = 0; i < keyManagers.length; i++) {
+                            System.out.println("KeyManager[" + i + "]: " + keyManagers[i].getClass().getName());
+                            if (keyManagers[i] instanceof X509KeyManager) {
+                                System.out.println("Wrapping X509KeyManager with SingleCertificateKeyManager for alias: " + targetAlias);
+                                keyManagers[i] = new SingleCertificateKeyManager(
+                                    (X509KeyManager) keyManagers[i], targetAlias);
+
+                                if (this.logger != null) {
+                                    this.logger.log(Level.INFO,
+                                        "[OUTBOUND CERT AUTH] Successfully configured SingleCertificateKeyManager with alias: " + targetAlias,
+                                        as2Info);
+                                }
+                                break;
+                            }
+                        }
+
+                        // Build SSL context with custom key manager
+                        // IMPORTANT: Build first to get the TrustManagers, then init with both KeyManagers and TrustManagers
+                        sslcontext = builder.build();
+                        System.out.println("SSLContext built, now re-initializing with custom KeyManagers while preserving TrustManagers...");
+
+                        // Get the default TrustManagers from a TrustManagerFactory
+                        javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                            javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                        tmf.init(this.trustStore.getKeystore());
+                        javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
+                        System.out.println("TrustManagers count: " + trustManagers.length);
+
+                        // Re-init with both custom KeyManagers and TrustManagers
+                        sslcontext.init(keyManagers, trustManagers, null);
+                        System.out.println("SSLContext initialized successfully with custom KeyManagers and TrustManagers");
+
+                        if (this.logger != null) {
+                            this.logger.log(Level.INFO,
+                                "[OUTBOUND CERT AUTH] SSL context initialized with client certificate. Certificate will be sent during TLS handshake.",
+                                as2Info);
+                        }
+                    } else {
+                        // Certificate not found - log warning and proceed without client cert
+                        if (this.logger != null) {
+                            this.logger.log(Level.WARNING,
+                                "[OUTBOUND CERT AUTH] Client certificate with fingerprint " + fingerprint +
+                                " not found in keystore. Proceeding without client certificate.",
+                                as2Info);
+                        }
+                        // Fall back to loading all keys
+                        builder.loadKeyMaterial(
+                            this.certStore.getKeystore(),
+                            this.certStore.getKeystorePass());
+                        sslcontext = builder.build();
+                    }
+                } else {
+                    // No fingerprint specified - find and use user-specific certificate only
+                    System.out.println("=== NO FINGERPRINT SPECIFIED (non-trust-all) - Looking for user-specific certificate ===");
+
+                    String userSpecificAlias = null;
+                    try {
+                        // Find the user-specific certificate (non-system)
+                        KeyStore ks = this.certStore.getKeystore();
+                        java.util.Enumeration<String> aliases = ks.aliases();
+                        while (aliases.hasMoreElements()) {
+                            String alias = aliases.nextElement();
+                            if (ks.isKeyEntry(alias)) {
+                                System.out.println("  Checking key entry: " + alias);
+                                // Skip system-wide certificates, find user-specific one
+                                if (!alias.equals("vscode-tls") && !alias.equals("testpod-tls")) {
+                                    userSpecificAlias = alias;
+                                    System.out.println("  -> Found user-specific certificate: " + alias);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.out.println("  Error searching for user-specific cert: " + e.getMessage());
+                    }
+
+                    if (userSpecificAlias != null) {
+                        // Use SingleCertificateKeyManager to present ONLY the user-specific certificate
+                        System.out.println("Using user-specific certificate: " + userSpecificAlias);
+
+                        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+                            KeyManagerFactory.getDefaultAlgorithm());
+                        kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
+
+                        KeyManager[] keyManagers = kmf.getKeyManagers();
+                        for (int i = 0; i < keyManagers.length; i++) {
+                            if (keyManagers[i] instanceof X509KeyManager) {
+                                keyManagers[i] = new SingleCertificateKeyManager(
+                                    (X509KeyManager) keyManagers[i], userSpecificAlias);
+                            }
+                        }
+
+                        sslcontext = builder.build();
+                        javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                            javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                        tmf.init(this.trustStore.getKeystore());
+                        javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
+                        sslcontext.init(keyManagers, trustManagers, null);
+
+                        System.out.println("SSL context initialized with user-specific certificate (non-trust-all)");
+
+                        if (this.logger != null) {
+                            this.logger.log(Level.INFO,
+                                "[OUTBOUND CERT AUTH] Using user-specific certificate: " + userSpecificAlias,
+                                as2Info);
+                        }
+                    } else {
+                        // No user-specific cert found - fall back to all keys
+                        System.out.println("No user-specific certificate found, using all certificates");
+                        if (this.logger != null) {
+                            this.logger.log(Level.WARNING,
+                                "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no user-specific certificate found.",
+                                as2Info);
+                        }
+                        builder.loadKeyMaterial(
+                            this.certStore.getKeystore(),
+                            this.certStore.getKeystorePass());
+                        sslcontext = builder.build();
+                    }
                 }
             } else {
                 // Not using certificate authentication - load all keys as before
@@ -1133,24 +1689,118 @@ public class MessageHttpUploader {
         // Remove colons and convert to uppercase for comparison
         String normalizedFingerprint = fingerprint.replace(":", "").toUpperCase();
 
+        System.out.println("=== findAliasByFingerprint ===");
+        System.out.println("Looking for fingerprint: " + fingerprint);
+        System.out.println("Normalized: " + normalizedFingerprint);
+        System.out.println("Keystore has " + java.util.Collections.list(keystore.aliases()).size() + " aliases");
+
         Enumeration<String> aliases = keystore.aliases();
         while (aliases.hasMoreElements()) {
             String alias = aliases.nextElement();
+            System.out.println("Checking alias: " + alias);
+            System.out.println("  Is key entry: " + keystore.isKeyEntry(alias));
+
             if (keystore.isKeyEntry(alias)) {
                 Certificate cert = keystore.getCertificate(alias);
+                System.out.println("  Certificate class: " + (cert != null ? cert.getClass().getName() : "NULL"));
+
                 if (cert instanceof X509Certificate) {
                     X509Certificate x509 = (X509Certificate) cert;
                     byte[] encoded = x509.getEncoded();
                     MessageDigest md = MessageDigest.getInstance("SHA-1");
                     byte[] certFingerprint = md.digest(encoded);
                     String certFingerprintHex = HexFormat.of().formatHex(certFingerprint).toUpperCase();
+                    System.out.println("  Certificate fingerprint: " + certFingerprintHex);
+                    System.out.println("  Match: " + certFingerprintHex.equals(normalizedFingerprint));
+
+                    // Check if private key is available
+                    try {
+                        Key key = keystore.getKey(alias, this.certStore.getKeystorePass());
+                        System.out.println("  Private key available: " + (key != null));
+                        if (key != null) {
+                            System.out.println("  Private key class: " + key.getClass().getName());
+                            System.out.println("  Private key algorithm: " + key.getAlgorithm());
+                        }
+                    } catch (Exception e) {
+                        System.out.println("  Error retrieving private key: " + e.getMessage());
+                    }
+
                     if (certFingerprintHex.equals(normalizedFingerprint)) {
+                        System.out.println("=== MATCH FOUND! Returning alias: " + alias + " ===");
                         return alias;
                     }
                 }
             }
         }
+        System.out.println("=== NO MATCH FOUND ===");
         return null;
+    }
+
+    /**
+     * Finds which keystore (by user_id) contains a certificate with the given fingerprint
+     * Searches TLS keystores in the database
+     * @param fingerprint The certificate fingerprint to search for
+     * @return The user_id of the keystore containing the certificate, or -1 if only in system-wide or not found
+     */
+    private int findKeystoreContainingCert(String fingerprint) {
+        if (fingerprint == null || fingerprint.isEmpty()) {
+            return -1;
+        }
+
+        System.out.println("=== findKeystoreContainingCert ===");
+        System.out.println("Searching for certificate with fingerprint: " + fingerprint);
+
+        try {
+            // Query database to find which keystore contains this certificate
+            // We'll search the keydata table for TLS keystores (purpose=1)
+            String sql = "SELECT user_id FROM keydata WHERE purpose = 1";
+
+            java.sql.Connection connection = this.dbDriverManager.getConnectionWithoutErrorHandling(
+                    de.mendelson.util.database.IDBDriverManager.DB_CONFIG);
+            java.sql.Statement stmt = connection.createStatement();
+            java.sql.ResultSet rs = stmt.executeQuery(sql);
+
+            java.util.List<Integer> userIds = new java.util.ArrayList<>();
+            while (rs.next()) {
+                userIds.add(rs.getInt("user_id"));
+            }
+            rs.close();
+            stmt.close();
+
+            System.out.println("Found " + userIds.size() + " TLS keystores to search");
+
+            // Search each keystore for the certificate
+            for (int userId : userIds) {
+                System.out.println("Checking keystore for user_id=" + userId);
+                try {
+                    KeystoreStorageImplDB storage = new KeystoreStorageImplDB(
+                            SystemEventManagerImplAS2.instance(),
+                            this.dbDriverManager,
+                            KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                            KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                            userId
+                    );
+
+                    KeyStore keystore = storage.getKeystore();
+                    String alias = this.findAliasByFingerprint(keystore, fingerprint);
+
+                    if (alias != null) {
+                        System.out.println("Certificate found in keystore user_id=" + userId);
+                        return userId;
+                    }
+                } catch (Exception e) {
+                    System.out.println("Error checking keystore user_id=" + userId + ": " + e.getMessage());
+                }
+            }
+
+            System.out.println("Certificate not found in any user-specific keystore");
+            return -1;
+
+        } catch (Exception e) {
+            System.out.println("Error searching keystores: " + e.getMessage());
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     /**
