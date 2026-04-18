@@ -91,7 +91,8 @@ public class MessageResource {
             @QueryParam("localStationId") Integer localStationId,
             @QueryParam("userdefinedId") String userdefinedId,
             @QueryParam("messageId") String messageId,
-            @QueryParam("format") String format) {
+            @QueryParam("format") String format,
+            @QueryParam("userId") Integer userFilterId) {
 
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
@@ -118,13 +119,27 @@ public class MessageResource {
                 WebUIUser user = userMgmt.getUserByUsername(username);
                 if (user != null) {
                     currentUserId = user.getId();
-                    filter.setUserId(currentUserId);
 
                     // Check if user has ADMIN role
                     List<Role> roles = userMgmt.getUserRoles(user.getId());
                     isAdmin = roles.stream()
                             .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
-                    filter.setAdmin(isAdmin);
+
+                    // If userFilterId is provided, use it for filtering (admin selected specific user)
+                    // Otherwise, use currentUserId for non-admin users
+                    if (userFilterId != null && userFilterId > 0) {
+                        // Admin selected a specific user from dropdown
+                        filter.setUserId(userFilterId);
+                        filter.setAdmin(false);  // Force filtering by this user
+                    } else if (isAdmin) {
+                        // Admin with no user filter - show all messages
+                        filter.setUserId(currentUserId);
+                        filter.setAdmin(true);
+                    } else {
+                        // Non-admin user - only see their own messages
+                        filter.setUserId(currentUserId);
+                        filter.setAdmin(false);
+                    }
                 }
             } catch (Exception e) {
                 // If we can't get user info, treat as non-admin with no user context

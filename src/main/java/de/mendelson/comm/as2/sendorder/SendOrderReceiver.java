@@ -300,9 +300,12 @@ public class SendOrderReceiver {
                         if (message != null && item.getFiles() != null && item.getFiles().length > 0) {
                             try {
                                 AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
-                                // Read the first raw payload file
+                                // Read only first 4KB of the first raw payload file for analysis
                                 java.nio.file.Path firstFile = item.getFiles()[0];
-                                byte[] payloadData = java.nio.file.Files.readAllBytes(firstFile);
+                                byte[] payloadData;
+                                try (java.io.InputStream is = java.nio.file.Files.newInputStream(firstFile)) {
+                                    payloadData = is.readNBytes(4096);
+                                }
                                 if (payloadData != null && payloadData.length > 0) {
                                     PayloadAnalyzer.PayloadAnalysis analysis = PayloadAnalyzer.analyze(payloadData);
                                     messageInfo.setPayloadFormat(analysis.getFormat());
