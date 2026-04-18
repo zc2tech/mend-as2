@@ -235,8 +235,6 @@ public class MessageAccessDB {
                         payload.setOriginalFilename(result.getString("originalfilename"));
                         payload.setContentId(result.getString("contentid"));
                         payload.setContentType(result.getString("contenttype"));
-                        payload.setPayloadFormat(result.getString("payload_format"));
-                        payload.setPayloadDocType(result.getString("payload_doctype"));
                         payloadList.add(payload);
                     }
                 }
@@ -491,8 +489,8 @@ public class MessageAccessDB {
                 } else {
                     queryCondition.append(" AND");
                 }
-                // Join with payload table to filter by format
-                queryCondition.append(" messageid IN (SELECT DISTINCT messageid FROM payload WHERE payload_format=?)");
+                // Filter by format in messages table
+                queryCondition.append(" payloadformat=?");
                 parameterList.add(filter.getPayloadFormat());
             }
             boolean hasStartTime = filter.getStartTime() != 0L;
@@ -979,15 +977,13 @@ public class MessageAccessDB {
             for (AS2Payload payload : payloadList) {
                 try (PreparedStatement statementInsert
                         = runtimeConnectionNoAutoCommit.prepareStatement(
-                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype,payload_format,payload_doctype)"
-                                + "VALUES(?,?,?,?,?,?,?)")) {
+                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype)"
+                                + "VALUES(?,?,?,?,?)")) {
                     statementInsert.setString(1, messageId);
                     statementInsert.setString(2, payload.getOriginalFilename());
                     statementInsert.setString(3, payload.getPayloadFilename());
                     statementInsert.setString(4, payload.getContentId());
                     statementInsert.setString(5, payload.getContentType());
-                    statementInsert.setString(6, payload.getPayloadFormat());
-                    statementInsert.setString(7, payload.getPayloadDocType());
                     statementInsert.executeUpdate();
                 }
             }

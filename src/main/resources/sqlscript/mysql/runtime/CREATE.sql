@@ -83,13 +83,10 @@ CREATE TABLE payload (
   payloadfilename VARCHAR(512),
   contentid VARCHAR(255),
   contenttype VARCHAR(255),
-  payload_format VARCHAR(50),
-  payload_doctype VARCHAR(255),
   FOREIGN KEY(messageid) REFERENCES messages(messageid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_payload_messageid ON payload(messageid);
-CREATE INDEX idx_payload_format ON payload(payload_format);
 
 -- Tracker message table
 DROP TABLE IF EXISTS tracker_auth_failure;
