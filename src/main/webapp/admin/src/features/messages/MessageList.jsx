@@ -28,6 +28,7 @@ import MessageDetails from './MessageDetails';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../auth/useAuth';
+import { useLocation } from 'react-router-dom';
 import api from '../../api/client';
 
 export default function MessageList() {
@@ -65,6 +66,16 @@ export default function MessageList() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const searchTimeoutRef = useRef(null);
+  const location = useLocation();
+
+  // Handle keyboard shortcut navigation (Cmd+M / Ctrl+M)
+  useEffect(() => {
+    if (location.state?.openManualSend) {
+      setShowManualSend(true);
+      // Clear the state to prevent reopening on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Apply search immediately for non-text filters
   const applyFiltersImmediately = (newFilters) => {

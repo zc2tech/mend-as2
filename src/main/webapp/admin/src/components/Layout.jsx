@@ -48,6 +48,36 @@ export default function Layout() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Global keyboard shortcut: Cmd+M (Mac) or Ctrl+M (Windows/Linux) to open Send Message
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Check for Cmd+M (Mac) or Ctrl+M (Windows/Linux)
+      const isCmdOrCtrl = event.metaKey || event.ctrlKey;
+      const isM = event.key.toLowerCase() === 'm';
+
+      if (isCmdOrCtrl && isM) {
+        // Don't trigger if user is typing in an input/textarea
+        const activeElement = document.activeElement;
+        if (activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.isContentEditable
+        )) {
+          return;
+        }
+
+        // Prevent default browser behavior
+        event.preventDefault();
+
+        // Navigate to manual send on messages page
+        navigate('/messages', { state: { openManualSend: true } });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
   const navStyle = {
     backgroundColor: '#2c3e50',
     color: 'white',
