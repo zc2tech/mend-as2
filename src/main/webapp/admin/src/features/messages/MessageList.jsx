@@ -434,7 +434,6 @@ export default function MessageList() {
                 }}
               >
                 <option value="">All Users</option>
-                <option value="0">System</option>
                 {users.map(u => (
                   <option key={u.id} value={u.id}>{u.username}</option>
                 ))}

@@ -124,8 +124,6 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
         long now = System.currentTimeMillis();
         int count = 0;
 
-        logger.info("[DEQUEUE-DEBUG] Checking queue: maxCount=" + maxCount + ", waitingQueue.size=" + waitingQueue.size());
-
         // Poll waiting queue for orders ready to execute
         while (count < maxCount) {
             LightweightSendOrder order = waitingQueue.peek();
@@ -133,11 +131,6 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
                 logger.info("[DEQUEUE-DEBUG] Queue is empty");
                 break; // Queue empty
             }
-
-            logger.info("[DEQUEUE-DEBUG] Found order " + order.getOrderId() +
-                       ": nextExecutionTime=" + order.getNextExecutionTime() +
-                       ", now=" + now +
-                       ", ready=" + (order.getNextExecutionTime() <= now));
 
             // Check if order is ready (nextExecutionTime <= now)
             if (order.getNextExecutionTime() > now) {

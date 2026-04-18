@@ -4,6 +4,7 @@ import de.mendelson.comm.as2.clientserver.message.RefreshClientMessageOverviewLi
 import de.mendelson.comm.as2.message.AS2MDNInfo;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
+import de.mendelson.comm.as2.message.AS2Payload;
 import de.mendelson.comm.as2.message.MessageAccessDB;
 import de.mendelson.comm.as2.message.postprocessingevent.ProcessingEvent;
 import de.mendelson.comm.as2.message.store.MessageStoreHandler;
@@ -15,6 +16,7 @@ import de.mendelson.comm.as2.send.MessageHttpUploader;
 import de.mendelson.comm.as2.send.NoConnectionException;
 import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.server.EventBus;
+import de.mendelson.comm.as2.tracker.PayloadAnalyzer;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
@@ -293,6 +295,24 @@ public class SendOrderReceiver {
                             item.getPayloadContentTypes(),
                             item.getUserId()  // Use user ID from send order
                         );
+
+                        // Extract payload format and document type from raw file BEFORE encryption
+                        if (message != null && item.getFiles() != null && item.getFiles().length > 0) {
+                            try {
+                                AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
+                                // Read the first raw payload file
+                                java.nio.file.Path firstFile = item.getFiles()[0];
+                                byte[] payloadData = java.nio.file.Files.readAllBytes(firstFile);
+                                if (payloadData != null && payloadData.length > 0) {
+                                    PayloadAnalyzer.PayloadAnalysis analysis = PayloadAnalyzer.analyze(payloadData);
+                                    messageInfo.setPayloadFormat(analysis.getFormat());
+                                    messageInfo.setPayloadDocType(analysis.getDocumentType());
+                                }
+                            } catch (Exception e) {
+                                logger.warning("Failed to analyze payload for outgoing message: " + e.getMessage());
+                                // Continue - this is not a critical failure
+                            }
+                        }
 
                         // Cache the message for future retries
                         item.setCachedMessage(message);

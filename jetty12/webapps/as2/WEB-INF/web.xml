@@ -13,18 +13,6 @@
         </init-param>
     </servlet>
     <servlet-mapping>
-        <servlet-name>ServerState</servlet-name>
-        <url-pattern>/ServerState</url-pattern>
-    </servlet-mapping>    
-    <servlet>
-        <servlet-name>ServerState</servlet-name>
-        <servlet-class>de.mendelson.comm.as2.servlet.ServerState</servlet-class>
-        <init-param>
-            <param-name>dirAllowed</param-name>
-            <param-value>false</param-value>
-        </init-param>
-    </servlet>
-    <servlet-mapping>
         <servlet-name>HttpReceiver</servlet-name>
         <url-pattern>/HttpReceiver</url-pattern>
     </servlet-mapping>

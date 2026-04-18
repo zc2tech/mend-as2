@@ -48,6 +48,7 @@ import de.mendelson.comm.as2.message.AS2MDNInfo;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
 import de.mendelson.comm.as2.message.AS2MessageParser;
+import de.mendelson.comm.as2.message.AS2Payload;
 import de.mendelson.comm.as2.message.DispositionNotificationOptions;
 import de.mendelson.comm.as2.message.MDNAccessDB;
 import de.mendelson.comm.as2.message.MessageAccessDB;
@@ -116,6 +117,7 @@ import de.mendelson.comm.as2.statistic.clientserver.StatisticOverviewResponse;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
 import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageRequest;
 import de.mendelson.comm.as2.tracker.clientserver.TrackerMessageHandler;
+import de.mendelson.comm.as2.tracker.PayloadAnalyzer;
 import de.mendelson.comm.as2.timing.PartnerTLSCertificateChangedController;
 import de.mendelson.comm.as2.timing.ResourceBundleMessageDeleteController;
 import de.mendelson.util.AS2Tools;
@@ -3456,6 +3458,24 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
             if (!message.isMDN()) {
                 AS2MessageInfo messageInfo = (AS2MessageInfo) message.getAS2Info();
+
+                // Extract payload format and document type
+                if (message.getPayloadCount() > 0) {
+                    try {
+                        AS2Payload firstPayload = message.getPayload(0);
+                        byte[] payloadData = firstPayload.getData();
+                        if (payloadData != null && payloadData.length > 0) {
+                            PayloadAnalyzer.PayloadAnalysis analysis = PayloadAnalyzer.analyze(payloadData);
+                            messageInfo.setPayloadFormat(analysis.getFormat());
+                            messageInfo.setPayloadDocType(analysis.getDocumentType());
+                        }
+                    } catch (Exception e) {
+                        this.logger.warning("Failed to analyze payload for message " +
+                                messageInfo.getMessageId() + ": " + e.getMessage());
+                        // Continue - this is not a critical failure
+                    }
+                }
+
                 if (requestObject.getHeader().getProperty("disposition-notification-options") != null) {
                     messageInfo.setDispositionNotificationOptions(
                             new DispositionNotificationOptions(requestObject.getHeader().getProperty("disposition-notification-options")));

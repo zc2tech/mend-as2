@@ -1181,7 +1181,15 @@ public class CertificateResource {
                 certManager.loadKeystoreCertificates(keystoreStorage);
             } else {
                 // User-specific sign/encrypt keystore
-                certManager = processing.getCertificateManagerSignEncrypt();
+                certManager = new CertificateManager(logger);
+                de.mendelson.util.security.cert.KeystoreStorageImplDB keystoreStorage =
+                    new de.mendelson.util.security.cert.KeystoreStorageImplDB(
+                        de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
+                        processing.getDBDriverManager(),
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        currentUserId);
+                certManager.loadKeystoreCertificates(keystoreStorage);
             }
 
             String fileName = fileDetail.getFileName();

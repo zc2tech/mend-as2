@@ -324,7 +324,8 @@ public class MessageAccessDB {
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         info.setOwnerUserId(result.getInt("owner_user_id"));
-                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setPayloadFormat(result.getString("payloadformat"));
+                        info.setPayloadDocType(result.getString("payloaddoctype"));
                         return (info);
                     }
                 }
@@ -381,8 +382,8 @@ public class MessageAccessDB {
                             info.setUserdefinedId(result.getString("userdefinedid"));
                             info.setUsesTLS(result.getInt("secureconnection") == 1);
                             info.setOwnerUserId(result.getInt("owner_user_id"));
-                            // Load first payload's format and doctype
-                            this.loadPayloadMetadata(runtimeConnectionNoAutoCommit, info);
+                            info.setPayloadFormat(result.getString("payloadformat"));
+                            info.setPayloadDocType(result.getString("payloaddoctype"));
                             messageList.add(info);
                         }
                     }
@@ -552,28 +553,17 @@ public class MessageAccessDB {
                 parameterList.add(new Timestamp(calendar.getTimeInMillis()));
             }
 
-            // Partner visibility filtering for non-admin users
+            // User filtering for non-admin users
             // Admin users or users without userId context (SwingUI) see all messages
             if (filter.getUserId() != null && !filter.isAdmin()) {
-                try (Connection configConnectionAutoCommit = this.dbDriverManager
-                        .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
-                    // Build subquery to get AS2 IDs of partners owned by this user
-                    // Using ownership-based filtering via created_by_user_id
-                    String visibilitySubquery =
-                        "(SELECT as2ident FROM partner WHERE created_by_user_id=?)";
-
-                    if (queryCondition.length() == 0) {
-                        queryCondition.append(" WHERE");
-                    } else {
-                        queryCondition.append(" AND");
-                    }
-                    queryCondition.append(" (senderid IN ").append(visibilitySubquery)
-                                   .append(" OR receiverid IN ").append(visibilitySubquery).append(")");
-
-                    // Add userId parameter twice (once for sender, once for receiver)
-                    parameterList.add(filter.getUserId());
-                    parameterList.add(filter.getUserId());
+                // Normal users: only see their own messages (by owner_user_id)
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
                 }
+                queryCondition.append(" owner_user_id=?");
+                parameterList.add(filter.getUserId());
             }
 
             // Order by initdateutc DESC to show newest messages first
@@ -622,9 +612,8 @@ public class MessageAccessDB {
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
                         info.setOwnerUserId(result.getInt("owner_user_id"));
-                        info.setOwnerUserId(result.getInt("owner_user_id"));
-                        // Load first payload's format and doctype
-                        this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
+                        info.setPayloadFormat(result.getString("payloadformat"));
+                        info.setPayloadDocType(result.getString("payloaddoctype"));
                         // Append to list normally (MySQL/PostgreSQL handle ORDER BY DESC correctly)
                         messageList.add(info);
                     }
@@ -1044,8 +1033,8 @@ public class MessageAccessDB {
                         "INSERT INTO messages(initdateutc,encryption,direction,messageid,rawfilename,receiverid,senderid,"
                         + "signature,state,syncmdn,headerfilename,rawdecryptedfilename,senderhost,useragent,"
                         + "contentmic,msgcompression,messagetype,asyncmdnurl,msgsubject,userdefinedid,"
-                        + "secureconnection,owner_user_id)VALUES("
-                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        + "secureconnection,owner_user_id,payloadformat,payloaddoctype)VALUES("
+                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setTimestamp(1, new java.sql.Timestamp(info.getInitDate().getTime()), this.calendarUTC);
             preparedStatement.setInt(2, info.getEncryptionType());
             preparedStatement.setInt(3, info.getDirection());
@@ -1072,6 +1061,8 @@ public class MessageAccessDB {
             }
             preparedStatement.setInt(21, info.usesTLS() ? 1 : 0);
             preparedStatement.setInt(22, info.getOwnerUserId());
+            preparedStatement.setString(23, info.getPayloadFormat());
+            preparedStatement.setString(24, info.getPayloadDocType());
             preparedStatement.executeUpdate();
             //insert payload and inc transaction counter
             AS2Message message = new AS2Message(info);
@@ -1092,7 +1083,7 @@ public class MessageAccessDB {
                 + "senderid=?,signature=?,state=?,syncmdn=?,headerfilename=?,useragent=?,"
                 + "rawdecryptedfilename=?,senderhost=?,"
                 + "contentmic=?,msgcompression=?,messagetype=?,asyncmdnurl=?,msgsubject=?,userdefinedid=?,"
-                + "secureconnection=?,owner_user_id=?"
+                + "secureconnection=?,owner_user_id=?,payloadformat=?,payloaddoctype=?"
                 + " WHERE messageid=?")) {
             preparedStatement.setInt(1, info.getEncryptionType());
             preparedStatement.setInt(2, info.getDirection());
@@ -1118,8 +1109,10 @@ public class MessageAccessDB {
             }
             preparedStatement.setInt(19, info.usesTLS() ? 1 : 0);
             preparedStatement.setInt(20, info.getOwnerUserId());
+            preparedStatement.setString(21, info.getPayloadFormat());
+            preparedStatement.setString(22, info.getPayloadDocType());
             //condition
-            preparedStatement.setString(21, info.getMessageId());
+            preparedStatement.setString(23, info.getMessageId());
             updatedEntries = preparedStatement.executeUpdate();
             if (updatedEntries > 0) {
                 //insert payload and inc transaction counter

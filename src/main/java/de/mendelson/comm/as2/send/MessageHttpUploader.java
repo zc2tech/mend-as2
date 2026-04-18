@@ -19,6 +19,7 @@ import de.mendelson.comm.as2.server.EventBus;
 import de.mendelson.comm.as2.statistic.QuotaAccessDB;
 import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreference;
 import de.mendelson.comm.as2.usermanagement.UserHttpAuthPreferenceAccessDB;
+import de.mendelson.comm.as2.server.AS2MessageProcessor;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.AnonymousTextClient;
@@ -348,12 +349,7 @@ public class MessageHttpUploader {
                 }
                 //send the data to the as2 server. It does not care if the MDN has been sync or async anymore
                 Path tempFile = null;
-                try( AnonymousTextClient client = new AnonymousTextClient(BaseClient.CLIENT_SENDORDER)){
-                    client.setDisplayServerLogMessages(false);
-                    // Use test mode port if enabled
-                    boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
-                    int port = isTestMode ? AS2Server.CLIENTSERVER_COMM_PORT_TEST : AS2Server.CLIENTSERVER_COMM_PORT;
-                    client.connect("localhost", port, 30000);
+                try {
                     IncomingMessageRequest messageRequest = new IncomingMessageRequest();
                     messageRequest.setSyncMDN( true );
                     //create temporary file to store the data
@@ -379,7 +375,8 @@ public class MessageHttpUploader {
                     if (!as2FromExists) {
                         messageRequest.addHeader("as2-from", AS2Message.escapeFromToHeader(receiver.getAS2Identification()));
                     }
-                    IncomingMessageResponse response = (IncomingMessageResponse) client.sendSyncWaitInfinite(messageRequest);
+                    // Use AS2MessageProcessor directly instead of socket connection
+                    IncomingMessageResponse response = AS2MessageProcessor.getInstance().processIncomingMessage(messageRequest);
                     if (response.getException() != null) {
                         throw (response.getException());
                     }

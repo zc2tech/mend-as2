@@ -199,7 +199,7 @@ public class MessageResource {
                 // ADMIN users can see all messages (similar to USER_MANAGE permission)
                 // This allows admin users to monitor all AS2 message traffic
                 request.setHasUserManagePermission(isAdmin);
-            }
+            } 
         }
 
         MessageOverviewResponse response = processing.processMessageOverviewRequest(request);
