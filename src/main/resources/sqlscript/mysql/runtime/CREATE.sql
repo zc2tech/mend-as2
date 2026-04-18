@@ -5,15 +5,15 @@
 CREATE TABLE version (
   id INT AUTO_INCREMENT PRIMARY KEY,
   actualversion INT,
-  updatedate TIMESTAMP,
+  updatedate TIMESTAMP NULL,
   updatecomment VARCHAR(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Messages table
 CREATE TABLE messages (
   messageid VARCHAR(255) PRIMARY KEY,
-  initdateutc TIMESTAMP,
-  senddateutc TIMESTAMP,
+  initdateutc TIMESTAMP NULL,
+  senddateutc TIMESTAMP NULL,
   direction INT,
   rawfilename VARCHAR(512),
   state INT,
@@ -46,7 +46,7 @@ CREATE INDEX idx_messages_owner_user ON messages(owner_user_id);
 CREATE TABLE mdn (
   messageid VARCHAR(255) PRIMARY KEY,
   relatedmessageid VARCHAR(255),
-  initdateutc TIMESTAMP,
+  initdateutc TIMESTAMP NULL,
   direction INT,
   rawfilename VARCHAR(512),
   state INT,
@@ -67,7 +67,7 @@ CREATE INDEX idx_mdn_initdate ON mdn(initdateutc);
 CREATE TABLE messagelog (
   id INT AUTO_INCREMENT PRIMARY KEY,
   messageid VARCHAR(255),
-  timestamputc TIMESTAMP,
+  timestamputc TIMESTAMP NULL,
   loglevel INT,
   details TEXT,
   FOREIGN KEY(messageid) REFERENCES messages(messageid)
@@ -157,7 +157,7 @@ CREATE TABLE statisticoverview (
   receivedmessagecount INT,
   sendwithfailurecount INT,
   receivedwithfailurecount INT,
-  resetdateutc TIMESTAMP
+  resetdateutc TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_statisticoverview_localstationid ON statisticoverview(localstationid);
