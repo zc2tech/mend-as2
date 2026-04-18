@@ -49,8 +49,53 @@ export default function SwitchUser() {
           enabledOnly: true
         }
       });
-      // Filter out current user only
-      const otherUsers = response.data.filter(u => u.id !== user?.id);
+
+      console.log('DEBUG [SwitchUser]: Current user:', user);
+      console.log('DEBUG [SwitchUser]: All users from API:', response.data);
+
+      // Check if current user is 'admin' super user or has ADMIN role
+      const isSuperUser = user?.username === 'admin';
+      const isCurrentUserAdmin = user?.roleIds?.includes(1) || user?.roles?.some(r => r.name === 'ADMIN');
+
+      console.log('DEBUG [SwitchUser]: isSuperUser =', isSuperUser);
+      console.log('DEBUG [SwitchUser]: isCurrentUserAdmin =', isCurrentUserAdmin);
+
+      // Filter users:
+      // 1. Remove current user
+      // 2. If super user 'admin' -> can see all users
+      // 3. If ADMIN role user (not 'admin') -> exclude ADMIN users and 'admin' super user
+      const otherUsers = response.data.filter(u => {
+        if (u.id === user?.id) {
+          console.log('DEBUG [SwitchUser]: Filtering out self:', u.username);
+          return false; // Remove self
+        }
+
+        if (isSuperUser) {
+          // Super user 'admin' can switch to anyone
+          console.log('DEBUG [SwitchUser]: Super user - including:', u.username);
+          return true;
+        }
+
+        if (isCurrentUserAdmin) {
+          // Regular ADMIN role user - filter out ADMIN users and 'admin' super user
+          if (u.username === 'admin') {
+            console.log('DEBUG [SwitchUser]: ADMIN role user - filtering out super user:', u.username);
+            return false; // Exclude super user
+          }
+          const isTargetAdmin = u.roleIds?.includes(1) || u.roles?.some(r => r.name === 'ADMIN');
+          if (isTargetAdmin) {
+            console.log('DEBUG [SwitchUser]: ADMIN role user - filtering out ADMIN user:', u.username);
+          } else {
+            console.log('DEBUG [SwitchUser]: ADMIN role user - including regular user:', u.username);
+          }
+          return !isTargetAdmin; // Only show non-ADMIN users
+        }
+
+        console.log('DEBUG [SwitchUser]: Regular user - including:', u.username);
+        return true; // Non-ADMIN users can see all other users
+      });
+
+      console.log('DEBUG [SwitchUser]: Filtered users:', otherUsers);
       setUsers(otherUsers);
     } catch (error) {
       toast.error('Failed to load users: ' + (error.response?.data?.error || error.message));
@@ -145,7 +190,11 @@ export default function SwitchUser() {
         <h1>Switch User</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           Select a user to switch to their account context. You will see their partners, certificates, and messages.
-          Admin users can switch to any enabled user, including other admins.
+          {user?.username === 'admin' ? (
+            <span> Super user can switch to any enabled user.</span>
+          ) : (
+            <span> ADMIN role users can only switch to non-ADMIN users.</span>
+          )}
         </p>
 
         <input

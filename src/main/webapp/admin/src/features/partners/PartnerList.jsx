@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePartners, useDeletePartner } from './usePartners';
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
@@ -35,6 +35,11 @@ export default function PartnerList() {
   const [showForm, setShowForm] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
   const { user } = useAuth();
+
+  // Check if current user has ADMIN role - recalculate when user changes
+  const isAdmin = useMemo(() => {
+    return user?.roleIds?.includes(1) || user?.roles?.some(r => r.name === 'ADMIN');
+  }, [user?.roleIds, user?.roles]);
 
   if (isLoading) {
     return <LoadingPage message="Loading partners..." />;
@@ -140,22 +145,24 @@ export default function PartnerList() {
               borderRadius: '4px'
             }}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.875rem', color: '#6c757d' }}>Show:</span>
-            <select
-              value={ownershipFilter}
-              onChange={(e) => setOwnershipFilter(e.target.value)}
-              style={{
-                padding: '0.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '0.875rem'
-              }}
-            >
-              <option value="mine">My Partners</option>
-              <option value="all">All Partners</option>
-            </select>
-          </div>
+          {isAdmin && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', color: '#6c757d' }}>Show:</span>
+              <select
+                value={ownershipFilter}
+                onChange={(e) => setOwnershipFilter(e.target.value)}
+                style={{
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="mine">My Partners</option>
+                <option value="all">All Partners</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

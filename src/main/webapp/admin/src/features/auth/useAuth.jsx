@@ -62,7 +62,12 @@ export function AuthProvider({ children }) {
 
       // Fetch current user info
       const userResponse = await api.get('/users/current');
-      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
 
       // Fetch user permissions
       const permissionsResponse = await api.get('/users/current/permissions');
@@ -91,7 +96,12 @@ export function AuthProvider({ children }) {
       // Check if user must change password
       if (response.data.mustChangePassword) {
         setMustChangePassword(true);
-        setUser({ id: response.data.id, username: response.data.username });
+        setUser({
+          id: response.data.id,
+          username: response.data.username,
+          roleIds: response.data.roleIds,
+          roles: response.data.roles
+        });
         return { success: true, mustChangePassword: true };
       }
 
@@ -100,7 +110,12 @@ export function AuthProvider({ children }) {
       const userPermissions = permissionsResponse.data;
 
       setPermissions(userPermissions);
-      setUser({ id: response.data.id, username: response.data.username });
+      setUser({
+        id: response.data.id,
+        username: response.data.username,
+        roleIds: response.data.roleIds,
+        roles: response.data.roles
+      });
       setMustChangePassword(false);
       return { success: true, mustChangePassword: false };
     } catch (error) {
@@ -140,7 +155,12 @@ export function AuthProvider({ children }) {
       const permissionsResponse = await api.get('/users/current/permissions');
 
       // Update state with new user and permissions
-      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
       setPermissions(permissionsResponse.data);
 
       return { success: true };
@@ -163,7 +183,12 @@ export function AuthProvider({ children }) {
       const permissionsResponse = await api.get('/users/current/permissions');
 
       // Update state
-      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
       setPermissions(permissionsResponse.data);
 
       // Clear original user since we're back

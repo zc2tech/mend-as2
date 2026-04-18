@@ -92,7 +92,8 @@ public class CertificateResource {
             @QueryParam("keystoreType") @DefaultValue("sign") String keystoreType,
             @QueryParam("visibleToUser") Integer visibleToUserId) {
         try {
-                        
+            System.out.println("DEBUG [CertificateResource.listCertificates]: keystoreType=" + keystoreType + ", visibleToUserId=" + visibleToUserId);
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
                                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -102,7 +103,8 @@ public class CertificateResource {
 
             // Get current user's ID from security context
             int currentUserId = getCurrentUserId(securityContext, processing);
-            
+            System.out.println("DEBUG [CertificateResource.listCertificates]: currentUserId=" + currentUserId);
+
             int keystoreUsage;
             int userId; // User ID for keystore operations
 
@@ -120,6 +122,7 @@ public class CertificateResource {
                 userId = currentUserId; // Use current user's ID
                             }
 
+            System.out.println("DEBUG [CertificateResource.listCertificates]: keystoreUsage=" + keystoreUsage + ", userId=" + userId);
             DownloadRequestKeystore request = new DownloadRequestKeystore(keystoreUsage, userId);
                         DownloadResponseKeystore response = processing.processDownloadRequestKeystore(request);
 
@@ -130,6 +133,10 @@ public class CertificateResource {
             }
 
             List<KeystoreCertificate> certificates = response.getCertificateList();
+            System.out.println("DEBUG [CertificateResource.listCertificates]: Total certificates from keystore: " + certificates.size());
+            for (KeystoreCertificate cert : certificates) {
+                System.out.println("DEBUG [CertificateResource.listCertificates]:   - alias=" + cert.getAlias() + ", fingerprint=" + cert.getFingerPrintSHA1());
+            }
 
             // Filter certificates by user ownership if requested
             // For user-specific keystores (where userId == currentUserId), certificates are owned by the user directly,
@@ -1059,6 +1066,8 @@ public class CertificateResource {
             @Context SecurityContext securityContext,
             UploadKeystoreRequestDTO uploadRequest) {
         try {
+            System.out.println("DEBUG [CertificateResource.importCertificates]: Starting import, keystoreType=" + uploadRequest.getKeystoreType());
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -1068,6 +1077,7 @@ public class CertificateResource {
 
             // Get current user's ID
             int currentUserId = getCurrentUserId(securityContext, processing);
+            System.out.println("DEBUG [CertificateResource.importCertificates]: currentUserId=" + currentUserId);
 
             int keystoreUsage;
             int userId;
@@ -1086,6 +1096,8 @@ public class CertificateResource {
                 userId = currentUserId;
             }
 
+            System.out.println("DEBUG [CertificateResource.importCertificates]: keystoreUsage=" + keystoreUsage + ", userId=" + userId);
+            System.out.println("DEBUG [CertificateResource.importCertificates]: Number of certificates to import: " + uploadRequest.getCertificateList().size());
             UploadRequestKeystore request = new UploadRequestKeystore(keystoreUsage, userId);
             request.addCertificateList(uploadRequest.getCertificateList());
 
@@ -1097,11 +1109,13 @@ public class CertificateResource {
             UploadResponseKeystore response = processing.processUploadRequestKeystore(request, userName, processOriginHost);
 
             if (response.getException() != null) {
+                System.out.println("DEBUG [CertificateResource.importCertificates]: Import failed with exception: " + response.getException().getMessage());
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new ErrorResponse(response.getException().getMessage()))
                         .build();
             }
 
+            System.out.println("DEBUG [CertificateResource.importCertificates]: Import successful");
             return Response.ok(new SuccessResponse("Certificates imported successfully")).build();
 
         } catch (Exception e) {

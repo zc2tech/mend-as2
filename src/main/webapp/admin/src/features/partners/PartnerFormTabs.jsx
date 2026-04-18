@@ -305,7 +305,10 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       }
     } catch (err) {
       console.error('Failed to generate local station URL:', err);
-      toast.error('Failed to generate URL. Please enter manually.');
+      console.error('Error response:', err.response?.data);
+      console.error('Error status:', err.response?.status);
+      const errorMsg = err.response?.data?.error || err.message || 'Unknown error';
+      toast.error('Failed to generate URL: ' + errorMsg);
     } finally {
       setGeneratingUrl(false);
     }

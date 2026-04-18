@@ -71,8 +71,8 @@ public class UserManagementResource {
 
             List<WebUIUser> users = userMgmt.getAllUsers();
 
-            // Apply filters
-            List<WebUIUser> filteredUsers = new java.util.ArrayList<>();
+            // Apply filters and build response with role information
+            List<Map<String, Object>> filteredUsers = new java.util.ArrayList<>();
             for (WebUIUser user : users) {
                 // Filter by enabled status
                 if (enabledOnly && !user.isEnabled()) {
@@ -91,9 +91,36 @@ public class UserManagementResource {
                     }
                 }
 
-                // Remove password hashes from response for security
-                user.setPasswordHash(null);
-                filteredUsers.add(user);
+                // Build user response with role information
+                Map<String, Object> userMap = new HashMap<>();
+                userMap.put("id", user.getId());
+                userMap.put("username", user.getUsername());
+                userMap.put("email", user.getEmail());
+                userMap.put("fullName", user.getFullName());
+                userMap.put("enabled", user.isEnabled());
+                userMap.put("mustChangePassword", user.isMustChangePassword());
+                userMap.put("createdAt", user.getCreatedAt());
+                userMap.put("updatedAt", user.getUpdatedAt());
+                userMap.put("lastLogin", user.getLastLogin());
+
+                // Add role information
+                try {
+                    List<Role> userRoles = userMgmt.getUserRoles(user.getId());
+                    userMap.put("roles", userRoles);
+
+                    // Extract role IDs
+                    List<Integer> roleIds = new java.util.ArrayList<>();
+                    for (Role role : userRoles) {
+                        roleIds.add(role.getId());
+                    }
+                    userMap.put("roleIds", roleIds);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Could not get roles for user: " + user.getUsername(), e);
+                    userMap.put("roles", new java.util.ArrayList<>());
+                    userMap.put("roleIds", new java.util.ArrayList<>());
+                }
+
+                filteredUsers.add(userMap);
             }
 
             return Response.ok(filteredUsers).build();
@@ -567,12 +594,29 @@ public class UserManagementResource {
                         .entity("{\"error\":\"User not found\"}").build();
             }
 
-            // Return user info
+            // Return user info with role information
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", user.getId());
             userInfo.put("username", user.getUsername());
             userInfo.put("fullName", user.getFullName());
             userInfo.put("email", user.getEmail());
+
+            // Add role information
+            try {
+                List<Role> userRoles = userMgmt.getUserRoles(user.getId());
+                userInfo.put("roles", userRoles);
+
+                // Extract role IDs
+                List<Integer> roleIds = new java.util.ArrayList<>();
+                for (Role role : userRoles) {
+                    roleIds.add(role.getId());
+                }
+                userInfo.put("roleIds", roleIds);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Could not get roles for user: " + user.getUsername(), e);
+                userInfo.put("roles", new java.util.ArrayList<>());
+                userInfo.put("roleIds", new java.util.ArrayList<>());
+            }
 
             return Response.ok(userInfo).build();
         } catch (Exception e) {
