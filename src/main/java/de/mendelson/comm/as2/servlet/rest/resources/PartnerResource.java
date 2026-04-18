@@ -69,6 +69,8 @@ public class PartnerResource {
             @QueryParam("completeness") @DefaultValue("full") String completeness,
             @QueryParam("visibleToUser") Integer visibleToUserId) {
         try {
+            System.out.println("DEBUG [PartnerResource.listPartners]: visibleToUserId=" + visibleToUserId + ", type=" + type);
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -80,13 +82,16 @@ public class PartnerResource {
 
             // If userId specified, filter by visibility
             if (visibleToUserId != null && visibleToUserId > 0) {
+                System.out.println("DEBUG [PartnerResource]: Using getPartnersOwnedByUser for userId=" + visibleToUserId);
                 int dataCompleteness = "names".equals(completeness)
                         ? PartnerAccessDB.DATA_COMPLETENESS_NAMES_AS2ID_TYPE
                         : PartnerAccessDB.DATA_COMPLETENESS_FULL;
 
                 PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
                 partners = partnerDB.getPartnersOwnedByUser(visibleToUserId, dataCompleteness);
+                System.out.println("DEBUG [PartnerResource]: getPartnersOwnedByUser returned " + partners.size() + " partners");
             } else {
+                System.out.println("DEBUG [PartnerResource]: Using processPartnerListRequest (no user filter)");
                 // Use existing logic
                 int listOption = PartnerListRequest.LIST_ALL;
                 if ("local".equals(type)) {
@@ -102,6 +107,9 @@ public class PartnerResource {
                         : PartnerListRequest.DATA_COMPLETENESS_FULL;
 
                 PartnerListRequest request = new PartnerListRequest(listOption, dataCompleteness);
+                // Set userId=-1 to return ALL partners (no user filtering)
+                request.setUserId(-1);
+                System.out.println("DEBUG [PartnerResource]: Set request.userId=-1 for all partners");
                 PartnerListResponse response = processing.processPartnerListRequest(request);
 
                 if (response.getException() != null) {
@@ -111,6 +119,7 @@ public class PartnerResource {
                 }
 
                 partners = response.getList();
+                System.out.println("DEBUG [PartnerResource]: processPartnerListRequest returned " + partners.size() + " partners");
             }
 
             // Convert to DTOs and populate creator usernames
@@ -118,6 +127,14 @@ public class PartnerResource {
             List<PartnerDTO> partnerDTOs = new ArrayList<>();
             for (Partner partner : partners) {
                 PartnerDTO dto = new PartnerDTO(partner);
+
+                System.out.println("DEBUG [PartnerResource]: Converting Partner to DTO: " +
+                    "id=" + partner.getDBId() +
+                    ", name=" + partner.getName() +
+                    ", partner.authenticationCredentialsMessage.certificateFingerprint=[" +
+                    partner.getAuthenticationCredentialsMessage().getCertificateFingerprint() + "]" +
+                    ", dto.authenticationCredentialsMessage.certificateFingerprint=[" +
+                    dto.getAuthenticationCredentialsMessage().getCertificateFingerprint() + "]");
 
                 // Look up and set creator username
                 int creatorUserId = partner.getCreatedByUserId();

@@ -337,8 +337,23 @@ public class JPanelPartner extends JPanel {
             }
         }
 
-        // Populate HTTP auth certificate dropdowns with TLS certificates (need private
-        // key for client auth)
+        // Populate HTTP auth certificate dropdowns with BOTH Sign/Crypt AND TLS certificates
+        // (need private key for client auth)
+        // Add placeholder "-- Select Certificate --" as first item
+        KeystoreCertificate placeholderCert = new KeystoreCertificate();
+        placeholderCert.setAlias("-- Select Certificate --");
+        this.jComboBoxHttpAuthCertMessage.addItem(placeholderCert);
+        this.jComboBoxHttpAuthCertMDN.addItem(placeholderCert);
+
+        // Add Sign/Crypt certificates with private keys
+        for (KeystoreCertificate cert : sortedEncSignCertificateList) {
+            if (cert.getIsKeyPair()) {
+                this.jComboBoxHttpAuthCertMessage.addItem(cert);
+                this.jComboBoxHttpAuthCertMDN.addItem(cert);
+            }
+        }
+
+        // Add TLS certificates with private keys
         for (KeystoreCertificate cert : sortedTLSCertificateList) {
             if (cert.getIsKeyPair()) {
                 this.jComboBoxHttpAuthCertMessage.addItem(cert);
@@ -688,19 +703,19 @@ public class JPanelPartner extends JPanel {
             // Set selected certificate (use TLS certificate manager for HTTP auth)
             String fingerprint = this.partner.getAuthenticationCredentialsMessage().getCertificateFingerprint();
             if (fingerprint != null && !fingerprint.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage,
-                        this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint));
+                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint);
+                if (cert != null) {
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, cert);
+                } else {
+                    // Fingerprint in DB but certificate not found in keystore - select placeholder
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
+                    System.out.println("WARN [JPanelPartner]: Certificate fingerprint in DB not found in keystore: " + fingerprint);
+                }
             } else {
-                // Fingerprint is empty - select first available certificate and set its fingerprint
+                // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMessage.getItemCount() > 0) {
-                    KeystoreCertificate firstCert = this.jComboBoxHttpAuthCertMessage.getItemAt(0);
-                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, firstCert);
-                    // Set the fingerprint to the partner object so it gets saved
-                    this.partner.getAuthenticationCredentialsMessage()
-                            .setCertificateFingerprint(firstCert.getFingerPrintSHA1());
-                    System.out.println("DEBUG [JPanelPartner]: Certificate auth mode with empty fingerprint - " +
-                                     "auto-selected first certificate: " + firstCert.getAlias() +
-                                     ", fingerprint: " + firstCert.getFingerPrintSHA1());
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
+                    System.out.println("DEBUG [JPanelPartner]: Certificate auth mode with empty fingerprint - showing placeholder");
                 }
             }
         } else {
@@ -717,19 +732,19 @@ public class JPanelPartner extends JPanel {
             // Set selected certificate (use TLS certificate manager for HTTP auth)
             String fingerprintMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint();
             if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
-                this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN,
-                        this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN));
+                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN);
+                if (cert != null) {
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, cert);
+                } else {
+                    // Fingerprint in DB but certificate not found in keystore - select placeholder
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
+                    System.out.println("WARN [JPanelPartner]: MDN Certificate fingerprint in DB not found in keystore: " + fingerprintMDN);
+                }
             } else {
-                // Fingerprint is empty - select first available certificate and set its fingerprint
+                // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMDN.getItemCount() > 0) {
-                    KeystoreCertificate firstCert = this.jComboBoxHttpAuthCertMDN.getItemAt(0);
-                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, firstCert);
-                    // Set the fingerprint to the partner object so it gets saved
-                    this.partner.getAuthenticationCredentialsAsyncMDN()
-                            .setCertificateFingerprint(firstCert.getFingerPrintSHA1());
-                    System.out.println("DEBUG [JPanelPartner]: MDN Certificate auth mode with empty fingerprint - " +
-                                     "auto-selected first certificate: " + firstCert.getAlias() +
-                                     ", fingerprint: " + firstCert.getFingerPrintSHA1());
+                    this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
+                    System.out.println("DEBUG [JPanelPartner]: MDN Certificate auth mode with empty fingerprint - showing placeholder");
                 }
             }
         } else {

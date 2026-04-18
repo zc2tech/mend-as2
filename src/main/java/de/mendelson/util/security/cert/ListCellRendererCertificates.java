@@ -213,35 +213,64 @@ public class ListCellRendererCertificates extends JLabel implements ListCellRend
         //Linux sets the value to null if nothing has been selected in the combobox
         if (value != null) {
             KeystoreCertificate certificate = value;
-            if (certificate.getIsKeyPair()) {
+            // Check if this is a placeholder certificate (null X509Certificate)
+            if (certificate.getX509Certificate() == null) {
+                // Placeholder certificate - just show the alias
+                this.setIcon(null);
+                this.setEnabled(list.isEnabled());
+                this.setText(certificate.getAlias());
+            } else if (certificate.getIsKeyPair()) {
                     this.setIcon(
                             new ImageIcon(
                                     TableModelCertificates.IMAGE_KEY_MULTIRESOLUTION.toMinResolution(IMAGE_HEIGHT)));
-                } else if (certificate.isRootCertificate()) {
+                this.setEnabled(list.isEnabled());
+                StringBuilder builder = new StringBuilder();
+                builder.append(certificate.getAlias());
+                // Add fingerprint in parentheses
+                try {
+                    String fingerprint = certificate.getFingerPrintSHA1();
+                    if (fingerprint != null && !fingerprint.isEmpty()) {
+                        builder.append(" (").append(fingerprint).append(")");
+                    }
+                } catch (Exception e) {
+                    // If fingerprint cannot be obtained, just show alias
+                }
+                this.setText(builder.toString());
+            } else if (certificate.isRootCertificate()) {
                     this.setIcon(
                             new ImageIcon(
                                     TableModelCertificates.IMAGE_ROOT_MULTIRESOLUTION.toMinResolution(IMAGE_HEIGHT)));
+                this.setEnabled(list.isEnabled());
+                StringBuilder builder = new StringBuilder();
+                builder.append(certificate.getAlias());
+                // Add fingerprint in parentheses
+                try {
+                    String fingerprint = certificate.getFingerPrintSHA1();
+                    if (fingerprint != null && !fingerprint.isEmpty()) {
+                        builder.append(" (").append(fingerprint).append(")");
+                    }
+                } catch (Exception e) {
+                    // If fingerprint cannot be obtained, just show alias
+                }
+                this.setText(builder.toString());
                 } else {
                     this.setIcon(
                             new ImageIcon(
                                     TableModelCertificates.IMAGE_CERTIFICATE_MULTIRESOLUTION.toMinResolution(IMAGE_HEIGHT)));
-                }
                 this.setEnabled(list.isEnabled());
                 StringBuilder builder = new StringBuilder();
                 builder.append(certificate.getAlias());
-                String additionalInfo = certificate.getSubjectCN();
-                if (additionalInfo == null) {
-                    additionalInfo = certificate.getSubjectOrganization();
-                }
-                if (additionalInfo == null) {
-                    additionalInfo = certificate.getSubjectOU();
-                }
-                if (additionalInfo != null) {
-                    builder.append(" [")
-                            .append(additionalInfo)
-                            .append("]");
+                // Add fingerprint in parentheses
+                try {
+                    String fingerprint = certificate.getFingerPrintSHA1();
+                    if (fingerprint != null && !fingerprint.isEmpty()) {
+                        builder.append(" (").append(fingerprint).append(")");
+                    }
+                } catch (Exception e) {
+                    // If fingerprint cannot be obtained, just show alias
                 }
                 this.setText(builder.toString());
+                }
         } else {
             this.setText(rb.getResourceString("certificate.not.assigned"));
             this.setIcon(

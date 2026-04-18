@@ -1088,7 +1088,12 @@ public class PartnerAccessDB {
                                     authentication.setUser(result.getString("httpauthuser"));
                                     authentication.setPassword(result.getString("httpauthpass"));
                                     authentication.setAuthMode(result.getInt("authmodehttp"));
-                                    authentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_message"));
+                                    String certFpFromDB = result.getString("httpauth_cert_fingerprint_message");
+                                    authentication.setCertificateFingerprint(certFpFromDB);
+                                    System.out.println("DEBUG [PartnerAccessDB.getPartnersOwnedByUser]: Partner id=" + partner.getDBId() +
+                                        ", name=" + partner.getName() +
+                                        ", certFpFromDB=[" + certFpFromDB + "]" +
+                                        ", authentication.getCertificateFingerprint()=[" + authentication.getCertificateFingerprint() + "]");
                                     HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
                                     asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
                                     asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));

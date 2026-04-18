@@ -27,11 +27,11 @@ import PartnerFormTabs from './PartnerFormTabs';
 import { useAuth } from '../auth/useAuth';
 
 export default function PartnerList() {
-  const { data: partners, isLoading, error } = usePartners();
+  const [ownershipFilter, setOwnershipFilter] = useState('mine'); // 'all', 'mine'
+  const { data: partners, isLoading, error } = usePartners(ownershipFilter === 'mine');
   const deletePartner = useDeletePartner();
   const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [ownershipFilter, setOwnershipFilter] = useState('mine'); // 'all', 'mine'
   const [showForm, setShowForm] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
   const { user } = useAuth();
@@ -44,24 +44,11 @@ export default function PartnerList() {
     return <div style={{ color: 'red' }}>Error loading partners: {error.message}</div>;
   }
 
-  // Determine current user ID for filtering
-  const currentUserId = user?.username === 'admin' ? 0 : user?.id;
-
   const filteredPartners = partners?.filter(partner => {
-    // Search filter
+    // Search filter only - ownership filter is handled by backend
     const matchesSearch = partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (!matchesSearch) return false;
-
-    // Ownership filter
-    if (ownershipFilter === 'all') return true;
-    if (ownershipFilter === 'mine') {
-      // My partners: created by current user
-      return partner.createdByUserId === currentUserId;
-    }
-
-    return true;
+    return matchesSearch;
   }) || [];
 
   const handleDelete = async (as2id, name) => {
