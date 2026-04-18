@@ -76,10 +76,6 @@ public class MultiUserCertificateManager {
 
         String purposeStr = (purpose == PURPOSE_ENC_SIGN) ? "ENC_SIGN" : "TLS";
 
-        System.out.println("[MULTI-USER-CERT-DEBUG] getAliasByFingerprint called:");
-        System.out.println("[MULTI-USER-CERT-DEBUG]   Fingerprint: " + fingerprintSHA1);
-        System.out.println("[MULTI-USER-CERT-DEBUG]   User ID: " + userId);
-        System.out.println("[MULTI-USER-CERT-DEBUG]   Purpose: " + purposeStr);
 
         if (logger != null) {
             logger.info("[CERT-DEBUG] Looking up certificate:");
@@ -90,41 +86,33 @@ public class MultiUserCertificateManager {
 
         // 1. Try user-specific keystore first (if userId provided)
         if (userId != null && userId >= 0) {
-            System.out.println("[MULTI-USER-CERT-DEBUG] Trying user-specific keystore...");
             CertificateManager userManager = getUserCertificateManager(userId, purpose);
-            System.out.println("[MULTI-USER-CERT-DEBUG]   User manager loaded: " + (userManager != null));
             if (userManager != null) {
                 String alias = userManager.getAliasByFingerprint(fingerprintSHA1);
-                System.out.println("[MULTI-USER-CERT-DEBUG]   Alias from user keystore: " + alias);
                 if (alias != null) {
                     if (logger != null) {
                         logger.info("[CERT-DEBUG] ✓ Certificate FOUND in user " + userId + " keystore");
                         logger.info("[CERT-DEBUG]   Alias: " + alias);
                     }
-                    System.out.println("[MULTI-USER-CERT-DEBUG] ✓ Returning alias from user keystore");
                     return alias;
                 } else {
                     if (logger != null) {
                         logger.info("[CERT-DEBUG] ✗ Certificate NOT found in user " + userId + " keystore, trying system-wide...");
                     }
-                    System.out.println("[MULTI-USER-CERT-DEBUG] ✗ Not in user keystore, trying system-wide...");
                 }
             } else {
                 if (logger != null) {
                     logger.info("[CERT-DEBUG] ✗ User " + userId + " keystore NOT available (may not exist)");
                 }
-                System.out.println("[MULTI-USER-CERT-DEBUG] ✗ User keystore not available");
             }
         }
 
         // 2. Fall back to system-wide keystore
-        System.out.println("[MULTI-USER-CERT-DEBUG] Trying system-wide keystore...");
         CertificateManager systemManager = (purpose == PURPOSE_ENC_SIGN)
                 ? systemEncSignManager
                 : systemTLSManager;
 
         String alias = systemManager.getAliasByFingerprint(fingerprintSHA1);
-        System.out.println("[MULTI-USER-CERT-DEBUG]   Alias from system keystore: " + alias);
         if (alias != null) {
             if (logger != null) {
                 logger.info("[CERT-DEBUG] ✓ Certificate FOUND in system-wide keystore");
@@ -134,7 +122,6 @@ public class MultiUserCertificateManager {
             if (logger != null) {
                 logger.warning("[CERT-DEBUG] ✗ Certificate NOT FOUND in any keystore!");
             }
-            System.out.println("[MULTI-USER-CERT-DEBUG] ✗ NOT FOUND in any keystore!");
         }
         return alias;
     }

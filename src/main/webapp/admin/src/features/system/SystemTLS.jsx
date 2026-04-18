@@ -210,7 +210,8 @@ export default function SystemTLS() {
       if (!csrData) {
         throw new Error('No CSR data returned');
       }
-      const blob = new Blob([atob(csrData)], { type: 'application/pkcs10' });
+      // CSR is already in PEM format (text with headers), don't decode
+      const blob = new Blob([csrData], { type: 'application/pkcs10' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -359,172 +360,183 @@ export default function SystemTLS() {
         </div>
       )}
 
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
+        {/* Export Menu */}
+        <div style={{ position: 'relative' }}>
           <button
             style={{
               ...buttonStyle,
-              backgroundColor: hasTLSWritePermission ? '#28a745' : '#6c757d',
+              backgroundColor: '#17a2b8',
               color: 'white',
-              padding: '0.5rem 1rem',
-              opacity: hasTLSWritePermission ? 1 : 0.6,
-              cursor: hasTLSWritePermission ? 'pointer' : 'not-allowed'
+              padding: '0.5rem 1rem'
             }}
-            onClick={handleImportClick}
-            disabled={!hasTLSWritePermission}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowExportMenu(!showExportMenu);
+              setShowToolsMenu(false);
+            }}
           >
-            Import
+            Export ▼
           </button>
+          {showExportMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                minWidth: '200px',
+                zIndex: 1000,
+                marginTop: '4px'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onClick={() => handleExportKeystoreClick('PKCS12')}
+              >
+                Export Keystore (PKCS#12)
+              </button>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onClick={() => handleExportKeystoreClick('JKS')}
+              >
+                Export Keystore (JKS)
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Tools Menu */}
+        <div style={{ position: 'relative' }}>
           <button
             style={{
               ...buttonStyle,
-              backgroundColor: hasTLSWritePermission ? '#28a745' : '#6c757d',
+              backgroundColor: '#6c757d',
               color: 'white',
-              padding: '0.5rem 1rem',
-              opacity: hasTLSWritePermission ? 1 : 0.6,
-              cursor: hasTLSWritePermission ? 'pointer' : 'not-allowed'
+              padding: '0.5rem 1rem'
             }}
-            onClick={() => setShowGenerateKey(true)}
-            disabled={!hasTLSWritePermission}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowToolsMenu(!showToolsMenu);
+              setShowExportMenu(false);
+            }}
           >
-            Generate New Key
+            Tools ▼
           </button>
+          {showToolsMenu && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #dee2e6',
+                borderRadius: '4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                minWidth: '200px',
+                zIndex: 1000,
+                marginTop: '4px'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  textAlign: 'left',
+                  cursor: hasTLSWritePermission ? 'pointer' : 'not-allowed',
+                  fontSize: '0.875rem',
+                  opacity: hasTLSWritePermission ? 1 : 0.6
+                }}
+                onMouseEnter={(e) => hasTLSWritePermission && (e.target.style.backgroundColor = '#f8f9fa')}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onClick={() => hasTLSWritePermission && setShowGenerateKey(true)}
+                disabled={!hasTLSWritePermission}
+              >
+                Generate New Key
+              </button>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                onClick={handleVerifyCertificates}
+              >
+                Verify Certificates (CRL)
+              </button>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {/* Export Menu */}
-          <div style={{ position: 'relative' }}>
-            <button
-              style={{
-                ...buttonStyle,
-                backgroundColor: '#17a2b8',
-                color: 'white',
-                padding: '0.5rem 1rem'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowExportMenu(!showExportMenu);
-                setShowToolsMenu(false);
-              }}
-            >
-              Export ▼
-            </button>
-            {showExportMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  backgroundColor: 'white',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  minWidth: '200px',
-                  zIndex: 1000,
-                  marginTop: '4px'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem'
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  onClick={() => handleExportKeystoreClick('PKCS12')}
-                >
-                  Export Keystore (PKCS#12)
-                </button>
-                <button
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem'
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  onClick={() => handleExportKeystoreClick('JKS')}
-                >
-                  Export Keystore (JKS)
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Tools Menu */}
-          <div style={{ position: 'relative' }}>
-            <button
-              style={{
-                ...buttonStyle,
-                backgroundColor: '#6c757d',
-                color: 'white',
-                padding: '0.5rem 1rem'
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowToolsMenu(!showToolsMenu);
-                setShowExportMenu(false);
-              }}
-            >
-              Tools ▼
-            </button>
-            {showToolsMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  backgroundColor: 'white',
-                  border: '1px solid #dee2e6',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  minWidth: '200px',
-                  zIndex: 1000,
-                  marginTop: '4px'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '0.875rem'
-                  }}
-                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                  onClick={handleVerifyCertificates}
-                >
-                  Verify Certificates (CRL)
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Import Button */}
+        <button
+          style={{
+            ...buttonStyle,
+            backgroundColor: hasTLSWritePermission ? '#28a745' : '#6c757d',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            opacity: hasTLSWritePermission ? 1 : 0.6,
+            cursor: hasTLSWritePermission ? 'pointer' : 'not-allowed'
+          }}
+          onClick={handleImportClick}
+          disabled={!hasTLSWritePermission}
+        >
+          Import Certificate
+        </button>
       </div>
 
       <table style={tableStyle}>
+        <colgroup>
+          <col style={{ width: '5%' }} />
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '15%' }} />
+          <col style={{ width: '23%' }} />
+        </colgroup>
         <thead>
           <tr>
-            <th style={{ ...thStyle, width: '15%' }}>Alias</th>
-            <th style={{ ...thStyle, width: '25%' }}>Subject DN</th>
-            <th style={{ ...thStyle, width: '15%' }}>Valid From</th>
-            <th style={{ ...thStyle, width: '15%' }}>Valid To</th>
-            <th style={{ ...thStyle, width: '10%' }}>Key Pair</th>
-            <th style={{ ...thStyle, width: '20%' }}>Actions</th>
+            <th style={thStyle}>Type</th>
+            <th style={thStyle}>Alias</th>
+            <th style={thStyle}>Subject DN</th>
+            <th style={thStyle}>Issuer</th>
+            <th style={thStyle}>Valid Until</th>
+            <th style={thStyle}>Fingerprint (SHA-1)</th>
+            <th style={thStyle}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -532,56 +544,110 @@ export default function SystemTLS() {
             certificates.map((cert, index) => {
               const fingerprint = cert.fingerprintSHA1 || cert.fingerprintsha1 ||
                                  cert.fingerPrintSHA1 || cert.fingerprintSha1;
+              const isExpired = cert.notAfter && new Date(cert.notAfter) < new Date();
               return (
                 <tr key={index}>
-                  <td style={tdStyle}>{cert.alias || 'N/A'}</td>
-                  <td style={tdStyle}>{formatSubjectDN(cert.subjectDN)}</td>
-                  <td style={tdStyle}>{formatDate(cert.notBefore)}</td>
-                  <td style={tdStyle}>{formatDate(cert.notAfter)}</td>
-                  <td style={tdStyle}>{cert.isKeyPair ? 'Yes' : 'No'}</td>
+                  <td style={{...tdStyle, textAlign: 'center', fontSize: '1.25rem'}}>
+                    <span title={cert.isKeyPair ? "Private Key (can sign/decrypt)" : cert.isRootCertificate ? "Root Certificate" : "Public Certificate"}>
+                      {cert.isKeyPair ? '🔑' : cert.isRootCertificate ? '📋' : '📜'}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{cert.alias || '-'}</td>
+                  <td style={tdStyle}>{cert.subjectDN || '-'}</td>
+                  <td style={tdStyle}>{cert.issuerDN || '-'}</td>
+                  <td style={{
+                    ...tdStyle,
+                    color: isExpired ? '#dc3545' : 'inherit',
+                    fontWeight: isExpired ? '600' : 'normal'
+                  }}>
+                    {cert.notAfter ? new Date(cert.notAfter).toLocaleDateString() : '-'}
+                    {isExpired && ' ⚠️'}
+                  </td>
                   <td style={tdStyle}>
-                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                      <button
-                        style={{
-                          ...buttonStyle,
-                          backgroundColor: '#17a2b8',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          margin: 0
-                        }}
-                        onClick={() => handleExport(cert.alias, 'PEM')}
-                      >
-                        Export
-                      </button>
-                      {cert.isKeyPair && fingerprint && (
-                        <button
-                          style={{
-                            ...buttonStyle,
-                            backgroundColor: '#17a2b8',
-                            color: 'white',
-                            padding: '0.25rem 0.5rem',
-                            margin: 0
-                          }}
-                          onClick={() => handleGenerateCSR(fingerprint)}
-                        >
-                          CSR
-                        </button>
+                    <code style={{ fontSize: '0.75rem' }}>
+                      {fingerprint || '-'}
+                    </code>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {hasTLSReadPermission && (
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              backgroundColor: '#17a2b8',
+                              color: 'white',
+                              margin: 0
+                            }}
+                            onClick={() => handleExport(cert.alias, 'PEM')}
+                            disabled={exportCertificate.isPending}
+                            title="Export certificate in PEM format"
+                          >
+                            PEM
+                          </button>
+                          <button
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: cert.isKeyPair ? 'pointer' : 'not-allowed',
+                              fontSize: '0.75rem',
+                              backgroundColor: cert.isKeyPair ? '#17a2b8' : '#6c757d',
+                              color: 'white',
+                              opacity: cert.isKeyPair ? 1 : 0.6,
+                              margin: 0
+                            }}
+                            onClick={() => cert.isKeyPair && handleExport(cert.alias, 'PKCS12')}
+                            disabled={exportCertificate.isPending || !cert.isKeyPair}
+                            title={cert.isKeyPair ? "Export certificate and private key in PKCS#12 format" : "PKCS#12 export requires a private key"}
+                          >
+                            PKCS#12
+                          </button>
+                        </div>
                       )}
-                      <button
-                        style={{
-                          ...buttonStyle,
-                          backgroundColor: hasTLSWritePermission ? '#dc3545' : '#6c757d',
-                          color: 'white',
-                          padding: '0.25rem 0.5rem',
-                          margin: 0,
-                          opacity: hasTLSWritePermission ? 1 : 0.6,
-                          cursor: hasTLSWritePermission ? 'pointer' : 'not-allowed'
-                        }}
-                        onClick={() => handleDelete(cert.alias)}
-                        disabled={!hasTLSWritePermission}
-                      >
-                        Delete
-                      </button>
+                      {hasTLSWritePermission && (
+                        <div style={{ display: 'flex', gap: '0.25rem' }}>
+                          <button
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: cert.isKeyPair ? 'pointer' : 'not-allowed',
+                              fontSize: '0.75rem',
+                              backgroundColor: cert.isKeyPair ? '#6c757d' : '#adb5bd',
+                              color: 'white',
+                              opacity: cert.isKeyPair ? 1 : 0.6,
+                              margin: 0
+                            }}
+                            onClick={() => cert.isKeyPair && handleGenerateCSR(fingerprint)}
+                            disabled={generateCSR.isPending || !cert.isKeyPair}
+                            title={cert.isKeyPair ? "Generate Certificate Signing Request" : "CSR generation requires a private key"}
+                          >
+                            CSR
+                          </button>
+                          <button
+                            style={{
+                              padding: '0.25rem 0.5rem',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.75rem',
+                              backgroundColor: '#dc3545',
+                              color: 'white',
+                              margin: 0
+                            }}
+                            onClick={() => handleDelete(cert.alias)}
+                            disabled={deleteCertificate.isPending}
+                            title="Delete this certificate"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -589,7 +655,7 @@ export default function SystemTLS() {
             })
           ) : (
             <tr>
-              <td colSpan="6" style={{ ...tdStyle, textAlign: 'center', padding: '2rem', color: '#6c757d' }}>
+              <td colSpan="7" style={{ ...tdStyle, textAlign: 'center', padding: '2rem', color: '#6c757d' }}>
                 No certificates found. Import or generate a certificate to get started.
               </td>
             </tr>

@@ -22,6 +22,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
 import { useAuth } from '../auth/useAuth';
+import { PERMISSIONS } from '../../constants/permissions';
 
 export function useCertificates(keystoreType = 'sign') {
   const { user } = useAuth();
@@ -51,6 +52,25 @@ export function useCertificates(keystoreType = 'sign') {
       return response.data;
     },
     enabled: !!user?.id // Only run query if user ID is available
+  });
+}
+
+/**
+ * Fetch ALL users' certificates (admin only)
+ */
+export function useAllUsersCertificates(keystoreType = 'sign') {
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission(PERMISSIONS.USER_MANAGE);
+
+  return useQuery({
+    queryKey: ['certificates', 'all-users', keystoreType],
+    queryFn: async () => {
+      const response = await api.get('/certificates/all-users', {
+        params: { keystoreType }
+      });
+      return response.data;
+    },
+    enabled: isAdmin // Only fetch if user is admin
   });
 }
 

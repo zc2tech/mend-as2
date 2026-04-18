@@ -1,13 +1,16 @@
 @echo off
 REM AS2 Database Backup Script (Windows)
 REM Backs up:
-REM   - Full as2_db_config database
+REM   - Full as2_db_config database (tables only, no CREATE/DROP DATABASE)
 REM   - Only version table from as2_db_runtime database
 REM
 REM Usage: backup.bat [backup_name]
 REM   backup_name: Optional custom name (default: backup_YYYYMMDD_HHMMSS)
 REM
 REM Output: Creates backup file in dev-scripts\backups\ directory
+REM
+REM Note: Backup does NOT include CREATE/DROP DATABASE statements.
+REM       Restore assumes databases already exist.
 REM
 
 setlocal enabledelayedexpansion
@@ -145,19 +148,26 @@ REM ============================================================
         echo -- Config Database: %DB_CONFIG%
         echo -- Runtime Database: %DB_RUNTIME% ^(version table only^)
         echo.
+        echo -- Note: This backup does NOT include CREATE/DROP DATABASE statements.
+        echo -- Restore assumes databases already exist.
+        echo.
+        echo USE %DB_CONFIG%;
+        echo.
     ) > "%BACKUP_FILE%"
 
-    REM Backup full config database
-    mysqldump --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --single-transaction --routines --triggers --events --add-drop-table --databases %DB_CONFIG% >> "%BACKUP_FILE%"
+    REM Backup full config database (without CREATE DATABASE)
+    mysqldump --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --single-transaction --routines --triggers --events --add-drop-table --no-create-db %DB_CONFIG% >> "%BACKUP_FILE%"
 
     (
         echo.
         echo -- Version table from runtime database
         echo.
+        echo USE %DB_RUNTIME%;
+        echo.
     ) >> "%BACKUP_FILE%"
 
     REM Backup only version table from runtime database
-    mysqldump --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --single-transaction --add-drop-table %DB_RUNTIME% version >> "%BACKUP_FILE%"
+    mysqldump --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --single-transaction --add-drop-table --no-create-db %DB_RUNTIME% version >> "%BACKUP_FILE%"
 
     exit /b 0
 
@@ -183,14 +193,19 @@ REM ============================================================
         echo -- Config Database: %DB_CONFIG%
         echo -- Runtime Database: %DB_RUNTIME% ^(version table only^)
         echo.
+        echo -- Note: This backup does NOT include CREATE/DROP DATABASE statements.
+        echo -- Restore assumes databases already exist.
+        echo.
     ) > "%BACKUP_FILE%"
 
-    REM Backup full config database
-    pg_dump --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --clean --if-exists --create %DB_CONFIG% >> "%BACKUP_FILE%"
+    REM Backup full config database (without CREATE DATABASE)
+    pg_dump --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --clean --if-exists %DB_CONFIG% >> "%BACKUP_FILE%"
 
     (
         echo.
         echo -- Version table from runtime database
+        echo.
+        echo \connect %DB_RUNTIME%
         echo.
     ) >> "%BACKUP_FILE%"
 

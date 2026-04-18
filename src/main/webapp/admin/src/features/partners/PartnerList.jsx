@@ -24,14 +24,17 @@ import { usePartners, useDeletePartner } from './usePartners';
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
 import PartnerFormTabs from './PartnerFormTabs';
+import { useAuth } from '../auth/useAuth';
 
 export default function PartnerList() {
   const { data: partners, isLoading, error } = usePartners();
   const deletePartner = useDeletePartner();
   const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [ownershipFilter, setOwnershipFilter] = useState('mine'); // 'all', 'mine'
   const [showForm, setShowForm] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
+  const { user } = useAuth();
 
   if (isLoading) {
     return <LoadingPage message="Loading partners..." />;
@@ -41,10 +44,25 @@ export default function PartnerList() {
     return <div style={{ color: 'red' }}>Error loading partners: {error.message}</div>;
   }
 
-  const filteredPartners = partners?.filter(partner =>
-    partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  // Determine current user ID for filtering
+  const currentUserId = user?.username === 'admin' ? 0 : user?.id;
+
+  const filteredPartners = partners?.filter(partner => {
+    // Search filter
+    const matchesSearch = partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Ownership filter
+    if (ownershipFilter === 'all') return true;
+    if (ownershipFilter === 'mine') {
+      // My partners: created by current user
+      return partner.createdByUserId === currentUserId;
+    }
+
+    return true;
+  }) || [];
 
   const handleDelete = async (as2id, name) => {
     if (window.confirm(`Are you sure you want to delete partner "${name}"?`)) {
@@ -121,19 +139,37 @@ export default function PartnerList() {
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Search partners..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            maxWidth: '400px',
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px'
-          }}
-        />
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search partners..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              maxWidth: '400px',
+              padding: '0.5rem',
+              border: '1px solid #ddd',
+              borderRadius: '4px'
+            }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.875rem', color: '#6c757d' }}>Show:</span>
+            <select
+              value={ownershipFilter}
+              onChange={(e) => setOwnershipFilter(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '0.875rem'
+              }}
+            >
+              <option value="mine">My Partners</option>
+              <option value="all">All Partners</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <table style={tableStyle}>
@@ -143,13 +179,14 @@ export default function PartnerList() {
             <th style={thStyle}>AS2 ID</th>
             <th style={thStyle}>URL</th>
             <th style={thStyle}>Direction</th>
+            <th style={thStyle}>Owner</th>
             <th style={thStyle}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredPartners.length === 0 ? (
             <tr>
-              <td colSpan="5" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan="6" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 {searchTerm ? 'No partners match your search' : 'No partners configured'}
               </td>
             </tr>
@@ -171,6 +208,9 @@ export default function PartnerList() {
                   ) : (
                     <span title="Remote Partner" style={{ fontSize: '1.5rem' }}>🌐</span>
                   )}
+                </td>
+                <td style={tdStyle}>
+                  {partner.createdByUsername || `User ${partner.createdByUserId}`}
                 </td>
                 <td style={tdStyle}>
                   <button

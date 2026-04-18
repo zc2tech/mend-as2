@@ -31,8 +31,10 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password generation and email delivery
   - Forced password change on first login
   - Password complexity enforcement
+  - Username validation (3-32 chars, alphanumeric + `-_.` only, must start with letter/digit)
   - Account enable/disable functionality
   - Admin user protection (cannot be disabled or deleted)
+  - User switching for admin users (test permissions, immediate data refresh)
 
 - **HTTP Authentication (Outbound)**
   - Flexible HTTP Basic Auth for partner connections
@@ -44,10 +46,11 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 - **Inbound Authentication**
   - System-wide authentication for incoming AS2 messages
   - Two authentication types (can enable both):
-    - **Basic Authentication** - Multiple username/password pairs
+    - **Basic Authentication** - Multiple username/password pairs with password visibility toggle
     - **Certificate Authentication** - Multiple trusted certificates
   - OR logic: message accepted if ANY credential matches
   - Configuration via SwingUI (System Preferences) and WebUI (System menu)
+  - Password show/hide toggle in SwingUI Inbound Auth Basic table (eye icon)
   - HTTP 401 response for failed authentication
   - Authentication logging for security auditing
 
@@ -70,6 +73,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Zero network attack surface for SwingUI (EventBus replaces Mina TCP)
   - System-wide TLS certificate management (separate from user certificates)
   - User-specific TLS certificates for local station authentication
+  - Multi-user certificate isolation (each user has separate signing/encryption keystores)
+  - TLS client certificate authentication for outbound connections
 
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -85,6 +90,7 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Automatic schema creation and migration
   - System-wide keystores use `user_id=-1` (not associated with any user)
   - User-specific keystores use actual user IDs for proper ownership
+  - Multi-user certificate isolation for signing, encryption, and TLS
 
 - **Tracker Messages**
   - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
@@ -103,6 +109,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Database indexes on timestamp columns for fast sorting
   - Message list optimization (AS2 Messages sorted newest first)
   - Clean logging without debug output in production
+  - IN_MEMORY send queue strategy for high-throughput scenarios
+  - Message retry optimization with cached encrypted payloads (prevents duplicate messages)
 
 ## 📦 Installation
 
@@ -264,12 +272,13 @@ For all database properties:
 - Indexes are created for optimal query performance
 - **PostgreSQL**: Databases must be created manually first
 - **MySQL**: Databases are created automatically by the application
+- **Restore scripts**: Assume databases exist, only drop/recreate tables (not databases)
 
 **📖 Database Documentation:**
 - [Database Initialization Guide](DATABASE_INITIALIZATION.md) - How databases are created automatically
 - [PostgreSQL Configuration](config/POSTGRESQL-CONFIG.md) - PostgreSQL quick reference
 - [MySQL Configuration](config/MYSQL-CONFIG.md) - MySQL quick reference
-- [Backup & Restore Scripts](dev-scripts/README.md) - Automated backup/restore tools
+- [Backup & Restore Scripts](dev-scripts/README.md) - Automated backup/restore tools (assumes existing databases)
 
 ## 🎯 Usage
 
@@ -296,6 +305,7 @@ Configure authentication required for incoming AS2 messages:
 3. Navigate to **Inb. Auth** tab
 4. Check authentication types:
    - ☑ **Enable Basic Authentication** - Add multiple username/password rows
+     - Use eye icon buttons to show/hide passwords in each row
    - ☑ **Enable Certificate Authentication** - Add multiple certificates from dropdown
 5. Click **OK** to save
 
@@ -456,6 +466,9 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 - **User Preference → HTTP Authentication** - Configure HTTP auth credentials
 - **User Management** - Create/edit users
   - Protected admin user (cannot disable/delete)
+  - **Switch User** - Admin users can switch to other users (test permissions)
+    - Automatic refresh of messages and partners after switch
+    - Window title shows current user when switched
 
 **Keyboard Shortcuts:**
 - `Cmd/Ctrl + ,` - Open Preferences
@@ -500,12 +513,17 @@ curl http://localhost:8080/as2/api/v1/users -b cookies.txt
 
 | Role | Permissions | Use Case |
 |------|------------|----------|
-| **ADMIN** | All | Full system access |
+| **ADMIN** | All | Full system access, can see all partners regardless of visibility |
 | **PARTNER_MANAGER** | Partner R/W | Manage trading partners |
 | **CERTIFICATE_MANAGER** | Certificate R/W | Manage certificates |
 | **MESSAGE_OPERATOR** | Message R/W | Send/view messages |
 | **SYSTEM_MANAGER** | System R/W | Configure server |
 | **VIEWER** | All Read | Read-only access |
+
+**Admin User Privileges:**
+- Can switch to other users to test their permissions
+- See all partners when sending messages (bypasses visibility filtering)
+- Full access to all system features
 
 ## 🏗️ Architecture
 
@@ -595,6 +613,7 @@ restore.bat backup_20260416_120000.sql
 - ✅ Supports both PostgreSQL and MySQL automatically
 - ✅ Cross-platform (Linux/Mac/Windows)
 - ✅ Safe restore with confirmation prompt
+- ✅ **Assumes databases already exist** - only drops/recreates tables
 - ✅ No manual configuration needed!
 
 **📖 Full Documentation:** [dev-scripts/README.md](dev-scripts/README.md)
@@ -707,6 +726,14 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] System-wide keystore user_id migration (user_id=-1)
 - [x] MySQL configuration quick reference guide
 - [x] Automated backup/restore scripts (dev-scripts/)
+- [x] Multi-user certificate isolation (sign/encrypt/TLS per user)
+- [x] TLS client certificate authentication for outbound connections
+- [x] Message retry optimization (cached encrypted payloads, no duplicates)
+- [x] Username validation rules (alphanumeric + special chars)
+- [x] SwingUI password visibility toggle (inbound auth basic)
+- [x] Admin user switching feature (test permissions)
+- [x] Admin user partner visibility bypass (see all partners)
+- [x] Restore scripts assume existing databases (drop tables only)
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -750,6 +777,7 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Check System → Inb. AS2 Auth settings (WebUI) or File → Preferences → Inb. AS2 Auth (SwingUI)
 - Verify at least one authentication type is enabled
 - For Basic Auth: Ensure sending partner uses one of the configured username/password pairs
+  - **SwingUI**: Use eye icon buttons to verify passwords are correct
 - For Certificate Auth: Ensure sending partner's certificate is in the trusted list
 - Check server logs for authentication failure details
 - If both auth types enabled, message must pass EITHER one (OR logic)
@@ -821,7 +849,73 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Use automated scripts in `dev-scripts/` folder
 - Scripts automatically detect database type and configuration
 - Backup includes full config database + version table from runtime
+- **Restore assumes databases already exist** - only drops tables, not databases
 - See [dev-scripts/README.md](dev-scripts/README.md) for usage
+
+**TLS Client Certificate Authentication (Outbound)**
+- **Issue**: Partner configured with certificate authentication mode but connection fails with 401 Unauthorized
+- **Cause**: Partner's `httpauth_cert_fingerprint_message` contains wrong/outdated certificate fingerprint
+- **Fix via UI**:
+  1. Login as the user who created the partner
+  2. Edit Partner → Security tab → HTTP Authentication section
+  3. Select correct certificate from dropdown (e.g., `vscode-admin1-tls`)
+  4. Fingerprint auto-updates when you select a certificate
+  5. Save changes
+- **Fix via Database**:
+  ```sql
+  -- Find the correct fingerprint (user's TLS keystore)
+  SELECT alias, fingerprint FROM certificates WHERE user_id=3 AND purpose=1;
+  
+  -- Update partner configuration
+  UPDATE partner SET httpauth_cert_fingerprint_message='65:5A:...' WHERE id=6;
+  ```
+- **Verification**: Check logs for `[OUTBOUND CERT AUTH] Found alias:` - should show certificate alias, not "NOT FOUND"
+- **Note**: Certificate must exist in sender's TLS keystore (system-wide or user-specific)
+
+**Duplicate Messages on Retry (IN_MEMORY Strategy)**
+- **Issue**: Each retry creates a new message with different message ID in database
+- **Cause**: Message was rebuilt from scratch on every retry instead of reusing encrypted payload
+- **Fixed**: Message is now cached after first send attempt, retries use same cached message
+- **Verification**: Check message IDs in database - retries should have same message ID
+- **Memory Management**: 
+  - Cached messages released when order completes (no memory leaks)
+  - Max memory: queue_depth × ~100KB (default: 1000 × 100KB = ~100MB)
+  - Cached messages survive server restart (serialized to checkpoint)
+- **AS2 Protocol Compliance**: Same message ID and encrypted bytes across all retry attempts
+
+**Multi-User Certificate Management**
+- Each user has isolated keystores for signing, encryption, and TLS
+- System-wide certificates (user_id=-1) available to all users as fallback
+- User-specific certificates (user_id=1,2,3...) take precedence for that user
+- Partner's `created_by_user_id` determines which user's certificates to use for signing/encryption
+- TLS client certificates can be user-specific or system-wide
+- Certificate manager UI shows only certificates accessible to current user
+
+**Username Requirements**
+- Length: 3-32 characters
+- Allowed characters: letters (a-z, A-Z), digits (0-9), hyphen (-), underscore (_), dot (.)
+- Must start with letter or digit (not special character)
+- Cannot end with special character
+- Examples:
+  - ✓ Valid: `admin`, `user1`, `john.doe`, `test-user`, `admin_123`
+  - ✗ Invalid: `-admin` (starts with hyphen), `user-` (ends with hyphen), `ab` (too short)
+
+**User Switching (Admin Only)**
+- Admin users can switch to other users via User Management → Switch User
+- Useful for testing user permissions and data visibility
+- Message list and partner list refresh automatically after switch
+- Window title shows current user when switched
+- Click "Switch Back" to return to admin user
+
+**Admin User Sending Messages**
+- Admin users can see and send messages using ALL partners (regardless of who created them)
+- Regular users only see partners they created or have visibility access to
+- This allows admins to test partner configurations without ownership restrictions
+
+**Async MDN Authentication Not Saving**
+- **Fixed**: "None" option for Async MDN authentication now saves correctly
+- Issue was caused by separate event handler that didn't set auth mode
+- If upgrading from older version and "None" wasn't saving, re-select "None" and save again
 
 ---
 

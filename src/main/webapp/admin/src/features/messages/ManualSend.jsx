@@ -39,6 +39,18 @@ export default function ManualSend({ onClose }) {
   const toast = useToast();
   const { user } = useAuth();
 
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose]);
+
   // Fetch partners list filtered by current user visibility
   useEffect(() => {
     const fetchPartners = async () => {

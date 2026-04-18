@@ -23,6 +23,7 @@ package de.mendelson.comm.as2.usermanagement.gui;
 
 import de.mendelson.comm.as2.usermanagement.Role;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.UsernameValidator;
 import de.mendelson.comm.as2.usermanagement.clientserver.*;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
@@ -129,6 +130,15 @@ public class JDialogEditUser extends JDialog {
         if (editingUser != null) {
             textUsername.setText(editingUser.getUsername());
             textUsername.setEnabled(false); // Cannot change username
+        } else {
+            // Set tooltip with validation requirements for new users
+            textUsername.setToolTipText("<html><b>Username Requirements:</b><br>" +
+                "• 3-50 characters<br>" +
+                "• Letters, numbers, underscore (_), hyphen (-), dot (.)<br>" +
+                "• Must start and end with letter or number<br>" +
+                "• No consecutive special characters (e.g., '..',  '--', '__')<br>" +
+                "• Cannot be reserved names (admin, root, system, etc.)<br>" +
+                "<br><b>Valid examples:</b> john_doe, user123, jane.smith</html>");
         }
         formPanel.add(textUsername, gbc);
 
@@ -332,6 +342,17 @@ public class JDialogEditUser extends JDialog {
                     "Username is required",
                     "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
+        }
+
+        // Validate username format (for new users only)
+        if (editingUser == null) {
+            String validationError = UsernameValidator.validateUsername(username);
+            if (validationError != null) {
+                JOptionPane.showMessageDialog(this,
+                        validationError + "\n\n" + UsernameValidator.getRequirements(),
+                        "Invalid Username", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         if (editingUser == null) {

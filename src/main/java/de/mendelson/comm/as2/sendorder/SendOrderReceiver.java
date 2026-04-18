@@ -300,6 +300,24 @@ public class SendOrderReceiver {
 
                         logger.info("[SENDORDER-DEBUG] ✓ AS2Message created and cached (message ID: " +
                                    message.getAS2Info().getMessageId() + ")");
+
+                        // Clean up uploaded files after successful message creation
+                        // Files are no longer needed - the encrypted message is now cached
+                        if (item.getFiles() != null) {
+                            for (java.nio.file.Path uploadedFile : item.getFiles()) {
+                                try {
+                                    // Only delete files from webui uploads (temp directory)
+                                    if (uploadedFile != null &&
+                                        uploadedFile.getFileName().toString().startsWith("webui_upload_")) {
+                                        java.nio.file.Files.deleteIfExists(uploadedFile);
+                                        logger.info("[SENDORDER-DEBUG] Cleaned up uploaded file: " + uploadedFile.getFileName());
+                                    }
+                                } catch (Exception cleanupEx) {
+                                    logger.warning("[SENDORDER-DEBUG] Failed to cleanup uploaded file: " +
+                                                  uploadedFile.getFileName() + " - " + cleanupEx.getMessage());
+                                }
+                            }
+                        }
                     }
                 }
 

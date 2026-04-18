@@ -45,7 +45,8 @@ export default function MessageList() {
     fromDate: '',
     toDate: '',
     messageId: '',
-    format: ''  // cXML, X12, EDIFACT
+    format: '',  // cXML, X12, EDIFACT
+    userId: ''   // Filter by user
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -55,6 +56,7 @@ export default function MessageList() {
   const [showManualSend, setShowManualSend] = useState(false);
   const [partners, setPartners] = useState([]);
   const [localStations, setLocalStations] = useState([]);
+  const [users, setUsers] = useState([]);
   const queryClient = useQueryClient();
   const toast = useToast();
   const searchTimeoutRef = useRef(null);
@@ -128,7 +130,18 @@ export default function MessageList() {
         console.error('Failed to fetch partners:', error);
       }
     };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/users');
+        setUsers(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
     fetchPartners();
+    fetchUsers();
   }, []);
 
   const handleDeleteMessage = async (messageId) => {
@@ -373,6 +386,28 @@ export default function MessageList() {
               ))}
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              User
+            </label>
+            <select
+              value={filters.userId}
+              onChange={(e) => applyFiltersImmediately({ ...filters, userId: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            >
+              <option value="">All Users</option>
+              <option value="0">System</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.username}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Row 2: Status checkboxes */}
@@ -519,6 +554,7 @@ export default function MessageList() {
             <th style={thStyle}>Sender</th>
             <th style={thStyle}>Receiver</th>
             <th style={thStyle}>Init Date ({getTimezoneOffset()})</th>
+            <th style={thStyle}>User</th>
             <th style={thStyle}>Format</th>
             <th style={thStyle}>Doc Type</th>
             <th style={thStyle}>Status</th>
@@ -528,7 +564,7 @@ export default function MessageList() {
         <tbody>
           {filteredMessages.length === 0 ? (
             <tr>
-              <td colSpan="9" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan="10" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No messages found
               </td>
             </tr>
@@ -549,6 +585,47 @@ export default function MessageList() {
                 <td style={tdStyle}>{message.receiverId || '-'}</td>
                 <td style={tdStyle}>
                   {message.initDate ? format(new Date(message.initDate), 'yyyy-MM-dd HH:mm:ss') : '-'}
+                </td>
+                <td style={tdStyle}>
+                  {message.ownerUserId === 0 ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      System
+                    </span>
+                  ) : message.ownerUsername ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      {message.ownerUsername}
+                    </span>
+                  ) : message.ownerUserId > 0 ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      User {message.ownerUserId}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#6c757d', fontSize: '0.75rem' }}>-</span>
+                  )}
                 </td>
                 <td style={tdStyle}>{message.payloadFormat || '-'}</td>
                 <td style={tdStyle}>{message.payloadDocType || '-'}</td>

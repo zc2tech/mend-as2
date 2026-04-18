@@ -22,10 +22,12 @@
 package de.mendelson.comm.as2.servlet.rest.resources;
 
 import de.mendelson.comm.as2.AS2ServerVersion;
+import de.mendelson.comm.as2.AS2Properties;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.preferences.InboundAuthCredential;
 import de.mendelson.comm.as2.preferences.InboundAuthCredentialAccessDB;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.sendorder.InMemorySendOrderQueue;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.util.systemevents.SystemEvent;
@@ -832,6 +834,101 @@ public class SystemResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
         }
+    }
+
+    /**
+     * Get SendOrder queue configuration
+     */
+    @GET
+    @Path("/queue/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getQueueConfig() {
+        try {
+            AS2Properties props = AS2Properties.getInstance();
+
+            QueueConfigResponse config = new QueueConfigResponse();
+            config.setStrategy(props.getSendOrderQueueStrategy());
+            config.setMaxDepth(props.getSendOrderQueueMaxDepth());
+            config.setCheckpointInterval(props.getSendOrderQueueCheckpointInterval());
+
+            return Response.ok(config).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"Failed to get queue config: " + e.getMessage() + "\"}")
+                    .build();
+        }
+    }
+
+    /**
+     * Get SendOrder queue statistics (IN_MEMORY strategy only)
+     */
+    @GET
+    @Path("/queue/stats")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getQueueStats() {
+        try {
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server == null || server.getSendOrderSender() == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity("{\"error\":\"Server not available\"}")
+                        .build();
+            }
+
+            // Check if using IN_MEMORY strategy
+            AS2Properties props = AS2Properties.getInstance();
+            String strategy = props.getSendOrderQueueStrategy();
+
+            if (!"IN_MEMORY".equals(strategy)) {
+                QueueStatsResponse stats = new QueueStatsResponse();
+                stats.setStrategy(strategy);
+                stats.setMessage("Queue statistics only available for IN_MEMORY strategy");
+                return Response.ok(stats).build();
+            }
+
+            // TODO: Access queue stats from SendOrderSender
+            // For now, return basic info
+            QueueStatsResponse stats = new QueueStatsResponse();
+            stats.setStrategy(strategy);
+            stats.setMessage("IN_MEMORY queue active");
+
+            return Response.ok(stats).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"Failed to get queue stats: " + e.getMessage() + "\"}")
+                    .build();
+        }
+    }
+
+    public static class QueueConfigResponse {
+        private String strategy;
+        private int maxDepth;
+        private int checkpointInterval;
+
+        public String getStrategy() { return strategy; }
+        public void setStrategy(String strategy) { this.strategy = strategy; }
+        public int getMaxDepth() { return maxDepth; }
+        public void setMaxDepth(int maxDepth) { this.maxDepth = maxDepth; }
+        public int getCheckpointInterval() { return checkpointInterval; }
+        public void setCheckpointInterval(int checkpointInterval) { this.checkpointInterval = checkpointInterval; }
+    }
+
+    public static class QueueStatsResponse {
+        private String strategy;
+        private String message;
+        private Integer waitingCount;
+        private Integer processingCount;
+        private Integer totalCount;
+
+        public String getStrategy() { return strategy; }
+        public void setStrategy(String strategy) { this.strategy = strategy; }
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+        public Integer getWaitingCount() { return waitingCount; }
+        public void setWaitingCount(Integer waitingCount) { this.waitingCount = waitingCount; }
+        public Integer getProcessingCount() { return processingCount; }
+        public void setProcessingCount(Integer processingCount) { this.processingCount = processingCount; }
+        public Integer getTotalCount() { return totalCount; }
+        public void setTotalCount(Integer totalCount) { this.totalCount = totalCount; }
     }
 
     public static class LocalStationUrlResponse {

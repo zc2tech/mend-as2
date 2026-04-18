@@ -113,11 +113,13 @@ const getFlattenedPartnerData = (partner) => {
     authModeMessage: String(authModeMessageValue),
     httpAuthMessageUser: partner.authenticationCredentialsMessage?.user ?? '',
     httpAuthMessagePassword: partner.authenticationCredentialsMessage?.password ?? '',
+    httpAuthMessageCertFingerprint: partner.authenticationCredentialsMessage?.certificateFingerprint ?? '',
     useHttpAuthMessage: partner.authenticationCredentialsMessage?.enabled ?? false,
 
     authModeAsyncMDN: String(authModeAsyncMDNValue),
     httpAuthAsyncMDNUser: partner.authenticationCredentialsAsyncMDN?.user ?? '',
     httpAuthAsyncMDNPassword: partner.authenticationCredentialsAsyncMDN?.password ?? '',
+    httpAuthAsyncMDNCertFingerprint: partner.authenticationCredentialsAsyncMDN?.certificateFingerprint ?? '',
     useHttpAuthAsyncMDN: partner.authenticationCredentialsAsyncMDN?.enabled ?? false
   };
 
@@ -139,6 +141,18 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const isEdit = !!partner;
   const { user } = useAuth();
   const [generatingUrl, setGeneratingUrl] = useState(false);
+
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose]);
 
   // Fetch certificates from both keystores for the dropdowns
   const { data: signCertificates, isLoading: signCertsLoading } = useCertificates('sign');
@@ -204,6 +218,14 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   // State for inbound auth credentials
   const [inboundAuthBasicList, setInboundAuthBasicList] = useState([]);
   const [inboundAuthCertList, setInboundAuthCertList] = useState([]);
+
+  // State for certificate filtering (remote partners only - show only public certificates by default)
+  const [showOnlyPublicCerts, setShowOnlyPublicCerts] = useState(true);
+
+  // Filter certificates based on checkbox (for remote partners)
+  const filteredCertificates = showOnlyPublicCerts
+    ? certificates?.filter(cert => !cert.isKeyPair)
+    : certificates;
 
   // Load credentials when editing existing partner
   useEffect(() => {
@@ -285,10 +307,12 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       authModeMessage,
       httpAuthMessageUser,
       httpAuthMessagePassword,
+      httpAuthMessageCertFingerprint,
       useHttpAuthMessage,
       authModeAsyncMDN,
       httpAuthAsyncMDNUser,
       httpAuthAsyncMDNPassword,
+      httpAuthAsyncMDNCertFingerprint,
       useHttpAuthAsyncMDN,
       ...otherData
     } = data;
@@ -299,12 +323,14 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
         authMode: authModeMessage,
         user: httpAuthMessageUser || '',
         password: httpAuthMessagePassword || '',
+        certificateFingerprint: httpAuthMessageCertFingerprint || '',
         enabled: useHttpAuthMessage
       },
       authenticationCredentialsAsyncMDN: {
         authMode: authModeAsyncMDN,
         user: httpAuthAsyncMDNUser || '',
         password: httpAuthAsyncMDNPassword || '',
+        certificateFingerprint: httpAuthAsyncMDNCertFingerprint || '',
         enabled: useHttpAuthAsyncMDN
       },
       // Include inbound auth credentials list (for local stations)
@@ -809,7 +835,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
             {activeTab === 'security' && (
               <>
                 {localStation ? (
-                  // Local Station: Show certificate selection
+                  // Local Station: Show certificate selection (private keys only)
                   <>
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Signature Certificate (Local)</label>
@@ -852,6 +878,22 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                 ) : (
                   // Remote Partner: 5 fields matching Swing UI
                   <>
+                    {/* Certificate filter checkbox */}
+                    <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.875rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={showOnlyPublicCerts}
+                          onChange={(e) => setShowOnlyPublicCerts(e.target.checked)}
+                          style={{ marginRight: '0.5rem', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontWeight: '500' }}>Show only public certificates (without private keys)</span>
+                      </label>
+                      <div style={{ fontSize: '0.75rem', color: '#6c757d', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
+                        Remote partners typically only need public certificates for encryption and signature verification
+                      </div>
+                    </div>
+
                     {/* 1. Partner certificate (Outbound data encryption) */}
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Partner Certificate (Outbound Data Encryption)</label>
@@ -861,7 +903,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         disabled={isSubmitting || certsLoading}
                       >
                         <option value="">-- Select Certificate --</option>
-                        {certificates?.map((cert) => {
+                        {filteredCertificates?.map((cert) => {
                           const icon = cert.isKeyPair ? '🔑' : '📜';
                           return (
                             <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
@@ -884,7 +926,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         disabled={isSubmitting || certsLoading}
                       >
                         <option value="">-- Select Certificate --</option>
-                        {certificates?.map((cert) => {
+                        {filteredCertificates?.map((cert) => {
                           const icon = cert.isKeyPair ? '🔑' : '📜';
                           return (
                             <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
@@ -1017,96 +1059,204 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                 <div style={{ marginBottom: '2rem' }}>
                   <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#495057' }}>HTTP Authentication Settings</h3>
                   <p style={{ fontSize: '0.875rem', color: '#6c757d', marginBottom: 0 }}>
-                    Configure HTTP basic authentication for message transmission and async MDN delivery
+                    Configure HTTP authentication for message transmission and async MDN delivery
                   </p>
                 </div>
 
                 {/* Message Authentication Section */}
                 <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #dee2e6' }}>
-                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Message Transmission Authentication</h4>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Authentication for outbound AS messages</h4>
 
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>Authentication Method</label>
-                    <select
-                      {...register('authModeMessage')}
-                      style={inputStyle}
-                      disabled={isSubmitting}
-                    >
-                      <option value="0">No HTTP Authentication</option>
-                      <option value="1">Basic Auth (credentials in this form)</option>
-                      <option value="2">Use User Preference</option>
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Option 1: None */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeMessage')}
+                        value="0"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>None</span>
+                    </label>
+
+                    {/* Option 2: Basic authentication */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeMessage')}
+                        value="1"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>
+                        Basic authentication{' '}
+                        <span
+                          title="HTTP Basic Authentication using username and password"
+                          style={{ cursor: 'help', color: '#6c757d', fontSize: '0.875rem' }}
+                        >
+                          (?)
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* Conditional: Username/Password fields for Basic auth */}
+                    {watch('authModeMessage') === "1" && (
+                      <div style={{ marginLeft: '1.75rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Username:</label>
+                          <input
+                            type="text"
+                            {...register('httpAuthMessageUser')}
+                            placeholder="HTTP username"
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
+                          <input
+                            type="password"
+                            {...register('httpAuthMessagePassword')}
+                            placeholder="HTTP password"
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option 3: Certificate authentication */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeMessage')}
+                        value="3"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>Certificate authentication</span>
+                    </label>
+
+                    {/* Conditional: Certificate picker for Certificate auth */}
+                    {watch('authModeMessage') === "3" && (
+                      <div style={{ marginLeft: '1.75rem', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Certificate:</label>
+                          <select
+                            {...register('httpAuthMessageCertFingerprint')}
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting || certsLoading}
+                          >
+                            <option value="">-- Select Certificate --</option>
+                            {certificates?.filter(cert => cert.isKeyPair).map((cert) => (
+                              <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
+                                🔑 {cert.alias} - {cert.subjectDN || 'No DN'}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  {watch('authModeMessage') === "1" && (
-                    <>
-                      <div style={formGroupStyle}>
-                        <label style={labelStyle}>Username</label>
-                        <input
-                          type="text"
-                          {...register('httpAuthMessageUser')}
-                          placeholder="HTTP authentication username"
-                          style={inputStyle}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <div style={formGroupStyle}>
-                        <label style={labelStyle}>Password</label>
-                        <input
-                          type="password"
-                          {...register('httpAuthMessagePassword')}
-                          placeholder="HTTP authentication password"
-                          style={inputStyle}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </>
-                  )}
                 </div>
 
                 {/* Async MDN Authentication Section */}
                 <div style={{ marginBottom: '1rem' }}>
-                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Async MDN Authentication</h4>
+                  <h4 style={{ fontSize: '0.95rem', marginBottom: '1rem', color: '#495057' }}>Authentication for outbound async MDN</h4>
 
-                  <div style={formGroupStyle}>
-                    <label style={labelStyle}>Authentication Method</label>
-                    <select
-                      {...register('authModeAsyncMDN')}
-                      style={inputStyle}
-                      disabled={isSubmitting}
-                    >
-                      <option value="0">No HTTP Authentication</option>
-                      <option value="1">Basic Auth (credentials in this form)</option>
-                      <option value="2">Use User Preference</option>
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Option 1: None */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeAsyncMDN')}
+                        value="0"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>None</span>
+                    </label>
+
+                    {/* Option 2: Basic authentication */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeAsyncMDN')}
+                        value="1"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>
+                        Basic authentication{' '}
+                        <span
+                          title="HTTP Basic Authentication using username and password"
+                          style={{ cursor: 'help', color: '#6c757d', fontSize: '0.875rem' }}
+                        >
+                          (?)
+                        </span>
+                      </span>
+                    </label>
+
+                    {/* Conditional: Username/Password fields for Basic auth */}
+                    {watch('authModeAsyncMDN') === "1" && (
+                      <div style={{ marginLeft: '1.75rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Username:</label>
+                          <input
+                            type="text"
+                            {...register('httpAuthAsyncMDNUser')}
+                            placeholder="HTTP username for async MDN"
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
+                          <input
+                            type="password"
+                            {...register('httpAuthAsyncMDNPassword')}
+                            placeholder="HTTP password for async MDN"
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option 3: Certificate authentication */}
+                    <label style={{ display: 'flex', alignItems: 'flex-start', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        {...register('authModeAsyncMDN')}
+                        value="3"
+                        disabled={isSubmitting}
+                        style={{ marginTop: '0.125rem', marginRight: '0.5rem', cursor: 'pointer' }}
+                      />
+                      <span>Certificate authentication</span>
+                    </label>
+
+                    {/* Conditional: Certificate picker for Certificate auth */}
+                    {watch('authModeAsyncMDN') === "3" && (
+                      <div style={{ marginLeft: '1.75rem', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Certificate:</label>
+                          <select
+                            {...register('httpAuthAsyncMDNCertFingerprint')}
+                            style={{ ...inputStyle, flex: 1 }}
+                            disabled={isSubmitting || certsLoading}
+                          >
+                            <option value="">-- Select Certificate --</option>
+                            {certificates?.filter(cert => cert.isKeyPair).map((cert) => (
+                              <option key={cert.fingerPrintSHA1} value={cert.fingerPrintSHA1}>
+                                🔑 {cert.alias} - {cert.subjectDN || 'No DN'}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
-
-                  {watch('authModeAsyncMDN') === "1" && (
-                    <>
-                      <div style={formGroupStyle}>
-                        <label style={labelStyle}>Username</label>
-                        <input
-                          type="text"
-                          {...register('httpAuthAsyncMDNUser')}
-                          placeholder="HTTP authentication username for async MDN"
-                          style={inputStyle}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-
-                      <div style={formGroupStyle}>
-                        <label style={labelStyle}>Password</label>
-                        <input
-                          type="password"
-                          {...register('httpAuthAsyncMDNPassword')}
-                          placeholder="HTTP authentication password for async MDN"
-                          style={inputStyle}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </>
-                  )}
                 </div>
               </>
             )}

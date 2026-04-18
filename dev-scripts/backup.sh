@@ -2,13 +2,16 @@
 #
 # AS2 Database Backup Script
 # Backs up:
-#   - Full as2_db_config database
+#   - Full as2_db_config database (tables only, no CREATE/DROP DATABASE)
 #   - Only version table from as2_db_runtime database
 #
 # Usage: ./backup.sh [backup_name]
 #   backup_name: Optional custom name (default: backup_YYYYMMDD_HHMMSS)
 #
 # Output: Creates backup file in dev-scripts/backups/ directory
+#
+# Note: Backup does NOT include CREATE/DROP DATABASE statements.
+#       Restore assumes databases already exist.
 #
 
 set -e  # Exit on error
@@ -106,8 +109,13 @@ if [ "$DB_TYPE" = "mysql" ]; then
         echo "-- Config Database: $DB_CONFIG"
         echo "-- Runtime Database: $DB_RUNTIME (version table only)"
         echo ""
+        echo "-- Note: This backup does NOT include CREATE/DROP DATABASE statements."
+        echo "-- Restore assumes databases already exist."
+        echo ""
+        echo "USE $DB_CONFIG;"
+        echo ""
 
-        # Backup full config database
+        # Backup full config database (without CREATE DATABASE)
         mysqldump \
             --host="$DB_HOST" \
             --port="$DB_PORT" \
@@ -117,10 +125,13 @@ if [ "$DB_TYPE" = "mysql" ]; then
             --triggers \
             --events \
             --add-drop-table \
-            --databases "$DB_CONFIG"
+            --no-create-db \
+            "$DB_CONFIG"
 
         echo ""
         echo "-- Version table from runtime database"
+        echo ""
+        echo "USE $DB_RUNTIME;"
         echo ""
 
         # Backup only version table from runtime database
@@ -130,6 +141,7 @@ if [ "$DB_TYPE" = "mysql" ]; then
             --user="$DB_USER" \
             --single-transaction \
             --add-drop-table \
+            --no-create-db \
             "$DB_RUNTIME" version
 
     } > "$BACKUP_FILE"
@@ -154,15 +166,17 @@ else
         echo "-- Config Database: $DB_CONFIG"
         echo "-- Runtime Database: $DB_RUNTIME (version table only)"
         echo ""
+        echo "-- Note: This backup does NOT include CREATE/DROP DATABASE statements."
+        echo "-- Restore assumes databases already exist."
+        echo ""
 
-        # Backup full config database
+        # Backup full config database (without CREATE DATABASE)
         pg_dump \
             --host="$DB_HOST" \
             --port="$DB_PORT" \
             --username="$DB_USER" \
             --clean \
             --if-exists \
-            --create \
             "$DB_CONFIG"
 
         echo ""
@@ -170,6 +184,9 @@ else
         echo ""
 
         # Backup only version table from runtime database
+        # First switch to runtime database context
+        echo "\\connect $DB_RUNTIME"
+        echo ""
         pg_dump \
             --host="$DB_HOST" \
             --port="$DB_PORT" \

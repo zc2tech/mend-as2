@@ -19,10 +19,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function CertificateImportTypeSelector({ keystoreType, onClose, onTypeSelected }) {
   const [selectedType, setSelectedType] = useState('certificate');
+
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose]);
 
   const handleContinue = () => {
     onTypeSelected(selectedType);

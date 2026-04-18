@@ -1076,6 +1076,65 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         return response;
     }
 
+    /**
+     * Process CSR generation request with user-specific keystore (for REST API)
+     */
+    public CSRGenerationResponse processCSRGenerationRequest(CSRGenerationRequest request, int userId) {
+        CSRGenerationResponse response = new CSRGenerationResponse(request);
+        try {
+            CertificateManager manager;
+            if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
+                // User-specific sign/encrypt keystore
+                manager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    userId);
+                manager.loadKeystoreCertificates(keystoreStorage);
+            } else if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_TLS) {
+                // User-specific TLS keystore
+                manager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    userId);
+                manager.loadKeystoreCertificates(keystoreStorage);
+            } else {
+                throw new IllegalArgumentException("processCSRGenerationRequest: Unknown keystore usage "
+                        + request.getKeystoreUsage());
+            }
+            KeystoreCertificate key = manager.getKeystoreCertificateByFingerprintSHA1NonNull(request.getFingerprintSHA1());
+            String keyAlias = key.getAlias();
+            CSRUtil util = new CSRUtil();
+            if (request.getRequestType() == CSRGenerationRequest.SELECTION_PKCS10) {
+                PKCS10CertificationRequest csr = util.generateCSRPKCS10(manager, keyAlias);
+                response.setCSRBase64(util.storeCSRPEMPKCS10ToStr(csr));
+            } else if (request.getRequestType() == CSRGenerationRequest.SELECTION_CRMF) {
+                BigInteger certReqId = BigInteger.valueOf(System.currentTimeMillis());
+                CertReqMessages certReqMessagesTLS
+                        = util.generateCertificateRequestMessagesTLS(certReqId, manager, keyAlias);
+                response.setCrmfTLSBase64(util.storeCertificateRequestMessagesToStr(certReqMessagesTLS));
+                CertReqMessages certReqMessagesSignature
+                        = util.generateCertificateRequestMessagesSign(certReqId, manager, keyAlias);
+                response.setCrmfSignatureBase64(util.storeCertificateRequestMessagesToStr(certReqMessagesSignature));
+                CertReqMessages certReqMessagesEncryption
+                        = util.generateCertificateRequestMessagesEnc(certReqId, manager, keyAlias);
+                response.setCrmfEncryptionBase64(util.storeCertificateRequestMessagesToStr(certReqMessagesEncryption));
+            } else {
+                throw new Exception("CSRGenerationRequest: Unsupported CSR request type " + request.getRequestType());
+            }
+
+        } catch (Throwable e) {
+            e.printStackTrace();
+            response.setException(e);
+        }
+        return response;
+    }
+
     private void processExportRequestPrivateKey(IoSession session, ExportRequestPrivateKey request) {
         ExportResponsePrivateKey response = new ExportResponsePrivateKey(request);
         try {
@@ -1167,13 +1226,28 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     private void processExportRequestKeystore(IoSession session, ExportRequestKeystore request) {
-        ExportResponseKeystore response = processExportRequestKeystore(request);
+        ExportResponseKeystore response = processExportRequestKeystore(request, session);
         session.write(response);
     }
 
-    public ExportResponseKeystore processExportRequestKeystore(ExportRequestKeystore request) {
+    public ExportResponseKeystore processExportRequestKeystore(ExportRequestKeystore request, IoSession session) {
         ExportResponseKeystore response = new ExportResponseKeystore(request);
         try {
+            // Get username from session
+            String username = (String) session.getAttribute("user");
+            if (username == null) {
+                username = "admin";
+            }
+
+            // Get userId from username
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
+            de.mendelson.comm.as2.usermanagement.WebUIUser webUIUser = userAccess.getUserByUsername(username);
+            if (webUIUser == null) {
+                throw new IllegalArgumentException("User not found: " + username);
+            }
+            int userId = webUIUser.getId();
+
             // Expand ~ to user home directory for Unix-like systems (macOS, Linux)
             String targetPath = request.getServerSideFilename();
             if (targetPath.startsWith("~" + java.io.File.separator) || targetPath.equals("~")) {
@@ -1200,10 +1274,26 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             String extension = null;
             CertificateManager manager;
             if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_ENC_SIGN) {
-                manager = this.certificateManagerEncSign;
+                // Create user-specific certificate manager for sign/encrypt
+                manager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    userId);
+                manager.loadKeystoreCertificates(keystoreStorage);
                 extension = ".p12";
             } else if (request.getKeystoreUsage() == ExportRequestPrivateKey.KEYSTORE_USAGE_TLS) {
-                manager = this.certificateManagerTLS;
+                // Create user-specific certificate manager for TLS
+                manager = new CertificateManager(this.logger);
+                KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                    SystemEventManagerImplAS2.instance(),
+                    this.dbDriverManager,
+                    KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    userId);
+                manager.loadKeystoreCertificates(keystoreStorage);
                 extension = ".p12";
             } else {
                 throw new IllegalArgumentException("processExportRequestKeystore: Unknown keystore usage "
@@ -1804,6 +1894,74 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             this.logger.severe("Failed to get all users' certificates: " + e.getMessage());
         }
         session.write(response);
+    }
+
+    /**
+     * Process AllUsersCertificatesRequest without IoSession (for REST API)
+     */
+    public AllUsersCertificatesResponse processAllUsersCertificatesRequest(
+            AllUsersCertificatesRequest request) {
+        AllUsersCertificatesResponse response = new AllUsersCertificatesResponse(request);
+        try {
+            List<CertificateWithOwner> allCertificates = new ArrayList<>();
+
+            // Get all users from database
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(this.dbDriverManager, this.logger);
+            List<de.mendelson.comm.as2.usermanagement.WebUIUser> users = userAccess.getAllUsers();
+
+            // For each user, load their keystore and extract certificates
+            for (de.mendelson.comm.as2.usermanagement.WebUIUser user : users) {
+                int userId = user.getId();
+                String username = user.getUsername();
+
+                try {
+                    // Create user-specific certificate manager
+                    CertificateManager userCertManager = new CertificateManager(this.logger);
+
+                    int keystoreUsage = request.getKeystoreUsage() == AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN
+                        ? KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN
+                        : KeystoreStorageImplDB.KEYSTORE_USAGE_TLS;
+
+                    String storageType = request.getKeystoreUsage() == AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN
+                        ? KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12
+                        : KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS;
+
+                    KeystoreStorageImplDB keystoreStorage = new KeystoreStorageImplDB(
+                        SystemEventManagerImplAS2.instance(),
+                        this.dbDriverManager,
+                        keystoreUsage,
+                        storageType,
+                        userId);
+
+                    userCertManager.loadKeystoreCertificates(keystoreStorage);
+                    List<KeystoreCertificate> userCertificates = userCertManager.getKeyStoreCertificateList();
+
+                    // Add each certificate with owner information
+                    for (KeystoreCertificate cert : userCertificates) {
+                        // Clone and set to display mode (hide private keys)
+                        KeystoreCertificate displayCert = cert;
+                        if (cert.getIsKeyPair()) {
+                            displayCert = (KeystoreCertificate) cert.clone();
+                            displayCert.setToDisplayMode();
+                        }
+
+                        CertificateWithOwner certWithOwner = new CertificateWithOwner(
+                            displayCert, userId, username);
+                        allCertificates.add(certWithOwner);
+                    }
+                } catch (Exception e) {
+                    // If keystore doesn't exist for this user, skip
+                    this.logger.fine("No keystore found for user " + username + " (userId=" + userId + "): " + e.getMessage());
+                }
+            }
+
+            response.setCertificates(allCertificates);
+        } catch (Throwable e) {
+            response.setException(e);
+            this.logger.severe("Failed to get all users' certificates: " + e.getMessage());
+        }
+        return response;
     }
 
     private void processUploadRequestKeystore(IoSession session, UploadRequestKeystore request) {

@@ -159,6 +159,13 @@ public class UserManagementResource {
                         .entity("{\"error\":\"Username is required\"}").build();
             }
 
+            // Validate username format for security and URL safety
+            String validationError = UsernameValidator.validateUsername(username);
+            if (validationError != null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("{\"error\":\"" + validationError + "\"}").build();
+            }
+
             // If generatePassword is true, generate a random password
             String generatedPassword = null;
             if (generatePassword != null && generatePassword) {

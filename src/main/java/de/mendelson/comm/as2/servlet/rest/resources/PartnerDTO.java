@@ -35,6 +35,9 @@ import java.util.ArrayList;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PartnerDTO {
+    // Database ID (for updates)
+    private int dbid;
+
     // General tab
     private String name;
 
@@ -108,12 +111,17 @@ public class PartnerDTO {
     private boolean notifyReceiveEnabled;
     private boolean notifySendReceiveEnabled;
 
+    // Ownership tracking
+    private int createdByUserId;
+    private String createdByUsername;
+
     // Default constructor for Jackson
     public PartnerDTO() {
     }
 
     // Constructor from Partner object
     public PartnerDTO(Partner partner) {
+        this.dbid = partner.getDBId();
         this.name = partner.getName();
         this.as2Identification = partner.getAS2Identification();
         this.localStation = partner.isLocalStation();
@@ -159,6 +167,9 @@ public class PartnerDTO {
 
         this.contactAS2 = partner.getContactAS2();
         this.contactCompany = partner.getContactCompany();
+
+        this.createdByUserId = partner.getCreatedByUserId();
+        // createdByUsername will be set by PartnerResource when needed
     }
 
     /**
@@ -261,6 +272,9 @@ public class PartnerDTO {
     }
 
     // Getters and setters
+    public int getDbid() { return dbid; }
+    public void setDbid(int dbid) { this.dbid = dbid; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -380,4 +394,10 @@ public class PartnerDTO {
 
     public boolean isInboundAuthCertEnabled() { return inboundAuthCertEnabled; }
     public void setInboundAuthCertEnabled(boolean inboundAuthCertEnabled) { this.inboundAuthCertEnabled = inboundAuthCertEnabled; }
+
+    public int getCreatedByUserId() { return createdByUserId; }
+    public void setCreatedByUserId(int createdByUserId) { this.createdByUserId = createdByUserId; }
+
+    public String getCreatedByUsername() { return createdByUsername; }
+    public void setCreatedByUsername(String createdByUsername) { this.createdByUsername = createdByUsername; }
 }

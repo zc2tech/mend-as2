@@ -29,7 +29,21 @@ export function AuthProvider({ children }) {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
-  const [originalUser, setOriginalUser] = useState(null); // Store original admin user when switching
+
+  // Store original admin user when switching - persist in sessionStorage
+  const [originalUser, setOriginalUser] = useState(() => {
+    const stored = sessionStorage.getItem('originalUser');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  // Persist originalUser to sessionStorage whenever it changes
+  useEffect(() => {
+    if (originalUser) {
+      sessionStorage.setItem('originalUser', JSON.stringify(originalUser));
+    } else {
+      sessionStorage.removeItem('originalUser');
+    }
+  }, [originalUser]);
 
   useEffect(() => {
     // Only check auth if not on login page
@@ -70,6 +84,9 @@ export function AuthProvider({ children }) {
   const login = async (username, password) => {
     try {
       const response = await api.post('/auth/login', { username, password });
+
+      // Clear any previous user switch state from sessionStorage on fresh login
+      setOriginalUser(null);
 
       // Check if user must change password
       if (response.data.mustChangePassword) {

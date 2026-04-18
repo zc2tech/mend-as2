@@ -39,6 +39,7 @@ import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -112,7 +113,30 @@ public class PartnerResource {
                 partners = response.getList();
             }
 
-            return Response.ok(partners).build();
+            // Convert to DTOs and populate creator usernames
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(processing.getDBDriverManager(), logger);
+            List<PartnerDTO> partnerDTOs = new ArrayList<>();
+            for (Partner partner : partners) {
+                PartnerDTO dto = new PartnerDTO(partner);
+
+                // Look up and set creator username
+                int creatorUserId = partner.getCreatedByUserId();
+                try {
+                    if (creatorUserId > 0) {
+                        WebUIUser creator = userMgmt.getUser(creatorUserId);
+                        if (creator != null) {
+                            dto.setCreatedByUsername(creator.getUsername());
+                        }
+                    }
+                } catch (Exception e) {
+                    // If user lookup fails, leave username as null (will fall back to "User X" in UI)
+                    logger.warning("Failed to lookup user " + creatorUserId + ": " + e.getMessage());
+                }
+
+                partnerDTOs.add(dto);
+            }
+
+            return Response.ok(partnerDTOs).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
@@ -200,11 +224,9 @@ public class PartnerResource {
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(processing.getDBDriverManager(), logger);
             WebUIUser user = userMgmt.getUserByUsername(username);
             if (user != null) {
-                // For admin user, use 0 for backward compatibility with SwingUI
-                // SwingUI always uses 0 for admin-created partners
-                int createdByUserId = "admin".equals(username) ? 0 : user.getId();
-                partner.setCreatedByUserId(createdByUserId);
-                logger.info("Setting created_by_user_id=" + createdByUserId + " for username=" + username);
+                // Use the actual user ID (admin user has ID 1)
+                partner.setCreatedByUserId(user.getId());
+                logger.info("Setting created_by_user_id=" + user.getId() + " for username=" + username);
             }
 
             SinglePartnerAddRequest request = new SinglePartnerAddRequest(partner);

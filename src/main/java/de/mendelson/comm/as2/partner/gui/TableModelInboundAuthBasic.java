@@ -35,10 +35,13 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
 
     public static final int COL_USERNAME = 0;
     public static final int COL_PASSWORD = 1;
-    public static final int COL_ENABLED = 2;
+    public static final int COL_SHOW_PASSWORD = 2;  // Show/hide password toggle column
+    public static final int COL_ENABLED = 3;
 
     private final List<PartnerInboundAuthCredential> data =
         Collections.synchronizedList(new ArrayList<PartnerInboundAuthCredential>());
+    private final List<Boolean> passwordVisibility =
+        Collections.synchronizedList(new ArrayList<Boolean>());  // Track password visibility per row
     private Partner partner;
     private final MecResourceBundle rb;
 
@@ -53,7 +56,7 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
 
     @Override
     public int getColumnCount() {
-        return 3;
+        return 4;  // Added show/hide password column
     }
 
     @Override
@@ -70,6 +73,8 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
                 return this.rb.getResourceString("inboundauth.table.col.username");
             case COL_PASSWORD:
                 return this.rb.getResourceString("inboundauth.table.col.password");
+            case COL_SHOW_PASSWORD:
+                return ""; // No header for toggle button column
             case COL_ENABLED:
                 return this.rb.getResourceString("inboundauth.table.col.enabled");
             default:
@@ -79,6 +84,9 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
 
     @Override
     public Class<?> getColumnClass(int column) {
+        if (column == COL_SHOW_PASSWORD) {
+            return Boolean.class;  // For the toggle button
+        }
         if (column == COL_ENABLED) {
             return Boolean.class;
         }
@@ -87,6 +95,11 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
 
     @Override
     public boolean isCellEditable(int row, int column) {
+        // Show/hide password column and enabled column are editable
+        if (column == COL_SHOW_PASSWORD) {
+            return true;
+        }
+        // All other columns are editable
         return true;
     }
 
@@ -98,8 +111,11 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
                 case COL_USERNAME:
                     return credential.getUsername() != null ? credential.getUsername() : "";
                 case COL_PASSWORD:
-                    // Show password in plain text for editing
+                    // Return the password - renderer will handle masking
                     return credential.getPassword() != null ? credential.getPassword() : "";
+                case COL_SHOW_PASSWORD:
+                    // Return the visibility state for this row
+                    return row < passwordVisibility.size() ? passwordVisibility.get(row) : Boolean.FALSE;
                 case COL_ENABLED:
                     return credential.isEnabled();
             }
@@ -118,11 +134,20 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
                 case COL_PASSWORD:
                     credential.setPassword((String) value);
                     break;
+                case COL_SHOW_PASSWORD:
+                    // Toggle password visibility
+                    while (passwordVisibility.size() <= row) {
+                        passwordVisibility.add(Boolean.FALSE);
+                    }
+                    passwordVisibility.set(row, (Boolean) value);
+                    // Fire update for the password column too so it re-renders
+                    fireTableCellUpdated(row, COL_PASSWORD);
+                    break;
                 case COL_ENABLED:
                     credential.setEnabled((Boolean) value);
                     break;
             }
-            if (partner != null) {
+            if (partner != null && column != COL_SHOW_PASSWORD) {
                 updatePartnerCredentials();
             }
         }
@@ -133,11 +158,13 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
         this.partner = partner;
         synchronized (data) {
             data.clear();
+            passwordVisibility.clear();  // Clear visibility states
             if (partner != null) {
                 // Only load basic auth credentials
                 for (PartnerInboundAuthCredential cred : partner.getInboundAuthCredentialsList()) {
                     if (cred.getAuthType() == PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
                         data.add(cred);
+                        passwordVisibility.add(Boolean.FALSE);  // Initially hide all passwords
                     }
                 }
             }
@@ -148,6 +175,7 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
     public void addRow(PartnerInboundAuthCredential credential) {
         synchronized (data) {
             data.add(credential);
+            passwordVisibility.add(Boolean.FALSE);  // Initially hide password for new row
             if (partner != null) {
                 updatePartnerCredentials();
             }
@@ -159,6 +187,9 @@ public class TableModelInboundAuthBasic extends AbstractTableModel {
         synchronized (data) {
             if (row >= 0 && row < data.size()) {
                 data.remove(row);
+                if (row < passwordVisibility.size()) {
+                    passwordVisibility.remove(row);  // Remove visibility state
+                }
                 if (partner != null) {
                     updatePartnerCredentials();
                 }

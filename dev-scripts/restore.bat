@@ -1,8 +1,8 @@
 @echo off
 REM AS2 Database Restore Script (Windows)
 REM Restores:
-REM   - Clears all tables in as2_db_config database
-REM   - Clears all tables in as2_db_runtime database
+REM   - Drops all tables in as2_db_config database (keeps database)
+REM   - Drops all tables in as2_db_runtime database (keeps database)
 REM   - Restores full as2_db_config from backup
 REM   - Restores version table to as2_db_runtime from backup
 REM
@@ -10,6 +10,9 @@ REM Usage: restore.bat <backup_file>
 REM   backup_file: Name of backup file (e.g., backup_20260416_120000.sql)
 REM
 REM WARNING: This will DELETE all existing data!
+REM
+REM Note: This script assumes the databases already exist and only drops tables.
+REM       It does NOT drop or recreate the databases themselves.
 REM
 
 setlocal enabledelayedexpansion
@@ -86,9 +89,12 @@ echo   Runtime DB: %DB_RUNTIME%
 echo.
 
 REM WARNING prompt
-echo ⚠️  WARNING: This will DELETE ALL existing data in:
-echo   - %DB_CONFIG% ^(all tables^)
-echo   - %DB_RUNTIME% ^(all tables^)
+echo ⚠️  WARNING: This will DELETE ALL existing tables in:
+echo   - %DB_CONFIG% ^(all tables will be dropped^)
+echo   - %DB_RUNTIME% ^(all tables will be dropped^)
+echo.
+echo   Note: The databases themselves will NOT be dropped or recreated.
+echo         Only the tables within them will be removed.
 echo.
 echo This action CANNOT be undone!
 echo.
@@ -167,17 +173,35 @@ REM ============================================================
         exit /b 1
     )
 
-    echo Step 1: Clearing all tables in %DB_CONFIG%...
+    echo Step 1: Dropping all tables in %DB_CONFIG%...
     (
-        echo DROP DATABASE IF EXISTS %DB_CONFIG%;
-        echo CREATE DATABASE %DB_CONFIG% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    ) | mysql --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD%
+        echo SET FOREIGN_KEY_CHECKS = 0;
+        echo SET GROUP_CONCAT_MAX_LEN = 32768;
+        echo SET @tables = NULL;
+        echo SELECT GROUP_CONCAT^(CONCAT^('DROP TABLE IF EXISTS `', table_name, '`'^)^) INTO @tables
+        echo FROM information_schema.tables
+        echo WHERE table_schema = '%DB_CONFIG%';
+        echo SET @stmt = @tables;
+        echo PREPARE stmt FROM @stmt;
+        echo EXECUTE stmt;
+        echo DEALLOCATE PREPARE stmt;
+        echo SET FOREIGN_KEY_CHECKS = 1;
+    ) | mysql --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --database=%DB_CONFIG%
 
-    echo Step 2: Clearing all tables in %DB_RUNTIME%...
+    echo Step 2: Dropping all tables in %DB_RUNTIME%...
     (
-        echo DROP DATABASE IF EXISTS %DB_RUNTIME%;
-        echo CREATE DATABASE %DB_RUNTIME% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-    ) | mysql --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD%
+        echo SET FOREIGN_KEY_CHECKS = 0;
+        echo SET GROUP_CONCAT_MAX_LEN = 32768;
+        echo SET @tables = NULL;
+        echo SELECT GROUP_CONCAT^(CONCAT^('DROP TABLE IF EXISTS `', table_name, '`'^)^) INTO @tables
+        echo FROM information_schema.tables
+        echo WHERE table_schema = '%DB_RUNTIME%';
+        echo SET @stmt = @tables;
+        echo PREPARE stmt FROM @stmt;
+        echo EXECUTE stmt;
+        echo DEALLOCATE PREPARE stmt;
+        echo SET FOREIGN_KEY_CHECKS = 1;
+    ) | mysql --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% --database=%DB_RUNTIME%
 
     echo Step 3: Restoring from backup file...
     mysql --host=%DB_HOST% --port=%DB_PORT% --user=%DB_USER% --password=%DB_PASSWORD% < "%BACKUP_FILE%"
@@ -196,17 +220,37 @@ REM ============================================================
 
     set PGPASSWORD=%DB_PASSWORD%
 
-    echo Step 1: Clearing all tables in %DB_CONFIG%...
+    echo Step 1: Dropping all tables in %DB_CONFIG%...
     (
-        echo DROP DATABASE IF EXISTS %DB_CONFIG%;
-        echo CREATE DATABASE %DB_CONFIG% OWNER %DB_USER%;
-    ) | psql --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --dbname=postgres
+        echo DO $$ DECLARE
+        echo     r RECORD;
+        echo BEGIN
+        echo     -- Drop all tables
+        echo     FOR r IN ^(SELECT tablename FROM pg_tables WHERE schemaname = 'public'^) LOOP
+        echo         EXECUTE 'DROP TABLE IF EXISTS ' ^|^| quote_ident^(r.tablename^) ^|^| ' CASCADE';
+        echo     END LOOP;
+        echo     -- Drop all sequences
+        echo     FOR r IN ^(SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'^) LOOP
+        echo         EXECUTE 'DROP SEQUENCE IF EXISTS ' ^|^| quote_ident^(r.sequence_name^) ^|^| ' CASCADE';
+        echo     END LOOP;
+        echo END $$;
+    ) | psql --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --dbname=%DB_CONFIG%
 
-    echo Step 2: Clearing all tables in %DB_RUNTIME%...
+    echo Step 2: Dropping all tables in %DB_RUNTIME%...
     (
-        echo DROP DATABASE IF EXISTS %DB_RUNTIME%;
-        echo CREATE DATABASE %DB_RUNTIME% OWNER %DB_USER%;
-    ) | psql --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --dbname=postgres
+        echo DO $$ DECLARE
+        echo     r RECORD;
+        echo BEGIN
+        echo     -- Drop all tables
+        echo     FOR r IN ^(SELECT tablename FROM pg_tables WHERE schemaname = 'public'^) LOOP
+        echo         EXECUTE 'DROP TABLE IF EXISTS ' ^|^| quote_ident^(r.tablename^) ^|^| ' CASCADE';
+        echo     END LOOP;
+        echo     -- Drop all sequences
+        echo     FOR r IN ^(SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'^) LOOP
+        echo         EXECUTE 'DROP SEQUENCE IF EXISTS ' ^|^| quote_ident^(r.sequence_name^) ^|^| ' CASCADE';
+        echo     END LOOP;
+        echo END $$;
+    ) | psql --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --dbname=%DB_RUNTIME%
 
     echo Step 3: Restoring from backup file...
     psql --host=%DB_HOST% --port=%DB_PORT% --username=%DB_USER% --dbname=postgres < "%BACKUP_FILE%"

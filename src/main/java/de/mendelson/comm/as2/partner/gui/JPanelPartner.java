@@ -967,6 +967,20 @@ public class JPanelPartner extends JPanel {
         jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_ENABLED).setPreferredWidth(70);
         jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_ENABLED).setMaxWidth(80);
 
+        // Configure custom renderers and editors for password toggle
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_PASSWORD)
+                .setCellRenderer(new PasswordCellRenderer());
+
+        PasswordToggleButtonRenderer toggleRenderer = new PasswordToggleButtonRenderer();
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_SHOW_PASSWORD)
+                .setCellRenderer(toggleRenderer);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_SHOW_PASSWORD)
+                .setCellEditor(toggleRenderer);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_SHOW_PASSWORD)
+                .setPreferredWidth(50);
+        jTableInboundAuthBasic.getColumnModel().getColumn(TableModelInboundAuthBasic.COL_SHOW_PASSWORD)
+                .setMaxWidth(60);
+
         jScrollPaneInboundAuthBasic = new javax.swing.JScrollPane(jTableInboundAuthBasic);
         jScrollPaneInboundAuthBasic.setPreferredSize(new java.awt.Dimension(600, 200));
         jScrollPaneInboundAuthBasic
@@ -2412,7 +2426,7 @@ public class JPanelPartner extends JPanel {
         jRadioButtonHttpAuthNoneMDN.setText(JPanelPartner.rb.getResourceString("label.httpauth.none"));
         jRadioButtonHttpAuthNoneMDN.addItemListener(new java.awt.event.ItemListener() {
             public void itemStateChanged(java.awt.event.ItemEvent evt) {
-                jRadioButtonHttpAuthNoneMDNItemStateChanged(evt);
+                jRadioButtonHttpAuthCredentialsMDNItemStateChanged(evt);
             }
         });
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -4097,16 +4111,23 @@ public class JPanelPartner extends JPanel {
 
     private void jRadioButtonHttpAuthCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
         if (this.partner != null) {
+            int oldAuthMode = this.partner.getAuthenticationCredentialsAsyncMDN().getAuthMode();
+            String oldAuthModeName = getAuthModeName(oldAuthMode);
+
             if (this.jRadioButtonHttpAuthNoneMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
+                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to NONE (0) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCredentialsMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
+                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to BASIC (1) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthUserPreferenceMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
+                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to USER_PREFERENCE (2) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCertificateMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_CERTIFICATE);
+                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to CERTIFICATE (3) for partner: " + this.partner.getName());
             }
             this.informTreeModelNodeChanged();
         }

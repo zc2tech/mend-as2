@@ -36,6 +36,18 @@ export default function MessageDetails({ message, onClose }) {
   const [selectedDetailIndex, setSelectedDetailIndex] = useState(0);
   const toast = useToast();
 
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose]);
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -429,37 +441,95 @@ export default function MessageDetails({ message, onClose }) {
     );
   };
 
+  const handleDownloadEncrypted = async () => {
+    try {
+      const selectedDetail = details[selectedDetailIndex];
+      const selectedMessageId = selectedDetail?.messageId;
+      const overviewMessageId = message.messageId;
+
+      const response = await api.get(`/messages/${overviewMessageId}/download/encrypted`, {
+        params: { entryMessageId: selectedMessageId },
+        responseType: 'blob'
+      });
+
+      const filename = `${selectedMessageId || overviewMessageId}_encrypted_raw.dat`;
+      const url = window.URL.createObjectURL(response.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Encrypted raw message downloaded successfully');
+    } catch (error) {
+      toast.error('Failed to download encrypted message: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDownloadDecrypted = async () => {
+    try {
+      const selectedDetail = details[selectedDetailIndex];
+      const selectedMessageId = selectedDetail?.messageId;
+      const overviewMessageId = message.messageId;
+
+      const response = await api.get(`/messages/${overviewMessageId}/download/decrypted`, {
+        params: { entryMessageId: selectedMessageId },
+        responseType: 'blob'
+      });
+
+      const filename = `${selectedMessageId || overviewMessageId}_decrypted_raw.dat`;
+      const url = window.URL.createObjectURL(response.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Decrypted raw message downloaded successfully');
+    } catch (error) {
+      toast.error('Failed to download decrypted message: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   // Render raw data tab
   const renderRawData = () => (
     <div style={{ padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h3 style={{ margin: 0, fontSize: '1rem', color: '#495057' }}>
-          Raw data (unencrypted)
+          Raw data
         </h3>
-        <button
-          onClick={() => {
-            const blob = new Blob([rawData], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `raw_${message.messageId}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          }}
-          style={{
-            padding: '0.375rem 0.75rem',
-            backgroundColor: '#17a2b8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '0.875rem'
-          }}
-        >
-          💾 Save to File
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={handleDownloadEncrypted}
+            style={{
+              padding: '0.375rem 0.75rem',
+              backgroundColor: '#ffc107',
+              color: '#212529',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            🔒 Download Encrypted
+          </button>
+          <button
+            onClick={handleDownloadDecrypted}
+            style={{
+              padding: '0.375rem 0.75rem',
+              backgroundColor: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            🔓 Download Decrypted
+          </button>
+        </div>
       </div>
       {rawDataTruncated && (
         <div style={{
@@ -845,7 +915,7 @@ export default function MessageDetails({ message, onClose }) {
             style={tabStyle(activeTab === 'raw')}
             onClick={() => setActiveTab('raw')}
           >
-            📄 Raw data (unencrypted)
+            📄 Raw data
           </button>
           <button
             style={tabStyle(activeTab === 'header')}

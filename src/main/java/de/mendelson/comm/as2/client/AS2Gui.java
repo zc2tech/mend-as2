@@ -3236,7 +3236,16 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             return;
         }
 
-        // Only allow switching if current user is admin (original user)
+        // Prevent cascade switching: only allow switching if current user is the original user
+        if (!this.username.equals(this.originalUsername)) {
+            JOptionPane.showMessageDialog(this,
+                    "Cascade switching is not allowed. Please switch back first.",
+                    "Access Denied",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Only allow switching if original user is admin
         if (!this.originalUsername.equals("admin")) {
             JOptionPane.showMessageDialog(this,
                     "User switching is only available for administrators",
@@ -3338,9 +3347,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Refresh all data after user switch
      */
     private void refreshAfterUserSwitch() {
-        // Trigger a full refresh of the message overview
+        // Trigger a full refresh of the message overview and partner list
         // This will automatically use the new userId
         this.refreshThread.userRequestsOverviewRefresh();
+        this.refreshThread.requestPartnerRefresh();
+        // Force immediate refresh instead of waiting for the next scheduled run (3 seconds)
+        this.refreshThread.run();
     }
 
     /**

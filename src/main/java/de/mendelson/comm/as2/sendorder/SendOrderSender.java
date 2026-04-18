@@ -53,19 +53,38 @@ public class SendOrderSender {
     }
 
     /**
-     * @return NULL in the case of an error
+     * @deprecated Use sendWithResult() instead. This method returns null on success for IN_MEMORY strategy.
+     * @return AS2Message for PERSISTENT strategy, null for IN_MEMORY strategy or error
      */
+    @Deprecated
     public AS2Message send(CertificateManager certificateManager, Partner sender,
             Partner receiver, Path[] files, String[] originalFilenames, String userdefinedId,
             String subject, String[] payloadContentTypes) {
-        return this.send(certificateManager, sender, receiver, files, originalFilenames,
-                userdefinedId, subject, payloadContentTypes, -1);
+        SendResult result = this.sendWithResult(certificateManager, sender, receiver, files,
+                originalFilenames, userdefinedId, subject, payloadContentTypes, -1);
+        return result.getMessage(); // Returns null for IN_MEMORY (confusing legacy behavior)
     }
 
     /**
-     * Creates and sends an AS2 message with userId for HTTP auth preferences
+     * @deprecated Use sendWithResult() instead. This method returns null on success for IN_MEMORY strategy.
+     * @return AS2Message for PERSISTENT strategy, null for IN_MEMORY strategy or error
      */
+    @Deprecated
     public AS2Message send(CertificateManager certificateManager, Partner sender,
+            Partner receiver, Path[] files, String[] originalFilenames, String userdefinedId,
+            String subject, String[] payloadContentTypes, int userId) {
+        SendResult result = this.sendWithResult(certificateManager, sender, receiver, files,
+                originalFilenames, userdefinedId, subject, payloadContentTypes, userId);
+        return result.getMessage(); // Returns null for IN_MEMORY (confusing legacy behavior)
+    }
+
+    /**
+     * Creates and sends an AS2 message with userId for HTTP auth preferences.
+     * Returns a SendResult object that clearly indicates success/failure.
+     *
+     * @return SendResult containing success status, message (if available), and error details
+     */
+    public SendResult sendWithResult(CertificateManager certificateManager, Partner sender,
             Partner receiver, Path[] files, String[] originalFilenames, String userdefinedId,
             String subject, String[] payloadContentTypes, int userId) {
         try {
@@ -74,15 +93,13 @@ public class SendOrderSender {
             // Check if we're using PERSISTENT or IN_MEMORY strategy
             boolean isPersistentStrategy = (queue instanceof PersistentSendOrderQueue);
 
-            AS2Message message = null;
-
             if (isPersistentStrategy) {
                 // PERSISTENT strategy: pre-build message
                 System.out.println("DEBUG [SendOrderSender]: PERSISTENT strategy - building message");
                 AS2MessageCreation messageCreation = new AS2MessageCreation(certificateManager, certificateManager);
                 messageCreation.setLogger(this.logger);
                 messageCreation.setServerResources(this.dbDriverManager);
-                message = messageCreation.createMessage(sender, receiver,
+                AS2Message message = messageCreation.createMessage(sender, receiver,
                             files, originalFilenames, userdefinedId, subject, payloadContentTypes);
                 StringBuilder filenames = new StringBuilder();
                 for (Path file : files) {
@@ -109,7 +126,7 @@ public class SendOrderSender {
                         .setUserdefinedId(userdefinedId)
                         .setUserId(userId);
                 ((PersistentSendOrderQueue) queue).enqueueWithMessage(sendOrder);
-                return message;
+                return SendResult.successWithMessage(message);
             } else {
                 // IN_MEMORY strategy: just enqueue metadata, message will be built on-demand
                 System.out.println("DEBUG [SendOrderSender]: IN_MEMORY strategy - enqueueing metadata only");
@@ -125,11 +142,10 @@ public class SendOrderSender {
                 int orderId = queue.enqueue(request);
                 this.logger.log(Level.INFO,
                         "Enqueued send order " + orderId + " for " + sender.getName() + " -> " + receiver.getName());
-                // For IN_MEMORY, we don't return a message (it hasn't been built yet)
-                // Return null to indicate success
-                return null;
+                return SendResult.successQueued(orderId);
             }
         } catch (Throwable e) {
+            String errorMsg = e.getClass().getSimpleName() + ": " + e.getMessage();
             logger.severe(rb.getResourceString("sendoder.sendfailed",
                     new Object[]{
                         e.getClass().getSimpleName(),
@@ -137,8 +153,8 @@ public class SendOrderSender {
                     }
             ));
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_PROCESSING_ANY);
+            return SendResult.failure(errorMsg);
         }
-        return (null);
     }
 
     /**

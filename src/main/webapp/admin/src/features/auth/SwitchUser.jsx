@@ -43,14 +43,13 @@ export default function SwitchUser() {
 
   const loadUsers = async () => {
     try {
-      // Get users excluding current user, disabled users, and admin users
+      // Get all enabled users
       const response = await api.get('/users', {
         params: {
-          excludeAdmins: true,
           enabledOnly: true
         }
       });
-      // Filter out current user
+      // Filter out current user only
       const otherUsers = response.data.filter(u => u.id !== user?.id);
       setUsers(otherUsers);
     } catch (error) {
@@ -146,6 +145,7 @@ export default function SwitchUser() {
         <h1>Switch User</h1>
         <p style={{ color: '#666', marginBottom: '1.5rem' }}>
           Select a user to switch to their account context. You will see their partners, certificates, and messages.
+          Admin users can switch to any enabled user, including other admins.
         </p>
 
         <input
@@ -167,6 +167,7 @@ export default function SwitchUser() {
                 <th style={thStyle}>Username</th>
                 <th style={thStyle}>Full Name</th>
                 <th style={thStyle}>Email</th>
+                <th style={thStyle}>Role</th>
                 <th style={thStyle}>Status</th>
                 <th style={thStyle}>Action</th>
               </tr>
@@ -177,6 +178,33 @@ export default function SwitchUser() {
                   <td style={tdStyle}>{u.username}</td>
                   <td style={tdStyle}>{u.fullName || '-'}</td>
                   <td style={tdStyle}>{u.email || '-'}</td>
+                  <td style={tdStyle}>
+                    {u.roleIds?.includes(1) || u.roles?.some(r => r.name === 'ADMIN') ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        fontWeight: '500'
+                      }}>
+                        Admin
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        fontWeight: '500'
+                      }}>
+                        User
+                      </span>
+                    )}
+                  </td>
                   <td style={tdStyle}>
                     {u.enabled ? (
                       <span style={{ color: '#28a745' }}>✓ Active</span>

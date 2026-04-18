@@ -54,7 +54,10 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 /**
  * REST resource for certificate management operations
@@ -127,7 +130,7 @@ public class CertificateResource {
             }
 
             List<KeystoreCertificate> certificates = response.getCertificateList();
-            
+
             // Filter certificates by user ownership if requested
             // For user-specific keystores (where userId == currentUserId), certificates are owned by the user directly,
             // not by partners, so we should NOT filter them by partner ownership
@@ -151,7 +154,7 @@ public class CertificateResource {
                                         // Get partner ID for this certificate from database
                     Integer certPartnerId = getCertificatePartnerId(
                         processing, cert.getFingerPrintSHA1(), keystoreUsage);
-                    
+
                     if (certPartnerId != null && partnerIds.contains(certPartnerId)) {
                         filteredCertificates.add(cert);
                                             } else {
@@ -162,8 +165,144 @@ public class CertificateResource {
                             } else if (userId == currentUserId) {
                             }
 
-            return Response.ok(certificates).build();
+            // Convert to DTO format with partner usage information
+            List<Map<String, Object>> certificateList = new ArrayList<>();
+            for (KeystoreCertificate cert : certificates) {
+                Map<String, Object> certData = new HashMap<>();
+
+                // Certificate fields
+                certData.put("alias", cert.getAlias());
+                certData.put("subjectDN", cert.getSubjectDN());
+                certData.put("issuerDN", cert.getIssuerDN());
+                certData.put("notAfter", cert.getNotAfter().getTime());
+                certData.put("notBefore", cert.getNotBefore().getTime());
+                certData.put("fingerprintSHA1", cert.getFingerPrintSHA1());
+                certData.put("fingerprintMD5", cert.getFingerPrintMD5());
+                certData.put("isKeyPair", cert.getIsKeyPair());
+                certData.put("isRootCertificate", cert.isRootCertificate());
+
+                // Owner fields (for single-user mode, all belong to current user)
+                certData.put("userId", currentUserId);
+
+                // Check if certificate is used by current user's partners
+                // This applies to all keystore types: sign (for encryption/signing), tls (for inbound cert auth)
+                logger.info("[DEBUG] Checking certificate usage for alias: " + cert.getAlias() + ", keystoreType: " + keystoreType + ", fingerprint: " + cert.getFingerPrintSHA1());
+                List<String> partnersUsing = getPartnersUsingCertificate(processing, cert.getFingerPrintSHA1(), currentUserId);
+                certData.put("partnersUsing", partnersUsing);
+                boolean canDelete = partnersUsing.isEmpty();
+                certData.put("canDelete", canDelete);
+                logger.info("[DEBUG] Certificate " + cert.getAlias() + " canDelete=" + canDelete + ", partnersUsing=" + partnersUsing);
+
+                certificateList.add(certData);
+            }
+
+            return Response.ok(certificateList).build();
         } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * List ALL users' certificates (admin only)
+     * Query parameters:
+     *   keystoreType: sign|tls (default: sign)
+     * Returns certificates with owner information
+     */
+    @GET
+    @Path("/all-users")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listAllUsersCertificates(
+            @Context SecurityContext securityContext,
+            @QueryParam("keystoreType") @DefaultValue("sign") String keystoreType) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Server processing not available"))
+                        .build();
+            }
+
+            // Check if current user is admin (has USER_MANAGE permission)
+            int currentUserId = getCurrentUserId(securityContext, processing);
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                    processing.getDBDriverManager(), logger);
+            de.mendelson.comm.as2.usermanagement.WebUIUser currentUser =
+                userAccess.getUser(currentUserId);
+
+            if (currentUser == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity(new ErrorResponse("User not found"))
+                        .build();
+            }
+
+            // Check if user has USER_MANAGE permission (admin)
+            java.util.Set<String> permissions =
+                userAccess.getUserPermissions(currentUser.getUsername());
+            boolean isAdmin = permissions.contains("USER_MANAGE");
+
+            if (!isAdmin) {
+                return Response.status(Response.Status.FORBIDDEN)
+                        .entity(new ErrorResponse("Access denied: Admin permission required"))
+                        .build();
+            }
+
+            // Determine keystore usage type
+            int keystoreUsage;
+            if ("tls".equals(keystoreType)) {
+                keystoreUsage = de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_TLS;
+            } else {
+                keystoreUsage = de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_ENC_SIGN;
+            }
+
+            // Create request and call existing backend handler
+            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest request =
+                new de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest(keystoreUsage);
+
+            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesResponse response =
+                processing.processAllUsersCertificatesRequest(request);
+
+            if (response.getException() != null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(response.getException().getMessage()))
+                        .build();
+            }
+
+            // Convert to DTO format that includes owner information
+            List<Map<String, Object>> certificateList = new ArrayList<>();
+            for (de.mendelson.util.security.cert.CertificateWithOwner certWithOwner : response.getCertificates()) {
+                Map<String, Object> certData = new HashMap<>();
+
+                // Certificate fields
+                de.mendelson.util.security.cert.KeystoreCertificate cert = certWithOwner.getCertificate();
+                certData.put("alias", cert.getAlias());
+                certData.put("subjectDN", cert.getSubjectDN());
+                certData.put("issuerDN", cert.getIssuerDN());
+                certData.put("notAfter", cert.getNotAfter().getTime());
+                certData.put("notBefore", cert.getNotBefore().getTime());
+                certData.put("fingerprintSHA1", cert.getFingerPrintSHA1());
+                certData.put("fingerprintMD5", cert.getFingerPrintMD5());
+                certData.put("isKeyPair", cert.getIsKeyPair());
+                certData.put("isRootCertificate", cert.isRootCertificate());
+
+                // Owner fields
+                certData.put("userId", certWithOwner.getUserId());
+                certData.put("username", certWithOwner.getUsername());
+
+                // Check if certificate is used by current user's partners
+                // This applies to all keystore types: sign (for encryption/signing), tls (for inbound cert auth)
+                List<String> partnersUsing = getPartnersUsingCertificate(processing, cert.getFingerPrintSHA1(), currentUserId);
+                certData.put("partnersUsing", partnersUsing);
+                certData.put("canDelete", certWithOwner.getUserId() == currentUserId && partnersUsing.isEmpty());
+
+                certificateList.add(certData);
+            }
+
+            return Response.ok(certificateList).build();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error listing all users' certificates", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
                     .build();
@@ -199,6 +338,72 @@ public class CertificateResource {
             System.err.println("Error getting certificate partner ID: " + e.getMessage());
         }
         return null;
+    }
+
+    /**
+     * Helper method to get partners using a certificate (for current user only)
+     */
+    private List<String> getPartnersUsingCertificate(AS2ServerProcessing processing,
+                                                      String fingerprintSHA1,
+                                                      int currentUserId) {
+        List<String> partnersUsing = new ArrayList<>();
+        logger.info("[DEBUG] getPartnersUsingCertificate called for fingerprint: " + fingerprintSHA1 + ", currentUserId: " + currentUserId);
+        try {
+            // Get ONLY partners owned by the current user
+            de.mendelson.comm.as2.partner.PartnerAccessDB partnerDB =
+                new de.mendelson.comm.as2.partner.PartnerAccessDB(processing.getDBDriverManager());
+            List<Partner> partners = partnerDB.getPartnersOwnedByUser(
+                currentUserId,
+                de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
+            logger.info("[DEBUG] Total partners owned by current user: " + partners.size());
+
+            // Check each partner's certificate configuration
+            for (Partner partner : partners) {
+                logger.info("[DEBUG] Checking partner: " + partner.getName() + " (ID=" + partner.getDBId() + ", isLocalStation=" + partner.isLocalStation() + ")");
+
+                // Check sign/encrypt certificates (for remote partners)
+                if (fingerprintSHA1.equals(partner.getCryptFingerprintSHA1())) {
+                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for ENCRYPTION");
+                    partnersUsing.add(partner.getName() + " (encryption)");
+                }
+                if (fingerprintSHA1.equals(partner.getSignFingerprintSHA1())) {
+                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for SIGNING");
+                    partnersUsing.add(partner.getName() + " (signing)");
+                }
+                if (fingerprintSHA1.equals(partner.getCryptOverwriteLocalstationFingerprintSHA1())) {
+                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for ENCRYPTION-OVERWRITE-LOCAL");
+                    partnersUsing.add(partner.getName() + " (encryption - overwrite local)");
+                }
+                if (fingerprintSHA1.equals(partner.getSignOverwriteLocalstationFingerprintSHA1())) {
+                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for SIGNING-OVERWRITE-LOCAL");
+                    partnersUsing.add(partner.getName() + " (signing - overwrite local)");
+                }
+
+                // Check TLS certificate (ONLY for local station - inbound cert auth)
+                if (partner.isLocalStation()) {
+                    // Check inbound auth credentials list for certificate authentication
+                    List<de.mendelson.comm.as2.partner.PartnerInboundAuthCredential> inboundCreds =
+                        partner.getInboundAuthCredentialsList();
+                    logger.info("[DEBUG] Local station " + partner.getName() + " has " + inboundCreds.size() + " inbound auth credentials");
+
+                    for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential cred : inboundCreds) {
+                        if (cred.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                            String credFingerprint = cred.getCertFingerprint();
+                            logger.info("[DEBUG] Found certificate auth credential with fingerprint: " + credFingerprint);
+                            if (fingerprintSHA1.equals(credFingerprint)) {
+                                logger.info("[DEBUG] MATCH: Local station " + partner.getName() + " uses this cert for TLS INBOUND CERT AUTH");
+                                partnersUsing.add(partner.getName() + " (TLS inbound cert auth)");
+                            }
+                        }
+                    }
+                }
+            }
+            logger.info("[DEBUG] Partners using this certificate: " + partnersUsing.size() + " - " + partnersUsing);
+        } catch (Exception e) {
+            logger.warning("Failed to check certificate usage: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return partnersUsing;
     }
 
     /**
@@ -319,7 +524,15 @@ public class CertificateResource {
                 manager.loadKeystoreCertificates(keystoreStorage);
             } else {
                 // User-specific sign/encrypt keystore
-                manager = processing.getCertificateManagerSignEncrypt();
+                manager = new CertificateManager(logger);
+                de.mendelson.util.security.cert.KeystoreStorageImplDB keystoreStorage =
+                    new de.mendelson.util.security.cert.KeystoreStorageImplDB(
+                        de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
+                        processing.getDBDriverManager(),
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        currentUserId);
+                manager.loadKeystoreCertificates(keystoreStorage);
             }
 
             if (manager == null) {
@@ -351,14 +564,16 @@ public class CertificateResource {
     }
 
     /**
-     * Generate a CSR (Certificate Signing Request) for a certificate
-     * Request body: { fingerprintSHA1, keystoreType (sign|tls), requestType (PKCS10|CRMF) }
+     * Export all public certificates as PEM files in a ZIP archive
+     * Request body: { keystoreType (sign|tls) }
      */
     @POST
-    @Path("/generate-csr")
+    @Path("/export-all-public-pem")
     @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response generateCSR(CSRGenerationRequestDTO csrRequest) {
+    @Produces("application/zip")
+    public Response exportAllPublicCertificatesPEM(
+            @Context SecurityContext securityContext,
+            ExportKeystoreRequestDTO exportRequest) {
         try {
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
@@ -366,6 +581,98 @@ public class CertificateResource {
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
             }
+
+            // Get current user's ID
+            int currentUserId = getCurrentUserId(securityContext, processing);
+
+            // Get the appropriate certificate manager
+            CertificateManager manager;
+            if ("tls".equals(exportRequest.getKeystoreType())) {
+                // User-specific TLS keystore
+                manager = new CertificateManager(logger);
+                de.mendelson.util.security.cert.KeystoreStorageImplDB keystoreStorage =
+                    new de.mendelson.util.security.cert.KeystoreStorageImplDB(
+                        de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
+                        processing.getDBDriverManager(),
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        currentUserId);
+                manager.loadKeystoreCertificates(keystoreStorage);
+            } else {
+                // User-specific sign/encrypt keystore
+                manager = processing.getCertificateManagerSignEncrypt();
+            }
+
+            if (manager == null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse("Certificate manager not available"))
+                        .build();
+            }
+
+            // Create a ZIP file containing all public certificates as PEM files
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            java.util.zip.ZipOutputStream zipOut = new java.util.zip.ZipOutputStream(baos);
+
+            // Get all certificates from keystore
+            java.security.KeyStore keystore = manager.getKeystore();
+            java.util.Enumeration<String> aliases = keystore.aliases();
+
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                java.security.cert.Certificate cert = keystore.getCertificate(alias);
+
+                if (cert != null) {
+                    // Convert certificate to PEM format
+                    String pemCert = "-----BEGIN CERTIFICATE-----\n" +
+                        java.util.Base64.getMimeEncoder(64, "\n".getBytes()).encodeToString(cert.getEncoded()) +
+                        "\n-----END CERTIFICATE-----\n";
+
+                    // Add to ZIP
+                    java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(alias + ".pem");
+                    zipOut.putNextEntry(zipEntry);
+                    zipOut.write(pemCert.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    zipOut.closeEntry();
+                }
+            }
+
+            zipOut.close();
+            byte[] zipData = baos.toByteArray();
+
+            String filename = exportRequest.getKeystoreType() + "_public_certificates.zip";
+
+            return Response.ok(zipData)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .build();
+
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .type(MediaType.APPLICATION_JSON)
+                    .build();
+        }
+    }
+
+    /**
+     * Generate a CSR (Certificate Signing Request) for a certificate
+     * Request body: { fingerprintSHA1, keystoreType (sign|tls), requestType (PKCS10|CRMF) }
+     */
+    @POST
+    @Path("/generate-csr")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response generateCSR(
+            @Context SecurityContext securityContext,
+            CSRGenerationRequestDTO csrRequest) {
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing == null) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                        .entity(new ErrorResponse("Server processing not available"))
+                        .build();
+            }
+
+            // Get current user's ID
+            int currentUserId = getCurrentUserId(securityContext, processing);
 
             int keystoreUsage = "tls".equals(csrRequest.getKeystoreType())
                     ? CSRGenerationRequest.KEYSTORE_USAGE_TLS
@@ -381,7 +688,8 @@ public class CertificateResource {
                     requestType
             );
 
-            CSRGenerationResponse response = processing.processCSRGenerationRequest(request);
+            // Use user-specific keystore for CSR generation
+            CSRGenerationResponse response = processing.processCSRGenerationRequest(request, currentUserId);
 
             if (response.getException() != null) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -913,6 +1221,18 @@ public class CertificateResource {
                         .build();
             }
 
+            // Check if certificate already exists by fingerprint (SHA-1)
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] fingerprintSHA1 = md.digest(x509Cert.getEncoded());
+            de.mendelson.util.security.cert.KeystoreCertificate existingCert =
+                certManager.getKeystoreCertificateByFingerprintSHA1(fingerprintSHA1);
+
+            if (existingCert != null) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(new ErrorResponse("Certificate already exists with alias: " + existingCert.getAlias()))
+                        .build();
+            }
+
             // Generate alias if not provided
             if (alias == null || alias.trim().isEmpty()) {
                 alias = x509Cert.getSubjectX500Principal().getName();
@@ -984,6 +1304,7 @@ public class CertificateResource {
 
             // Import all entries from keystore
             List<String> importedAliases = new ArrayList<>();
+            List<String> skippedAliases = new ArrayList<>();
             java.util.Enumeration<String> aliases = keystore.aliases();
 
             while (aliases.hasMoreElements()) {
@@ -994,16 +1315,44 @@ public class CertificateResource {
                     java.security.Key key = keystore.getKey(entryAlias, password.toCharArray());
                     java.security.cert.Certificate[] chain = keystore.getCertificateChain(entryAlias);
 
-                    String targetAlias = (alias != null && !alias.isEmpty()) ? alias : entryAlias;
-                    certManager.getKeystore().setKeyEntry(targetAlias, key,
-                        certManager.getKeystorePass(), chain);
-                    importedAliases.add(targetAlias);
+                    if (chain != null && chain.length > 0 && chain[0] instanceof java.security.cert.X509Certificate) {
+                        java.security.cert.X509Certificate x509Cert = (java.security.cert.X509Certificate) chain[0];
+
+                        // Check if certificate already exists by fingerprint
+                        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+                        byte[] fingerprintSHA1 = md.digest(x509Cert.getEncoded());
+                        de.mendelson.util.security.cert.KeystoreCertificate existingCert =
+                            certManager.getKeystoreCertificateByFingerprintSHA1(fingerprintSHA1);
+
+                        if (existingCert != null) {
+                            skippedAliases.add(entryAlias + " (already exists as " + existingCert.getAlias() + ")");
+                            continue;
+                        }
+
+                        String targetAlias = (alias != null && !alias.isEmpty()) ? alias : entryAlias;
+                        certManager.getKeystore().setKeyEntry(targetAlias, key,
+                            certManager.getKeystorePass(), chain);
+                        importedAliases.add(targetAlias);
+                    }
                 } else if (keystore.isCertificateEntry(entryAlias)) {
                     // Import certificate only
                     java.security.cert.Certificate cert = keystore.getCertificate(entryAlias);
                     if (cert instanceof java.security.cert.X509Certificate) {
+                        java.security.cert.X509Certificate x509Cert = (java.security.cert.X509Certificate) cert;
+
+                        // Check if certificate already exists by fingerprint
+                        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+                        byte[] fingerprintSHA1 = md.digest(x509Cert.getEncoded());
+                        de.mendelson.util.security.cert.KeystoreCertificate existingCert =
+                            certManager.getKeystoreCertificateByFingerprintSHA1(fingerprintSHA1);
+
+                        if (existingCert != null) {
+                            skippedAliases.add(entryAlias + " (already exists as " + existingCert.getAlias() + ")");
+                            continue;
+                        }
+
                         String targetAlias = (alias != null && !alias.isEmpty()) ? alias : entryAlias;
-                        certManager.addCertificate(targetAlias, (java.security.cert.X509Certificate) cert);
+                        certManager.addCertificate(targetAlias, x509Cert);
                         importedAliases.add(targetAlias);
                     }
                 }
@@ -1012,8 +1361,13 @@ public class CertificateResource {
             certManager.saveKeystore();
 
             ImportCertificateResponseDTO response = new ImportCertificateResponseDTO();
-            response.setMessage("Keystore imported successfully. Imported " + importedAliases.size() + " entries");
+            String message = "Keystore imported successfully. Imported " + importedAliases.size() + " entries";
+            if (!skippedAliases.isEmpty()) {
+                message += ". Skipped " + skippedAliases.size() + " duplicate entries";
+            }
+            response.setMessage(message);
             response.setImportedAliases(importedAliases);
+            response.setSkippedAliases(skippedAliases);
 
             return Response.ok(response).build();
 
@@ -1568,6 +1922,16 @@ public class CertificateResource {
 
         public void setImportedAliases(List<String> importedAliases) {
             this.importedAliases = importedAliases;
+        }
+
+        private List<String> skippedAliases;
+
+        public List<String> getSkippedAliases() {
+            return skippedAliases;
+        }
+
+        public void setSkippedAliases(List<String> skippedAliases) {
+            this.skippedAliases = skippedAliases;
         }
     }
 }
