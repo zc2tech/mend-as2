@@ -256,7 +256,7 @@ export default function Layout() {
                 >
                   Change Password
                 </button>
-                {isAdmin && (
+                {isAdmin && !originalUser && (
                   <button
                     onClick={handleSwitchUser}
                     style={dropdownItemStyle}
