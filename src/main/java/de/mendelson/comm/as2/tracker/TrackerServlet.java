@@ -127,8 +127,11 @@ public class TrackerServlet extends HttpServlet {
             }
         }
 
-        // 3. Get client IP address
+        // 3. Get client IP address and hostname
         String remoteAddr = request.getRemoteAddr();
+        String hostHeader = request.getHeader("Host");
+        // Use Host header if available, otherwise fall back to IP
+        String endpoint = (hostHeader != null && !hostHeader.isEmpty()) ? hostHeader : remoteAddr;
         String userAgent = request.getHeader("User-Agent");
 
         // 4. Check rate limiting
@@ -243,7 +246,7 @@ public class TrackerServlet extends HttpServlet {
         TrackerMessageInfo info = new TrackerMessageInfo();
         info.setMessageId(messageId);
         info.setTrackerId(trackerId);
-        info.setRemoteAddr(remoteAddr);
+        info.setRemoteAddr(endpoint);  // Store hostname from Host header instead of IP
         info.setUserAgent(userAgent);
         info.setContentType(request.getContentType());
         info.setContentSize(data.length);
