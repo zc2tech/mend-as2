@@ -33,8 +33,8 @@ export function usePartners(filterByUser = false) {
 
       // Only filter by user if explicitly requested
       if (filterByUser) {
-        // For filtering: use 0 for admin user (legacy compatibility), database ID for others
-        const filterUserId = user?.username === 'admin' ? 0 : user?.id;
+        // For filtering: use 1 for admin user (legacy compatibility), database ID for others
+        const filterUserId = user?.username === 'admin' ? 1 : user?.id;
         params.visibleToUser = filterUserId;
       }
 
