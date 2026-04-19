@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
@@ -32,7 +33,7 @@ import javax.swing.tree.TreePath;
  */
 public class JTreePartner extends JTree {
 
-    public static final int ICON_HEIGHT = AS2Gui.IMAGE_SIZE_TREENODE;
+    public static final int ICON_HEIGHT = IconManager.IMAGE_SIZE_TREENODE;
     
     /**
      * Holds a new partner ID for every created partner that is always negativ

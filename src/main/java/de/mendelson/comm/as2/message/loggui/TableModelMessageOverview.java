@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.message.loggui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
@@ -36,7 +37,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class TableModelMessageOverview extends AbstractTableModel {
     
-    protected static final int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_TABLE;
+    protected static final int IMAGE_HEIGHT = IconManager.IMAGE_SIZE_TABLE;
     public static final int ROW_HEIGHT = IMAGE_HEIGHT+2;
 
     public static final ImageIcon ICON_IN

@@ -419,3 +419,62 @@ SELECT u.id, r.id
 FROM webui_users u
 CROSS JOIN webui_roles r
 WHERE u.username = 'admin' AND r.name = 'ADMIN';
+
+-- IP Whitelist Tables
+
+-- Global IP whitelist for system-wide access control
+CREATE TABLE ip_whitelist_global (
+  id SERIAL PRIMARY KEY,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  target_type VARCHAR(50) NOT NULL,
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by VARCHAR(255),
+  UNIQUE (ip_pattern, target_type)
+);
+
+CREATE INDEX idx_ip_whitelist_target ON ip_whitelist_global(target_type, enabled);
+
+-- Partner-specific IP whitelist
+CREATE TABLE ip_whitelist_partner (
+  id SERIAL PRIMARY KEY,
+  partner_id INTEGER NOT NULL,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (partner_id, ip_pattern),
+  FOREIGN KEY (partner_id) REFERENCES partner(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ip_whitelist_partner_id ON ip_whitelist_partner(partner_id, enabled);
+
+-- User-specific IP whitelist for WebUI/API access
+CREATE TABLE ip_whitelist_user (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, ip_pattern),
+  FOREIGN KEY (user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_ip_whitelist_user_id ON ip_whitelist_user(user_id, enabled);
+
+-- IP whitelist block log for audit trail
+CREATE TABLE ip_whitelist_block_log (
+  id SERIAL PRIMARY KEY,
+  blocked_ip VARCHAR(255) NOT NULL,
+  target_type VARCHAR(50) NOT NULL,
+  attempted_user VARCHAR(255),
+  attempted_partner VARCHAR(255),
+  block_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  user_agent VARCHAR(512),
+  request_path VARCHAR(512)
+);
+
+CREATE INDEX idx_ip_block_log_time ON ip_whitelist_block_log(block_time);
+CREATE INDEX idx_ip_block_log_ip ON ip_whitelist_block_log(blocked_ip);

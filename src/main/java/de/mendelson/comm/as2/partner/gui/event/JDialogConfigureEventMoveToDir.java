@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui.event;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
@@ -82,7 +83,7 @@ public class JDialogConfigureEventMoveToDir extends JDialog {
     }
 
     private void setMultiresolutionIcons() {
-        this.jLabelImage.setIcon(new ImageIcon(PartnerEventResource.IMAGE_PROCESS_MOVE_TO_DIR.toMinResolution(AS2Gui.IMAGE_SIZE_DIALOG)));
+        this.jLabelImage.setIcon(new ImageIcon(PartnerEventResource.IMAGE_PROCESS_MOVE_TO_DIR.toMinResolution(IconManager.IMAGE_SIZE_DIALOG)));
     }
 
     /**

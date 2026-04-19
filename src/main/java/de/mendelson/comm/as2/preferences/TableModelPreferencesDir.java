@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.preferences;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.MecResourceBundle;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class TableModelPreferencesDir extends AbstractTableModel {
 
-    protected static final int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_TABLE;
+    protected static final int IMAGE_HEIGHT = IconManager.IMAGE_SIZE_TABLE;
     public static final int ROW_HEIGHT = IMAGE_HEIGHT + 2;
 
     /*Actual data to display, list of directory prefs*/

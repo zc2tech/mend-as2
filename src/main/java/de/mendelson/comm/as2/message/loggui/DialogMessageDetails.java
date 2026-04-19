@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.message.loggui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.AS2Exception;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.log.LogEntry;
@@ -66,10 +67,10 @@ public class DialogMessageDetails extends JDialog implements ListSelectionListen
 
     public static final ImageIcon ICON_LOCALSTATION
             = new ImageIcon(MendelsonMultiResolutionImage.fromSVG(
-                    "/de/mendelson/comm/as2/message/loggui/localstation.svg", AS2Gui.IMAGE_SIZE_TOOLBAR));
+                    "/de/mendelson/comm/as2/message/loggui/localstation.svg", IconManager.IMAGE_SIZE_TOOLBAR));
     public static final ImageIcon ICON_REMOTEPARTNER
             = new ImageIcon(MendelsonMultiResolutionImage.fromSVG(
-                    "/de/mendelson/comm/as2/message/loggui/singlepartner.svg", AS2Gui.IMAGE_SIZE_TOOLBAR));
+                    "/de/mendelson/comm/as2/message/loggui/singlepartner.svg", IconManager.IMAGE_SIZE_TOOLBAR));
     public static final ImageIcon ICON_PENDING
             = new ImageIcon(MendelsonMultiResolutionImage.fromSVG(
                     "/de/mendelson/comm/as2/message/loggui/state_pending.svg", 15, 48));

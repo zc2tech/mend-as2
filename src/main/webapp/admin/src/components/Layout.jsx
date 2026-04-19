@@ -198,6 +198,8 @@ export default function Layout() {
   const showMessages = hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE');
   const showSystem = hasAnyPermission('SYSTEM_READ', 'SYSTEM_WRITE');
   const showUsers = hasAnyPermission('USER_MANAGE');
+  // IP Whitelist is only visible to 'admin' super user
+  const showIPWhitelist = user?.username === 'admin';
 
   const switchedUserBannerStyle = {
     backgroundColor: '#fff3cd',
@@ -249,6 +251,7 @@ export default function Layout() {
           {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
           {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
           {showUsers && <Link to="/users" style={linkStyle}>Users</Link>}
+          {showIPWhitelist && <Link to="/ipwhitelist" style={linkStyle}>IP Whitelist</Link>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={dropdownContainerStyle} ref={dropdownRef}>

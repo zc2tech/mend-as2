@@ -96,6 +96,41 @@ public class TrackerServlet extends HttpServlet {
             return;
         }
 
+        // Get client IP address for whitelist check (declared here to avoid duplicate later)
+        String remoteAddr = request.getRemoteAddr();
+
+        // IP Whitelist Check for Tracker endpoint
+        try {
+            PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
+
+            if ("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER))) {
+
+                de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService whitelistService =
+                    de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService.getInstance(
+                        processing.getDBDriverManager());
+
+                if (!whitelistService.isAllowedForTracker(remoteAddr)) {
+                    // Log blocked attempt
+                    whitelistService.logBlockedAttempt(
+                        remoteAddr,
+                        "TRACKER",
+                        null,
+                        null,
+                        request.getHeader("User-Agent"),
+                        request.getRequestURI()
+                    );
+
+                    // Return 403 Forbidden
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                            "Access denied: IP address not whitelisted for Tracker endpoint");
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            // Log error but don't block if whitelist check fails
+            LOGGER.warning("IP whitelist check failed for Tracker endpoint: " + e.getMessage());
+        }
+
         PreferencesAS2 prefs;
         try {
             prefs = new PreferencesAS2(processing.getDBDriverManager());
@@ -127,8 +162,7 @@ public class TrackerServlet extends HttpServlet {
             }
         }
 
-        // 3. Get client IP address and hostname
-        String remoteAddr = request.getRemoteAddr();
+        // 3. Get hostname from Host header
         String hostHeader = request.getHeader("Host");
         // Use Host header if available, otherwise fall back to IP
         String endpoint = (hostHeader != null && !hostHeader.isEmpty()) ? hostHeader : remoteAddr;

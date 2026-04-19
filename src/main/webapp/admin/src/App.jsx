@@ -37,6 +37,7 @@ import TrackerMessageList from './features/tracker/TrackerMessageList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
 import UserPreferences from './features/preferences/UserPreferences';
+import IPWhitelistManagement from './features/ipwhitelist/IPWhitelistManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -127,6 +128,8 @@ function App() {
                   </PermissionRoute>
                 }
               />
+              {/* IP Whitelist - only accessible to 'admin' super user */}
+              <Route path="ipwhitelist" element={<IPWhitelistManagement />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.comm.as2.clientserver.message.PartnerConfigurationChanged;
@@ -101,16 +102,16 @@ public class JDialogPartnerConfig extends JDialog {
     private final LockClientInformation lockKeeper;
     private final static MendelsonMultiResolutionImage IMAGE_DELETE
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/delete.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_COPY
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/copypartner.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_ADD
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/add.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_PARTNER_GROUP
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/global/partner_group.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private Color colorRed = Color.RED.darker();
 
     /**
@@ -196,9 +197,9 @@ public class JDialogPartnerConfig extends JDialog {
     }
 
     private void setMultiresolutionIcons() {
-        this.jButtonDeletePartner.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonClonePartner.setIcon(new ImageIcon(IMAGE_COPY.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonNewPartner.setIcon(new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonDeletePartner.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonClonePartner.setIcon(new ImageIcon(IMAGE_COPY.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonNewPartner.setIcon(new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
         // Removed: this.jButtonGlobalSettings.setIcon(...)
 
     }

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.preferences;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.JTextFieldLimitDocument;
 import de.mendelson.util.MecResourceBundle;
@@ -32,7 +33,7 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
                     JDialogPreferences.IMAGE_HEIGHT);
     private final static MendelsonMultiResolutionImage IMAGE_WARNING
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/preferences/warning_sign.svg",
-                    AS2Gui.IMAGE_SIZE_MENU_ITEM);
+                    IconManager.IMAGE_SIZE_MENU_ITEM);
     private String oldHTTPPort = "";
     private String oldHTTPSPort = "";
     private String oldConnectionCountInbound = "";
@@ -73,9 +74,9 @@ public class PreferencesPanelConnectivity extends PreferencesPanel {
         this.jTextFieldHTTPPort.setDocument(new JTextFieldLimitDocument(5));
         //max port is 65535 because its a unsigned 16 bit value in TCP/IP
         this.jTextFieldHTTPSPort.setDocument(new JTextFieldLimitDocument(5));
-        this.jLabelWarningJettyConfigAccess1.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
-        this.jLabelWarningJettyConfigAccess2.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
-        this.jLabelWarningJettyConfigAccess3.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+        this.jLabelWarningJettyConfigAccess1.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
+        this.jLabelWarningJettyConfigAccess2.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
+        this.jLabelWarningJettyConfigAccess3.setIcon(new ImageIcon(IMAGE_WARNING.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
     }
 
     private void initializeHelp() {

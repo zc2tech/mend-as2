@@ -135,6 +135,46 @@ public class HttpReceiver extends HttpServlet {
             String cipherSuite = "-";
             int localPort = request.getLocalPort();
             String remoteAddress = request.getRemoteAddr();
+
+            // IP Whitelist Check for AS2 endpoint
+            try {
+                de.mendelson.comm.as2.preferences.PreferencesAS2 prefs =
+                    new de.mendelson.comm.as2.preferences.PreferencesAS2(
+                        AS2Server.getActivatedDBDriverManager());
+
+                if ("true".equals(prefs.get(
+                        de.mendelson.comm.as2.preferences.PreferencesAS2.IP_WHITELIST_ENABLED_AS2))) {
+
+                    // Extract partner AS2 ID from headers (if available)
+                    String partnerAS2Id = request.getHeader("AS2-From");
+
+                    de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService whitelistService =
+                        de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService.getInstance(
+                            AS2Server.getActivatedDBDriverManager());
+
+                    if (!whitelistService.isAllowedForAS2(remoteAddress, partnerAS2Id)) {
+                        // Log blocked attempt
+                        whitelistService.logBlockedAttempt(
+                            remoteAddress,
+                            "AS2",
+                            null,
+                            partnerAS2Id,
+                            request.getHeader("User-Agent"),
+                            request.getRequestURI()
+                        );
+
+                        // Return 403 Forbidden
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                                "Access denied: IP address not whitelisted for AS2 endpoint");
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // Log error but don't block if whitelist check fails
+                Logger.getLogger(AS2Server.SERVER_LOGGER_NAME).warning(
+                    "IP whitelist check failed for AS2 endpoint: " + e.getMessage());
+            }
+
             //might be one of
             //javax.servlet.request.ssl_session
             //org.eclipse.jetty.servlet.request.ssl_session

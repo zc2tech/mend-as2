@@ -21,13 +21,17 @@
 
 package de.mendelson.comm.as2.servlet.rest.auth;
 
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import jakarta.annotation.Priority;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
@@ -50,6 +54,9 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
     private static final Logger LOGGER = Logger.getLogger(JwtAuthenticationFilter.class.getName());
     private static final String ACCESS_TOKEN_COOKIE = "as2_access_token";
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider();
+
+    @Context
+    private HttpServletRequest httpServletRequest;
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
@@ -86,6 +93,53 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
 
         // Get username from token
         String username = jwtTokenProvider.getUsernameFromToken(token);
+
+        // IP Whitelist Check for WebUI/API access
+        try {
+            String clientIP = getClientIP(requestContext);
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+
+            if (processing != null && clientIP != null) {
+                PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
+                IPWhitelistService whitelistService = IPWhitelistService.getInstance(processing.getDBDriverManager());
+
+                // Get user ID for user-specific whitelist check
+                int userId = getUserId(username, processing);
+
+                // Check WebUI whitelist (for browser-based access)
+                boolean webUIEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
+                if (webUIEnabled && !whitelistService.isAllowedForWebUI(clientIP, userId)) {
+                    whitelistService.logBlockedAttempt(clientIP, "WEBUI", username, null,
+                                                      getUserAgent(requestContext), path);
+                    LOGGER.log(Level.WARNING, "IP {0} blocked by WebUI whitelist for user {1} accessing {2}",
+                              new Object[]{clientIP, username, path});
+                    requestContext.abortWith(
+                            Response.status(Response.Status.FORBIDDEN)
+                                    .entity("{\"error\":\"Access denied: Your IP address is not whitelisted for WebUI access\"}")
+                                    .build()
+                    );
+                    return;
+                }
+
+                // Check API whitelist (for REST API access)
+                boolean apiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API));
+                if (apiEnabled && !whitelistService.isAllowedForAPI(clientIP, userId)) {
+                    whitelistService.logBlockedAttempt(clientIP, "API", username, null,
+                                                      getUserAgent(requestContext), path);
+                    LOGGER.log(Level.WARNING, "IP {0} blocked by API whitelist for user {1} accessing {2}",
+                              new Object[]{clientIP, username, path});
+                    requestContext.abortWith(
+                            Response.status(Response.Status.FORBIDDEN)
+                                    .entity("{\"error\":\"Access denied: Your IP address is not whitelisted for API access\"}")
+                                    .build()
+                    );
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            // Log error but don't block request (graceful degradation)
+            LOGGER.log(Level.WARNING, "IP whitelist check failed for WebUI/API: " + e.getMessage(), e);
+        }
 
         // Check if user must change password before accessing other endpoints
         // Skip this check if the session is an admin impersonation (switchedByAdmin=true)
@@ -281,5 +335,58 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Extract client IP address from request
+     * Supports X-Forwarded-For header for proxies/load balancers
+     */
+    private String getClientIP(ContainerRequestContext requestContext) {
+        try {
+            // Try X-Forwarded-For header first (for proxies/load balancers)
+            String xForwardedFor = requestContext.getHeaderString("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.trim().isEmpty()) {
+                // X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2, ...)
+                // Take the first one (original client)
+                String[] ips = xForwardedFor.split(",");
+                return ips[0].trim();
+            }
+
+            // Fall back to direct remote address
+            if (httpServletRequest != null) {
+                return httpServletRequest.getRemoteAddr();
+            }
+
+            return null;
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to extract client IP", e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract user agent from request
+     */
+    private String getUserAgent(ContainerRequestContext requestContext) {
+        try {
+            return requestContext.getHeaderString("User-Agent");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get user ID by username
+     */
+    private int getUserId(String username, AS2ServerProcessing processing) {
+        try {
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                    processing.getDBDriverManager(), LOGGER);
+            de.mendelson.comm.as2.usermanagement.WebUIUser user = userMgmt.getUserByUsername(username);
+            return user != null ? user.getId() : -1;
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to get user ID for username: " + username, e);
+            return -1;
+        }
     }
 }

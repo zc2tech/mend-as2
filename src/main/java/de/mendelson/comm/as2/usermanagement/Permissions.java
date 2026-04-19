@@ -48,6 +48,7 @@ public class Permissions {
     public static final String SYSTEM_CONFIG_NOTIFICATIONS = "SYSTEM_CONFIG_NOTIFICATIONS";
     public static final String SYSTEM_CONFIG_INTERFACE = "SYSTEM_CONFIG_INTERFACE";
     public static final String SYSTEM_CONFIG_LOGGING = "SYSTEM_CONFIG_LOGGING";
+    public static final String SYSTEM_CONFIG_IP_WHITELIST = "SYSTEM_CONFIG_IP_WHITELIST";
 
     // System Monitoring
     public static final String SYSTEM_INFO_READ = "SYSTEM_INFO_READ";

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.client;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.util.httpconfig.gui.JDialogDisplayHTTPConfiguration;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
@@ -176,98 +177,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         ClientsideMessageProcessor, MouseListener, PopupMenuListener, ModuleStarter,
         TableColumnHiddenStateListener {
 
-    public static final int IMAGE_SIZE_POPUP = 20;
-    public static final int IMAGE_SIZE_MENU_ITEM = 20;
-    public static final int IMAGE_SIZE_TOOLBAR = 24;
-    public static final int IMAGE_SIZE_DIALOG = 32;
-    public static final int IMAGE_SIZE_TREENODE = 18;
-    public static final int IMAGE_SIZE_LIST = 18;
-    public static final int IMAGE_SIZE_TABLE = 18;
-
-    /**
-     * Icons, multi resolution
-     */
-    private static final MendelsonMultiResolutionImage IMAGE_DELETE = MendelsonMultiResolutionImage
-            .fromSVG("/de/mendelson/comm/as2/client/delete.svg", IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FILTER = MendelsonMultiResolutionImage
-            .fromSVG("/de/mendelson/comm/as2/client/filter.svg", IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FILTER_ACTIVE = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/filter_active.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_MESSAGE_DETAILS = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/messagedetails.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_CERTIFICATE = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/util/security/cert/certificate.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_MANUAL_SEND = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/send.svg",
-            IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_TOOLBAR * 2);
-    private static final MendelsonMultiResolutionImage IMAGE_PARTNER = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/partner/gui/singlepartner.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_USER_MANAGEMENT = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/usermanagement/gui/usermanagement.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_STOP = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/stop.svg",
-            IMAGE_SIZE_TOOLBAR);
-    private static final MendelsonMultiResolutionImage IMAGE_COLUMN = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/util/tables/hideablecolumns/column.svg",
-            IMAGE_SIZE_TOOLBAR);
-    private static final MendelsonMultiResolutionImage IMAGE_LOG_SEARCH = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/util/clientserver/log/search/gui/magnifying_glass.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_PORTS = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/util/httpconfig/gui/ports.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_EXIT = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/exit.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_PREFERENCES = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/preferences/preferences.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    public static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO_WITH_TEXT = MendelsonMultiResolutionImage
-            .fromSVG(getLogoPath("logo_open_source_with_text.svg"),
-                    100);
-    private static final MendelsonMultiResolutionImage IMAGE_PRODUCT_LOGO = MendelsonMultiResolutionImage.fromSVG(
-            getLogoPath("logo_open_source.svg"),
-            16, 128);
-    private static final MendelsonMultiResolutionImage IMAGE_PENDING = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/message/loggui/state_pending.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_STOPPED = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/message/loggui/state_stopped.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_FINISHED = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/message/loggui/state_finished.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_HIDE = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/hide.svg",
-            IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_MENU_ITEM * 2,
-            SVGScalingOption.KEEP_HEIGHT);
-    private static final MendelsonMultiResolutionImage IMAGE_SYSINFO = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/util/systemevents/gui/sysinfo.svg",
-            IMAGE_SIZE_MENU_ITEM);
-    private static final MendelsonMultiResolutionImage IMAGE_HOURGLASS = MendelsonMultiResolutionImage.fromSVG(
-            "/de/mendelson/comm/as2/client/hourglass.svg",
-            IMAGE_SIZE_MENU_ITEM,
-            IMAGE_SIZE_TOOLBAR * 2);
-
-
-    /**
-     * Helper method to determine logo path based on test mode
-     * Test mode is detected by checking if the system property is set
-     */
-    private static String getLogoPath(String defaultLogoName) {
-        boolean isTestMode = Boolean.parseBoolean(System.getProperty("mend.as2.testmode", "false"));
-        if (isTestMode) {
-            // Replace .svg with _test.svg
-            return "/de/mendelson/comm/as2/client/" + defaultLogoName.replace(".svg", "_test.svg");
-        } else {
-            return "/de/mendelson/comm/as2/client/" + defaultLogoName;
-        }
-    }
+    // Icon management is now delegated to IconManager class
 
     /**
      * Preferences of the application
@@ -643,40 +553,44 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void setMultiresolutionIcons() {
-        this.jButtonFilter.setIcon(new ImageIcon(IMAGE_FILTER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jButtonDeleteMessage.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemPopupDeleteMessage.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IMAGE_SIZE_POPUP)));
-        this.jButtonMessageDetails.setIcon(new ImageIcon(IMAGE_MESSAGE_DETAILS.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemPopupMessageDetails
-                .setIcon(new ImageIcon(IMAGE_MESSAGE_DETAILS.toMinResolution(IMAGE_SIZE_POPUP)));
-        this.jButtonCertificatesSignEncrypt
-                .setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jButtonCertificatesTLS.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemCertificatesSSL.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemCertificatesSignCrypt
-                .setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemFileSend.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemPopupSendAgain.setIcon(new ImageIcon(IMAGE_MANUAL_SEND.toMinResolution(IMAGE_SIZE_POPUP)));
-        this.jButtonPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemPartner.setIcon(new ImageIcon(IMAGE_PARTNER.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jButtonUserManagement.setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemUserManagement
-                .setIcon(new ImageIcon(IMAGE_USER_MANAGEMENT.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemSearchInServerLog.setIcon(new ImageIcon(IMAGE_LOG_SEARCH.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jToggleButtonStopRefresh.setIcon(new ImageIcon(IMAGE_STOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jButtonConfigureColumns.setIcon(new ImageIcon(IMAGE_COLUMN.toMinResolution(IMAGE_SIZE_TOOLBAR)));
-        this.jMenuItemHTTPServerInfo.setIcon(new ImageIcon(IMAGE_PORTS.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemFileExit.setIcon(new ImageIcon(IMAGE_EXIT.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemHelpAbout.setIcon(new ImageIcon(IMAGE_PRODUCT_LOGO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemHelpSystem.setIcon(new ImageIcon(IMAGE_PRODUCT_LOGO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemFilePreferences.setIcon(new ImageIcon(IMAGE_PREFERENCES.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jLabelFilterShowError.setIcon(new ImageIcon(IMAGE_STOPPED.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jLabelFilterShowOk.setIcon(new ImageIcon(IMAGE_FINISHED.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jLabelFilterShowPending.setIcon(new ImageIcon(IMAGE_PENDING.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jButtonHideFilter.setIcon(new ImageIcon(IMAGE_HIDE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        this.jMenuItemSystemEvents.setIcon(new ImageIcon(IMAGE_SYSINFO.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
-        // this.jButtonShop.setIcon(new
-        // ImageIcon(IMAGE_SHOP.toMinResolution(IMAGE_SIZE_TOOLBAR)));
+        // Initialize IconManager
+        IconManager.initialize();
+
+        // Toolbar and button icons
+        this.jButtonFilter.setIcon(IconManager.getFilterIconToolbar());
+        this.jButtonDeleteMessage.setIcon(IconManager.getDeleteIconToolbar());
+        this.jButtonMessageDetails.setIcon(IconManager.getMessageDetailsIconToolbar());
+        this.jButtonCertificatesSignEncrypt.setIcon(IconManager.getCertificateIconToolbar());
+        this.jButtonCertificatesTLS.setIcon(IconManager.getCertificateIconToolbar());
+        this.jButtonPartner.setIcon(IconManager.getPartnerIconToolbar());
+        this.jButtonUserManagement.setIcon(IconManager.getUserManagementIconToolbar());
+        this.jToggleButtonStopRefresh.setIcon(IconManager.getStopIconToolbar());
+        this.jButtonConfigureColumns.setIcon(IconManager.getColumnIconToolbar());
+        this.jButtonHideFilter.setIcon(IconManager.getHideIconMenuItem());
+
+        // Menu item icons
+        this.jMenuItemCertificatesSSL.setIcon(IconManager.getCertificateIconMenuItem());
+        this.jMenuItemCertificatesSignCrypt.setIcon(IconManager.getCertificateIconMenuItem());
+        this.jMenuItemFileSend.setIcon(IconManager.getManualSendIconMenuItem());
+        this.jMenuItemPartner.setIcon(IconManager.getPartnerIconMenuItem());
+        this.jMenuItemUserManagement.setIcon(IconManager.getUserManagementIconMenuItem());
+        this.jMenuItemSearchInServerLog.setIcon(IconManager.getLogSearchIconMenuItem());
+        this.jMenuItemHTTPServerInfo.setIcon(IconManager.getPortsIconMenuItem());
+        this.jMenuItemFileExit.setIcon(IconManager.getExitIconMenuItem());
+        this.jMenuItemHelpAbout.setIcon(IconManager.getProductLogoIconMenuItem());
+        this.jMenuItemHelpSystem.setIcon(IconManager.getProductLogoIconMenuItem());
+        this.jMenuItemFilePreferences.setIcon(IconManager.getPreferencesIconMenuItem());
+        this.jMenuItemSystemEvents.setIcon(IconManager.getSysinfoIconMenuItem());
+
+        // Popup menu icons
+        this.jMenuItemPopupDeleteMessage.setIcon(IconManager.getDeleteIconPopup());
+        this.jMenuItemPopupMessageDetails.setIcon(IconManager.getMessageDetailsIconPopup());
+        this.jMenuItemPopupSendAgain.setIcon(IconManager.getManualSendIconPopup());
+
+        // Filter status label icons
+        this.jLabelFilterShowError.setIcon(IconManager.getStoppedIconMenuItem());
+        this.jLabelFilterShowOk.setIcon(IconManager.getFinishedIconMenuItem());
+        this.jLabelFilterShowPending.setIcon(IconManager.getPendingIconMenuItem());
     }
 
     /**
@@ -845,7 +759,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      */
     private void initializeDesktopIntegration() {
         // sets the application icons in multiple resolutions
-        this.setIconImages(IMAGE_PRODUCT_LOGO.getResolutionVariants());
+        this.setIconImages(IconManager.getProductLogo().getResolutionVariants());
         // Moves the main Menu Bar to where the Mac OS users expect it - this property
         // is ignored on
         // other platforms
@@ -870,7 +784,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             Taskbar taskbar = Taskbar.getTaskbar();
             if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
                 try {
-                    taskbar.setIconImage(IMAGE_PRODUCT_LOGO);
+                    taskbar.setIconImage(IconManager.getProductLogo());
                 } catch (SecurityException e) {
                     // nop
                 }
@@ -1140,9 +1054,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         }
         this.jButtonDeleteMessage.setEnabled(deletableRowSelected);
         if (this.filterIsSet()) {
-            this.jButtonFilter.setIcon(new ImageIcon(IMAGE_FILTER_ACTIVE.toMinResolution(24)));
+            this.jButtonFilter.setIcon(IconManager.getFilterActiveIcon(24));
         } else {
-            this.jButtonFilter.setIcon(new ImageIcon(IMAGE_FILTER.toMinResolution(24)));
+            this.jButtonFilter.setIcon(IconManager.getFilterIcon(24));
         }
 
     }
@@ -1402,13 +1316,13 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         .append("]");
             }
             UINotification.instance().addNotification(
-                    IMAGE_PREFERENCES,
+                    IconManager.getPreferences(),
                     UINotification.TYPE_INFORMATION,
                     this.rbPreferences.getResourceString("setting.updated"),
                     text.toString());
         } else if (message.getType() == ConfigurationChangedOnServer.TYPE_NOTIFICATION_SETTINGS) {
             UINotification.instance().addNotification(
-                    IMAGE_PREFERENCES,
+                    IconManager.getPreferences(),
                     UINotification.TYPE_INFORMATION,
                     this.rbPreferences.getResourceString("setting.updated"),
                     this.rbPreferences.getResourceString("notification.setting.updated"));
@@ -1441,7 +1355,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             AS2Gui.this.rbCertGui.getResourceString("title.ssl"),
                             AS2ServerVersion.getFullProductName(), false,
                             ModuleLock.MODULE_SSL_KEYSTORE, null);
-                    dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
+                    dialog.setImageSizePopup(IconManager.IMAGE_SIZE_POPUP);
                     dialog.setSelectionByAlias(selectedAlias);
 
                     // For TLS certificates, admin users access system-wide keystore (user_id=-1)
@@ -1507,7 +1421,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                             AS2Gui.this.rbCertGui.getResourceString("title.signencrypt"),
                             AS2ServerVersion.getFullProductName(), false,
                             ModuleLock.MODULE_ENCSIGN_KEYSTORE, null);
-                    dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
+                    dialog.setImageSizePopup(IconManager.IMAGE_SIZE_POPUP);
 
                     KeystoreStorage storage = new KeystoreStorageImplClientServer(
                             AS2Gui.this.getBaseClient(),
@@ -1592,7 +1506,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
                         false,
                         ModuleLock.MODULE_SSL_KEYSTORE,
                         null);
-                    dialog.setImageSizePopup(AS2Gui.IMAGE_SIZE_POPUP);
+                    dialog.setImageSizePopup(IconManager.IMAGE_SIZE_POPUP);
                     dialog.initialize(keystoreStorage);
 
                     // Enable admin mode to show toggle for viewing all users' certificates
@@ -2378,6 +2292,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuSystem.add(jMenuItemUserManagement);
 
+        // IP Whitelist Management
+        jMenuItemIPWhitelist = new javax.swing.JMenuItem();
+        jMenuItemIPWhitelist.setIcon(new javax.swing.ImageIcon(
+                getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
+        jMenuItemIPWhitelist.setText("IP Whitelist Management");
+        jMenuItemIPWhitelist.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemIPWhitelistActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemIPWhitelist);
+
         // TLS Certificates
         jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
@@ -2524,7 +2450,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuUserPreference.add(jMenuItemCertificatesSignCrypt);
 
         // My TLS Certificates menu item
-        jMenuItemMyTLSCertificates.setIcon(new ImageIcon(IMAGE_CERTIFICATE.toMinResolution(IMAGE_SIZE_MENU_ITEM)));
+        jMenuItemMyTLSCertificates.setIcon(IconManager.getCertificateIconMenuItem());
         jMenuItemMyTLSCertificates.setText(this.rb.getResourceString("menu.file.certificates.tls.my"));
         jMenuItemMyTLSCertificates.setAccelerator(KeyboardShortcutUtil
                 .createMenuShortcut(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
@@ -2641,6 +2567,16 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement dialog = new de.mendelson.comm.as2.usermanagement.gui.JDialogUserManagement(
                 this, this);
         dialog.setVisible(true);
+    }
+
+    private void jMenuItemIPWhitelistActionPerformed(java.awt.event.ActionEvent evt) {
+        // TODO: Fix when IDBDriverManager is available
+        // For now, JDialogIPWhitelistManagement needs to be updated to not require IDBDriverManager
+        // or we need to provide it somehow
+        JOptionPane.showMessageDialog(this,
+            "IP Whitelist Management is not yet available in SwingUI.\nPlease use WebUI for now.",
+            "Not Available",
+            JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void jMenuItemSwitchUserActionPerformed(java.awt.event.ActionEvent evt) {
@@ -2792,6 +2728,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuItem jMenuItemSystemEvents;
     private javax.swing.JMenuItem jMenuItemSwitchUser;
     private javax.swing.JMenuItem jMenuItemUserManagement;
+    private javax.swing.JMenuItem jMenuItemIPWhitelist;
     private javax.swing.JPanel jPaneSpace;
     private javax.swing.JPanel jPanelFilterOverview;
     private javax.swing.JPanel jPanelFilterOverviewContainer;
@@ -2905,7 +2842,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         // happen.
         if (throwable instanceof SyncRequestTimeoutException) {
             if (request != null && !(request instanceof MessagePayloadRequest)) {
-                UINotification.instance().addNotification(AS2Gui.IMAGE_HOURGLASS,
+                UINotification.instance().addNotification(IconManager.getHourglass(),
                         UINotification.TYPE_WARNING,
                         AS2Gui.this.rb.getResourceString("server.answer.timeout.title"),
                         AS2Gui.this.rb.getResourceString("server.answer.timeout.details"));
@@ -3378,6 +3315,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         this.jMenuItemUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
         this.jButtonUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
+
+        this.jMenuItemIPWhitelist.setVisible(this.permissionManager.hasPermission(Permissions.SYSTEM_CONFIG_IP_WHITELIST));
 
         // Disable (gray out) instead of hiding Sys TLS certificates
         boolean hasTLSPermission = this.permissionManager.hasPermission(Permissions.CERT_TLS_READ);

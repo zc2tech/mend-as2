@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
@@ -141,16 +142,16 @@ public class JPanelPartner extends JPanel {
 
     private final static MendelsonMultiResolutionImage IMAGE_DELETE = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/delete.svg",
-            AS2Gui.IMAGE_SIZE_TOOLBAR);
+            IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_ADD = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/add.svg",
-            AS2Gui.IMAGE_SIZE_TOOLBAR);
+            IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_EDIT = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/event/edit.svg",
-            AS2Gui.IMAGE_SIZE_TOOLBAR);
+            IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_TESTCONNECTION = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/testconnection.svg",
-            AS2Gui.IMAGE_SIZE_TOOLBAR);
+            IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_SYNC_MDN = MendelsonMultiResolutionImage
             .fromSVG("/de/mendelson/comm/as2/partner/gui/sync_mdn.svg", 90, 130);
     private final static MendelsonMultiResolutionImage IMAGE_ASYNC_MDN = MendelsonMultiResolutionImage
@@ -501,27 +502,27 @@ public class JPanelPartner extends JPanel {
 
     private void setMultiresolutionIcons() {
         this.jButtonHttpHeaderAdd.setIcon(
-                new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+                new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
         this.jButtonHttpHeaderRemove.setIcon(
-                new ImageIcon(IMAGE_DELETE.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+                new ImageIcon(IMAGE_DELETE.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
         this.jButtonTestConnection.setIcon(
-                new ImageIcon(IMAGE_TESTCONNECTION.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+                new ImageIcon(IMAGE_TESTCONNECTION.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
         this.jLabelIconAsyncMDN.setIcon(
                 new ImageIcon(IMAGE_ASYNC_MDN.toMinResolution(90)));
         this.jLabelIconSyncMDN.setIcon(
                 new ImageIcon(IMAGE_SYNC_MDN.toMinResolution(90)));
         this.jButtonAddEventOnReceipt.setIcon(
-                new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonEditEventOnReceipt.setIcon(
-                new ImageIcon(IMAGE_EDIT.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_EDIT.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonAddEventOnSendError.setIcon(
-                new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonEditEventOnSendError.setIcon(
-                new ImageIcon(IMAGE_EDIT.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_EDIT.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonAddEventOnSendSuccess.setIcon(
-                new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
         this.jButtonEditEventOnSendSuccess.setIcon(
-                new ImageIcon(IMAGE_EDIT.toMinResolution(AS2Gui.IMAGE_SIZE_MENU_ITEM)));
+                new ImageIcon(IMAGE_EDIT.toMinResolution(IconManager.IMAGE_SIZE_MENU_ITEM)));
     }
 
     private void initializeHelp() {

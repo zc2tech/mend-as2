@@ -146,6 +146,13 @@ public class PreferencesAS2 {
     public static final String TRACKER_RATE_LIMIT_FAILURES = "tracker.ratelimit.failures";
     public static final String TRACKER_RATE_LIMIT_WINDOW_HOURS = "tracker.ratelimit.window.hours";
     public static final String TRACKER_RATE_LIMIT_BLOCK_MINUTES = "tracker.ratelimit.block.minutes";
+    // IP Whitelist configuration keys
+    public static final String IP_WHITELIST_ENABLED_AS2 = "ip.whitelist.enabled.as2";
+    public static final String IP_WHITELIST_ENABLED_TRACKER = "ip.whitelist.enabled.tracker";
+    public static final String IP_WHITELIST_ENABLED_WEBUI = "ip.whitelist.enabled.webui";
+    public static final String IP_WHITELIST_ENABLED_API = "ip.whitelist.enabled.api";
+    public static final String IP_WHITELIST_MODE = "ip.whitelist.mode"; // GLOBAL_ONLY, PARTNER_ONLY, USER_ONLY, GLOBAL_AND_SPECIFIC
+    public static final String IP_WHITELIST_LOG_RETENTION_DAYS = "ip.whitelist.log.retention.days";
     // Login rate limiting configuration keys
     public static final String LOGIN_RATE_LIMIT_ENABLED = "login.ratelimit.enabled";
     public static final String LOGIN_RATE_LIMIT_FAILURES = "login.ratelimit.failures";
@@ -273,6 +280,12 @@ public class PreferencesAS2 {
                     Map.entry(TRACKER_RATE_LIMIT_FAILURES, "3"),
                     Map.entry(TRACKER_RATE_LIMIT_WINDOW_HOURS, "1"),
                     Map.entry(TRACKER_RATE_LIMIT_BLOCK_MINUTES, "60"),
+                    Map.entry(IP_WHITELIST_ENABLED_AS2, "false"),
+                    Map.entry(IP_WHITELIST_ENABLED_TRACKER, "false"),
+                    Map.entry(IP_WHITELIST_ENABLED_WEBUI, "true"),
+                    Map.entry(IP_WHITELIST_ENABLED_API, "true"),
+                    Map.entry(IP_WHITELIST_MODE, "GLOBAL_AND_SPECIFIC"),
+                    Map.entry(IP_WHITELIST_LOG_RETENTION_DAYS, "30"),
                     Map.entry(LOGIN_RATE_LIMIT_ENABLED, "true"),
                     Map.entry(LOGIN_RATE_LIMIT_FAILURES, "5"),
                     Map.entry(LOGIN_RATE_LIMIT_WINDOW_HOURS, "1"),

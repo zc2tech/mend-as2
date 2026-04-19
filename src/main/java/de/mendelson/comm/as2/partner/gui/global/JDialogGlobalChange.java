@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui.global;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.JTextFieldLimitDocument;
@@ -39,10 +40,10 @@ public class JDialogGlobalChange extends JDialog {
 
     private final static MendelsonMultiResolutionImage IMAGE_SET
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/global/set_profile_defaults.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_PARTNER_GROUP
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/global/partner_group.svg",
-                    AS2Gui.IMAGE_SIZE_DIALOG);
+                    IconManager.IMAGE_SIZE_DIALOG);
 
     private final MecResourceBundle rb;
     private final List<Partner> partnerList;
@@ -66,10 +67,10 @@ public class JDialogGlobalChange extends JDialog {
     }
 
     private void setMultiresolutionIcons() {
-        this.jLabelIcon.setIcon(new ImageIcon(IMAGE_PARTNER_GROUP.toMinResolution(AS2Gui.IMAGE_SIZE_DIALOG)));
-        this.jButtonSetPollEnabled.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonSetPollInterval.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonSetMaxPollFiles.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jLabelIcon.setIcon(new ImageIcon(IMAGE_PARTNER_GROUP.toMinResolution(IconManager.IMAGE_SIZE_DIALOG)));
+        this.jButtonSetPollEnabled.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonSetPollInterval.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonSetMaxPollFiles.setIcon(new ImageIcon(IMAGE_SET.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
     }
 
     private void performChangeErrorNotification() {
