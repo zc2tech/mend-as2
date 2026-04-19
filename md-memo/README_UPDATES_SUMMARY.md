@@ -1,151 +1,58 @@
-# README.md Updates - Summary
+# Recent Updates Summary (2026-04-18)
 
-## Changes Made
+This document summarizes the recent changes made to the mend-as2 project that should be reflected in README.md.
 
-Updated the main README.md to reflect recent features and improvements:
+## 1. User Switching Feature (SwingUI)
+**Feature**: Admin users can now switch to other users to test their permissions and view
+**Location**: SwingUI menu → User Management → Switch User
+**Details**:
+- Admin users can impersonate other admin or regular users
+- Automatic refresh of message list and partner list after switching
+- Menu item changes to "Switch Back" when switched
+- Window title shows current user when switched
 
-### 1. Enhanced Security Section
-**Added:**
-- System-wide TLS certificate management (separate from user certificates)
-- User-specific TLS certificates for local station authentication
+## 2. Username Validation
+**Feature**: Comprehensive validation rules for username creation
+**Rules**:
+- 3-32 characters
+- Letters, digits, hyphens, underscores, dots only
+- Must start with letter or digit
+- Cannot end with special characters
+**Implementation**: Both WebUI and SwingUI with pattern validation and tooltips
 
-### 2. Database Support Section
-**Added:**
-- System-wide keystores use `user_id=-1` (not associated with any user)
-- User-specific keystores use actual user IDs for proper ownership
+## 3. SwingUI Password Visibility Toggle
+**Feature**: Show/hide password toggle for Inbound Basic Authentication table
+**Location**: Partner → HTTP Authentication tab → Inbound Auth Basic table
+**UI**: Eye icon button column (using same SVG icons as HTTP Auth password fields)
+- 👁 (unmasked eye) when password visible
+- Masked eye icon when password hidden
+- Toggle button appears immediately after Password column
 
-### 3. Database Initialization Section
-**Added:**
-- Note about PostgreSQL requiring manual database creation
-- Note about MySQL creating databases automatically
-- Links to comprehensive documentation:
-  - Database Initialization Guide (DATABASE_INITIALIZATION.md)
-  - PostgreSQL Configuration (config/POSTGRESQL-CONFIG.md)
-  - MySQL Configuration (config/MYSQL-CONFIG.md)
-  - Backup & Restore Scripts (dev-scripts/README.md)
+## 4. Async MDN Authentication Bug Fix
+**Issue**: "None" option for Async MDN authentication not saving
+**Fixed**: Radio button event handler now properly sets AUTH_MODE_NONE
+**Location**: JPanelPartner.java HTTP Authentication tab
 
-### 4. WebUI Access Section
-**Updated System menu description:**
-- Changed "Inb. AS2 Auth" to "TLS" subtab
-- Noted: "System-wide HTTPS server certificates (permission-based access)"
-- TLS tab is now positioned as second tab after HTTP Server Configuration
+## 5. WebUI Message Sending - Admin Partner Visibility
+**Issue**: Admin users couldn't send messages using partners created by other users
+**Fixed**: Admin users now see ALL partners (userId=-1) when sending messages
+**Logic**: Regular users only see their own partners, admin users bypass filtering
 
-### 5. Backup & Restore Section
-**Complete Rewrite:**
-- **Before:** Simple pg_dump/psql commands only
-- **After:** 
-  - Automated scripts section (recommended approach)
-  - Examples for both Linux/Mac and Windows
-  - Feature list (auto-detection, cross-platform, safe restore)
-  - Link to full documentation
-  - Manual backup commands for both PostgreSQL and MySQL
+## 6. Database Restore Scripts Update
+**Change**: Scripts no longer drop/recreate databases
+**New Behavior**: 
+- Assumes databases already exist
+- Only drops tables within existing databases
+- Preserves database-level permissions and settings
+**Files**: `dev-scripts/restore.sh` and `dev-scripts/restore.bat`
 
-**New Features Highlighted:**
-```bash
-# Automated backup (Linux/Mac)
-cd dev-scripts
-./backup.sh
+## Summary for README Update
 
-# Automated restore
-./restore.sh backup_20260416_120000.sql
-```
+Key points to add to README.md:
 
-### 6. Roadmap Section
-**Added completed items:**
-- ✅ System TLS certificates management (WebUI subtab)
-- ✅ User-specific TLS certificates for local station auth
-- ✅ System-wide keystore user_id migration (user_id=-1)
-- ✅ MySQL configuration quick reference guide
-- ✅ Automated backup/restore scripts (dev-scripts/)
-
-### 7. Troubleshooting Section
-**Added new entries:**
-
-#### System TLS vs User TLS Certificates
-- Explanation of System TLS (System → TLS tab)
-  - System-wide HTTPS server certificates
-  - Permission requirements (CERT_TLS_READ/WRITE)
-  - Stored with user_id=-1
-- Explanation of User TLS (My Sign/Crypt/TLS → TLS tab)
-  - User-specific certificates
-  - Stored with actual user ID
-- Migration note: user_id=0 → user_id=-1 automatic migration
-
-#### Backup & Restore
-- Points users to automated scripts in dev-scripts/
-- Notes automatic database type detection
-- Links to detailed documentation
-
-## Documentation Links Added
-
-1. **DATABASE_INITIALIZATION.md** - How databases are created automatically
-2. **config/POSTGRESQL-CONFIG.md** - PostgreSQL quick reference
-3. **config/MYSQL-CONFIG.md** - MySQL quick reference  
-4. **dev-scripts/README.md** - Backup/restore tools guide
-
-## Key Improvements
-
-### Before
-- Limited backup documentation (PostgreSQL only)
-- No mention of System TLS certificates
-- Missing MySQL-specific information
-- No automated backup tools mentioned
-
-### After
-- ✅ Comprehensive backup section with automated tools
-- ✅ Clear distinction between System TLS and User TLS
-- ✅ Full MySQL and PostgreSQL documentation links
-- ✅ User_id=-1 migration documented
-- ✅ Cross-platform backup/restore scripts highlighted
-- ✅ Complete feature roadmap updates
-
-## Impact on Users
-
-### New Users
-- Clear guidance on database initialization differences (PostgreSQL vs MySQL)
-- Easy-to-find backup/restore tools
-- Understanding of certificate management architecture
-
-### Existing Users
-- Migration information (user_id=0 → user_id=-1)
-- New System TLS management capabilities
-- Automated backup tools for production use
-
-### Administrators
-- Quick reference guides for both databases
-- Production-ready backup strategies
-- Security best practices with proper certificate separation
-
-## Related Documentation
-
-All referenced documentation exists and is comprehensive:
-
-```
-mend-as2/
-├── README.md                                    ✅ Updated
-├── DATABASE_INITIALIZATION.md                   ✅ Exists
-├── config/
-│   ├── POSTGRESQL-CONFIG.md                     ✅ Exists
-│   └── MYSQL-CONFIG.md                          ✅ Exists
-├── dev-scripts/
-│   ├── README.md                                ✅ Exists
-│   ├── backup.sh                                ✅ Exists
-│   ├── backup.bat                               ✅ Exists
-│   ├── restore.sh                               ✅ Exists
-│   └── restore.bat                              ✅ Exists
-└── SYSTEM_WIDE_USERID_MIGRATION_COMPLETED.md   ✅ Exists
-```
-
-## Summary
-
-The README.md now:
-- ✅ Reflects all recent architectural changes
-- ✅ Documents new System TLS management
-- ✅ Includes automated backup/restore tools
-- ✅ Provides MySQL and PostgreSQL guidance
-- ✅ Links to comprehensive documentation
-- ✅ Maintains consistent formatting and style
-- ✅ Helps users understand certificate ownership model
-- ✅ Guides users to appropriate tools and docs
-
-Users now have a complete, up-to-date reference for all major features!
+1. **User Switching** section under SwingUI features
+2. **Username Validation** rules in User Management section
+3. **Password Visibility Toggle** in Inbound Authentication UI features
+4. **Troubleshooting** entry for Async MDN auth not saving (now fixed)
+5. **Backup & Restore** section update: clarify that restore assumes databases exist
+6. **Admin User Privileges** clarification in User Roles section
