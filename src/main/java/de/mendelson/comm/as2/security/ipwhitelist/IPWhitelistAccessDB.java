@@ -255,6 +255,30 @@ public class IPWhitelistAccessDB {
         }
     }
 
+    /**
+     * Update partner whitelist entry
+     */
+    public void updatePartnerWhitelist(IPWhitelistEntry entry) {
+        try (Connection configConnection = dbDriverManager.getConnectionWithoutErrorHandling(
+                IDBDriverManager.DB_CONFIG)) {
+
+            String sql = "UPDATE ip_whitelist_partner SET " +
+                        "ip_pattern = ?, description = ?, enabled = ?, updated_at = ? " +
+                        "WHERE id = ?";
+
+            try (PreparedStatement statement = configConnection.prepareStatement(sql)) {
+                statement.setString(1, entry.getIpPattern());
+                statement.setString(2, entry.getDescription());
+                statement.setBoolean(3, entry.isEnabled());
+                statement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+                statement.setInt(5, entry.getId());
+                statement.executeUpdate();
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
     // ========== User Whitelist ==========
 
     /**
@@ -333,6 +357,30 @@ public class IPWhitelistAccessDB {
 
             try (PreparedStatement statement = configConnection.prepareStatement(sql)) {
                 statement.setInt(1, id);
+                statement.executeUpdate();
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
+     * Update user whitelist entry
+     */
+    public void updateUserWhitelist(IPWhitelistEntry entry) {
+        try (Connection configConnection = dbDriverManager.getConnectionWithoutErrorHandling(
+                IDBDriverManager.DB_CONFIG)) {
+
+            String sql = "UPDATE ip_whitelist_user SET " +
+                        "ip_pattern = ?, description = ?, enabled = ?, updated_at = ? " +
+                        "WHERE id = ?";
+
+            try (PreparedStatement statement = configConnection.prepareStatement(sql)) {
+                statement.setString(1, entry.getIpPattern());
+                statement.setString(2, entry.getDescription());
+                statement.setBoolean(3, entry.isEnabled());
+                statement.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
+                statement.setInt(5, entry.getId());
                 statement.executeUpdate();
             }
         } catch (Throwable e) {

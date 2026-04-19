@@ -35,15 +35,18 @@ public class SwingUIPermissionManager {
 
     private Set<String> userPermissions = new HashSet<>();
     private final BaseClient baseClient;
+    private final String username;
     private boolean loaded = false;
 
     /**
      * Create a permission manager for SwingUI
      *
      * @param baseClient The client connection to the server
+     * @param username The username to manage permissions for
      */
-    public SwingUIPermissionManager(BaseClient baseClient) {
+    public SwingUIPermissionManager(BaseClient baseClient, String username) {
         this.baseClient = baseClient;
+        this.username = username;
     }
 
     /**
@@ -87,6 +90,11 @@ public class SwingUIPermissionManager {
      * @return true if the user has the permission, false otherwise
      */
     public boolean hasPermission(String permission) {
+        // Super user 'admin' bypasses all permission checks
+        if ("admin".equals(this.username)) {
+            return true;
+        }
+
         if (!this.loaded) {
             // Not loaded yet - deny by default
             return false;

@@ -75,6 +75,16 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - User-specific TLS certificates for local station authentication
   - Multi-user certificate isolation (each user has separate signing/encryption keystores)
   - TLS client certificate authentication for outbound connections
+  - **IP Whitelist Management** - Multi-level IP address access control
+    - Per-endpoint type (AS2, Tracker, WebUI, REST API)
+    - Three whitelist modes: Global Only, Partner/User Specific Only, or Combined
+    - Global whitelist (applies to all endpoints)
+    - Partner-specific whitelist (per AS2 partner)
+    - User-specific whitelist (per WebUI/API user)
+    - IP pattern support (single IP, CIDR, ranges, wildcards)
+    - Block attempt logging with configurable retention
+    - Configuration via both SwingUI and WebUI
+    - Auto-cache refresh (60-second TTL)
 
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -282,6 +292,71 @@ For all database properties:
 
 ## 🎯 Usage
 
+### IP Whitelist Management
+
+Control which IP addresses can access specific endpoints with multi-level whitelisting.
+
+**WebUI Configuration:**
+1. Login as Admin
+2. Navigate to **System** → **IP Whitelist**
+3. Configure in 5 tabs:
+
+**Settings Tab:**
+- Enable/disable whitelist per endpoint type:
+  - ☑ **AS2 Endpoint** - Control AS2 message submissions
+  - ☑ **Tracker Endpoint** - Control tracker message access
+  - ☑ **WebUI Access** - Control web interface login
+  - ☑ **REST API Access** - Control API calls
+- Select whitelist mode:
+  - **Global + Specific (Recommended)** - Check both global and partner/user lists (OR logic)
+  - **Global Only** - Only check global whitelist (same rules for everyone)
+  - **Partner/User Specific Only** - Only check entity-specific lists (isolated rules)
+- Set block log retention (1-365 days)
+
+**Global Whitelist Tab:**
+- Add IP patterns that apply to ALL enabled endpoints
+- Supports: single IPs, CIDR notation, ranges, wildcards
+- Examples: `192.168.1.1`, `10.0.0.0/8`, `192.168.1.1-192.168.1.254`, `192.168.*.*`
+
+**Partner-Specific Whitelist Tab:**
+- Select partner from dropdown (shows format: `{Username}:{PartnerName}`)
+- Add IP patterns specific to that partner's AS2 messages
+- Only applies to AS2 endpoint when partner sends messages
+
+**User-Specific Whitelist Tab:**
+- Select WebUI user from dropdown
+- Add IP patterns specific to that user's WebUI/API access
+- Only applies to WebUI and REST API endpoints
+
+**Block Log Tab:**
+- View blocked IP attempts with details:
+  - Source IP, endpoint type, target (partner/user), timestamp
+- Filter by endpoint type and date range
+- Automatic cleanup based on retention setting
+
+**SwingUI Configuration:**
+1. Open AS2Gui
+2. Menu → **System → IP Whitelist Manage** (Cmd/Ctrl+Shift+W)
+3. Same 5-tab interface as WebUI
+4. Keyboard shortcut: `Cmd+Shift+W` (Mac) or `Ctrl+Shift+W` (Windows/Linux)
+
+**Behavior:**
+- When whitelist disabled for endpoint: All IPs allowed
+- When whitelist enabled for endpoint: Only whitelisted IPs allowed (default-deny)
+- Mode "Global + Specific": IP allowed if in EITHER global OR specific list
+- Mode "Global Only": IP must be in global list
+- Mode "Specific Only": IP must be in partner/user-specific list
+- Changes take effect within 60 seconds (cache refresh interval)
+- Blocked attempts logged to database and visible in Block Log tab
+- Pattern validation on entry (invalid patterns rejected)
+
+**IP Pattern Syntax:**
+- Single IP: `192.168.1.100`
+- CIDR notation: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+- IP range: `192.168.1.1-192.168.1.254`
+- Wildcards: `192.168.*.*`, `10.0.*.100`
+- IPv6: `2001:db8::1`, `2001:db8::/32`
+
 ### Inbound Authentication
 
 Configure authentication required for incoming AS2 messages:
@@ -441,6 +516,12 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
   - HTTP Server Configuration
   - **TLS** - System-wide HTTPS server certificates (permission-based access)
   - **Tracker Conf** - Configure tracker endpoint settings
+  - **IP Whitelist** - Multi-level IP access control (5 tabs)
+    - Settings: Enable per endpoint type and select mode
+    - Global: Universal IP patterns
+    - Partner-Specific: Per-partner IP restrictions
+    - User-Specific: Per-user IP restrictions  
+    - Block Log: View blocked access attempts
   - System Events
   - Search in Server Log
   - Maintenance
@@ -477,6 +558,7 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 - `Cmd/Ctrl + E` - Edit selected
 - `Cmd/Ctrl + D` - Delete selected
 - `Cmd/Ctrl + R` - Refresh
+- `Cmd/Ctrl + Shift + W` - IP Whitelist Management
 - `ESC` - Close dialog
 
 ### REST API
@@ -563,6 +645,7 @@ mend-as2/
 - ✅ User-specific HTTP authentication credentials (outbound)
 - ✅ System-wide inbound message authentication (Basic + Certificate Auth)
 - ✅ Zero attack surface for GUI mode (Mina removed, EventBus replaces TCP)
+- ✅ IP Whitelist Management (multi-level access control per endpoint)
 
 **Best Practices:**
 1. Change default admin password immediately
@@ -734,6 +817,7 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Admin user switching feature (test permissions)
 - [x] Admin user partner visibility bypass (see all partners)
 - [x] Restore scripts assume existing databases (drop tables only)
+- [x] IP Whitelist Management (multi-level, per endpoint, 3 modes)
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -916,6 +1000,23 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - **Fixed**: "None" option for Async MDN authentication now saves correctly
 - Issue was caused by separate event handler that didn't set auth mode
 - If upgrading from older version and "None" wasn't saving, re-select "None" and save again
+
+**IP Whitelist Not Blocking**
+- Verify whitelist is enabled for the endpoint type (System → IP Whitelist → Settings tab)
+- Check the correct mode is selected:
+  - "Global + Specific" requires IP in EITHER global OR specific list
+  - "Global Only" requires IP in global list
+  - "Specific Only" requires IP in partner/user list
+- Changes take up to 60 seconds to apply (cache refresh interval)
+- Check Block Log tab to see if IPs are being blocked
+- Verify IP pattern syntax is correct (use validation during entry)
+- For partner-specific: Ensure partner matches the one sending AS2 messages
+- For user-specific: Ensure user matches the one logging into WebUI/API
+
+**IP Whitelist Settings Not Saving**
+- **Fixed**: Checkbox values now save correctly in both SwingUI and WebUI
+- Issue was case mismatch between "TRUE" (saved) and "true" (checked)
+- If settings don't persist after upgrade, re-save them once
 
 ---
 

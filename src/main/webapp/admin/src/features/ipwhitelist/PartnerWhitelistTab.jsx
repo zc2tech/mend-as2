@@ -156,11 +156,15 @@ export default function PartnerWhitelistTab() {
               style={selectStyle}
             >
               <option value="">-- Select a partner --</option>
-              {partners?.filter(p => !p.isLocalStation).map((partner) => (
-                <option key={partner.dbId} value={partner.dbId}>
-                  {partner.name} ({partner.as2Identification})
-                </option>
-              ))}
+              {partners?.filter(p => !p.isLocalStation).map((partner) => {
+                const username = partner.createdByUsername || `User ${partner.createdByUserId || 'Unknown'}`;
+                const displayName = `${username}:${partner.name}`;
+                return (
+                  <option key={partner.dbId} value={partner.dbId}>
+                    {displayName}
+                  </option>
+                );
+              })}
             </select>
             <button onClick={handleAdd} style={buttonStyle} disabled={!selectedPartnerId}>
               + Add Entry

@@ -1,6 +1,7 @@
 package de.mendelson.comm.as2.client;
 
 import de.mendelson.comm.as2.client.IconManager;
+import de.mendelson.comm.as2.security.ipwhitelist.gui.JDialogIPWhitelistManagement;
 import de.mendelson.util.httpconfig.gui.JDialogDisplayHTTPConfiguration;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.client.manualsend.JDialogManualSend;
@@ -275,6 +276,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         } catch (MissingResourceException e) {
             throw new RuntimeException("Oops..resource bundle " + e.getClassName() + " not found.");
         }
+        // Initialize IconManager before initComponents() uses icons
+        IconManager.initialize();
         initComponents();
         this.setMultiresolutionIcons();
         this.setupToolbarTooltips();
@@ -359,9 +362,9 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         // Initialize userId from username
                 this.userId = this.getUserIdFromUsername(username);
-        
+
         // Initialize permission manager and load permissions
-        this.permissionManager = new SwingUIPermissionManager(this.getBaseClient());
+        this.permissionManager = new SwingUIPermissionManager(this.getBaseClient(), username);
         try {
             this.permissionManager.loadPermissions();
         } catch (Exception e) {
@@ -553,8 +556,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void setMultiresolutionIcons() {
-        // Initialize IconManager
-        IconManager.initialize();
+        // IconManager.initialize() is called in constructor before initComponents()
 
         // Toolbar and button icons
         this.jButtonFilter.setIcon(IconManager.getFilterIconToolbar());
@@ -2297,6 +2299,8 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemIPWhitelist.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif")));
         jMenuItemIPWhitelist.setText("IP Whitelist Management");
+        jMenuItemIPWhitelist.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_W,
+                java.awt.event.InputEvent.SHIFT_DOWN_MASK));
         jMenuItemIPWhitelist.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemIPWhitelistActionPerformed(evt);
@@ -2570,13 +2574,11 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     }
 
     private void jMenuItemIPWhitelistActionPerformed(java.awt.event.ActionEvent evt) {
-        // TODO: Fix when IDBDriverManager is available
-        // For now, JDialogIPWhitelistManagement needs to be updated to not require IDBDriverManager
-        // or we need to provide it somehow
-        JOptionPane.showMessageDialog(this,
-            "IP Whitelist Management is not yet available in SwingUI.\nPlease use WebUI for now.",
-            "Not Available",
-            JOptionPane.INFORMATION_MESSAGE);
+        JDialogIPWhitelistManagement dialog = new JDialogIPWhitelistManagement(
+            this,
+            de.mendelson.comm.as2.server.AS2Server.getActivatedDBDriverManager()
+        );
+        dialog.setVisible(true);
     }
 
     private void jMenuItemSwitchUserActionPerformed(java.awt.event.ActionEvent evt) {
@@ -3297,10 +3299,23 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Called after permission loading or user switching
      */
     private void updateMenusForPermissions() {
-        if (this.permissionManager == null || !this.permissionManager.isLoaded()) {
-            // No permissions loaded - disable everything except exit
+        System.out.println("[DEBUG] updateMenusForPermissions() called for user: " + this.username);
+        this.getLogger().info("updateMenusForPermissions() called for user: " + this.username);
+
+        if (this.permissionManager == null) {
+            System.out.println("[DEBUG] permissionManager is null!");
+            this.getLogger().warning("permissionManager is null!");
             return;
         }
+
+        if (!this.permissionManager.isLoaded()) {
+            System.out.println("[DEBUG] permissionManager not loaded!");
+            this.getLogger().warning("permissionManager not loaded!");
+            return;
+        }
+
+        System.out.println("[DEBUG] permissionManager loaded successfully");
+        this.getLogger().info("permissionManager loaded successfully");
 
         // System Menu items
         // Hide System Preferences for users without system config permissions
@@ -3316,7 +3331,10 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jMenuItemUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
         this.jButtonUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
-        this.jMenuItemIPWhitelist.setVisible(this.permissionManager.hasPermission(Permissions.SYSTEM_CONFIG_IP_WHITELIST));
+        boolean hasIPWhitelistPermission = this.permissionManager.hasPermission(Permissions.SYSTEM_CONFIG_IP_WHITELIST);
+        System.out.println("[DEBUG] IP Whitelist permission check: " + hasIPWhitelistPermission + " for user: " + this.username);
+        this.getLogger().info("IP Whitelist permission check: " + hasIPWhitelistPermission + " for user: " + this.username);
+        this.jMenuItemIPWhitelist.setVisible(hasIPWhitelistPermission);
 
         // Disable (gray out) instead of hiding Sys TLS certificates
         boolean hasTLSPermission = this.permissionManager.hasPermission(Permissions.CERT_TLS_READ);

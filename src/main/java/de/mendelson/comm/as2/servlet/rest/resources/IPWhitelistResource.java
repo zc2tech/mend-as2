@@ -75,10 +75,10 @@ public class IPWhitelistResource {
             PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
 
             WhitelistSettingsDTO settings = new WhitelistSettingsDTO();
-            settings.setEnabledAS2("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_AS2)));
-            settings.setEnabledTracker("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER)));
-            settings.setEnabledWebUI("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI)));
-            settings.setEnabledAPI("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API)));
+            settings.setEnabledAS2(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_AS2));
+            settings.setEnabledTracker(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER));
+            settings.setEnabledWebUI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
+            settings.setEnabledAPI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_API));
             settings.setMode(prefs.get(PreferencesAS2.IP_WHITELIST_MODE));
             settings.setLogRetentionDays(prefs.getInt(PreferencesAS2.IP_WHITELIST_LOG_RETENTION_DAYS));
 
