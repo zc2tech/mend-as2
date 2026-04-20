@@ -269,6 +269,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       const response = await api.get('/system/generate-local-station-url', {
         params: {
           username: user.username,
+          protocol: protocol,
           hostname: window.location.hostname
         }
       });

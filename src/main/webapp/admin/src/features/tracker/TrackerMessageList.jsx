@@ -59,13 +59,13 @@ export default function TrackerMessageList() {
         }
 
         // Add HTTP URL if configured
-        if (trackerConfig.data.httpPort) {
-          urls.push({
-            protocol: 'http',
-            port: trackerConfig.data.httpPort,
-            url: `http://${host}:${trackerConfig.data.httpPort}/as2/tracker/${username}`
-          });
-        }
+        // if (trackerConfig.data.httpPort) {
+        //   urls.push({
+        //     protocol: 'http',
+        //     port: trackerConfig.data.httpPort,
+        //     url: `http://${host}:${trackerConfig.data.httpPort}/as2/tracker/${username}`
+        //   });
+        // }
 
         setTrackerEndpointUrls(urls);
       } catch (error) {

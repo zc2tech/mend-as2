@@ -527,8 +527,8 @@ public class SystemResource {
             config.setRateLimitWindowHours(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
             config.setRateLimitBlockMinutes(preferences.getInt(PreferencesAS2.TRACKER_RATE_LIMIT_BLOCK_MINUTES));
 
-            // Get hostname using helper
-            config.setHostname(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHostname());
+            // Get hostname using helper, not expected when deployed, so just comment out
+            // config.setHostname(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHostname());
 
             // Get actual listening ports from HTTP server config (handles test mode automatically)
             AS2Server server = AS2Server.getStaticServerReference();
@@ -777,6 +777,7 @@ public class SystemResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response generateLocalStationUrl(
             @QueryParam("username") String username,
+            @QueryParam("protocol") String reqProtocol, // http or https, NOT following jetty spec
             @QueryParam("hostname") String hostname) {
         try {
             AS2Server server = AS2Server.getStaticServerReference();
@@ -793,15 +794,15 @@ public class SystemResource {
 
             // Get preferred listener (HTTPS first, then HTTP) using helper
             HTTPServerConfigInfo.Listener listener =
-                de.mendelson.comm.as2.server.ServerConfigurationHelper.getPreferredListener(configInfo);
+                de.mendelson.comm.as2.server.ServerConfigurationHelper.getListener(reqProtocol, configInfo);
 
             if (listener == null) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity("{\"error\":\"No HTTP listener configured\"}").build();
             }
 
-            // Determine protocol using helper
-            String protocol = de.mendelson.comm.as2.server.ServerConfigurationHelper.getProtocol(listener);
+            // Determine protocol using helper, convert to http or https
+            // String protocol = de.mendelson.comm.as2.server.ServerConfigurationHelper.getProtocol(listener);
 
             // Use provided hostname or fall back to adapter or auto-detected hostname
             String host = hostname;
@@ -818,11 +819,11 @@ public class SystemResource {
 
             // Build URL: protocol://host:port/receiptPath/username
             String url = String.format("%s://%s:%d%s/%s",
-                    protocol, host, port, receiptPath, username);
+                    reqProtocol, host, port, receiptPath, username);
 
             LocalStationUrlResponse response = new LocalStationUrlResponse();
             response.setUrl(url);
-            response.setProtocol(protocol);
+            response.setProtocol(reqProtocol);
             response.setHost(host);
             response.setPort(port);
             response.setReceiptPath(receiptPath);

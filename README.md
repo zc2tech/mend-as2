@@ -305,7 +305,7 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 - Enable/disable whitelist per endpoint type:
   - ☑ **AS2 Endpoint** - Control AS2 message submissions
   - ☑ **Tracker Endpoint** - Control tracker message access
-  - ☑ **WebUI Access** - Control web interface login
+  - ☑ **WebUI Access** - Control web interface login (checked before login form displayed)
   - ☑ **REST API Access** - Control API calls
 - Select whitelist mode:
   - **Global + Specific (Recommended)** - Check both global and partner/user lists (OR logic)
@@ -317,6 +317,9 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 - Add IP patterns that apply to ALL enabled endpoints
 - Supports: single IPs, CIDR notation, ranges, wildcards
 - Examples: `192.168.1.1`, `10.0.0.0/8`, `192.168.1.1-192.168.1.254`, `192.168.*.*`
+- **IP Pattern filter** - Search/filter entries by IP pattern (client-side)
+- **Pagination** - Page through large lists (25/50/100/200 per page)
+- **Default filter** - WEBUI target type selected by default
 
 **Partner-Specific Whitelist Tab:**
 - Select partner from dropdown (shows format: `{Username}:{PartnerName}`)
@@ -330,9 +333,13 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 
 **Block Log Tab:**
 - View blocked IP attempts with details:
-  - Source IP, endpoint type, target (partner/user), timestamp
-- Filter by endpoint type and date range
+  - Timestamp (displayed in browser's local timezone)
+  - Source IP (IPv6 localhost normalized to 127.0.0.1 for readability)
+  - Endpoint type, target (partner/user)
+  - Request path, user agent
+- Filter by endpoint type and date range (1/7/14/30/90 days)
 - Automatic cleanup based on retention setting
+- **Timezone handling**: All timestamps stored in UTC, displayed in browser's timezone
 
 **SwingUI Configuration:**
 1. Open AS2Gui
@@ -349,6 +356,9 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 - Changes take effect within 60 seconds (cache refresh interval)
 - Blocked attempts logged to database and visible in Block Log tab
 - Pattern validation on entry (invalid patterns rejected)
+- **WebUI blocking**: IP check happens BEFORE login form is displayed (access denied page shown)
+- **Localhost always allowed**: 127.0.0.1 and IPv6 localhost (::1) always bypass whitelist
+- **Timezone independent**: All timestamps stored in UTC, works correctly across different server and browser timezones
 
 **IP Pattern Syntax:**
 - Single IP: `192.168.1.100`
@@ -359,7 +369,7 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 
 **Bulk Import from JSON:**
 
-For importing large numbers of IP CIDR entries, use the batch import utility:
+For importing large numbers of IP entries, use the batch import utility:
 
 ```bash
 # Import for all endpoint types (AS2, TRACKER, WEBUI, API)
@@ -376,6 +386,9 @@ cd dev-scripts
 - Transaction safety (automatic rollback on errors)
 - Progress display every 50 entries
 - Duplicate handling (updates existing entries)
+- **IP range conversion**: Automatically converts IP ranges (e.g., `106.120.93.35 - 106.120.93.36`) to wildcard patterns (e.g., `106.120.93.*`)
+- **CIDR preserved**: CIDR notation (e.g., `10.0.0.0/8`) kept as-is, not converted
+- **Thin JAR support**: Detects `lib/` folder for dependencies (thin release distributions)
 
 **📖 Full Documentation:** [dev-scripts/IMPORT_WHITELIST.md](dev-scripts/IMPORT_WHITELIST.md)
 
@@ -1034,11 +1047,20 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Verify IP pattern syntax is correct (use validation during entry)
 - For partner-specific: Ensure partner matches the one sending AS2 messages
 - For user-specific: Ensure user matches the one logging into WebUI/API
+- **Localhost bypass**: 127.0.0.1 and ::1 always allowed (cannot be blocked)
 
 **IP Whitelist Settings Not Saving**
 - **Fixed**: Checkbox values now save correctly in both SwingUI and WebUI
 - Issue was case mismatch between "TRUE" (saved) and "true" (checked)
 - If settings don't persist after upgrade, re-save them once
+
+**IP Whitelist Block Log Not Showing Data**
+- **Fixed**: Timezone handling now uses UTC consistently
+- All timestamps stored in UTC from Java side (`System.currentTimeMillis()`)
+- Browser automatically displays timestamps in local timezone
+- Works correctly across different server timezones (e.g., UTC+10) and browser timezones (e.g., UTC+8)
+- IPv6 localhost addresses (::1) normalized to 127.0.0.1 for better readability
+- If upgrading from older version, delete old test records and trigger new blocked attempts
 
 ---
 

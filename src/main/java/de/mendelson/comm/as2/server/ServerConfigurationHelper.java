@@ -132,6 +132,38 @@ public class ServerConfigurationHelper {
     }
 
     /**
+     * Get the preferred listener (HTTPS first, then HTTP).
+     * Used for generating URLs when only one protocol is needed.
+     *
+     * @param configInfo  HTTP server configuration info
+     * @param reqProtocol Required protocol (e.g. "http" or "https") to prefer
+     * @return Preferred listener, or null if none found
+     */
+    public static HTTPServerConfigInfo.Listener getListener(String reqProtocol, HTTPServerConfigInfo configInfo) {
+        if (configInfo == null || configInfo.getListener().isEmpty()) {
+            return null;
+        }
+
+        // Try to find HTTPS/SSL listener first
+        for (HTTPServerConfigInfo.Listener listener : configInfo.getListener()) {
+            String protocol = listener.getProtocol();
+            if (protocol == null) {
+                continue;
+            }
+            if (protocol.toLowerCase().contains("ssl") && reqProtocol.equals("https")) {
+                return listener;
+            } else {
+                // If the protocol doesn't match, we can check if it's a fallback option
+                if (reqProtocol.equals(reqProtocol)) {
+                    // Prefer HTTPS over HTTP
+                    return listener;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Check if a listener is HTTPS/SSL.
      *
      * @param listener Listener to check
