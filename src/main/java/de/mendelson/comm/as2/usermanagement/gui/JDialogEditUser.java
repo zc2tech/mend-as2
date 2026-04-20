@@ -23,6 +23,7 @@ package de.mendelson.comm.as2.usermanagement.gui;
 
 import de.mendelson.comm.as2.usermanagement.Role;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
+import de.mendelson.comm.as2.usermanagement.UsernameValidator;
 import de.mendelson.comm.as2.usermanagement.clientserver.*;
 import de.mendelson.util.clientserver.GUIClient;
 import de.mendelson.util.clientserver.messages.ClientServerResponse;
@@ -54,7 +55,8 @@ public class JDialogEditUser extends JDialog {
     private JCheckBox checkEnabled;
     private JCheckBox checkGeneratePassword;
     private JPanel rolePanel;
-    private Map<Integer, JCheckBox> roleCheckboxes;
+    private ButtonGroup roleButtonGroup;
+    private Map<Integer, JRadioButton> roleRadioButtons;
     private List<Role> availableRoles;
     private JButton buttonSave;
     private JButton buttonCancel;
@@ -68,7 +70,7 @@ public class JDialogEditUser extends JDialog {
 
         this.initComponents();
         this.setupKeyboardShortcuts();
-        this.setSize(600, 650); // Increased width and height for role section
+        this.setSize(600, 450); // Compact size with simplified role section
         this.setLocationRelativeTo(parent);
     }
 
@@ -128,6 +130,15 @@ public class JDialogEditUser extends JDialog {
         if (editingUser != null) {
             textUsername.setText(editingUser.getUsername());
             textUsername.setEnabled(false); // Cannot change username
+        } else {
+            // Set tooltip with validation requirements for new users
+            textUsername.setToolTipText("<html><b>Username Requirements:</b><br>" +
+                "• 3-50 characters<br>" +
+                "• Letters, numbers, underscore (_), hyphen (-), dot (.)<br>" +
+                "• Must start and end with letter or number<br>" +
+                "• No consecutive special characters (e.g., '..',  '--', '__')<br>" +
+                "• Cannot be reserved names (admin, root, system, etc.)<br>" +
+                "<br><b>Valid examples:</b> john_doe, user123, jane.smith</html>");
         }
         formPanel.add(textUsername, gbc);
 
@@ -145,10 +156,9 @@ public class JDialogEditUser extends JDialog {
                 "User must change password on first login.</html>");
             checkGeneratePassword.addItemListener(e -> {
                 boolean generatePassword = checkGeneratePassword.isSelected();
-                labelPassword.setVisible(!generatePassword);
-                textPassword.setVisible(!generatePassword);
-                labelConfirmPassword.setVisible(!generatePassword);
-                textConfirmPassword.setVisible(!generatePassword);
+                // Disable password fields when generating, but keep them visible
+                textPassword.setEnabled(!generatePassword);
+                textConfirmPassword.setEnabled(!generatePassword);
                 if (generatePassword) {
                     textPassword.setText("");
                     textConfirmPassword.setText("");
@@ -240,58 +250,69 @@ public class JDialogEditUser extends JDialog {
 
         row++;
 
-        // Roles section (if roles are available)
+        // Role section (if roles are available)
         if (availableRoles != null && !availableRoles.isEmpty()) {
             boolean isAdmin = editingUser != null && editingUser.getUsername().equalsIgnoreCase("admin");
 
             gbc.gridx = 0;
             gbc.gridy = row;
-            gbc.gridwidth = 2;
-            gbc.weightx = 1.0;
-            JLabel rolesLabel = new JLabel(isAdmin ? "Assigned Roles: (Cannot modify admin roles)" : "Assigned Roles:");
+            gbc.gridwidth = 1;
+            gbc.weightx = 0;
+            JLabel rolesLabel = new JLabel(isAdmin ? "Role: (Cannot modify admin role)" : "Role:");
             if (isAdmin) {
                 rolesLabel.setForeground(new Color(108, 117, 125)); // Gray color
             }
             formPanel.add(rolesLabel, gbc);
 
-            row++;
-
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            gbc.gridwidth = 2;
-            rolePanel = new JPanel(new GridLayout(0, 1, 5, 5));
-            rolePanel.setBorder(BorderFactory.createEtchedBorder());
+            gbc.gridx = 1;
+            gbc.weightx = 1.0;
+            rolePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
             if (isAdmin) {
                 rolePanel.setBackground(new Color(248, 249, 250)); // Light gray background
             }
 
-            roleCheckboxes = new HashMap<>();
+            roleRadioButtons = new HashMap<>();
+            roleButtonGroup = new ButtonGroup();
 
-            // Get current user roles if editing
-            Set<Integer> currentRoleIds = new HashSet<>();
+            // Get current user role if editing (should only be one)
+            Integer currentRoleId = null;
             if (editingUser != null) {
                 List<Role> userRoles = getUserRoles(editingUser.getId());
-                for (Role role : userRoles) {
-                    currentRoleIds.add(role.getId());
+                if (!userRoles.isEmpty()) {
+                    currentRoleId = userRoles.get(0).getId(); // Take first role
                 }
             }
 
-            // Create checkbox for each role
+            // Create radio button for each role (ADMIN and USER)
             for (Role role : availableRoles) {
-                JCheckBox checkbox = new JCheckBox(role.getName() + " - " + role.getDescription());
-                checkbox.setSelected(currentRoleIds.contains(role.getId()));
-                checkbox.setEnabled(!isAdmin); // Disable checkboxes for admin user
-                roleCheckboxes.put(role.getId(), checkbox);
-                rolePanel.add(checkbox);
+                JRadioButton radioButton = new JRadioButton(role.getName());
+                radioButton.setSelected(currentRoleId != null && currentRoleId.equals(role.getId()));
+                radioButton.setEnabled(!isAdmin); // Disable radio buttons for admin user
+                roleRadioButtons.put(role.getId(), radioButton);
+                roleButtonGroup.add(radioButton);
+                rolePanel.add(radioButton);
             }
 
-            JScrollPane roleScrollPane = new JScrollPane(rolePanel);
-            roleScrollPane.setPreferredSize(new Dimension(550, 180));
-            roleScrollPane.setMinimumSize(new Dimension(550, 180));
-            formPanel.add(roleScrollPane, gbc);
+            // If no role selected yet (creating new user), select USER by default
+            if (editingUser == null && !availableRoles.isEmpty()) {
+                // Find USER role (id=2) and select it
+                for (Role role : availableRoles) {
+                    if ("USER".equalsIgnoreCase(role.getName())) {
+                        JRadioButton userRadio = roleRadioButtons.get(role.getId());
+                        if (userRadio != null) {
+                            userRadio.setSelected(true);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            formPanel.add(rolePanel, gbc);
 
             gbc.gridwidth = 1; // Reset
         }
+
+        row++;
 
         this.add(formPanel, BorderLayout.CENTER);
 
@@ -321,6 +342,17 @@ public class JDialogEditUser extends JDialog {
                     "Username is required",
                     "Validation Error", JOptionPane.ERROR_MESSAGE);
             return;
+        }
+
+        // Validate username format (for new users only)
+        if (editingUser == null) {
+            String validationError = UsernameValidator.validateUsername(username);
+            if (validationError != null) {
+                JOptionPane.showMessageDialog(this,
+                        validationError + "\n\n" + UsernameValidator.getRequirements(),
+                        "Invalid Username", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         if (editingUser == null) {
@@ -530,7 +562,7 @@ public class JDialogEditUser extends JDialog {
     }
 
     private void saveRoleAssignments(int userId) {
-        if (roleCheckboxes == null) {
+        if (roleRadioButtons == null) {
             return;
         }
 
@@ -540,36 +572,43 @@ public class JDialogEditUser extends JDialog {
             return;
         }
 
-        // First, get current roles to determine what changed
+        // Find which role is selected
+        Integer selectedRoleId = null;
+        for (Map.Entry<Integer, JRadioButton> entry : roleRadioButtons.entrySet()) {
+            if (entry.getValue().isSelected()) {
+                selectedRoleId = entry.getKey();
+                break;
+            }
+        }
+
+        if (selectedRoleId == null) {
+            logger.warning("No role selected for user");
+            return;
+        }
+
+        // Get current roles
         Set<Integer> currentRoleIds = new HashSet<>();
         List<Role> currentRoles = getUserRoles(userId);
         for (Role role : currentRoles) {
             currentRoleIds.add(role.getId());
         }
 
-        // Process each role checkbox
-        for (Map.Entry<Integer, JCheckBox> entry : roleCheckboxes.entrySet()) {
-            int roleId = entry.getKey();
-            boolean isSelected = entry.getValue().isSelected();
-            boolean wasSelected = currentRoleIds.contains(roleId);
-
-            try {
-                if (isSelected && !wasSelected) {
-                    // Add role
-                    UserRoleAssignRequest request = new UserRoleAssignRequest();
-                    request.setUserId(userId);
-                    request.setRoleId(roleId);
-                    guiClient.sendSync(request);
-                } else if (!isSelected && wasSelected) {
-                    // Remove role
-                    UserRoleRemoveRequest request = new UserRoleRemoveRequest();
-                    request.setUserId(userId);
-                    request.setRoleId(roleId);
-                    guiClient.sendSync(request);
-                }
-            } catch (Exception e) {
-                logger.severe("Error saving role assignment: " + e.getMessage());
+        try {
+            // Remove all current roles first
+            for (Integer roleId : currentRoleIds) {
+                UserRoleRemoveRequest removeRequest = new UserRoleRemoveRequest();
+                removeRequest.setUserId(userId);
+                removeRequest.setRoleId(roleId);
+                guiClient.sendSync(removeRequest);
             }
+
+            // Assign the selected role
+            UserRoleAssignRequest assignRequest = new UserRoleAssignRequest();
+            assignRequest.setUserId(userId);
+            assignRequest.setRoleId(selectedRoleId);
+            guiClient.sendSync(assignRequest);
+        } catch (Exception e) {
+            logger.severe("Error saving role assignment: " + e.getMessage());
         }
     }
 

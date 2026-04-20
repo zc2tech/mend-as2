@@ -53,6 +53,13 @@ public class KeydataAccessDB {
     public static String KEYSTORE_JKS = BCCryptoHelper.KEYSTORE_JKS;
     public static String KEYSTORE_PKCS12 = BCCryptoHelper.KEYSTORE_PKCS12;
 
+    /**
+     * Special user_id value indicating system-wide keystores (not owned by any particular user).
+     * System-wide keystores are accessible based on permissions (CERT_TLS_READ, CERT_TLS_WRITE)
+     * rather than user ownership.
+     */
+    public static final int SYSTEM_WIDE_USER_ID = -1;
+
     public KeydataAccessDB(IDBDriverManager dbDriverManager, SystemEventManager systemEventManager) {
         this.dbDriverManager = dbDriverManager;
         this.systemEventManager = systemEventManager;
@@ -81,11 +88,12 @@ public class KeydataAccessDB {
     /**
      * Returns the timestamp in ms the keydata entry has been modified last
      */
-    public long getLastChanged(int purpose) {
+    public long getLastChanged(int purpose, int userId) {
         try (Connection configConnectionAutoCommit = this.dbDriverManager.getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
             try (PreparedStatement statement = configConnectionAutoCommit.prepareStatement(
-                    "SELECT lastchanged FROM keydata WHERE purpose=?")) {
+                    "SELECT lastchanged FROM keydata WHERE purpose=? AND user_id=?")) {
                 statement.setInt(1, purpose);
+                statement.setInt(2, userId);
                 try (ResultSet result = statement.executeQuery()) {
                     if (result.next()) {
                         long timestamp = result.getLong("lastchanged");
@@ -100,23 +108,44 @@ public class KeydataAccessDB {
     }
 
     /**
-     * Returns the key storage of the requested purpose
+     * Returns the key storage of the requested purpose and user
+     * @param purpose KEYSTORE_USAGE_TLS or KEYSTORE_USAGE_ENC_SIGN
+     * @param userId User ID (0 = admin/system, >0 = specific user, -1 = system-wide)
      */
-    public KeystoreData getKeydata(int purpose) {
+    public KeystoreData getKeydata(int purpose, int userId) {
         try (Connection configConnectionAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
-            try (PreparedStatement selectStatement = configConnectionAutoCommit.prepareStatement(
-                    "SELECT * FROM keydata WHERE purpose=?")) {
+
+            // Check if user_id column exists in keydata table
+            boolean hasUserIdColumn = false;
+            try (ResultSet rs = configConnectionAutoCommit.getMetaData().getColumns(null, null, "keydata", "user_id")) {
+                hasUserIdColumn = rs.next();
+            }
+
+            PreparedStatement selectStatement;
+            if (hasUserIdColumn) {
+                // New schema with user_id column
+                selectStatement = configConnectionAutoCommit.prepareStatement(
+                        "SELECT * FROM keydata WHERE purpose=? AND user_id=?");
                 selectStatement.setInt(1, purpose);
-                try (ResultSet result = selectStatement.executeQuery()) {
-                    if (result.next()) {
-                        byte[] keyData = this.dbDriverManager.readBytesStoredAsJavaObject(result, "storagedata");
-                        String securityProvider = result.getString("securityprovider");
-                        int storageType = result.getInt("storagetype");
-                        KeystoreData data = new KeystoreData(securityProvider, storageType, keyData);
-                        return (data);
-                    }
+                selectStatement.setInt(2, userId);
+            } else {
+                // Old schema without user_id column - only filter by purpose
+                selectStatement = configConnectionAutoCommit.prepareStatement(
+                        "SELECT * FROM keydata WHERE purpose=?");
+                selectStatement.setInt(1, purpose);
+            }
+
+            try (ResultSet result = selectStatement.executeQuery()) {
+                if (result.next()) {
+                    byte[] keyData = this.dbDriverManager.readBytesStoredAsJavaObject(result, "storagedata");
+                    String securityProvider = result.getString("securityprovider");
+                    int storageType = result.getInt("storagetype");
+                    KeystoreData data = new KeystoreData(securityProvider, storageType, keyData);
+                    return (data);
                 }
+            } finally {
+                selectStatement.close();
             }
         } catch (Throwable e) {
             this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
@@ -157,7 +186,7 @@ public class KeydataAccessDB {
      * Inserts a new key store into the database if none exists so far
      */
     public void insertKeydataFromFileIfItDoesNotExistInDB(Logger logger, Path keystoreFile,
-            String storageType, int purpose, String securityProvider) {
+            String storageType, int purpose, String securityProvider, int userId) {
         String transactionName = "Keydata_insert";
         try (Connection configConnectionNoAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
@@ -170,8 +199,9 @@ public class KeydataAccessDB {
                             "keydata"});
                 boolean entryExists = true;
                 try (PreparedStatement checkStatement = configConnectionNoAutoCommit.prepareStatement(
-                        "SELECT COUNT(1) AS counter FROM keydata WHERE purpose=?")) {
+                        "SELECT COUNT(1) AS counter FROM keydata WHERE purpose=? AND user_id=?")) {
                     checkStatement.setInt(1, purpose);
+                    checkStatement.setInt(2, userId);
                     try (ResultSet result = checkStatement.executeQuery()) {
                         if (result.next()) {
                             entryExists = result.getInt("counter") > 0;
@@ -180,13 +210,14 @@ public class KeydataAccessDB {
                     if (!entryExists) {
                         byte[] keystoreData = Files.readAllBytes(keystoreFile);
                         try (PreparedStatement insertStatement = configConnectionNoAutoCommit.prepareStatement(
-                                "INSERT INTO keydata(storagedata,storagetype,purpose,lastchanged,securityprovider)"
-                                + "VALUES(?,?,?,?,?)")) {
-                            this.dbDriverManager.setBytesParameterAsJavaObject(insertStatement, 1, keystoreData);
-                            insertStatement.setInt(2, keystoreTypeStrToInt(storageType));
-                            insertStatement.setInt(3, purpose);
-                            insertStatement.setLong(4, System.currentTimeMillis());
-                            insertStatement.setString(5, securityProvider);
+                                "INSERT INTO keydata(user_id,storagedata,storagetype,purpose,lastchanged,securityprovider)"
+                                + "VALUES(?,?,?,?,?,?)")) {
+                            insertStatement.setInt(1, userId);
+                            this.dbDriverManager.setBytesParameterAsJavaObject(insertStatement, 2, keystoreData);
+                            insertStatement.setInt(3, keystoreTypeStrToInt(storageType));
+                            insertStatement.setInt(4, purpose);
+                            insertStatement.setLong(5, System.currentTimeMillis());
+                            insertStatement.setString(6, securityProvider);
                             insertStatement.executeUpdate();
                         }
                     }
@@ -210,7 +241,7 @@ public class KeydataAccessDB {
      * purpose that is already in the system. Else the system data will left
      * untouched.
      */
-    public void updateKeydata(byte[] keystoreData, String keystoreType, int purpose, String securityProvider) {
+    public void updateKeydata(byte[] keystoreData, String keystoreType, int purpose, String securityProvider, int userId) {
         String transactionName = "update_Keydata";
         try (Connection configConnectionNoAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
@@ -224,14 +255,49 @@ public class KeydataAccessDB {
                 try (PreparedStatement updateStatement = configConnectionNoAutoCommit.prepareStatement(
                         "UPDATE keydata SET "
                         + "storagedata=?,storagetype=?,lastchanged=?,securityprovider=? "
-                        + "WHERE purpose=?")) {
+                        + "WHERE purpose=? AND user_id=?")) {
                     this.dbDriverManager.setBytesParameterAsJavaObject(updateStatement, 1, keystoreData);
                     updateStatement.setInt(2, keystoreTypeStrToInt(keystoreType));
                     updateStatement.setLong(3, System.currentTimeMillis());
                     updateStatement.setString(4, securityProvider);
                     //condition
                     updateStatement.setInt(5, purpose);
+                    updateStatement.setInt(6, userId);
                     updateStatement.executeUpdate();
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
+     * Insert empty keystore data for a new user
+     */
+    public void insertEmptyKeydata(byte[] keystoreData, String keystoreType, int purpose, String securityProvider, int userId) {
+        String transactionName = "insert_Keydata";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                //start transaction - these tables have to be locked first to forbit any write operation
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{"keydata"});
+                try (PreparedStatement insertStatement = configConnectionNoAutoCommit.prepareStatement(
+                        "INSERT INTO keydata(user_id,storagedata,storagetype,purpose,lastchanged,securityprovider) "
+                        + "VALUES(?,?,?,?,?,?)")) {
+                    insertStatement.setInt(1, userId);
+                    this.dbDriverManager.setBytesParameterAsJavaObject(insertStatement, 2, keystoreData);
+                    insertStatement.setInt(3, keystoreTypeStrToInt(keystoreType));
+                    insertStatement.setInt(4, purpose);
+                    insertStatement.setLong(5, System.currentTimeMillis());
+                    insertStatement.setString(6, securityProvider);
+                    insertStatement.executeUpdate();
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
                 } catch (Throwable e) {
                     this.systemEventManager.systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
@@ -246,7 +312,7 @@ public class KeydataAccessDB {
     /**
      * Deletes the keydata entry of a special purpose
      */
-    public void deleteKeydata(int purpose) {
+    public void deleteKeydata(int purpose, int userId) {
         String transactionName = "delete_Keydata";
         try (Connection configConnectionNoAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
@@ -258,8 +324,9 @@ public class KeydataAccessDB {
                         new String[]{
                             "keydata"});
                 try (PreparedStatement deleteStatement = configConnectionNoAutoCommit.prepareStatement(
-                        "DELETE FROM keydata WHERE purpose=?")) {
+                        "DELETE FROM keydata WHERE purpose=? AND user_id=?")) {
                     deleteStatement.setInt(1, purpose);
+                    deleteStatement.setInt(2, userId);
                     deleteStatement.executeUpdate();
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
                 } catch (Throwable e) {

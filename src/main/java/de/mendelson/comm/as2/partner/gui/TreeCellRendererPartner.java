@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.ColorUtil;
@@ -27,7 +28,7 @@ import javax.swing.tree.DefaultTreeCellRenderer;
  */
 public class TreeCellRendererPartner extends DefaultTreeCellRenderer {
 
-    public final static int ICON_HEIGHT = AS2Gui.IMAGE_SIZE_TREENODE;
+    public final static int ICON_HEIGHT = IconManager.IMAGE_SIZE_TREENODE;
 
     private final static ImageIcon ICON_REMOTE
             = new ImageIcon(ListCellRendererPartner.IMAGE_REMOTESTATION.toMinResolution(ICON_HEIGHT));

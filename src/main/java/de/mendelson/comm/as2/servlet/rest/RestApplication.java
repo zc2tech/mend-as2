@@ -22,11 +22,12 @@
 package de.mendelson.comm.as2.servlet.rest;
 
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
+import de.mendelson.comm.as2.servlet.rest.auth.AdminOnlyFilter;
 import de.mendelson.comm.as2.servlet.rest.auth.AuthenticationResource;
 import de.mendelson.comm.as2.servlet.rest.auth.JwtAuthenticationFilter;
 import de.mendelson.comm.as2.servlet.rest.exceptions.ApiExceptionMapper;
-import de.mendelson.comm.as2.servlet.rest.resources.CemResource;
 import de.mendelson.comm.as2.servlet.rest.resources.CertificateResource;
+import de.mendelson.comm.as2.servlet.rest.resources.IPWhitelistResource;
 import de.mendelson.comm.as2.servlet.rest.resources.MessageResource;
 import de.mendelson.comm.as2.servlet.rest.resources.NotificationResource;
 import de.mendelson.comm.as2.servlet.rest.resources.PartnerResource;
@@ -59,6 +60,9 @@ public class RestApplication extends ResourceConfig {
         // Register authentication filter
         register(JwtAuthenticationFilter.class);
 
+        // Register authorization filters
+        register(AdminOnlyFilter.class);
+
         // Register exception mappers
         register(ApiExceptionMapper.class);
 
@@ -67,17 +71,26 @@ public class RestApplication extends ResourceConfig {
         register(AuthenticationResource.class);
         System.out.println("RestApplication: Registering SystemResource");
         register(SystemResource.class);
+        System.out.println("RestApplication: Registering PartnerResource");
         register(PartnerResource.class);
+        System.out.println("RestApplication: Registering CertificateResource");
         register(CertificateResource.class);
+        System.out.println("RestApplication: Registering MessageResource");
         register(MessageResource.class);
-        register(CemResource.class);
+        System.out.println("RestApplication: Registering StatisticsResource");
         register(StatisticsResource.class);
+        System.out.println("RestApplication: Registering PreferencesResource");
         register(PreferencesResource.class);
+        System.out.println("RestApplication: Registering NotificationResource");
         register(NotificationResource.class);
         System.out.println("RestApplication: Registering UserManagementResource");
         register(UserManagementResource.class);
+        System.out.println("RestApplication: Registering UserHttpAuthPreferenceResource");
         register(UserHttpAuthPreferenceResource.class);
+        System.out.println("RestApplication: Registering TrackerMessageResource");
         register(TrackerMessageResource.class);
+        System.out.println("RestApplication: Registering IPWhitelistResource");
+        register(IPWhitelistResource.class);
 
         System.out.println("RestApplication: Jersey REST application initialized");
 

@@ -28,18 +28,32 @@ public class CertificateExportRequest extends ClientServerMessage{
     private final int keystoreUsageSource;
     private final String fingerprintSHA1;
     private final String exportFormat;
+    private final int userId;  // User ID for user-specific keystores (0 = admin/system)
 
     /**
-     * 
+     *
      * @param KEYSTORE_USAGE_SOURCE
      * @param fingerprintSHA1
      * @param exportFormat One of KeystoreCertificate.CERTIFICATE_FORMAT_*
      */
     public CertificateExportRequest(final int KEYSTORE_USAGE_SOURCE,
             String fingerprintSHA1,  String exportFormat) {
+        this(KEYSTORE_USAGE_SOURCE, fingerprintSHA1, exportFormat, 0);
+    }
+
+    /**
+     *
+     * @param KEYSTORE_USAGE_SOURCE
+     * @param fingerprintSHA1
+     * @param exportFormat One of KeystoreCertificate.CERTIFICATE_FORMAT_*
+     * @param userId User ID for user-specific keystores (0 = admin/system, >0 = specific user)
+     */
+    public CertificateExportRequest(final int KEYSTORE_USAGE_SOURCE,
+            String fingerprintSHA1,  String exportFormat, int userId) {
         this.keystoreUsageSource = KEYSTORE_USAGE_SOURCE;
         this.fingerprintSHA1 = fingerprintSHA1;
         this.exportFormat = exportFormat;
+        this.userId = userId;
     }
 
     @Override
@@ -75,5 +89,12 @@ public class CertificateExportRequest extends ClientServerMessage{
     public String getExportFormat() {
         return exportFormat;
     }
-    
+
+    /**
+     * @return the userId for user-specific keystores (0 = admin/system, >0 = specific user)
+     */
+    public int getUserId() {
+        return userId;
+    }
+
 }

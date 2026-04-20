@@ -23,6 +23,8 @@ public class MessageOverviewRequest extends ClientServerMessage{
     private static final long serialVersionUID = 1L;
     private MessageOverviewFilter filter = null;
     private String messageId = null;
+    private int userId = 1;  // User ID for filtering (0 = admin)
+    private boolean hasUserManagePermission = false;  // If true, user sees all messages
 
     public MessageOverviewRequest(String messageId) {
         this.messageId = messageId;
@@ -49,6 +51,34 @@ public class MessageOverviewRequest extends ClientServerMessage{
      */
     public String getMessageId() {
         return messageId;
+    }
+
+    /**
+     * @return the userId
+     */
+    public int getUserId() {
+        return userId;
+    }
+
+    /**
+     * @param userId the userId to set (0 = admin, >0 = specific user)
+     */
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    /**
+     * @return whether user has USER_MANAGE permission
+     */
+    public boolean hasUserManagePermission() {
+        return hasUserManagePermission;
+    }
+
+    /**
+     * @param hasUserManagePermission whether user has USER_MANAGE permission
+     */
+    public void setHasUserManagePermission(boolean hasUserManagePermission) {
+        this.hasUserManagePermission = hasUserManagePermission;
     }
 
     /**

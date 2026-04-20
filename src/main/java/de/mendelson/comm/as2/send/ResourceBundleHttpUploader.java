@@ -41,6 +41,7 @@ public class ResourceBundleHttpUploader extends MecResourceBundle{
         {"trust.all.server.certificates", "The outbound TLS connection will trust all remote end server certificates if the root and intermediate certificates are available." },
         {"strict.hostname.check", "The outbound TLS connection will perform a strict hostname check on the server end certificate." },
         {"strict.hostname.check.skipped.selfsigned", "TLS: The strict hostname check has been skipped, self signed certificate found on remote server." },
+        {"using.certificate.auth", "Using client certificate authentication with certificate {0}" },
     };
     
 }

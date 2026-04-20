@@ -21,6 +21,9 @@ public class ManualSendRequest extends UploadRequestFile {
 
     
     private static final long serialVersionUID = 1L;
+    private int senderDBId = -1;      // Sender partner's database ID (primary key)
+    private int receiverDBId = -1;    // Receiver partner's database ID (primary key)
+    // Legacy fields - kept for backward compatibility, but DB IDs take precedence
     private String senderAS2Id = null;
     //If the sender AS2 name is used this results always in a AS2 id lookup on the server side!
     //Better use the AS2 id if this is known
@@ -206,6 +209,33 @@ public class ManualSendRequest extends UploadRequestFile {
         this.receiverAS2Name = receiverAS2Name;
     }
 
-    
-    
+    /**
+     * @return the senderDBId
+     */
+    public int getSenderDBId() {
+        return senderDBId;
+    }
+
+    /**
+     * @param senderDBId the sender partner's database ID (primary key)
+     */
+    public void setSenderDBId(int senderDBId) {
+        this.senderDBId = senderDBId;
+    }
+
+    /**
+     * @return the receiverDBId
+     */
+    public int getReceiverDBId() {
+        return receiverDBId;
+    }
+
+    /**
+     * @param receiverDBId the receiver partner's database ID (primary key)
+     */
+    public void setReceiverDBId(int receiverDBId) {
+        this.receiverDBId = receiverDBId;
+    }
+
+
 }

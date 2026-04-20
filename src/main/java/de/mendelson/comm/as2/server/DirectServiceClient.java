@@ -44,17 +44,23 @@ public class DirectServiceClient {
         this.serverProcessing = serverProcessing;
     }
 
+    public AS2ServerProcessing getServerProcessing() {
+        return this.serverProcessing;
+    }
+
     /**
      * Process any ClientServerMessage request
+     * @param request The request to process
+     * @param username The logged-in username
      */
-    public ClientServerResponse processRequest(ClientServerMessage request) {
+    public ClientServerResponse processRequest(ClientServerMessage request, String username) {
         if (serverProcessing == null) {
             throw new IllegalStateException("Server processing not initialized");
         }
 
         try {
             // Create a capturing IoSession to intercept the response
-            CapturingIoSession capturingSession = new CapturingIoSession();
+            CapturingIoSession capturingSession = new CapturingIoSession(username);
 
             // Process the request - response will be written to capturing session
             serverProcessing.process(capturingSession, request);
@@ -73,10 +79,9 @@ public class DirectServiceClient {
         private ClientServerResponse capturedResponse;
         private final java.util.Map<String, Object> attributes = new java.util.HashMap<>();
 
-        public CapturingIoSession() {
-            // Set default session attributes for SwingUI client
-            // Use consistent values so locks work correctly
-            attributes.put("user", "admin");  // SwingUI always runs as admin
+        public CapturingIoSession(String username) {
+            // Set session attributes for the logged-in user
+            attributes.put("user", username != null ? username : "admin");
             attributes.put("clientPid", java.lang.management.ManagementFactory.getRuntimeMXBean().getName());
         }
 

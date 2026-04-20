@@ -108,6 +108,14 @@ public class AS2MessageInfo implements AS2Info {
      * Document type of the first payload (Purchase Order, Invoice, 810, DESADV, etc.)
      */
     private String payloadDocType = null;
+    /**
+     * Owner user ID for message ownership (0 = admin/system, >0 = specific user)
+     */
+    private int ownerUserId = 0;
+    /**
+     * Owner username for display in UI
+     */
+    private String ownerUsername = null;
 
     /**
      * These are the disposition notification options
@@ -631,6 +639,34 @@ public class AS2MessageInfo implements AS2Info {
      */
     public void setSendDate(Date sendDate) {
         this.sendDate = sendDate;
+    }
+
+    /**
+     * @return the ownerUserId
+     */
+    public int getOwnerUserId() {
+        return ownerUserId;
+    }
+
+    /**
+     * @param ownerUserId the ownerUserId to set (0 = admin/system, >0 = specific user)
+     */
+    public void setOwnerUserId(int ownerUserId) {
+        this.ownerUserId = ownerUserId;
+    }
+
+    /**
+     * @return the ownerUsername
+     */
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    /**
+     * @param ownerUsername the ownerUsername to set
+     */
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
     }
 
 }

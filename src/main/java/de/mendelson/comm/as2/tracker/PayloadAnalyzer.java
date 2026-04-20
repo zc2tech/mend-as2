@@ -76,6 +76,7 @@ public class PayloadAnalyzer {
 
     /**
      * Analyze payload content to determine format and document type
+     * Only analyzes the first 4KB for performance
      */
     public static PayloadAnalysis analyze(byte[] content) {
         if (content == null || content.length == 0) {
@@ -83,7 +84,11 @@ public class PayloadAnalyzer {
         }
 
         try {
-            String contentStr = new String(content, StandardCharsets.UTF_8);
+            // Only analyze first 4KB for performance
+            int bytesToAnalyze = Math.min(content.length, 4096);
+            byte[] contentToAnalyze = (bytesToAnalyze == content.length) ? content :
+                                      java.util.Arrays.copyOf(content, bytesToAnalyze);
+            String contentStr = new String(contentToAnalyze, StandardCharsets.UTF_8);
 
             // Try cXML first (XML-based)
             if (contentStr.trim().startsWith("<?xml") || contentStr.contains("<cXML")) {

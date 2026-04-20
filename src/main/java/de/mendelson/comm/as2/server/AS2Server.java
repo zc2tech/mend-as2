@@ -17,7 +17,6 @@ import de.mendelson.Copyright;
 import de.mendelson.activation.AWSRESTAccess;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.AS2ShutdownThread;
-import de.mendelson.comm.as2.cem.CertificateCEMController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationCheckController;
 import de.mendelson.comm.as2.configurationcheck.ConfigurationIssue;
 import de.mendelson.util.database.DBClientInformation;
@@ -31,6 +30,10 @@ import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.send.DirPollManager;
 import de.mendelson.comm.as2.sendorder.SendOrderAccessDB;
 import de.mendelson.comm.as2.sendorder.SendOrderReceiver;
+import de.mendelson.comm.as2.sendorder.SendOrderSender;
+import de.mendelson.comm.as2.sendorder.SendOrderQueueInterface;
+import de.mendelson.comm.as2.sendorder.PersistentSendOrderQueue;
+import de.mendelson.comm.as2.sendorder.InMemorySendOrderQueue;
 import de.mendelson.comm.as2.timing.CertificateExpireController;
 import de.mendelson.comm.as2.timing.FileDeleteController;
 import de.mendelson.comm.as2.timing.MDNReceiptController;
@@ -133,6 +136,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private CertificateManager certificateManagerEncSign = null;
     private boolean skipStartupConfigCheck = false;
     private CertificateManager certificateManagerTLS = null;
+    private de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertificateManager = null;
     private AS2ServerProcessing serverProcessing = null;
     private final ClientServer clientserver;
     private ClientServerSessionHandlerLocalhost clientServerSessionHandler = null;
@@ -152,9 +156,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private final IDBDriverManager dbDriverManager;
     public static final ServerPlugins PLUGINS = new ServerPlugins();
     private SendOrderReceiver sendOrderReceiver = null;
+    private SendOrderQueueInterface sendOrderQueue = null; // Queue instance for sending orders
+    private SendOrderSender sendOrderSender = null; // Sender instance
     private final ServerInstanceHA serverInstanceHA = new ServerInstanceHA();
     private final ServerStartupSequence serverStartupSequence = new ServerStartupSequence(this.logger);
-    private CertificateCEMController cemController = null;
     private ModuleLockReleaseController lockReleaseController = null;
     private CertificateExpireController expireController = null;
     private PostProcessingEventController eventController = null;
@@ -251,13 +256,16 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private void handleKeystoreSettings(boolean importTLS, boolean importSignEnc) throws Exception {
         KeydataAccessDB keydataAccessDB = new KeydataAccessDB(this.dbDriverManager,
                 SystemEventManagerImplAS2.instance());
+        // Import to system-wide keystore (user_id=-1)
+        int systemWideUserId = KeydataAccessDB.SYSTEM_WIDE_USER_ID;
         Path keystoreFileEncSign = Paths.get("certificates.p12");
         if (importSignEnc) {
             byte[] keystoreData = Files.readAllBytes(keystoreFileEncSign);
             keydataAccessDB.updateKeydata(keystoreData,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    systemWideUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileEncSign,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
@@ -268,7 +276,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     keystoreFileEncSign,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    systemWideUserId);
         }
         Path keystoreFileTLS = Paths.get("jetty12/etc/keystore");
         if (importTLS) {
@@ -276,7 +285,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             keydataAccessDB.updateKeydata(keystoreData,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    systemWideUserId);
             keydataAccessDB.logKeystoreImport(this.logger,
                     keystoreFileTLS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
@@ -287,7 +297,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     keystoreFileTLS,
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    BouncyCastleProviderSingleton.instance().getName());
+                    BouncyCastleProviderSingleton.instance().getName(),
+                    systemWideUserId);
         }
     }
 
@@ -411,20 +422,33 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         try {
             this.ensureRunningDBServer();
             this.handleKeystoreSettings(importTLS, importSignEnc);
+            // Create system-wide keystores (user_id=-1, system-wide)
             this.certificateManagerEncSign = new CertificateManager(this.logger);
             KeystoreStorage signEncStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12);
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                    KeydataAccessDB.SYSTEM_WIDE_USER_ID);  // user_id=-1 (system-wide)
             this.certificateManagerEncSign.loadKeystoreCertificates(signEncStorage);
             this.certificateManagerTLS = new CertificateManager(this.logger);
             KeystoreStorage tlsStorage = new KeystoreStorageImplDB(
                     SystemEventManagerImplAS2.instance(),
                     this.dbDriverManager,
                     KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS);
+                    KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                    KeydataAccessDB.SYSTEM_WIDE_USER_ID);  // user_id=-1 (system-wide)
             this.certificateManagerTLS.loadKeystoreCertificates(tlsStorage);
+
+            // Create multi-user certificate manager that wraps system-wide managers
+            // and provides on-demand loading of user-specific keystores
+            this.multiUserCertificateManager = new de.mendelson.util.security.cert.MultiUserCertificateManager(
+                this.logger,
+                this.certificateManagerEncSign,
+                this.certificateManagerTLS,
+                this.dbDriverManager
+            );
+            this.logger.info("Multi-user certificate manager initialized (system-wide + on-demand user keystores)");
 
             // Start client-server BEFORE HTTP server to avoid race condition
             // where HTTP receiver gets messages but client-server isn't ready yet
@@ -434,6 +458,11 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
 
             // Time costing process:
             this.startHTTPServer(tlsStorage);
+
+            // Initialize SendOrder queue and sender BEFORE starting the receiver
+            // because receiver needs the queue instance
+            this.initializeSendOrderQueue();
+
             this.startSendOrderReceiver();
             this.initializeAdditionalLogger();
             // start control threads
@@ -446,21 +475,29 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             this.fileDeleteController.startAutoDeleteControl();
             this.statsDeleteController = new StatisticDeleteController(this.dbDriverManager);
             this.statsDeleteController.startAutoDeleteControl();
+
+
             this.eventController = new PostProcessingEventController(this.clientserver,
                     this.certificateManagerEncSign,
-                    this.dbDriverManager);
+                    this.dbDriverManager,
+                    this.sendOrderSender);
             this.eventController.startEventExecution();
+
             this.pollManager = new DirPollManager(this.certificateManagerEncSign,
-                    this.clientserver, this.dbDriverManager);
+                    this.clientserver, this.dbDriverManager, this.sendOrderSender);
             this.configCheckController = new ConfigurationCheckController(
                     this.certificateManagerEncSign,
                     this.certificateManagerTLS,
                     this.httpServerConfigInfo, this.pollManager,
                     this.dbDriverManager);
+
+            // Remove duplicate call to initializeSendOrderQueue (moved above)
+            // this.initializeSendOrderQueue();
+
             this.serverProcessing = new AS2ServerProcessing(this.clientserver, this.pollManager,
                     this.certificateManagerEncSign, this.certificateManagerTLS, this.dbDriverManager,
                     this.configCheckController, this.httpServerConfigInfo, this.dbServerInformation,
-                    this.dbClientInformation);
+                    this.dbClientInformation, this.sendOrderSender);
 
             // Initialize AS2MessageProcessor for HttpReceiver
             AS2MessageProcessor.getInstance().setServerProcessing(this.serverProcessing);
@@ -493,9 +530,6 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.dbDriverManager, SystemEventManagerImplAS2.instance(),
                     AS2Server.SERVER_LOGGER_NAME);
             this.lockReleaseController.startLockReleaseControl();
-            this.cemController = new CertificateCEMController(
-                    this.clientserver, this.dbDriverManager, this.certificateManagerEncSign);
-            this.cemController.start();
             new SystemEventNotificationControllerImplAS2(
                     this.getLogger(),
                     this.dbDriverManager);
@@ -692,18 +726,74 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     }
 
     /**
+     * Initialize the SendOrder queue and sender early in startup
+     * Must be called before AS2ServerProcessing is created
+     */
+    private void initializeSendOrderQueue() throws Exception {
+        // Read queue strategy configuration from as2.properties (like database type)
+        AS2Properties as2Props = AS2Properties.getInstance();
+        String queueStrategy = as2Props.getSendOrderQueueStrategy();
+
+        // Create appropriate queue implementation
+        if ("IN_MEMORY".equalsIgnoreCase(queueStrategy)) {
+            this.logger.info("Using IN_MEMORY queue strategy (lightweight, no database persistence)");
+
+            int maxDepth = as2Props.getSendOrderQueueMaxDepth();
+            int checkpointInterval = as2Props.getSendOrderQueueCheckpointInterval();
+
+            this.sendOrderQueue = new InMemorySendOrderQueue(maxDepth, checkpointInterval);
+
+        } else if ("PERSISTENT".equalsIgnoreCase(queueStrategy)) {
+            this.logger.info("Using PERSISTENT queue strategy (database-backed with pre-built messages)");
+
+            this.sendOrderQueue = new PersistentSendOrderQueue(this.dbDriverManager);
+
+        } else {
+            throw new IllegalArgumentException(
+                "Invalid sendorder.queue.strategy: " + queueStrategy +
+                ". Valid values: PERSISTENT, IN_MEMORY"
+            );
+        }
+
+        // Restore queue from persistence (crash recovery)
+        this.sendOrderQueue.restore();
+
+        // Create sender (used by multiple components)
+        this.sendOrderSender = new SendOrderSender(this.sendOrderQueue, this.dbDriverManager);
+
+        this.logger.info("SendOrder queue and sender initialized successfully");
+    }
+
+    /**
      * This starts the poll process that listens to the database queue for new
      * data to send
      *
      * @throws Exception
      */
     private void startSendOrderReceiver() throws Exception {
-        // reset the send order state of available send orders back to waiting
-        SendOrderAccessDB sendOrderAccess = new SendOrderAccessDB(
-                this.dbDriverManager);
-        sendOrderAccess.resetAllToWaiting();
-        this.sendOrderReceiver = new SendOrderReceiver(this.clientserver, this.dbDriverManager);
+        // Queue and sender already initialized in initializeSendOrderQueue()
+        // Just create and start receiver with multi-user certificate manager
+        this.sendOrderReceiver = new SendOrderReceiver(
+            this.sendOrderQueue,
+            this.clientserver,
+            this.dbDriverManager,
+            this.multiUserCertificateManager
+        );
         this.sendOrderReceiver.execute();
+
+        // Register shutdown hook for graceful cleanup
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (this.sendOrderQueue != null) {
+                this.sendOrderQueue.shutdown();
+            }
+        }));
+    }
+
+    /**
+     * Get the SendOrderSender instance (for use by AS2ServerProcessing and other components)
+     */
+    public SendOrderSender getSendOrderSender() {
+        return this.sendOrderSender;
     }
 
     /**

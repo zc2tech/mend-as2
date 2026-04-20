@@ -82,14 +82,99 @@ public class HttpReceiver extends HttpServlet {
      */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //stores if the commit already occured. Do not send an additional error in this case        
+        //stores if the commit already occured. Do not send an additional error in this case
         boolean committed = false;
         Path dataFile = null;
         try {
+            // Extract username from URL path for user-specific endpoints
+            String pathInfo = request.getPathInfo();  // e.g., "/john" or null
+            String targetUsername = null;
+            int targetUserId = 1;
+
+            if (pathInfo != null && pathInfo.length() > 1) {
+                // Remove leading slash
+                targetUsername = pathInfo.substring(1);
+
+                // Lookup user ID from database
+                if ("admin".equals(targetUsername)) {
+                    targetUserId = 1;  // Admin user
+                } else {
+                    // Look up non-admin user
+                    try {
+                        de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+                            new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                                AS2Server.getActivatedDBDriverManager(),
+                                Logger.getLogger(AS2Server.SERVER_LOGGER_NAME));
+                        de.mendelson.comm.as2.usermanagement.WebUIUser user = userAccess.getUserByUsername(targetUsername);
+                        if (user != null) {
+                            targetUserId = user.getId();
+                        } else {
+                            // User not found
+                            response.sendError(HttpServletResponse.SC_NOT_FOUND,
+                                "User not found: " + targetUsername);
+                            return;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            "Error looking up user: " + e.getMessage());
+                        return;
+                    }
+                }
+            } else {
+                // No path info - use system/admin (backward compatibility)
+                targetUsername = "admin";
+                targetUserId = 1;
+            }
+
+            // Store user context for processing
+            request.setAttribute("targetUserId", targetUserId);
+            request.setAttribute("targetUsername", targetUsername);
+
             String tlsProtocol = "-";
             String cipherSuite = "-";
             int localPort = request.getLocalPort();
             String remoteAddress = request.getRemoteAddr();
+
+            // IP Whitelist Check for AS2 endpoint
+            try {
+                de.mendelson.comm.as2.preferences.PreferencesAS2 prefs =
+                    new de.mendelson.comm.as2.preferences.PreferencesAS2(
+                        AS2Server.getActivatedDBDriverManager());
+
+                if ("true".equals(prefs.get(
+                        de.mendelson.comm.as2.preferences.PreferencesAS2.IP_WHITELIST_ENABLED_AS2))) {
+
+                    // Extract partner AS2 ID from headers (if available)
+                    String partnerAS2Id = request.getHeader("AS2-From");
+
+                    de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService whitelistService =
+                        de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService.getInstance(
+                            AS2Server.getActivatedDBDriverManager());
+
+                    if (!whitelistService.isAllowedForAS2(remoteAddress, partnerAS2Id)) {
+                        // Log blocked attempt
+                        whitelistService.logBlockedAttempt(
+                            remoteAddress,
+                            "AS2",
+                            null,
+                            partnerAS2Id,
+                            request.getHeader("User-Agent"),
+                            request.getRequestURI()
+                        );
+
+                        // Return 403 Forbidden
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                                "Access denied: IP address not whitelisted for AS2 endpoint");
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                // Log error but don't block if whitelist check fails
+                Logger.getLogger(AS2Server.SERVER_LOGGER_NAME).warning(
+                    "IP whitelist check failed for AS2 endpoint: " + e.getMessage());
+            }
+
             //might be one of
             //javax.servlet.request.ssl_session
             //org.eclipse.jetty.servlet.request.ssl_session
@@ -105,10 +190,16 @@ public class HttpReceiver extends HttpServlet {
             }
             //get SSL information
             if (sslSessionAttributeKey != null) {
-                SSLSession sslSession = (SSLSession) request.getAttribute(sslSessionAttributeKey);
-                if (sslSession != null) {
-                    tlsProtocol = sslSession.getProtocol();
-                    cipherSuite = sslSession.getCipherSuite();
+                try {
+                    Object attrValue = request.getAttribute(sslSessionAttributeKey);
+                    if (attrValue instanceof SSLSession) {
+                        SSLSession sslSession = (SSLSession) attrValue;
+                        tlsProtocol = sslSession.getProtocol();
+                        cipherSuite = sslSession.getCipherSuite();
+                    }
+                } catch (Exception e) {
+                    // Ignore if SSL session cannot be retrieved
+                    // This can happen with proxies or certain Jetty configurations
                 }
             }
             InputStream inStream = request.getInputStream();
@@ -187,6 +278,13 @@ public class HttpReceiver extends HttpServlet {
         messageRequest.setTLSProtocol(tlsProtocol);
         messageRequest.setCipherSuite(cipherSuite);
         messageRequest.setRemoteAddress(remoteAddress);
+
+        // Set target user ID from request attributes
+        Integer targetUserId = (Integer) request.getAttribute("targetUserId");
+        if (targetUserId != null) {
+            messageRequest.setTargetUserId(targetUserId);
+        }
+
         String remoteHost = request.getRemoteHost();
         if (remoteHost == null) {
             remoteHost = request.getRemoteAddr();
@@ -246,81 +344,243 @@ public class HttpReceiver extends HttpServlet {
     }
 
     /**
-     * Validate inbound authentication based on system preferences.
+     * Validate inbound authentication based on per-partner configuration.
      * Returns true if authentication passes or is disabled, false otherwise.
-     * Implements OR logic: message accepted if it matches ANY configured credential.
+     * Implements OR logic: message accepted if it matches ANY enabled auth method.
      *
      * This validates EXTERNAL partner authentication, not internal client-server communication.
      */
     private boolean validateInboundAuthentication(LinkedHashMap<String, String> headerMap, HttpServletRequest request) {
-        PreferencesAS2 preferences = new PreferencesAS2();
-        int authMode = preferences.getInt(PreferencesAS2.INBOUND_AUTH_MODE);
         Logger logger = Logger.getLogger("de.mendelson.as2.server");
 
-        // Mode 0: No authentication required
-        if (authMode == 0) {
+        // Get target username from request attribute (set in doPost)
+        String targetUsername = (String) request.getAttribute("targetUsername");
+        if (targetUsername == null) {
+            logger.severe("No username in request path - endpoint requires /as2/HttpReceiver/{username}");
+            return false;
+        }
+
+        // Get AS2-To header to identify which local station this message is for
+        String as2To = headerMap.get("as2-to");
+        if (as2To == null || as2To.isEmpty()) {
+            logger.warning("No AS2-To header found in request from " + request.getRemoteAddr());
+            return false;
+        }
+
+        // Unescape AS2-To header value
+        as2To = de.mendelson.comm.as2.message.AS2MessageParser.unescapeFromToHeader(as2To);
+
+        // Look up user by username
+        de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userAccess =
+            new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                AS2Server.getActivatedDBDriverManager(), logger);
+        de.mendelson.comm.as2.usermanagement.WebUIUser user = null;
+        int userId = -1;  // Initialize to invalid user ID
+
+        try {
+            user = userAccess.getUserByUsername(targetUsername);
+            if (user != null) {
+                userId = user.getId();
+                // Use actual user ID from database (admin should be 1)
+            } else {
+                logger.warning("User not found: " + targetUsername);
+                return false;
+            }
+        } catch (Exception e) {
+            logger.severe("Failed to lookup user: " + e.getMessage());
+            return false;
+        }
+
+        // Find local station matching both user_id and AS2 ID
+        de.mendelson.comm.as2.partner.PartnerAccessDB partnerAccess =
+            new de.mendelson.comm.as2.partner.PartnerAccessDB(AS2Server.getActivatedDBDriverManager());
+
+        // Get all local stations owned by this user
+        java.util.List<de.mendelson.comm.as2.partner.Partner> userLocalStations =
+            partnerAccess.getPartnersOwnedByUser(userId,
+                de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
+
+        // Find the local station with matching AS2 ID
+        de.mendelson.comm.as2.partner.Partner localStation = null;
+        for (de.mendelson.comm.as2.partner.Partner partner : userLocalStations) {
+            if (partner.isLocalStation() && as2To.equals(partner.getAS2Identification())) {
+                localStation = partner;
+                break;
+            }
+        }
+
+        if (localStation == null) {
+            logger.warning("No local station found for user '" + targetUsername +
+                         "' with AS2-To: " + as2To + " (checked " + userLocalStations.size() + " partners)");
+            return false;
+        }
+
+        // Get inbound authentication credentials list
+        java.util.List<de.mendelson.comm.as2.partner.PartnerInboundAuthCredential> credentials =
+            localStation.getInboundAuthCredentialsList();
+
+        // Check master toggles (from partner table)
+        boolean basicAuthMasterEnabled = localStation.isInboundAuthBasicEnabled();
+        boolean certAuthMasterEnabled = localStation.isInboundAuthCertEnabled();
+
+        // Count enabled credentials by type (only if master toggle is ON)
+        boolean anyBasicCredential = false;
+        boolean anyCertCredential = false;
+        boolean basicAuthPassed = false;
+        boolean certAuthPassed = false;
+
+        // Check what types of credentials are configured AND enabled
+        // Only count them if the master toggle is ON
+        if (basicAuthMasterEnabled) {
+            for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                if (credential.isEnabled() &&
+                    credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
+                    anyBasicCredential = true;
+                    break;
+                }
+            }
+        }
+
+        if (certAuthMasterEnabled) {
+            for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                if (credential.isEnabled() &&
+                    credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    anyCertCredential = true;
+                    break;
+                }
+            }
+        }
+
+        // If no credentials are enabled, no auth is required - accept all
+        if (!anyBasicCredential && !anyCertCredential) {
+            logger.info("No authentication required for local station: " + targetUsername +
+                       " (all auth methods disabled)");
             return true;
         }
 
-        // Mode 1: Basic Authentication - validate against configured credentials
-        if (authMode == 1) {
+        // Validate Basic Authentication (check ALL basic credentials)
+        if (anyBasicCredential) {
             String authHeader = headerMap.get("authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                logger.warning("Inbound message rejected: Missing Basic Auth header from " + request.getRemoteAddr());
-                return false;
+            logger.info("DEBUG: anyBasicCredential=true, authHeader=[" + authHeader + "]");
+            if (authHeader != null && authHeader.startsWith("Basic ")) {
+                try {
+                    String base64Credentials = authHeader.substring(6);
+                    byte[] decoded = Base64.getDecoder().decode(base64Credentials);
+                    String credentialsStr = new String(decoded, StandardCharsets.UTF_8);
+                    String[] parts = credentialsStr.split(":", 2);
+
+                    if (parts.length == 2) {
+                        String username = parts[0];
+                        String password = parts[1];
+
+                        logger.info("DEBUG: Received basic auth - username: [" + username + "] password: [" + password + "]");
+
+                        // Check against ALL basic auth credentials
+                        for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                            if (credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC) {
+                                logger.info("DEBUG: Comparing with credential - enabled: " + credential.isEnabled() +
+                                          " username: [" + credential.getUsername() + "] password: [" + credential.getPassword() + "]");
+                            }
+
+                            if (credential.isEnabled() &&
+                                credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_BASIC &&
+                                username.equals(credential.getUsername()) &&
+                                password.equals(credential.getPassword())) {
+                                basicAuthPassed = true;
+                                logger.info("Inbound Basic Auth accepted for user: " + username +
+                                           " at local station: " + targetUsername + " from " + request.getRemoteAddr());
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Inbound Basic Auth parsing failed: " + e.getMessage());
+                }
             }
 
-            try {
-                String base64Credentials = authHeader.substring(6);
-                byte[] decoded = Base64.getDecoder().decode(base64Credentials);
-                String credentials = new String(decoded, StandardCharsets.UTF_8);
-                String[] parts = credentials.split(":", 2);
-
-                if (parts.length != 2) {
-                    logger.warning("Inbound message rejected: Invalid Basic Auth format from " + request.getRemoteAddr());
-                    return false;
-                }
-
-                String username = parts[0];
-                String password = parts[1];
-
-                // Validate against inbound credentials stored in preferences
-                // For now, accept any non-empty credentials
-                // TODO: Implement proper credential validation against stored values
-                if (username != null && !username.trim().isEmpty() &&
-                    password != null && !password.trim().isEmpty()) {
-                    logger.info("Inbound Basic Auth accepted - username: " + username + " from " + request.getRemoteAddr());
-                    return true;
-                }
-
-                logger.warning("Inbound message rejected: Invalid credentials from " + request.getRemoteAddr());
-                return false;
-
-            } catch (Exception e) {
-                logger.warning("Inbound message rejected: Basic Auth parsing failed - " + e.getMessage());
-                return false;
+            if (!basicAuthPassed) {
+                logger.warning("Inbound Basic Auth failed for local station: " + targetUsername +
+                              " from " + request.getRemoteAddr());
             }
         }
 
-        // Mode 2: Certificate Authentication - validate client certificate
-        if (authMode == 2) {
-            // Certificate authentication requires reverse proxy to extract client cert
-            // The proxy should pass cert info via custom headers
-            String clientCertSerial = headerMap.get("x-client-cert-serial");
-            String clientCertSubject = headerMap.get("x-client-cert-subject");
+        // Validate Certificate Authentication (check ALL cert credentials)
+        if (anyCertCredential) {
+            // Get client certificate from request
+            // Try jakarta.servlet.request.X509Certificate attribute (Jetty 12 / Jakarta EE 10)
+            java.security.cert.X509Certificate[] clientCerts =
+                (java.security.cert.X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
 
-            if (clientCertSerial == null || clientCertSubject == null) {
-                logger.warning("Inbound message rejected: No client certificate from " + request.getRemoteAddr());
-                return false;
+            // Fallback to javax variant for older containers
+            if (clientCerts == null) {
+                clientCerts = (java.security.cert.X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
             }
 
-            // TODO: Validate certificate against stored trusted certificates
-            logger.info("Inbound Certificate Auth accepted - cert subject: " + clientCertSubject + " from " + request.getRemoteAddr());
-            return true;
+            // Now validate the certificate if we found one
+            if (clientCerts != null && clientCerts.length > 0) {
+                try {
+                    java.security.cert.X509Certificate clientCert = clientCerts[0];
+                    String certFingerprint = calculateFingerprint(clientCert);
+                    logger.info("Inbound certificate authentication: Received client certificate with fingerprint: " + certFingerprint +
+                               " from " + request.getRemoteAddr());
+
+                    // Check against ALL certificate credentials
+                    for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential credential : credentials) {
+                        if (credential.isEnabled() &&
+                            credential.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE &&
+                            credential.getCertFingerprint() != null) {
+                            String configuredFingerprint = credential.getCertFingerprint();
+                            if (certFingerprint.replace(":", "").equalsIgnoreCase(
+                                    configuredFingerprint.replace(":", ""))) {
+                                certAuthPassed = true;
+                                logger.info("Inbound Certificate Auth accepted for local station: " + targetUsername +
+                                           " from " + request.getRemoteAddr());
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("Certificate validation failed: " + e.getMessage());
+                }
+            } else {
+                logger.warning("No client certificate found in request. Remote client may not be sending a certificate, or SSL mutual authentication is not configured.");
+            }
+
+            if (!certAuthPassed) {
+                logger.warning("Inbound Certificate Auth failed for local station: " + targetUsername +
+                              " from " + request.getRemoteAddr());
+            }
         }
 
-        // Unknown auth mode - reject
-        logger.warning("Inbound message rejected: Unknown auth mode " + authMode);
-        return false;
+        // OR logic: Pass if ANY configured auth method succeeded
+        return basicAuthPassed || certAuthPassed;
+    }
+
+    /**
+     * Helper method to calculate SHA-1 fingerprint of a certificate
+     */
+    private String calculateFingerprint(java.security.cert.X509Certificate cert) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
+            byte[] der = cert.getEncoded();
+            md.update(der);
+            byte[] digest = md.digest();
+
+            // Convert to hex string with colons
+            StringBuilder hexString = new StringBuilder();
+            for (int i = 0; i < digest.length; i++) {
+                String hex = Integer.toHexString(0xFF & digest[i]);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex.toUpperCase());
+                if (i < digest.length - 1) {
+                    hexString.append(':');
+                }
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 }

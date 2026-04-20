@@ -71,7 +71,7 @@ public class HTTPServerConfigInfoProcessor {
                 receiptURLList.add("https://<HOST>:" + listener.getPort() + this.httpServerConfigInfo.getReceiptURLPath());
                 serverStateURLList.add("https://<HOST>:" + listener.getPort() + this.httpServerConfigInfo.getServerStatePath());
             } else {
-                receiptURLList.add("http://<HOST>:" + listener.getPort() + this.httpServerConfigInfo.getReceiptURLPath());
+                receiptURLList.add("http://<HOST>:" + listener.getPort() + this.httpServerConfigInfo.getReceiptURLPath() + "/{username}");
                 serverStateURLList.add("http://<HOST>:" + listener.getPort() + this.httpServerConfigInfo.getServerStatePath());
             }
             String adapterStr = "<unknown>";

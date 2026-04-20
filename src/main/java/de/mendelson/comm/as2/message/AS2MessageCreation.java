@@ -528,6 +528,8 @@ public class AS2MessageCreation {
         info.setSignType(receiver.getSignType());
         info.setEncryptionType(receiver.getEncryptionType());
         info.setRequestsSyncMDN(receiver.isSyncMDN());
+        // Set owner_user_id from sender's created_by_user_id (sender is the local station for outbound messages)
+        info.setOwnerUserId(sender.getCreatedByUserId());
         if (!receiver.isSyncMDN()) {
             info.setAsyncMDNURL(sender.getMdnURL());
         }
@@ -1095,8 +1097,20 @@ public class AS2MessageCreation {
             throw new Exception("AS2MessageCreation.signContent: Outbound signature private key is not defined for the send process from "
                     + sender.getName() + " to " + receiver.getName());
         }
+
+        System.out.println("[AS2-SIGN-DEBUG] ========================================");
+        System.out.println("[AS2-SIGN-DEBUG] Looking up signing certificate:");
+        System.out.println("[AS2-SIGN-DEBUG]   Sender: " + sender.getName());
+        System.out.println("[AS2-SIGN-DEBUG]   Fingerprint: " + signKeyFingerprintSHA1);
+        System.out.println("[AS2-SIGN-DEBUG]   CertManager class: " + this.signatureCertManager.getClass().getName());
+
         PrivateKey senderKey = this.signatureCertManager.getPrivateKeyByFingerprintSHA1(signKeyFingerprintSHA1);
         String senderSignAlias = this.signatureCertManager.getAliasByFingerprint(signKeyFingerprintSHA1);
+
+        System.out.println("[AS2-SIGN-DEBUG]   Alias found: " + senderSignAlias);
+        System.out.println("[AS2-SIGN-DEBUG]   Private key found: " + (senderKey != null));
+        System.out.println("[AS2-SIGN-DEBUG] ========================================");
+
         if (senderKey == null) {
             throw new Exception("AS2MessageCreation.signContent: Key with serial " + sender.getSignFingerprintSHA1()
                     + " does not exist in the keystore.");

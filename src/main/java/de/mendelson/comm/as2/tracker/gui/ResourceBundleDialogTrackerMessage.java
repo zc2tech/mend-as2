@@ -45,6 +45,7 @@ public class ResourceBundleDialogTrackerMessage extends MecResourceBundle {
         {"label.trackerid.filter.tooltip", "Search by partial tracker ID (leave empty to search by date)"},
         {"label.user.filter", "User:"},
         {"label.user.filter.tooltip", "Filter by authenticated user"},
+        {"label.user.filter.readonly.tooltip", "Filter by authenticated user (admin only can edit)"},
         {"label.format.filter", "Format:"},
         {"label.format.filter.tooltip", "Filter by payload format"},
         {"label.format.all", "All"},

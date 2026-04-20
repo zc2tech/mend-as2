@@ -39,6 +39,7 @@ import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -68,6 +69,7 @@ public class PartnerResource {
             @QueryParam("completeness") @DefaultValue("full") String completeness,
             @QueryParam("visibleToUser") Integer visibleToUserId) {
         try {
+
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -84,7 +86,7 @@ public class PartnerResource {
                         : PartnerAccessDB.DATA_COMPLETENESS_FULL;
 
                 PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
-                partners = partnerDB.getPartnersVisibleToUser(visibleToUserId, dataCompleteness);
+                partners = partnerDB.getPartnersOwnedByUser(visibleToUserId, dataCompleteness);
             } else {
                 // Use existing logic
                 int listOption = PartnerListRequest.LIST_ALL;
@@ -101,6 +103,8 @@ public class PartnerResource {
                         : PartnerListRequest.DATA_COMPLETENESS_FULL;
 
                 PartnerListRequest request = new PartnerListRequest(listOption, dataCompleteness);
+                // Set userId=-1 to return ALL partners (no user filtering)
+                request.setUserId(-1);
                 PartnerListResponse response = processing.processPartnerListRequest(request);
 
                 if (response.getException() != null) {
@@ -112,7 +116,30 @@ public class PartnerResource {
                 partners = response.getList();
             }
 
-            return Response.ok(partners).build();
+            // Convert to DTOs and populate creator usernames
+            UserManagementAccessDB userMgmt = new UserManagementAccessDB(processing.getDBDriverManager(), logger);
+            List<PartnerDTO> partnerDTOs = new ArrayList<>();
+            for (Partner partner : partners) {
+                PartnerDTO dto = new PartnerDTO(partner);
+
+                // Look up and set creator username
+                int creatorUserId = partner.getCreatedByUserId();
+                try {
+                    if (creatorUserId > 0) {
+                        WebUIUser creator = userMgmt.getUser(creatorUserId);
+                        if (creator != null) {
+                            dto.setCreatedByUsername(creator.getUsername());
+                        }
+                    }
+                } catch (Exception e) {
+                    // If user lookup fails, leave username as null (will fall back to "User X" in UI)
+                    logger.warning("Failed to lookup user " + creatorUserId + ": " + e.getMessage());
+                }
+
+                partnerDTOs.add(dto);
+            }
+
+            return Response.ok(partnerDTOs).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
@@ -200,7 +227,9 @@ public class PartnerResource {
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(processing.getDBDriverManager(), logger);
             WebUIUser user = userMgmt.getUserByUsername(username);
             if (user != null) {
+                // Use the actual user ID (admin user has ID 1)
                 partner.setCreatedByUserId(user.getId());
+                logger.info("Setting created_by_user_id=" + user.getId() + " for username=" + username);
             }
 
             SinglePartnerAddRequest request = new SinglePartnerAddRequest(partner);
@@ -251,16 +280,7 @@ public class PartnerResource {
                         .build();
             }
 
-            // Check if AS2 ID is being changed to a duplicate
-            String newAS2Id = partnerDTO.getAs2Identification();
-            if (newAS2Id != null && !newAS2Id.equals(existingPartner.getAS2Identification())) {
-                Partner duplicateCheck = partnerAccess.getPartner(newAS2Id);
-                if (duplicateCheck != null && duplicateCheck.getDBId() != dbId) {
-                    return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(new ErrorResponse("A partner with AS2 ID '" + newAS2Id + "' already exists"))
-                            .build();
-                }
-            }
+            // Note: AS2 ID duplication is allowed because users have separate endpoints /as2/HttpReceiver/{username}
 
             // Update existing partner with values from DTO (preserves fields not in DTO)
             updatePartnerFromDTO(existingPartner, partnerDTO);
@@ -309,108 +329,6 @@ public class PartnerResource {
             }
 
             return Response.ok(new SuccessResponse("Partner deleted successfully")).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(e.getMessage()))
-                    .build();
-        }
-    }
-
-    /**
-     * Get visibility settings for a partner
-     * GET /partners/{id}/visibility
-     */
-    @GET
-    @Path("/{id}/visibility")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getPartnerVisibility(@PathParam("id") int partnerId) {
-        try {
-            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
-            if (processing == null) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                        .entity(new ErrorResponse("Server processing not available"))
-                        .build();
-            }
-
-            PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
-            Partner partner = partnerDB.getPartner(partnerId);
-
-            if (partner == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(new ErrorResponse("Partner not found"))
-                        .build();
-            }
-
-            Map<String, Object> visibility = new HashMap<>();
-            visibility.put("partnerId", partnerId);
-            visibility.put("localStation", partner.isLocalStation());
-            visibility.put("visibleToAll", partner.isVisibleToAllUsers());
-            visibility.put("visibleToUserIds", partner.getVisibleToUserIds());
-
-            return Response.ok(visibility).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorResponse(e.getMessage()))
-                    .build();
-        }
-    }
-
-    /**
-     * Update visibility settings for a partner
-     * PUT /partners/{id}/visibility
-     * Body: { "visibleToAll": true|false, "userIds": [1,2,3] }
-     */
-    @PUT
-    @Path("/{id}/visibility")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response updatePartnerVisibility(
-            @PathParam("id") int partnerId,
-            Map<String, Object> visibilityData) {
-
-        try {
-            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
-            if (processing == null) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                        .entity(new ErrorResponse("Server processing not available"))
-                        .build();
-            }
-
-            PartnerAccessDB partnerDB = new PartnerAccessDB(processing.getDBDriverManager());
-            Partner partner = partnerDB.getPartner(partnerId);
-
-            if (partner == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(new ErrorResponse("Partner not found"))
-                        .build();
-            }
-
-            if (partner.isLocalStation()) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .entity(new ErrorResponse("Cannot set visibility for local stations"))
-                        .build();
-            }
-
-            Boolean visibleToAll = (Boolean) visibilityData.get("visibleToAll");
-            List<Integer> userIds = new java.util.ArrayList<>();
-
-            if (Boolean.FALSE.equals(visibleToAll)) {
-                // Extract user IDs
-                Object userIdsObj = visibilityData.get("userIds");
-                if (userIdsObj instanceof List) {
-                    for (Object id : (List<?>) userIdsObj) {
-                        if (id instanceof Number) {
-                            userIds.add(((Number) id).intValue());
-                        }
-                    }
-                }
-            }
-
-            // Update visibility
-            partner.setVisibleToUserIds(userIds);
-            partnerDB.updatePartner(partner);
-
-            return Response.ok(new SuccessResponse("Visibility updated successfully")).build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse(e.getMessage()))
@@ -494,6 +412,17 @@ public class PartnerResource {
         }
         if (dto.getAuthenticationCredentialsAsyncMDN() != null) {
             partner.setAuthenticationAsyncMDN(dto.getAuthenticationCredentialsAsyncMDN());
+        }
+
+        // Inbound Authentication (for local stations only)
+        if (partner.isLocalStation() && dto.getInboundAuthCredentialsList() != null) {
+            partner.setInboundAuthCredentialsList(dto.getInboundAuthCredentialsList());
+        }
+
+        // Inbound Auth enable flags (for local stations only)
+        if (partner.isLocalStation()) {
+            partner.setInboundAuthBasicEnabled(dto.isInboundAuthBasicEnabled());
+            partner.setInboundAuthCertEnabled(dto.isInboundAuthCertEnabled());
         }
 
         // Contact tab

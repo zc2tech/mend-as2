@@ -246,8 +246,11 @@ public class CertificateManager {
      * Stores the manages keystore
      */
     public void saveKeystore() throws Throwable {
+        this.logger.info("[DEBUG CertificateManager] saveKeystore() called");
         this.storage.save();
+        this.logger.info("[DEBUG CertificateManager] Storage saved, now rereading certificates...");
         this.rereadKeystoreCertificates();
+        this.logger.info("[DEBUG CertificateManager] Certificates reread successfully");
     }
 
     /**
@@ -771,6 +774,17 @@ public class CertificateManager {
      */
     public int getStorageUsage() {
         return (this.storage.getKeystoreUsage());
+    }
+
+    /**
+     * Returns the userId for user-specific keystores (0 = admin/system, >0 = specific user)
+     * Only works if the storage is KeystoreStorageImplClientServer, otherwise returns 0
+     */
+    public int getUserId() {
+        if (this.storage instanceof de.mendelson.util.security.cert.clientserver.KeystoreStorageImplClientServer) {
+            return ((de.mendelson.util.security.cert.clientserver.KeystoreStorageImplClientServer) this.storage).getUserId();
+        }
+        return 0;  // Default to admin/system for non-client-server storages
     }
 
     /**

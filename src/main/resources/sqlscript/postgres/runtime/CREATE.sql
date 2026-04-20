@@ -38,12 +38,14 @@ CREATE TABLE messages (
   msgsubject VARCHAR(255),
   resendcounter INTEGER DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
-  secureconnection INTEGER DEFAULT 0 NOT NULL
+  secureconnection INTEGER DEFAULT 0 NOT NULL,
+  owner_user_id INTEGER DEFAULT 0 NOT NULL
 );
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);
 CREATE INDEX idx_messages_contentmic ON messages(contentmic);
 CREATE INDEX idx_messages_state ON messages(state);
+CREATE INDEX idx_messages_owner_user ON messages(owner_user_id);
 
 -- MDN table
 CREATE TABLE mdn (
@@ -86,13 +88,10 @@ CREATE TABLE payload (
   payloadfilename VARCHAR(512),
   contentid VARCHAR(255),
   contenttype VARCHAR(255),
-  payload_format VARCHAR(50),
-  payload_doctype VARCHAR(255),
   FOREIGN KEY(messageid) REFERENCES messages(messageid)
 );
 
 CREATE INDEX idx_payload_messageid ON payload(messageid);
-CREATE INDEX idx_payload_format ON payload(payload_format);
 
 -- Tracker message table (drop first if exists from previous run)
 DROP TABLE IF EXISTS tracker_auth_failure CASCADE;

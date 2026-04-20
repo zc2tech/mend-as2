@@ -145,4 +145,85 @@ public class AS2Properties {
 
         return defaultValue;
     }
+
+    /**
+     * Get SendOrder queue strategy (PERSISTENT or IN_MEMORY)
+     * Priority: ENV > System Property > File > Default
+     */
+    public String getSendOrderQueueStrategy() {
+        // 1. Environment variable
+        String envValue = System.getenv("AS2_SENDORDER_QUEUE_STRATEGY");
+        if (envValue != null && !envValue.isEmpty()) {
+            return normalizeQueueStrategy(envValue);
+        }
+
+        // 2. System property
+        String sysProp = System.getProperty("sendorder.queue.strategy");
+        if (sysProp != null && !sysProp.isEmpty()) {
+            return normalizeQueueStrategy(sysProp);
+        }
+
+        // 3. Properties file
+        String propValue = properties.getProperty("sendorder.queue.strategy");
+        if (propValue != null && !propValue.isEmpty()) {
+            return normalizeQueueStrategy(propValue);
+        }
+
+        // 4. Default
+        return "PERSISTENT";
+    }
+
+    /**
+     * Normalize queue strategy to uppercase and validate
+     */
+    private String normalizeQueueStrategy(String strategy) {
+        String normalized = strategy.trim().toUpperCase();
+        if ("PERSISTENT".equals(normalized) || "IN_MEMORY".equals(normalized)) {
+            return normalized;
+        }
+        logger.warning("Invalid sendorder.queue.strategy '" + strategy + "', using default: PERSISTENT");
+        return "PERSISTENT";
+    }
+
+    /**
+     * Get SendOrder queue max depth for IN_MEMORY strategy
+     * Priority: ENV > System Property > File > Default (1000)
+     */
+    public int getSendOrderQueueMaxDepth() {
+        return getInt("sendorder.queue.max_depth", "AS2_SENDORDER_QUEUE_MAX_DEPTH", 1000);
+    }
+
+    /**
+     * Get SendOrder queue checkpoint interval for IN_MEMORY strategy (seconds)
+     * Priority: ENV > System Property > File > Default (60)
+     */
+    public int getSendOrderQueueCheckpointInterval() {
+        return getInt("sendorder.queue.checkpoint_interval", "AS2_SENDORDER_QUEUE_CHECKPOINT_INTERVAL", 60);
+    }
+
+    /**
+     * Get integer property with priority: ENV > System Property > File > Default
+     */
+    private int getInt(String propertyKey, String envVar, int defaultValue) {
+        try {
+            String envValue = System.getenv(envVar);
+            if (envValue != null && !envValue.isEmpty()) {
+                return Integer.parseInt(envValue);
+            }
+
+            String sysProp = System.getProperty(propertyKey);
+            if (sysProp != null && !sysProp.isEmpty()) {
+                return Integer.parseInt(sysProp);
+            }
+
+            String propValue = properties.getProperty(propertyKey);
+            if (propValue != null && !propValue.isEmpty()) {
+                return Integer.parseInt(propValue);
+            }
+        } catch (NumberFormatException e) {
+            logger.warning("Invalid number format for " + propertyKey + ", using default: " + defaultValue);
+        }
+
+        return defaultValue;
+    }
 }

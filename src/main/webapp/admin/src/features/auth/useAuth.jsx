@@ -30,6 +30,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
+  // Store original admin user when switching - persist in sessionStorage
+  const [originalUser, setOriginalUser] = useState(() => {
+    const stored = sessionStorage.getItem('originalUser');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  // Persist originalUser to sessionStorage whenever it changes
+  useEffect(() => {
+    if (originalUser) {
+      sessionStorage.setItem('originalUser', JSON.stringify(originalUser));
+    } else {
+      sessionStorage.removeItem('originalUser');
+    }
+  }, [originalUser]);
+
   useEffect(() => {
     // Only check auth if not on login page
     if (!window.location.pathname.includes('/login')) {
@@ -47,7 +62,12 @@ export function AuthProvider({ children }) {
 
       // Fetch current user info
       const userResponse = await api.get('/users/current');
-      setUser({ id: userResponse.data.id, username: userResponse.data.username });
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
 
       // Fetch user permissions
       const permissionsResponse = await api.get('/users/current/permissions');
@@ -70,10 +90,18 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.post('/auth/login', { username, password });
 
+      // Clear any previous user switch state from sessionStorage on fresh login
+      setOriginalUser(null);
+
       // Check if user must change password
       if (response.data.mustChangePassword) {
         setMustChangePassword(true);
-        setUser({ id: response.data.id, username: response.data.username });
+        setUser({
+          id: response.data.id,
+          username: response.data.username,
+          roleIds: response.data.roleIds,
+          roles: response.data.roles
+        });
         return { success: true, mustChangePassword: true };
       }
 
@@ -82,7 +110,12 @@ export function AuthProvider({ children }) {
       const userPermissions = permissionsResponse.data;
 
       setPermissions(userPermissions);
-      setUser({ id: response.data.id, username: response.data.username });
+      setUser({
+        id: response.data.id,
+        username: response.data.username,
+        roleIds: response.data.roleIds,
+        roles: response.data.roles
+      });
       setMustChangePassword(false);
       return { success: true, mustChangePassword: false };
     } catch (error) {
@@ -102,7 +135,68 @@ export function AuthProvider({ children }) {
       setUser(null);
       setPermissions([]);
       setMustChangePassword(false);
+      setOriginalUser(null); // Clear original user on logout
       window.location.href = '/as2/webui/login';
+    }
+  };
+
+  const switchUser = async (targetUsername) => {
+    try {
+      // Store current user as original user before switching
+      if (!originalUser) {
+        setOriginalUser({ id: user.id, username: user.username });
+      }
+
+      // Call backend API to switch user
+      const response = await api.post('/auth/switch-user', { targetUsername });
+
+      // Fetch new user info and permissions
+      const userResponse = await api.get('/users/current');
+      const permissionsResponse = await api.get('/users/current/permissions');
+
+      // Update state with new user and permissions
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
+      setPermissions(permissionsResponse.data);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const switchBack = async () => {
+    if (!originalUser) {
+      throw new Error('No original user to switch back to');
+    }
+
+    try {
+      // Switch back to original user
+      await api.post('/auth/switch-user', { targetUsername: originalUser.username });
+
+      // Fetch original user info and permissions
+      const userResponse = await api.get('/users/current');
+      const permissionsResponse = await api.get('/users/current/permissions');
+
+      // Update state
+      setUser({
+        id: userResponse.data.id,
+        username: userResponse.data.username,
+        roleIds: userResponse.data.roleIds,
+        roles: userResponse.data.roles
+      });
+      setPermissions(permissionsResponse.data);
+
+      // Clear original user since we're back
+      setOriginalUser(null);
+
+      return { success: true };
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -133,8 +227,11 @@ export function AuthProvider({ children }) {
       permissions,
       loading,
       mustChangePassword,
+      originalUser,
       login,
       logout,
+      switchUser,
+      switchBack,
       clearMustChangePassword,
       refreshPermissions,
       hasPermission,

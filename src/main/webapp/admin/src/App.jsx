@@ -25,6 +25,7 @@ import { AuthProvider } from './features/auth/useAuth';
 import { ToastProvider } from './components/Toast';
 import Login from './features/auth/Login';
 import ChangePassword from './features/auth/ChangePassword';
+import SwitchUser from './features/auth/SwitchUser';
 import ProtectedRoute from './features/auth/ProtectedRoute';
 import PermissionRoute from './features/auth/PermissionRoute';
 import Layout from './components/Layout';
@@ -36,6 +37,7 @@ import TrackerMessageList from './features/tracker/TrackerMessageList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
 import UserPreferences from './features/preferences/UserPreferences';
+import IPWhitelistManagement from './features/ipwhitelist/IPWhitelistManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +71,15 @@ function App() {
               {/* Change password within the app layout */}
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="preferences" element={<UserPreferences />} />
+              {/* Switch user - only accessible to admins */}
+              <Route
+                path="switch-user"
+                element={
+                  <PermissionRoute requiredPermissions={['USER_MANAGE']}>
+                    <SwitchUser />
+                  </PermissionRoute>
+                }
+              />
               <Route
                 path="partners"
                 element={
@@ -117,6 +128,8 @@ function App() {
                   </PermissionRoute>
                 }
               />
+              {/* IP Whitelist - only accessible to 'admin' super user */}
+              <Route path="ipwhitelist" element={<IPWhitelistManagement />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

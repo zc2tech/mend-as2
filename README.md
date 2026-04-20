@@ -31,8 +31,10 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password generation and email delivery
   - Forced password change on first login
   - Password complexity enforcement
+  - Username validation (3-32 chars, alphanumeric + `-_.` only, must start with letter/digit)
   - Account enable/disable functionality
   - Admin user protection (cannot be disabled or deleted)
+  - User switching for admin users (test permissions, immediate data refresh)
 
 - **HTTP Authentication (Outbound)**
   - Flexible HTTP Basic Auth for partner connections
@@ -44,10 +46,11 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 - **Inbound Authentication**
   - System-wide authentication for incoming AS2 messages
   - Two authentication types (can enable both):
-    - **Basic Authentication** - Multiple username/password pairs
+    - **Basic Authentication** - Multiple username/password pairs with password visibility toggle
     - **Certificate Authentication** - Multiple trusted certificates
   - OR logic: message accepted if ANY credential matches
   - Configuration via SwingUI (System Preferences) and WebUI (System menu)
+  - Password show/hide toggle in SwingUI Inbound Auth Basic table (eye icon)
   - HTTP 401 response for failed authentication
   - Authentication logging for security auditing
 
@@ -68,6 +71,20 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Partner-level visibility controls
   - Inbound message authentication (Basic + Certificate Auth)
   - Zero network attack surface for SwingUI (EventBus replaces Mina TCP)
+  - System-wide TLS certificate management (separate from user certificates)
+  - User-specific TLS certificates for local station authentication
+  - Multi-user certificate isolation (each user has separate signing/encryption keystores)
+  - TLS client certificate authentication for outbound connections
+  - **IP Whitelist Management** - Multi-level IP address access control
+    - Per-endpoint type (AS2, Tracker, WebUI, REST API)
+    - Three whitelist modes: Global Only, Partner/User Specific Only, or Combined
+    - Global whitelist (applies to all endpoints)
+    - Partner-specific whitelist (per AS2 partner)
+    - User-specific whitelist (per WebUI/API user)
+    - IP pattern support (single IP, CIDR, ranges, wildcards)
+    - Block attempt logging with configurable retention
+    - Configuration via both SwingUI and WebUI
+    - Auto-cache refresh (60-second TTL)
 
 - **Modern Tech Stack**
   - **Backend**: Java 17+, Jetty 12, Jakarta EE 10, JAX-RS (Jersey)
@@ -81,6 +98,9 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Database selection via `as2.properties` or environment variable
   - Connection pooling with HikariCP for both databases
   - Automatic schema creation and migration
+  - System-wide keystores use `user_id=-1` (not associated with any user)
+  - User-specific keystores use actual user IDs for proper ownership
+  - Multi-user certificate isolation for signing, encryption, and TLS
 
 - **Tracker Messages**
   - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
@@ -99,6 +119,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Database indexes on timestamp columns for fast sorting
   - Message list optimization (AS2 Messages sorted newest first)
   - Clean logging without debug output in production
+  - IN_MEMORY send queue strategy for high-throughput scenarios
+  - Message retry optimization with cached encrypted payloads (prevents duplicate messages)
 
 ## 📦 Installation
 
@@ -258,8 +280,117 @@ For all database properties:
 - Schema and tables are created automatically on first startup
 - Migration scripts run automatically when upgrading
 - Indexes are created for optimal query performance
+- **PostgreSQL**: Databases must be created manually first
+- **MySQL**: Databases are created automatically by the application
+- **Restore scripts**: Assume databases exist, only drop/recreate tables (not databases)
+
+**📖 Database Documentation:**
+- [Database Initialization Guide](DATABASE_INITIALIZATION.md) - How databases are created automatically
+- [PostgreSQL Configuration](config/POSTGRESQL-CONFIG.md) - PostgreSQL quick reference
+- [MySQL Configuration](config/MYSQL-CONFIG.md) - MySQL quick reference
+- [Backup & Restore Scripts](dev-scripts/README.md) - Automated backup/restore tools (assumes existing databases)
 
 ## 🎯 Usage
+
+### IP Whitelist Management
+
+Control which IP addresses can access specific endpoints with multi-level whitelisting.
+
+**WebUI Configuration:**
+1. Login as Admin
+2. Navigate to **System** → **IP Whitelist**
+3. Configure in 5 tabs:
+
+**Settings Tab:**
+- Enable/disable whitelist per endpoint type:
+  - ☑ **AS2 Endpoint** - Control AS2 message submissions
+  - ☑ **Tracker Endpoint** - Control tracker message access
+  - ☑ **WebUI Access** - Control web interface login (checked before login form displayed)
+  - ☑ **REST API Access** - Control API calls
+- Select whitelist mode:
+  - **Global + Specific (Recommended)** - Check both global and partner/user lists (OR logic)
+  - **Global Only** - Only check global whitelist (same rules for everyone)
+  - **Partner/User Specific Only** - Only check entity-specific lists (isolated rules)
+- Set block log retention (1-365 days)
+
+**Global Whitelist Tab:**
+- Add IP patterns that apply to ALL enabled endpoints
+- Supports: single IPs, CIDR notation, ranges, wildcards
+- Examples: `192.168.1.1`, `10.0.0.0/8`, `192.168.1.1-192.168.1.254`, `192.168.*.*`
+- **IP Pattern filter** - Search/filter entries by IP pattern (client-side)
+- **Pagination** - Page through large lists (25/50/100/200 per page)
+- **Default filter** - WEBUI target type selected by default
+
+**Partner-Specific Whitelist Tab:**
+- Select partner from dropdown (shows format: `{Username}:{PartnerName}`)
+- Add IP patterns specific to that partner's AS2 messages
+- Only applies to AS2 endpoint when partner sends messages
+
+**User-Specific Whitelist Tab:**
+- Select WebUI user from dropdown
+- Add IP patterns specific to that user's WebUI/API access
+- Only applies to WebUI and REST API endpoints
+
+**Block Log Tab:**
+- View blocked IP attempts with details:
+  - Timestamp (displayed in browser's local timezone)
+  - Source IP (IPv6 localhost normalized to 127.0.0.1 for readability)
+  - Endpoint type, target (partner/user)
+  - Request path, user agent
+- Filter by endpoint type and date range (1/7/14/30/90 days)
+- Automatic cleanup based on retention setting
+- **Timezone handling**: All timestamps stored in UTC, displayed in browser's timezone
+
+**SwingUI Configuration:**
+1. Open AS2Gui
+2. Menu → **System → IP Whitelist Manage** (Cmd/Ctrl+Shift+W)
+3. Same 5-tab interface as WebUI
+4. Keyboard shortcut: `Cmd+Shift+W` (Mac) or `Ctrl+Shift+W` (Windows/Linux)
+
+**Behavior:**
+- When whitelist disabled for endpoint: All IPs allowed
+- When whitelist enabled for endpoint: Only whitelisted IPs allowed (default-deny)
+- Mode "Global + Specific": IP allowed if in EITHER global OR specific list
+- Mode "Global Only": IP must be in global list
+- Mode "Specific Only": IP must be in partner/user-specific list
+- Changes take effect within 60 seconds (cache refresh interval)
+- Blocked attempts logged to database and visible in Block Log tab
+- Pattern validation on entry (invalid patterns rejected)
+- **WebUI blocking**: IP check happens BEFORE login form is displayed (access denied page shown)
+- **Localhost always allowed**: 127.0.0.1 and IPv6 localhost (::1) always bypass whitelist
+- **Timezone independent**: All timestamps stored in UTC, works correctly across different server and browser timezones
+
+**IP Pattern Syntax:**
+- Single IP: `192.168.1.100`
+- CIDR notation: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`
+- IP range: `192.168.1.1-192.168.1.254`
+- Wildcards: `192.168.*.*`, `10.0.*.100`
+- IPv6: `2001:db8::1`, `2001:db8::/32`
+
+**Bulk Import from JSON:**
+
+For importing large numbers of IP entries, use the batch import utility:
+
+```bash
+# Import for all endpoint types (AS2, TRACKER, WEBUI, API)
+cd dev-scripts
+./import-whitelist.sh ../private/public_ip_cidr.json
+
+# Import for specific endpoint type
+./import-whitelist.sh ../private/public_ip_cidr.json WEBUI
+```
+
+**Features:**
+- High-performance batch processing (500-1000+ entries/second)
+- Database-agnostic (PostgreSQL/MySQL auto-detection)
+- Transaction safety (automatic rollback on errors)
+- Progress display every 50 entries
+- Duplicate handling (updates existing entries)
+- **IP range conversion**: Automatically converts IP ranges (e.g., `106.120.93.35 - 106.120.93.36`) to wildcard patterns (e.g., `106.120.93.*`)
+- **CIDR preserved**: CIDR notation (e.g., `10.0.0.0/8`) kept as-is, not converted
+- **Thin JAR support**: Detects `lib/` folder for dependencies (thin release distributions)
+
+**📖 Full Documentation:** [dev-scripts/IMPORT_WHITELIST.md](dev-scripts/IMPORT_WHITELIST.md)
 
 ### Inbound Authentication
 
@@ -284,6 +415,7 @@ Configure authentication required for incoming AS2 messages:
 3. Navigate to **Inb. Auth** tab
 4. Check authentication types:
    - ☑ **Enable Basic Authentication** - Add multiple username/password rows
+     - Use eye icon buttons to show/hide passwords in each row
    - ☑ **Enable Certificate Authentication** - Add multiple certificates from dropdown
 5. Click **OK** to save
 
@@ -417,8 +549,14 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
   - Messages sorted by timestamp (newest first)
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
-  - **Inb. AS2 Auth** - Configure incoming AS2 message authentication
+  - **TLS** - System-wide HTTPS server certificates (permission-based access)
   - **Tracker Conf** - Configure tracker endpoint settings
+  - **IP Whitelist** - Multi-level IP access control (5 tabs)
+    - Settings: Enable per endpoint type and select mode
+    - Global: Universal IP patterns
+    - Partner-Specific: Per-partner IP restrictions
+    - User-Specific: Per-user IP restrictions  
+    - Block Log: View blocked access attempts
   - System Events
   - Search in Server Log
   - Maintenance
@@ -444,6 +582,9 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 - **User Preference → HTTP Authentication** - Configure HTTP auth credentials
 - **User Management** - Create/edit users
   - Protected admin user (cannot disable/delete)
+  - **Switch User** - Admin users can switch to other users (test permissions)
+    - Automatic refresh of messages and partners after switch
+    - Window title shows current user when switched
 
 **Keyboard Shortcuts:**
 - `Cmd/Ctrl + ,` - Open Preferences
@@ -452,6 +593,7 @@ java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
 - `Cmd/Ctrl + E` - Edit selected
 - `Cmd/Ctrl + D` - Delete selected
 - `Cmd/Ctrl + R` - Refresh
+- `Cmd/Ctrl + Shift + W` - IP Whitelist Management
 - `ESC` - Close dialog
 
 ### REST API
@@ -488,12 +630,17 @@ curl http://localhost:8080/as2/api/v1/users -b cookies.txt
 
 | Role | Permissions | Use Case |
 |------|------------|----------|
-| **ADMIN** | All | Full system access |
+| **ADMIN** | All | Full system access, can see all partners regardless of visibility |
 | **PARTNER_MANAGER** | Partner R/W | Manage trading partners |
 | **CERTIFICATE_MANAGER** | Certificate R/W | Manage certificates |
 | **MESSAGE_OPERATOR** | Message R/W | Send/view messages |
 | **SYSTEM_MANAGER** | System R/W | Configure server |
 | **VIEWER** | All Read | Read-only access |
+
+**Admin User Privileges:**
+- Can switch to other users to test their permissions
+- See all partners when sending messages (bypasses visibility filtering)
+- Full access to all system features
 
 ## 🏗️ Architecture
 
@@ -533,6 +680,7 @@ mend-as2/
 - ✅ User-specific HTTP authentication credentials (outbound)
 - ✅ System-wide inbound message authentication (Basic + Certificate Auth)
 - ✅ Zero attack surface for GUI mode (Mina removed, EventBus replaces TCP)
+- ✅ IP Whitelist Management (multi-level access control per endpoint)
 
 **Best Practices:**
 1. Change default admin password immediately
@@ -550,6 +698,46 @@ mend-as2/
 
 ## 🔄 Backup & Restore
 
+### Automated Scripts (Recommended)
+
+Use the provided scripts in `dev-scripts/` for easy backup and restore:
+
+**Backup:**
+```bash
+# Linux/Mac
+cd dev-scripts
+./backup.sh                    # Auto-generated name
+./backup.sh my_backup          # Custom name
+
+# Windows
+cd dev-scripts
+backup.bat
+backup.bat my_backup
+```
+
+**Restore:**
+```bash
+# Linux/Mac
+./restore.sh backup_20260416_120000.sql
+
+# Windows
+restore.bat backup_20260416_120000.sql
+```
+
+**Features:**
+- ✅ Automatic configuration detection from `config/` files
+- ✅ Backs up full config database (partners, certificates, users)
+- ✅ Backs up version table from runtime database
+- ✅ Supports both PostgreSQL and MySQL automatically
+- ✅ Cross-platform (Linux/Mac/Windows)
+- ✅ Safe restore with confirmation prompt
+- ✅ **Assumes databases already exist** - only drops/recreates tables
+- ✅ No manual configuration needed!
+
+**📖 Full Documentation:** [dev-scripts/README.md](dev-scripts/README.md)
+
+### Manual Backup (PostgreSQL)
+
 ```bash
 # Backup
 pg_dump -U as2user -d as2_db_config -f backup_config.sql
@@ -558,6 +746,18 @@ pg_dump -U as2user -d as2_db_runtime -f backup_runtime.sql
 # Restore
 psql -U as2user -d as2_db_config -f backup_config.sql
 psql -U as2user -d as2_db_runtime -f backup_runtime.sql
+```
+
+### Manual Backup (MySQL)
+
+```bash
+# Backup
+mysqldump -u as2user -p as2_db_config > backup_config.sql
+mysqldump -u as2user -p as2_db_runtime > backup_runtime.sql
+
+# Restore
+mysql -u as2user -p as2_db_config < backup_config.sql
+mysql -u as2user -p as2_db_runtime < backup_runtime.sql
 ```
 
 ## 🛠️ Development
@@ -639,6 +839,20 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Partner direction visual indicators
 - [x] Admin user protection (cannot disable/delete)
 - [x] Improved Tracker Config UI consistency
+- [x] System TLS certificates management (WebUI subtab)
+- [x] User-specific TLS certificates for local station auth
+- [x] System-wide keystore user_id migration (user_id=-1)
+- [x] MySQL configuration quick reference guide
+- [x] Automated backup/restore scripts (dev-scripts/)
+- [x] Multi-user certificate isolation (sign/encrypt/TLS per user)
+- [x] TLS client certificate authentication for outbound connections
+- [x] Message retry optimization (cached encrypted payloads, no duplicates)
+- [x] Username validation rules (alphanumeric + special chars)
+- [x] SwingUI password visibility toggle (inbound auth basic)
+- [x] Admin user switching feature (test permissions)
+- [x] Admin user partner visibility bypass (see all partners)
+- [x] Restore scripts assume existing databases (drop tables only)
+- [x] IP Whitelist Management (multi-level, per endpoint, 3 modes)
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -682,6 +896,7 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Check System → Inb. AS2 Auth settings (WebUI) or File → Preferences → Inb. AS2 Auth (SwingUI)
 - Verify at least one authentication type is enabled
 - For Basic Auth: Ensure sending partner uses one of the configured username/password pairs
+  - **SwingUI**: Use eye icon buttons to verify passwords are correct
 - For Certificate Auth: Ensure sending partner's certificate is in the trusted list
 - Check server logs for authentication failure details
 - If both auth types enabled, message must pass EITHER one (OR logic)
@@ -711,6 +926,141 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Both WebUI and SwingUI now prompt for password before export
 - Use a strong password to protect exported certificates
 - Password is required to import the keystore later
+
+**Certificate Selection Not Persisting (SwingUI)**
+- Fixed: Certificate selections in Partner → Security tab now persist correctly after save
+- Issue was caused by ActionListener events firing during UI refresh
+- Dropdowns now properly maintain selected values when reopening partner dialog
+
+**MDN URL Helper Buttons (SwingUI)**
+- Fixed: HTTP/HTTPS buttons now show correct ports in all modes
+- Supports custom ports via environment variables:
+  - `AS2_HTTP_PORT` - Override HTTP port (default: 8080 normal, 11080 test mode)
+  - `AS2_HTTPS_PORT` - Override HTTPS port (default: 8443 normal, 11443 test mode)
+- Can also configure via `config/as2.properties`:
+  - `jetty.http.port=9090`
+  - `jetty.ssl.port=9443`
+- Priority: Environment variables > Properties file > Test mode defaults > Normal defaults
+
+**File Path Tilde Expansion (SwingUI)**
+- Certificate import/export dialogs now support `~` for home directory on Mac/Linux
+- Examples:
+  - `~/certificates/mycert.p12` → `/Users/username/certificates/mycert.p12`
+  - `~/.certs/keystore.jks` → `/Users/username/.certs/keystore.jks`
+- Works in:
+  - Certificate export dialog
+  - JKS keystore import
+  - PKCS12 keystore import
+
+**System TLS vs User TLS Certificates**
+- **System TLS** (System → TLS tab in WebUI):
+  - System-wide HTTPS server certificates for Jetty
+  - Used by all users for incoming HTTPS connections
+  - Requires CERT_TLS_READ to view, CERT_TLS_WRITE to modify
+  - Stored with user_id=-1 (not owned by any specific user)
+- **User TLS** (My Sign/Crypt/TLS → TLS tab):
+  - User-specific TLS certificates for local station authentication
+  - Each user can have their own TLS certificates
+  - Stored with actual user ID for proper ownership
+- Migration: Existing system-wide TLS certificates automatically migrated from user_id=0 to user_id=-1
+
+**Backup & Restore**
+- Use automated scripts in `dev-scripts/` folder
+- Scripts automatically detect database type and configuration
+- Backup includes full config database + version table from runtime
+- **Restore assumes databases already exist** - only drops tables, not databases
+- See [dev-scripts/README.md](dev-scripts/README.md) for usage
+
+**TLS Client Certificate Authentication (Outbound)**
+- **Issue**: Partner configured with certificate authentication mode but connection fails with 401 Unauthorized
+- **Cause**: Partner's `httpauth_cert_fingerprint_message` contains wrong/outdated certificate fingerprint
+- **Fix via UI**:
+  1. Login as the user who created the partner
+  2. Edit Partner → Security tab → HTTP Authentication section
+  3. Select correct certificate from dropdown (e.g., `vscode-admin1-tls`)
+  4. Fingerprint auto-updates when you select a certificate
+  5. Save changes
+- **Fix via Database**:
+  ```sql
+  -- Find the correct fingerprint (user's TLS keystore)
+  SELECT alias, fingerprint FROM certificates WHERE user_id=3 AND purpose=1;
+  
+  -- Update partner configuration
+  UPDATE partner SET httpauth_cert_fingerprint_message='65:5A:...' WHERE id=6;
+  ```
+- **Verification**: Check logs for `[OUTBOUND CERT AUTH] Found alias:` - should show certificate alias, not "NOT FOUND"
+- **Note**: Certificate must exist in sender's TLS keystore (system-wide or user-specific)
+
+**Duplicate Messages on Retry (IN_MEMORY Strategy)**
+- **Issue**: Each retry creates a new message with different message ID in database
+- **Cause**: Message was rebuilt from scratch on every retry instead of reusing encrypted payload
+- **Fixed**: Message is now cached after first send attempt, retries use same cached message
+- **Verification**: Check message IDs in database - retries should have same message ID
+- **Memory Management**: 
+  - Cached messages released when order completes (no memory leaks)
+  - Max memory: queue_depth × ~100KB (default: 1000 × 100KB = ~100MB)
+  - Cached messages survive server restart (serialized to checkpoint)
+- **AS2 Protocol Compliance**: Same message ID and encrypted bytes across all retry attempts
+
+**Multi-User Certificate Management**
+- Each user has isolated keystores for signing, encryption, and TLS
+- System-wide certificates (user_id=-1) available to all users as fallback
+- User-specific certificates (user_id=1,2,3...) take precedence for that user
+- Partner's `created_by_user_id` determines which user's certificates to use for signing/encryption
+- TLS client certificates can be user-specific or system-wide
+- Certificate manager UI shows only certificates accessible to current user
+
+**Username Requirements**
+- Length: 3-32 characters
+- Allowed characters: letters (a-z, A-Z), digits (0-9), hyphen (-), underscore (_), dot (.)
+- Must start with letter or digit (not special character)
+- Cannot end with special character
+- Examples:
+  - ✓ Valid: `admin`, `user1`, `john.doe`, `test-user`, `admin_123`
+  - ✗ Invalid: `-admin` (starts with hyphen), `user-` (ends with hyphen), `ab` (too short)
+
+**User Switching (Admin Only)**
+- Admin users can switch to other users via User Management → Switch User
+- Useful for testing user permissions and data visibility
+- Message list and partner list refresh automatically after switch
+- Window title shows current user when switched
+- Click "Switch Back" to return to admin user
+
+**Admin User Sending Messages**
+- Admin users can see and send messages using ALL partners (regardless of who created them)
+- Regular users only see partners they created or have visibility access to
+- This allows admins to test partner configurations without ownership restrictions
+
+**Async MDN Authentication Not Saving**
+- **Fixed**: "None" option for Async MDN authentication now saves correctly
+- Issue was caused by separate event handler that didn't set auth mode
+- If upgrading from older version and "None" wasn't saving, re-select "None" and save again
+
+**IP Whitelist Not Blocking**
+- Verify whitelist is enabled for the endpoint type (System → IP Whitelist → Settings tab)
+- Check the correct mode is selected:
+  - "Global + Specific" requires IP in EITHER global OR specific list
+  - "Global Only" requires IP in global list
+  - "Specific Only" requires IP in partner/user list
+- Changes take up to 60 seconds to apply (cache refresh interval)
+- Check Block Log tab to see if IPs are being blocked
+- Verify IP pattern syntax is correct (use validation during entry)
+- For partner-specific: Ensure partner matches the one sending AS2 messages
+- For user-specific: Ensure user matches the one logging into WebUI/API
+- **Localhost bypass**: 127.0.0.1 and ::1 always allowed (cannot be blocked)
+
+**IP Whitelist Settings Not Saving**
+- **Fixed**: Checkbox values now save correctly in both SwingUI and WebUI
+- Issue was case mismatch between "TRUE" (saved) and "true" (checked)
+- If settings don't persist after upgrade, re-save them once
+
+**IP Whitelist Block Log Not Showing Data**
+- **Fixed**: Timezone handling now uses UTC consistently
+- All timestamps stored in UTC from Java side (`System.currentTimeMillis()`)
+- Browser automatically displays timestamps in local timezone
+- Works correctly across different server timezones (e.g., UTC+10) and browser timezones (e.g., UTC+8)
+- IPv6 localhost addresses (::1) normalized to 127.0.0.1 for better readability
+- If upgrading from older version, delete old test records and trigger new blocked attempts
 
 ---
 

@@ -19,48 +19,59 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
-import { useToast } from '../../components/Toast';
 import { useAuth } from '../auth/useAuth';
 import api from '../../api/client';
 
 export default function TrackerConfig() {
-  const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { hasPermission } = useAuth();
 
   const canWrite = hasPermission('SYSTEM_WRITE');
 
-  const [enabled, setEnabled] = useState(true);
-  const [authRequired, setAuthRequired] = useState(true);
-  const [maxSizeMB, setMaxSizeMB] = useState(2);
-  const [rateLimitFailures, setRateLimitFailures] = useState(3);
-  const [rateLimitWindowHours, setRateLimitWindowHours] = useState(1);
-  const [rateLimitBlockMinutes, setRateLimitBlockMinutes] = useState(60);
+  const [saving, setSaving] = useState(false);
 
   // Load configuration
-  const { isLoading } = useQuery({
+  const { data: config, isLoading } = useQuery({
     queryKey: ['trackerConfig'],
     queryFn: async () => {
       const res = await api.get('/system/tracker/config');
-      const config = res.data;
+      return res.data;
+    },
+    staleTime: 0, // Always fetch fresh data when component mounts
+  });
 
+  // Local editable state - initialized from query data
+  const [enabled, setEnabled] = useState(config?.enabled ?? true);
+  const [authRequired, setAuthRequired] = useState(config?.authRequired ?? true);
+  const [maxSizeMB, setMaxSizeMB] = useState(config?.maxSizeMB ?? 2);
+  const [rateLimitFailures, setRateLimitFailures] = useState(config?.rateLimitFailures ?? 3);
+  const [rateLimitWindowHours, setRateLimitWindowHours] = useState(config?.rateLimitWindowHours ?? 1);
+  const [rateLimitBlockMinutes, setRateLimitBlockMinutes] = useState(config?.rateLimitBlockMinutes ?? 60);
+
+  // Update local state when query data changes
+  useEffect(() => {
+    if (config) {
       setEnabled(config.enabled);
       setAuthRequired(config.authRequired);
       setMaxSizeMB(config.maxSizeMB);
       setRateLimitFailures(config.rateLimitFailures);
       setRateLimitWindowHours(config.rateLimitWindowHours);
       setRateLimitBlockMinutes(config.rateLimitBlockMinutes);
-
-      return config;
     }
-  });
+  }, [config]);
 
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async () => {
+  // Save configuration
+  const handleSave = async () => {
+    if (!canWrite) {
+      alert('You do not have permission to modify system settings');
+      return;
+    }
+
+    setSaving(true);
+    try {
       await api.post('/system/tracker/config', {
         enabled,
         authRequired,
@@ -69,22 +80,15 @@ export default function TrackerConfig() {
         rateLimitWindowHours,
         rateLimitBlockMinutes
       });
-    },
-    onSuccess: () => {
-      showToast('Tracker configuration saved successfully', 'success');
-      queryClient.invalidateQueries(['trackerConfig']);
-    },
-    onError: (error) => {
-      showToast('Failed to save tracker configuration: ' + error.message, 'error');
-    }
-  });
 
-  const handleSave = () => {
-    if (!canWrite) {
-      showToast('You do not have permission to modify system settings', 'error');
-      return;
+      alert('Tracker configuration saved successfully');
+      queryClient.invalidateQueries(['trackerConfig']);
+    } catch (error) {
+      console.error('Error saving tracker configuration:', error);
+      alert('Failed to save tracker configuration: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
     }
-    saveMutation.mutate();
   };
 
   if (isLoading) {
@@ -136,14 +140,14 @@ export default function TrackerConfig() {
 
   const saveButtonStyle = {
     padding: '0.5rem 1.5rem',
-    backgroundColor: '#007bff',
+    backgroundColor: saving ? '#6c757d' : '#007bff',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
-    cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
+    cursor: saving ? 'not-allowed' : 'pointer',
     fontSize: '0.875rem',
     fontWeight: '600',
-    opacity: saveMutation.isPending ? 0.6 : 1
+    opacity: saving ? 0.6 : 1
   };
 
   const gridStyle = {
@@ -290,10 +294,10 @@ export default function TrackerConfig() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid #dee2e6' }}>
             <button
               onClick={handleSave}
-              disabled={saveMutation.isPending}
+              disabled={saving}
               style={saveButtonStyle}
             >
-              {saveMutation.isPending ? 'Saving...' : 'Save Configuration'}
+              {saving ? 'Saving...' : 'Save Configuration'}
             </button>
           </div>
         ) : (

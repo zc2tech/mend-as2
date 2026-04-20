@@ -162,6 +162,11 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private JPanelCertificates panelCertificates = null;
     private CertificateManager manager;
     private final Logger logger;
+
+    // Admin mode fields for viewing all users' certificates
+    private de.mendelson.util.clientserver.BaseClient baseClient;
+    private int currentUserId = 0;
+    private boolean adminModeEnabled = false;
     private final GUIClient guiClient;
     private final String productName;
     private final List<AllowModificationCallback> allowModificationCallbackList = new ArrayList<AllowModificationCallback>();
@@ -241,6 +246,9 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private void setupKeyboardShortcuts() {
         // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
         KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
+
+        // Add Cmd+S / Ctrl+S shortcut to OK button (Save & Close)
+        KeyboardShortcutUtil.addButtonShortcutWithTooltip(this.jButtonOk, KeyEvent.VK_S, "SAVE");
     }
 
     /**
@@ -383,6 +391,26 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         this.panelCertificates.addCertificateInUseChecker(checker);
     }
 
+    /**
+     * Enable admin mode to allow viewing all users' certificates
+     * @param baseClient The client for server communication
+     * @param currentUserId The current user's ID
+     * @param keystoreType The keystore type (KEYSTORE_TYPE_TLS or KEYSTORE_TYPE_ENC_SIGN)
+     */
+    public void setAdminMode(de.mendelson.util.clientserver.BaseClient baseClient, int currentUserId, int keystoreType) {
+        this.baseClient = baseClient;
+        this.currentUserId = currentUserId;
+        this.adminModeEnabled = true;
+
+        // Enable admin mode on the panel to show the toggle
+        if (this.panelCertificates != null) {
+            this.panelCertificates.enableAdminMode(baseClient, currentUserId, keystoreType);
+        }
+    }
+
+    /**
+     * Handler for toggle switch to show all users' certificates
+     */
     /**
      * Checks if the operation is possible because the keystore is R/O and
      * displayes a message if not It's also possible to set the module into a
@@ -645,30 +673,52 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
         KeyGenerator generator = new KeyGenerator();
 
         try {
+            System.out.println("[CERT-GEN-DEBUG] ===== Starting certificate generation =====");
+            System.out.println("[CERT-GEN-DEBUG] Manager: " + this.manager.getClass().getName());
+            System.out.println("[CERT-GEN-DEBUG] Keystore usage: " + this.manager.getStorageUsage());
+
             //take the main panel as anchor because it might be integrated in another swing program
             JFrame parent = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class,
                     this.jPanelMain);
-            JDialogGenerateKey dialog = new JDialogGenerateKey(parent);
+            // Pass keystore usage to the dialog so it can set default checkboxes
+            int keystoreUsage = this.manager.getStorageUsage();
+            JDialogGenerateKey dialog = new JDialogGenerateKey(parent, keystoreUsage);
             dialog.setVisible(true);
             KeyGenerationValues values = dialog.getValues();
             if (values == null) {
+                System.out.println("[CERT-GEN-DEBUG] User cancelled generation");
                 //user break
                 return;
             }
+
+            System.out.println("[CERT-GEN-DEBUG] Generating key pair with common name: " + values.getCommonName());
             KeyGenerationResult result = generator.generateKeyPair(values);
+            System.out.println("[CERT-GEN-DEBUG] Key pair generated successfully");
+
             String alias = KeyStoreUtil.getProposalCertificateAliasForImport(result.getCertificate());
             alias = KeyStoreUtil.ensureUniqueAliasName(this.manager.getKeystore(), alias);
+            System.out.println("[CERT-GEN-DEBUG] Using alias: " + alias);
+
             this.manager.getKeystore().setKeyEntry(alias, result.getKeyPair().getPrivate(),
                     null, new X509Certificate[]{result.getCertificate()});
+            System.out.println("[CERT-GEN-DEBUG] Key entry added to keystore, alias: " + alias);
+
+            // IMPORTANT: Save keystore to persist the changes to database/disk
+            System.out.println("[CERT-GEN-DEBUG] Saving keystore to database...");
+            this.manager.saveKeystore();
+            System.out.println("[CERT-GEN-DEBUG] Keystore saved successfully");
+
             this.panelCertificates.refreshData();
             this.panelCertificates.certificateAdded(alias);
+            System.out.println("[CERT-GEN-DEBUG] Certificate generation complete");
         } catch (Throwable e) {
+            System.out.println("[CERT-GEN-DEBUG] ERROR during generation: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
             String message = e.getClass().getName() + ": " + e.getMessage();
             UINotification.instance().addNotification(null,
                     UINotification.TYPE_ERROR,
                     rb.getResourceString("generatekey.error.title"),
                     rb.getResourceString("generatekey.error.message", message));
-            e.printStackTrace();
         }
     }
 
@@ -1434,6 +1484,10 @@ public class JDialogCertificates extends JDialog implements ListSelectionListene
     private javax.swing.JPopupMenu.Separator jSeparator8;
     private javax.swing.JToolBar jToolBar;
     // End of variables declaration//GEN-END:variables
+
+    // Admin mode toggle components (not generated)
+    private javax.swing.JLabel jLabelShowAllUsers;
+    private de.mendelson.util.toggleswitch.ToggleSwitch toggleShowAllUsers;
 
     /**
      * Let this class listen to the underlaying table liste events, makes it a

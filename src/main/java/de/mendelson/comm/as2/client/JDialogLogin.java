@@ -83,10 +83,7 @@ public class JDialogLogin extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         textUsername = new JTextField(20);
-        textUsername.setText("admin"); // Only admin user allowed for SwingUI
-        textUsername.setEditable(false); // Make readonly - only admin allowed
-        textUsername.setFocusable(false); // Prevent focus on readonly field
-        textUsername.setBackground(UIManager.getColor("TextField.inactiveBackground")); // Visual indication
+        textUsername.setText(""); // Allow any user to log in
         formPanel.add(textUsername, gbc);
 
         // Password label
@@ -154,12 +151,13 @@ public class JDialogLogin extends JDialog {
         username = textUsername.getText().trim();
         password = textPassword.getPassword();
 
-        // Username validation (should always be "admin" since field is readonly)
-        if (username.isEmpty() || !username.equals("admin")) {
+        // Username validation
+        if (username.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Only 'admin' user is allowed for SwingUI",
+                    "Please enter a username",
                     "Login Error",
                     JOptionPane.WARNING_MESSAGE);
+            textUsername.requestFocusInWindow();
             return;
         }
 

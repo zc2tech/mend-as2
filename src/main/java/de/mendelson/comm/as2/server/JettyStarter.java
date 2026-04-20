@@ -230,14 +230,65 @@ public class JettyStarter {
                 }
             }
             );
-            //define the TLS system keystore for the jetty access 
+            //define the TLS system keystore for the jetty access
             Connector[] connector = tempHTTPServer.getConnectors();
             for (Connector conn : connector) {
                 if (conn.getConnectionFactory("ssl") != null) {
                     SslConnectionFactory sslConnectionFactory = (SslConnectionFactory) conn.getConnectionFactory("ssl");
-                    SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
+                    SslContextFactory.Server sslContextFactory = (SslContextFactory.Server) sslConnectionFactory.getSslContextFactory();
                     sslContextFactory.setKeyStore(this.tlsStorage.getKeystore());
                     sslContextFactory.setKeyStorePassword(new String(tlsStorage.getKeystorePass()));
+
+                    // Configure trust-all trust manager for client certificates by creating custom SSLContext
+                    // This accepts ANY client certificate during TLS handshake without validation
+                    // The actual certificate validation happens at application layer by checking fingerprints
+                    try {
+                        // Create trust manager that accepts all client certificates
+                        javax.net.ssl.X509TrustManager trustAllManager = new javax.net.ssl.X509TrustManager() {
+                            @Override
+                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                                return new java.security.cert.X509Certificate[0];
+                            }
+                            @Override
+                            public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                                // Accept all client certificates without validation
+                                // Application layer validates fingerprints against partner_inbound_auth_credentials
+                            }
+                            @Override
+                            public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
+                                    throws java.security.cert.CertificateException {
+                                // For server cert validation, use default validation
+                                throw new java.security.cert.CertificateException("Server cert validation not supported in this TrustManager");
+                            }
+                        };
+
+                        // Create SSL context with custom trust manager
+                        javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+
+                        // Initialize KeyManager with the TLS keystore
+                        javax.net.ssl.KeyManagerFactory kmf = javax.net.ssl.KeyManagerFactory.getInstance(
+                            javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm());
+                        kmf.init(this.tlsStorage.getKeystore(), tlsStorage.getKeystorePass());
+
+                        // Initialize SSL context with KeyManager and trust-all TrustManager
+                        sslContext.init(kmf.getKeyManagers(), new javax.net.ssl.TrustManager[] { trustAllManager }, null);
+
+                        // Set the custom SSL context
+                        sslContextFactory.setSslContext(sslContext);
+
+                        this.logger.info(MODULE_NAME + " TrustManager configured to accept all client certificates (validation at application layer)");
+                    } catch (Exception e) {
+                        this.logger.severe(MODULE_NAME + " Failed to configure trust-all TrustManager: " + e.getMessage());
+                        // Fallback: use default truststore behavior
+                        sslContextFactory.setTrustStore(this.tlsStorage.getKeystore());
+                        sslContextFactory.setTrustStorePassword(new String(tlsStorage.getKeystorePass()));
+                    }
+
+                    // Request client certificates (but don't require them)
+                    // This allows certificate authentication to work while still allowing
+                    // connections without client certs (for basic auth or no auth)
+                    sslContextFactory.setWantClientAuth(true);
+                    this.logger.info(MODULE_NAME + " Configured HTTPS connector to request client certificates (WantClientAuth=true)");
                     certificateRefreshController.addRefreshControl(sslContextFactory);
                 }
             }

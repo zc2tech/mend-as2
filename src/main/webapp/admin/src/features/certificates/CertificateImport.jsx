@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../components/Toast';
 import api from '../../api/client';
@@ -35,6 +35,18 @@ export default function CertificateImport({ keystoreType, importType, onClose })
 
   const isCertificateImport = importType === 'certificate';
   const isKeystoreImport = importType === 'keystore';
+
+  // Handle ESC key to close dialog
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [onClose]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -94,11 +106,23 @@ export default function CertificateImport({ keystoreType, importType, onClose })
 
       const message = response.data.message ||
         (isCertificateImport ? 'Certificate imported successfully' : 'Keystore imported successfully');
-      toast.success(message);
+
+      // Show warning if there were skipped duplicates
+      if (response.data.skippedAliases && response.data.skippedAliases.length > 0) {
+        toast.warning(message + '\n\nSkipped duplicates:\n' + response.data.skippedAliases.join('\n'));
+      } else {
+        toast.success(message);
+      }
+
       queryClient.invalidateQueries(['certificates', keystoreType]);
       onClose();
     } catch (error) {
-      toast.error('Failed to import: ' + (error.response?.data?.error || error.message));
+      // Check if it's a 409 Conflict (duplicate certificate)
+      if (error.response?.status === 409) {
+        toast.error('Duplicate certificate: ' + (error.response?.data?.error || error.message));
+      } else {
+        toast.error('Failed to import: ' + (error.response?.data?.error || error.message));
+      }
     } finally {
       setLoading(false);
     }

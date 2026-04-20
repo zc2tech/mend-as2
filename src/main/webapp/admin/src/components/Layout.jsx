@@ -22,12 +22,19 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../features/auth/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from './Toast';
 
 export default function Layout() {
-  const { user, logout, hasAnyPermission, permissions } = useAuth();
+  const { user, logout, switchBack, originalUser, hasAnyPermission, permissions } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const queryClient = useQueryClient();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  // Check if current user is admin (has USER_MANAGE permission)
+  const isAdmin = hasAnyPermission('USER_MANAGE');
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,6 +47,36 @@ export default function Layout() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Global keyboard shortcut: Cmd+M (Mac) or Ctrl+M (Windows/Linux) to open Send Message
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Check for Cmd+M (Mac) or Ctrl+M (Windows/Linux)
+      const isCmdOrCtrl = event.metaKey || event.ctrlKey;
+      const isM = event.key.toLowerCase() === 'm';
+
+      if (isCmdOrCtrl && isM) {
+        // Don't trigger if user is typing in an input/textarea
+        const activeElement = document.activeElement;
+        if (activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.isContentEditable
+        )) {
+          return;
+        }
+
+        // Prevent default browser behavior
+        event.preventDefault();
+
+        // Navigate to manual send on messages page
+        navigate('/messages', { state: { openManualSend: true } });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
 
   const navStyle = {
     backgroundColor: '#2c3e50',
@@ -132,9 +169,25 @@ export default function Layout() {
     navigate('/change-password');
   };
 
+  const handleSwitchUser = () => {
+    setDropdownOpen(false);
+    navigate('/switch-user');
+  };
+
   const handleLogout = () => {
     setDropdownOpen(false);
     logout();
+  };
+
+  const handleSwitchBack = async () => {
+    try {
+      await switchBack();
+      queryClient.clear(); // Clear all cached data
+      toast.success(`Switched back to: ${originalUser.username}`);
+      navigate('/');
+    } catch (error) {
+      toast.error('Failed to switch back: ' + (error.response?.data?.error || error.message));
+    }
   };
 
   // Menu visibility based on permissions
@@ -145,19 +198,60 @@ export default function Layout() {
   const showMessages = hasAnyPermission('MESSAGE_READ', 'MESSAGE_WRITE');
   const showSystem = hasAnyPermission('SYSTEM_READ', 'SYSTEM_WRITE');
   const showUsers = hasAnyPermission('USER_MANAGE');
+  // IP Whitelist is only visible to 'admin' super user
+  const showIPWhitelist = user?.username === 'admin';
+
+  const switchedUserBannerStyle = {
+    backgroundColor: '#fff3cd',
+    borderBottom: '2px solid #ffc107',
+    padding: '0.75rem 2rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    color: '#856404'
+  };
+
+  const switchBackButtonStyle = {
+    padding: '0.5rem 1rem',
+    backgroundColor: '#ffc107',
+    color: '#000',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '0.875rem',
+    fontWeight: '600'
+  };
 
   return (
     <div>
+      {/* Show banner when viewing as another user */}
+      {originalUser && (
+        <div style={switchedUserBannerStyle}>
+          <span>
+            <strong>⚠️ Viewing as: {user?.username}</strong>
+            {' '} (Originally logged in as: {originalUser.username})
+          </span>
+          <button
+            onClick={handleSwitchBack}
+            style={switchBackButtonStyle}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#e0a800'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#ffc107'}
+          >
+            Switch Back to {originalUser.username}
+          </button>
+        </div>
+      )}
       <nav style={navStyle}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <h2 style={{ margin: 0, marginRight: '2rem' }}>AS2 Server</h2>
           <Link to="/" style={linkStyle}>Dashboard</Link>
-          {showPartners && <Link to="/partners" style={linkStyle}>Partners</Link>}
-          {showCertificates && <Link to="/certificates" style={linkStyle}>Certificates</Link>}
+          {showPartners && <Link to="/partners" style={linkStyle}>My Partners</Link>}
+          {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt/TLS</Link>}
           {showMessages && <Link to="/messages" style={linkStyle}>AS2 Messages</Link>}
           {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
           {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
           {showUsers && <Link to="/users" style={linkStyle}>Users</Link>}
+          {showIPWhitelist && <Link to="/ipwhitelist" style={linkStyle}>IP Whitelist</Link>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={dropdownContainerStyle} ref={dropdownRef}>
@@ -195,6 +289,16 @@ export default function Layout() {
                 >
                   Change Password
                 </button>
+                {isAdmin && !originalUser && (
+                  <button
+                    onClick={handleSwitchUser}
+                    style={dropdownItemStyle}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    Switch User
+                  </button>
+                )}
                 <div style={{ borderTop: '1px solid #e0e0e0', margin: '0.25rem 0' }} />
                 <button
                   onClick={handleLogout}

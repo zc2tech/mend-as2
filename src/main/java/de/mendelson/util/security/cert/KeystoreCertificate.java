@@ -1199,6 +1199,16 @@ public class KeystoreCertificate implements Comparable<KeystoreCertificate>, Ser
         }
         if (anObject != null && anObject instanceof KeystoreCertificate) {
             KeystoreCertificate cert = (KeystoreCertificate) anObject;
+            // Handle placeholder certificates (null X509Certificate)
+            if (this.certificate == null && cert.getX509Certificate() == null) {
+                // Both are placeholders - compare by alias
+                return this.alias != null && this.alias.equals(cert.getAlias());
+            }
+            if (this.certificate == null || cert.getX509Certificate() == null) {
+                // One is placeholder, other is not - not equal
+                return false;
+            }
+            // Both are real certificates - compare by fingerprint
             String otherFingerPrint;
             String ownFingerPrint;
             try {

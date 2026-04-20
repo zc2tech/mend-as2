@@ -211,12 +211,17 @@ public class TableModelCertificates extends AbstractTableModel {
 
     private ImageIcon getIconForCertificate(KeystoreCertificate certificate) {
         ImageIcon icon = this.getUnmodifiedIconForCertificate(certificate, IMAGE_HEIGHT);
+
         synchronized (this.inUseCheckerList) {
             for (CertificateInUseChecker checker : this.inUseCheckerList) {
                 CertificateInUseInfo info = checker.checkUsed(certificate);
+                System.out.println("  Checker returned usage list size: " + info.getUsageList().size());
                 if (info.getUsageList().isEmpty()) {
+                    System.out.println("  -> GRAYING OUT (usage list is empty)");
                     icon = ImageUtil.grayImage(icon);
                     break;
+                } else {
+                    System.out.println("  -> KEEPING COLORED (usage list not empty)");
                 }
             }
         }

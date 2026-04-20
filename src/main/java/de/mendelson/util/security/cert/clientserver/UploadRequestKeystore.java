@@ -24,20 +24,26 @@ import java.util.List;
 public class UploadRequestKeystore extends ClientServerMessage{
 
     private static final long serialVersionUID = 1L;
-    
+
     public static final int KEYSTORE_TYPE_TLS = KeystoreStorageImplFile.KEYSTORE_USAGE_TLS;
     public static final int KEYSTORE_TYPE_ENC_SIGN = KeystoreStorageImplFile.KEYSTORE_USAGE_ENC_SIGN;
-    
+
     private final int keystoreUsage;
+    private final int userId;  // User ID for user-specific keystores (0 = admin/system)
     private final List<KeystoreCertificate> certList = new ArrayList<KeystoreCertificate>();
 
     public UploadRequestKeystore(final int KEYSTORE_USAGE) {
+        this(KEYSTORE_USAGE, 0);  // Default to admin/system keystore
+    }
+
+    public UploadRequestKeystore(final int KEYSTORE_USAGE, final int userId) {
         this.keystoreUsage = KEYSTORE_USAGE;
+        this.userId = userId;
     }
 
     @Override
     public String toString() {
-        return ("Upload request keystore");
+        return ("Upload request keystore (usage=" + keystoreUsage + ", userId=" + userId + ")");
     }
 
     public void addCertificateList(List<KeystoreCertificate> list) {
@@ -47,7 +53,7 @@ public class UploadRequestKeystore extends ClientServerMessage{
     public List<KeystoreCertificate> getCertificateList() {
         return (this.certList);
     }
-    
+
     /**Prevent an overwrite of the readObject method for de-serialization*/
     private void readObject(ObjectInputStream inStream) throws ClassNotFoundException, IOException{
         inStream.defaultReadObject();
@@ -58,6 +64,10 @@ public class UploadRequestKeystore extends ClientServerMessage{
      */
     public int getKeystoreUsage() {
         return keystoreUsage;
+    }
+
+    public int getUserId() {
+        return userId;
     }
 
 }

@@ -39,6 +39,7 @@ public class ExecuteMoveToPartner implements IProcessingExecution {
     private final MessageAccessDB messageAccess;
     private final PartnerAccessDB partnerAccess;
     private final CertificateManager certificateManagerEncSign;
+    private final SendOrderSender sendOrderSender;
 
     /**
      * Localize your GUI!
@@ -47,9 +48,11 @@ public class ExecuteMoveToPartner implements IProcessingExecution {
     private final IDBDriverManager dbDriverManager;
 
     public ExecuteMoveToPartner(IDBDriverManager dbDriverManager,
-            CertificateManager certificateManagerEncSign) {
+            CertificateManager certificateManagerEncSign,
+            SendOrderSender sendOrderSender) {
         this.dbDriverManager = dbDriverManager;
         this.certificateManagerEncSign = certificateManagerEncSign;
+        this.sendOrderSender = sendOrderSender;
         this.messageAccess = new MessageAccessDB(dbDriverManager);
         this.partnerAccess = new PartnerAccessDB(dbDriverManager);
         //Load resourcebundle
@@ -125,8 +128,7 @@ public class ExecuteMoveToPartner implements IProcessingExecution {
                 String[] originalFilenames = new String[]{originalFilename};
                 String[] payloadContentTypes = new String[]{targetPartner.getContentType()};
                 try {
-                    SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
-                    orderSender.send(this.certificateManagerEncSign, messageSender,
+                    this.sendOrderSender.send(this.certificateManagerEncSign, messageSender,
                             targetPartner, sendFiles, originalFilenames, null,
                             targetPartner.getSubject(), payloadContentTypes);
                     this.logger.log(Level.INFO, this.rb.getResourceString("executing.movetopartner.success",
@@ -182,8 +184,7 @@ public class ExecuteMoveToPartner implements IProcessingExecution {
                     Path[] sendFiles = new Path[]{sourceFile};
                     String[] originalFilenames = new String[]{originalFilename};
                     String[] payloadContentTypes = new String[]{targetPartner.getContentType()};
-                    SendOrderSender orderSender = new SendOrderSender(this.dbDriverManager);
-                    orderSender.send(this.certificateManagerEncSign, messageReceiver,
+                    this.sendOrderSender.send(this.certificateManagerEncSign, messageReceiver,
                             targetPartner, sendFiles, originalFilenames, null,
                             targetPartner.getSubject(), payloadContentTypes);
                     this.logger.log(Level.INFO, this.rb.getResourceString("executing.movetopartner.success",

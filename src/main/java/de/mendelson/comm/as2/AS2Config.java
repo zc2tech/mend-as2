@@ -40,12 +40,16 @@ public class AS2Config {
     private static final String PROP_SKIP_CONFIG_CHECK = "as2.startup.skip.configcheck";
     private static final String PROP_TEST_MODE = "as2.test.mode";
     private static final String PROP_LOG_LEVEL = "as2.log.level";
+    private static final String PROP_HTTP_PORT = "jetty.http.port";
+    private static final String PROP_HTTPS_PORT = "jetty.ssl.port";
 
     private static final String ENV_START_GUI = "AS2_START_GUI";
     private static final String ENV_DISPLAY_MODE = "AS2_DISPLAY_MODE";
     private static final String ENV_SKIP_CONFIG_CHECK = "AS2_SKIP_CONFIG_CHECK";
     private static final String ENV_TEST_MODE = "AS2_TEST_MODE";
     private static final String ENV_LOG_LEVEL = "AS2_LOG_LEVEL";
+    private static final String ENV_HTTP_PORT = "AS2_HTTP_PORT";
+    private static final String ENV_HTTPS_PORT = "AS2_HTTPS_PORT";
 
     private final Properties properties;
 
@@ -94,6 +98,16 @@ public class AS2Config {
             properties.setProperty(PROP_LOG_LEVEL, envLogLevel);
         }
 
+        String envHttpPort = System.getenv(ENV_HTTP_PORT);
+        if (envHttpPort != null) {
+            properties.setProperty(PROP_HTTP_PORT, envHttpPort);
+        }
+
+        String envHttpsPort = System.getenv(ENV_HTTPS_PORT);
+        if (envHttpsPort != null) {
+            properties.setProperty(PROP_HTTPS_PORT, envHttpsPort);
+        }
+
         // Set system property so WindowTitleUtil can access test mode setting
         System.setProperty(PROP_TEST_MODE, properties.getProperty(PROP_TEST_MODE, "false"));
     }
@@ -139,18 +153,40 @@ public class AS2Config {
     }
 
     /**
-     * Returns the HTTP port based on test mode
-     * @return 11080 in test mode, 8080 in normal mode
+     * Returns the HTTP port based on configuration priority:
+     * 1. Environment variable AS2_HTTP_PORT
+     * 2. Property file jetty.http.port
+     * 3. Test mode default (11080) or normal default (8080)
+     * @return HTTP port number
      */
     public int getHttpPort() {
+        String portStr = properties.getProperty(PROP_HTTP_PORT);
+        if (portStr != null && !portStr.isEmpty()) {
+            try {
+                return Integer.parseInt(portStr);
+            } catch (NumberFormatException e) {
+                // Fall through to defaults
+            }
+        }
         return isTestMode() ? 11080 : 8080;
     }
 
     /**
-     * Returns the HTTPS port based on test mode
-     * @return 11443 in test mode, 8443 in normal mode
+     * Returns the HTTPS port based on configuration priority:
+     * 1. Environment variable AS2_HTTPS_PORT
+     * 2. Property file jetty.ssl.port
+     * 3. Test mode default (11443) or normal default (8443)
+     * @return HTTPS port number
      */
     public int getHttpsPort() {
+        String portStr = properties.getProperty(PROP_HTTPS_PORT);
+        if (portStr != null && !portStr.isEmpty()) {
+            try {
+                return Integer.parseInt(portStr);
+            } catch (NumberFormatException e) {
+                // Fall through to defaults
+            }
+        }
         return isTestMode() ? 11443 : 8443;
     }
 

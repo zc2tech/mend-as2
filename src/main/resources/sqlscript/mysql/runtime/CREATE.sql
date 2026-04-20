@@ -5,15 +5,15 @@
 CREATE TABLE version (
   id INT AUTO_INCREMENT PRIMARY KEY,
   actualversion INT,
-  updatedate TIMESTAMP,
+  updatedate TIMESTAMP NULL,
   updatecomment VARCHAR(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Messages table
 CREATE TABLE messages (
   messageid VARCHAR(255) PRIMARY KEY,
-  initdateutc TIMESTAMP,
-  senddateutc TIMESTAMP,
+  initdateutc TIMESTAMP NULL,
+  senddateutc TIMESTAMP NULL,
   direction INT,
   rawfilename VARCHAR(512),
   state INT,
@@ -33,18 +33,20 @@ CREATE TABLE messages (
   msgsubject VARCHAR(255),
   resendcounter INT DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
-  secureconnection INT DEFAULT 0 NOT NULL
+  secureconnection INT DEFAULT 0 NOT NULL,
+  owner_user_id INT DEFAULT 0 NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);
 CREATE INDEX idx_messages_contentmic ON messages(contentmic);
 CREATE INDEX idx_messages_state ON messages(state);
+CREATE INDEX idx_messages_owner_user ON messages(owner_user_id);
 
 -- MDN table
 CREATE TABLE mdn (
   messageid VARCHAR(255) PRIMARY KEY,
   relatedmessageid VARCHAR(255),
-  initdateutc TIMESTAMP,
+  initdateutc TIMESTAMP NULL,
   direction INT,
   rawfilename VARCHAR(512),
   state INT,
@@ -65,7 +67,7 @@ CREATE INDEX idx_mdn_initdate ON mdn(initdateutc);
 CREATE TABLE messagelog (
   id INT AUTO_INCREMENT PRIMARY KEY,
   messageid VARCHAR(255),
-  timestamputc TIMESTAMP,
+  timestamputc TIMESTAMP NULL,
   loglevel INT,
   details TEXT,
   FOREIGN KEY(messageid) REFERENCES messages(messageid)
@@ -81,13 +83,10 @@ CREATE TABLE payload (
   payloadfilename VARCHAR(512),
   contentid VARCHAR(255),
   contenttype VARCHAR(255),
-  payload_format VARCHAR(50),
-  payload_doctype VARCHAR(255),
   FOREIGN KEY(messageid) REFERENCES messages(messageid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_payload_messageid ON payload(messageid);
-CREATE INDEX idx_payload_format ON payload(payload_format);
 
 -- Tracker message table
 DROP TABLE IF EXISTS tracker_auth_failure;
@@ -155,7 +154,7 @@ CREATE TABLE statisticoverview (
   receivedmessagecount INT,
   sendwithfailurecount INT,
   receivedwithfailurecount INT,
-  resetdateutc TIMESTAMP
+  resetdateutc TIMESTAMP NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_statisticoverview_localstationid ON statisticoverview(localstationid);

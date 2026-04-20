@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useMessages } from './useMessages';
 import { LoadingPage } from '../../components/Loading';
 import { format } from 'date-fns';
@@ -28,11 +28,17 @@ import MessageDetails from './MessageDetails';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../auth/useAuth';
+import { useLocation } from 'react-router-dom';
 import api from '../../api/client';
 
 export default function MessageList() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const canWrite = hasPermission('MESSAGE_WRITE');
+
+  // Check if current user has ADMIN role - recalculate when user changes
+  const isAdmin = useMemo(() => {
+    return user?.roleIds?.includes(1) || user?.roles?.some(r => r.name === 'ADMIN');
+  }, [user?.roleIds, user?.roles]);
 
   const defaultFilters = {
     limit: 100,
@@ -45,7 +51,8 @@ export default function MessageList() {
     fromDate: '',
     toDate: '',
     messageId: '',
-    format: ''  // cXML, X12, EDIFACT
+    format: '',  // cXML, X12, EDIFACT
+    userId: ''   // Filter by user
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -55,9 +62,20 @@ export default function MessageList() {
   const [showManualSend, setShowManualSend] = useState(false);
   const [partners, setPartners] = useState([]);
   const [localStations, setLocalStations] = useState([]);
+  const [users, setUsers] = useState([]);
   const queryClient = useQueryClient();
   const toast = useToast();
   const searchTimeoutRef = useRef(null);
+  const location = useLocation();
+
+  // Handle keyboard shortcut navigation (Cmd+M / Ctrl+M)
+  useEffect(() => {
+    if (location.state?.openManualSend) {
+      setShowManualSend(true);
+      // Clear the state to prevent reopening on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Apply search immediately for non-text filters
   const applyFiltersImmediately = (newFilters) => {
@@ -120,16 +138,49 @@ export default function MessageList() {
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        const response = await api.get('/partners');
+        // For ADMIN users, get all partners; for regular users, only get their own partners
+        const params = isAdmin ? {} : { visibleToUser: user?.id };
+        const response = await api.get('/partners', { params });
         const allPartners = response.data || [];
-        setLocalStations(allPartners.filter(p => p.localStation === true));
-        setPartners(allPartners.filter(p => p.localStation !== true));
+
+        // Sort partners by display name (username:name or just name)
+        const sortedLocalStations = allPartners
+          .filter(p => p.localStation === true)
+          .sort((a, b) => {
+            const aDisplay = isAdmin && a.createdByUsername ? `${a.createdByUsername}:${a.name}` : a.name;
+            const bDisplay = isAdmin && b.createdByUsername ? `${b.createdByUsername}:${b.name}` : b.name;
+            return aDisplay.localeCompare(bDisplay);
+          });
+
+        const sortedPartners = allPartners
+          .filter(p => p.localStation !== true)
+          .sort((a, b) => {
+            const aDisplay = isAdmin && a.createdByUsername ? `${a.createdByUsername}:${a.name}` : a.name;
+            const bDisplay = isAdmin && b.createdByUsername ? `${b.createdByUsername}:${b.name}` : b.name;
+            return aDisplay.localeCompare(bDisplay);
+          });
+
+        setLocalStations(sortedLocalStations);
+        setPartners(sortedPartners);
       } catch (error) {
         console.error('Failed to fetch partners:', error);
       }
     };
+
+    const fetchUsers = async () => {
+      try {
+        const response = await api.get('/users');
+        setUsers(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
     fetchPartners();
-  }, []);
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin, user?.id]);
 
   const handleDeleteMessage = async (messageId) => {
     if (!window.confirm(`Are you sure you want to delete message ${messageId}?`)) {
@@ -272,7 +323,7 @@ export default function MessageList() {
         </div>
 
         {/* Row 1: Basic filters */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '0.5fr 0.75fr 0.5fr 1fr 1fr 1fr' : '0.5fr 0.75fr 0.5fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Limit
@@ -348,7 +399,9 @@ export default function MessageList() {
             >
               <option value="">All Partners</option>
               {partners.map(p => (
-                <option key={p.dbid} value={p.dbid}>{p.name}</option>
+                <option key={p.dbid} value={p.dbid}>
+                  {isAdmin && p.createdByUsername ? `${p.createdByUsername}:${p.name}` : p.name}
+                </option>
               ))}
             </select>
           </div>
@@ -369,45 +422,39 @@ export default function MessageList() {
             >
               <option value="">All Stations</option>
               {localStations.map(p => (
-                <option key={p.dbid} value={p.dbid}>{p.name}</option>
+                <option key={p.dbid} value={p.dbid}>
+                  {isAdmin && p.createdByUsername ? `${p.createdByUsername}:${p.name}` : p.name}
+                </option>
               ))}
             </select>
           </div>
+
+          {isAdmin && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+                User
+              </label>
+              <select
+                value={filters.userId}
+                onChange={(e) => applyFiltersImmediately({ ...filters, userId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value="">All Users</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.username}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Row 2: Status checkboxes */}
-        <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem', padding: '0.5rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filters.showFinished}
-              onChange={(e) => applyFiltersImmediately({ ...filters, showFinished: e.target.checked })}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Show Finished
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filters.showPending}
-              onChange={(e) => applyFiltersImmediately({ ...filters, showPending: e.target.checked })}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Show Pending
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filters.showStopped}
-              onChange={(e) => applyFiltersImmediately({ ...filters, showStopped: e.target.checked })}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Show Stopped
-          </label>
-        </div>
-
-        {/* Row 3: Date range and Message ID */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+        {/* Row 2: Date range, Message ID, and Status checkboxes */}
+        <div style={{ display: 'grid', gridTemplateColumns: '0.75fr 0.75fr 1fr 1.5fr', gap: '1rem', alignItems: 'end' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               From
@@ -508,6 +555,35 @@ export default function MessageList() {
               }}
             />
           </div>
+          <div style={{ display: 'flex', gap: '1.5rem', paddingBottom: '0.5rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input
+                type="checkbox"
+                checked={filters.showFinished}
+                onChange={(e) => applyFiltersImmediately({ ...filters, showFinished: e.target.checked })}
+                style={{ marginRight: '0.5rem' }}
+              />
+              Finished
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input
+                type="checkbox"
+                checked={filters.showPending}
+                onChange={(e) => applyFiltersImmediately({ ...filters, showPending: e.target.checked })}
+                style={{ marginRight: '0.5rem' }}
+              />
+              Pending
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <input
+                type="checkbox"
+                checked={filters.showStopped}
+                onChange={(e) => applyFiltersImmediately({ ...filters, showStopped: e.target.checked })}
+                style={{ marginRight: '0.5rem' }}
+              />
+              Stopped
+            </label>
+          </div>
         </div>
       </div>
 
@@ -519,6 +595,7 @@ export default function MessageList() {
             <th style={thStyle}>Sender</th>
             <th style={thStyle}>Receiver</th>
             <th style={thStyle}>Init Date ({getTimezoneOffset()})</th>
+            <th style={thStyle}>User</th>
             <th style={thStyle}>Format</th>
             <th style={thStyle}>Doc Type</th>
             <th style={thStyle}>Status</th>
@@ -528,7 +605,7 @@ export default function MessageList() {
         <tbody>
           {filteredMessages.length === 0 ? (
             <tr>
-              <td colSpan="9" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan="10" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No messages found
               </td>
             </tr>
@@ -549,6 +626,47 @@ export default function MessageList() {
                 <td style={tdStyle}>{message.receiverId || '-'}</td>
                 <td style={tdStyle}>
                   {message.initDate ? format(new Date(message.initDate), 'yyyy-MM-dd HH:mm:ss') : '-'}
+                </td>
+                <td style={tdStyle}>
+                  {message.ownerUserId === 0 ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      System
+                    </span>
+                  ) : message.ownerUsername ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      {message.ownerUsername}
+                    </span>
+                  ) : message.ownerUserId > 0 ? (
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.75rem',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      fontWeight: '500'
+                    }}>
+                      User {message.ownerUserId}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#6c757d', fontSize: '0.75rem' }}>-</span>
+                  )}
                 </td>
                 <td style={tdStyle}>{message.payloadFormat || '-'}</td>
                 <td style={tdStyle}>{message.payloadDocType || '-'}</td>

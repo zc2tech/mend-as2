@@ -97,11 +97,25 @@ public class PartnerAccessDB {
                         HTTPAuthentication authentication = partner.getAuthenticationCredentialsMessage();
                         authentication.setUser(result.getString("httpauthuser"));
                         authentication.setPassword(result.getString("httpauthpass"));
-                        authentication.setAuthMode(result.getInt("authmodehttp"));
+                        int authModeFromDB = result.getInt("authmodehttp");
+                        authentication.setAuthMode(authModeFromDB);
+                        authentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_message"));
                         HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
                         asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
                         asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));
                         asyncAuthentication.setAuthMode(result.getInt("authmodehttpasynmdn"));
+                        asyncAuthentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_mdn"));
+                        // Load inbound auth credentials for local stations
+                        if (partner.isLocalStation()) {
+                            HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                            inboundAuth.setUser(result.getString("inbound_auth_user"));
+                            inboundAuth.setPassword(result.getString("inbound_auth_password"));
+                            inboundAuth.setAuthMode(result.getInt("inbound_auth_mode"));
+                            inboundAuth.setCertificateFingerprint(result.getString("inbound_auth_cert_fingerprint"));
+                            // Load toggle switch states
+                            partner.setInboundAuthBasicEnabled(result.getBoolean("inbound_auth_basic_enabled"));
+                            partner.setInboundAuthCertEnabled(result.getBoolean("inbound_auth_cert_enabled"));
+                        }
                         partner.setComment(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercomment"));
                         partner.setContactAS2(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercontact"));
                         partner.setContactCompany(this.dbDriverManager.readTextStoredAsJavaObject(result, "partneraddress"));
@@ -121,6 +135,7 @@ public class PartnerAccessDB {
                         //ensure to have a valid partner DB id before loading the releated data
                         this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
                         this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
+                        this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
                         this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
                         partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
                         int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
@@ -133,11 +148,6 @@ public class PartnerAccessDB {
                         if (!result.wasNull()) {
                             OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
                             partner.setOAuth2MDN(oAuth2ConfigMDN);
-                        }
-                        //load visibility settings (only for remote partners)
-                        if (!partner.isLocalStation()) {
-                            List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
-                            partner.setVisibleToUserIds(visibleUsers);
                         }
                     }
                     partnerList.add(partner);
@@ -191,8 +201,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "httpheader",
                             "partnerevent",
-                            "oauth2",
-                            "partner_user_visibility"
+                            "oauth2"
                         });
                 try {
                     partnerList.addAll(this.getPartnerByQuery(query, parameter, dataCompleteness, configConnectionNoAutoCommit));
@@ -277,6 +286,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "partnersystem",
                             "oauth2"
                         });
@@ -307,15 +317,17 @@ public class PartnerAccessDB {
                 + "as2ident=?,partnername=?,islocal=?,sign=?,encrypt=?,email=?,url=?,"
                 + "mdnurl=?,msgsubject=?,contenttype=?,syncmdn=?,pollignorelist=?,"
                 + "pollinterval=?,msgcompression=?,signedmdn=?,"
-                + "authmodehttp=?,httpauthuser=?,httpauthpass=?,"
-                + "authmodehttpasynmdn=?,httpauthuserasnymdn=?,httpauthpassasnymdn=?,"
+                + "authmodehttp=?,httpauthuser=?,httpauthpass=?,httpauth_cert_fingerprint_message=?,"
+                + "authmodehttpasynmdn=?,httpauthuserasnymdn=?,httpauthpassasnymdn=?,httpauth_cert_fingerprint_mdn=?,"
                 + "keeporiginalfilenameonreceipt=?,partnercomment=?,notifysend=?,"
                 + "notifyreceive=?,notifysendreceive=?,notifysendenabled=?,"
                 + "notifyreceiveenabled=?,notifysendreceiveenabled=?,"
                 + "contenttransferencoding=?,httpversion=?,"
                 + "maxpollfiles=?,partnercontact=?,partneraddress=?,algidentprotatt=?,"
                 + "enabledirpoll=?,useoauth2message=?,useoauth2mdn=?,"
-                + "oauth2idmessage=?,oauth2idmdn=?,overwritelocalsecurity=? "
+                + "oauth2idmessage=?,oauth2idmdn=?,overwritelocalsecurity=?,"
+                + "inbound_auth_mode=?,inbound_auth_user=?,inbound_auth_password=?,inbound_auth_cert_fingerprint=?,"
+                + "inbound_auth_basic_enabled=?,inbound_auth_cert_enabled=? "
                 + "WHERE id=?")) {
             preparedStatement.setString(1, partner.getAS2Identification());
             preparedStatement.setString(2, partner.getName());
@@ -332,54 +344,73 @@ public class PartnerAccessDB {
             preparedStatement.setInt(13, partner.getPollInterval());
             preparedStatement.setInt(14, partner.getCompressionType());
             preparedStatement.setInt(15, partner.isSignedMDN() ? 1 : 0);
-            preparedStatement.setInt(16, partner.getAuthenticationCredentialsMessage().getAuthMode());
+
+            // Log HTTP authentication mode being saved
+            int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
+
+            preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
             preparedStatement.setString(18, partner.getAuthenticationCredentialsMessage().getPassword());
-            preparedStatement.setInt(19, partner.getAuthenticationCredentialsAsyncMDN().getAuthMode());
-            preparedStatement.setString(20, partner.getAuthenticationCredentialsAsyncMDN().getUser());
-            preparedStatement.setString(21, partner.getAuthenticationCredentialsAsyncMDN().getPassword());
-            preparedStatement.setInt(22, partner.getKeepOriginalFilenameOnReceipt() ? 1 : 0);
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 23, partner.getComment());
-            preparedStatement.setInt(24, partner.getNotifySend());
-            preparedStatement.setInt(25, partner.getNotifyReceive());
-            preparedStatement.setInt(26, partner.getNotifySendReceive());
-            preparedStatement.setInt(27, partner.isNotifySendEnabled() ? 1 : 0);
-            preparedStatement.setInt(28, partner.isNotifyReceiveEnabled() ? 1 : 0);
-            preparedStatement.setInt(29, partner.isNotifySendReceiveEnabled() ? 1 : 0);
-            preparedStatement.setInt(30, partner.getContentTransferEncoding());
-            preparedStatement.setString(31, partner.getHttpProtocolVersion());
-            preparedStatement.setInt(32, partner.getMaxPollFiles());
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 33, partner.getContactAS2());
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 34, partner.getContactCompany());
-            preparedStatement.setInt(35, partner.getUseAlgorithmIdentifierProtectionAttribute() ? 1 : 0);
-            preparedStatement.setInt(36, partner.isEnableDirPoll() ? 1 : 0);
-            preparedStatement.setInt(37, partner.usesOAuth2Message() ? 1 : 0);
-            preparedStatement.setInt(38, partner.usesOAuth2MDN() ? 1 : 0);
+            preparedStatement.setString(19, partner.getAuthenticationCredentialsMessage().getCertificateFingerprint());
+            preparedStatement.setInt(20, partner.getAuthenticationCredentialsAsyncMDN().getAuthMode());
+            preparedStatement.setString(21, partner.getAuthenticationCredentialsAsyncMDN().getUser());
+            preparedStatement.setString(22, partner.getAuthenticationCredentialsAsyncMDN().getPassword());
+            preparedStatement.setString(23, partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint());
+            preparedStatement.setInt(24, partner.getKeepOriginalFilenameOnReceipt() ? 1 : 0);
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 25, partner.getComment());
+            preparedStatement.setInt(26, partner.getNotifySend());
+            preparedStatement.setInt(27, partner.getNotifyReceive());
+            preparedStatement.setInt(28, partner.getNotifySendReceive());
+            preparedStatement.setInt(29, partner.isNotifySendEnabled() ? 1 : 0);
+            preparedStatement.setInt(30, partner.isNotifyReceiveEnabled() ? 1 : 0);
+            preparedStatement.setInt(31, partner.isNotifySendReceiveEnabled() ? 1 : 0);
+            preparedStatement.setInt(32, partner.getContentTransferEncoding());
+            preparedStatement.setString(33, partner.getHttpProtocolVersion());
+            preparedStatement.setInt(34, partner.getMaxPollFiles());
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 35, partner.getContactAS2());
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 36, partner.getContactCompany());
+            preparedStatement.setInt(37, partner.getUseAlgorithmIdentifierProtectionAttribute() ? 1 : 0);
+            preparedStatement.setInt(38, partner.isEnableDirPoll() ? 1 : 0);
+            preparedStatement.setInt(39, partner.usesOAuth2Message() ? 1 : 0);
+            preparedStatement.setInt(40, partner.usesOAuth2MDN() ? 1 : 0);
             if (partner.getOAuth2Message() != null) {
                 this.oAuth2Access.insertOrUpdateOAuth2(partner.getOAuth2Message(), configConnectionNoAutoCommit);
-                preparedStatement.setInt(39, partner.getOAuth2Message().getDBId());
+                preparedStatement.setInt(41, partner.getOAuth2Message().getDBId());
             } else {
-                preparedStatement.setNull(39, Types.INTEGER);
+                preparedStatement.setNull(41, Types.INTEGER);
             }
             if (partner.getOAuth2MDN() != null) {
                 this.oAuth2Access.insertOrUpdateOAuth2(partner.getOAuth2MDN(), configConnectionNoAutoCommit);
-                preparedStatement.setInt(40, partner.getOAuth2MDN().getDBId());
+                preparedStatement.setInt(42, partner.getOAuth2MDN().getDBId());
             } else {
-                preparedStatement.setNull(40, Types.INTEGER);
+                preparedStatement.setNull(42, Types.INTEGER);
             }
-            preparedStatement.setInt(41, partner.isOverwriteLocalStationSecurity() ? 1 : 0);
+            preparedStatement.setInt(43, partner.isOverwriteLocalStationSecurity() ? 1 : 0);
+            // Set inbound auth for local stations
+            if (partner.isLocalStation()) {
+                HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                preparedStatement.setInt(44, inboundAuth.getAuthMode());
+                preparedStatement.setString(45, inboundAuth.getUser());
+                preparedStatement.setString(46, inboundAuth.getPassword());
+                preparedStatement.setString(47, inboundAuth.getCertificateFingerprint());
+                preparedStatement.setBoolean(48, partner.isInboundAuthBasicEnabled());
+                preparedStatement.setBoolean(49, partner.isInboundAuthCertEnabled());
+            } else {
+                // Set nulls for remote partners
+                preparedStatement.setInt(44, 0);
+                preparedStatement.setNull(45, Types.VARCHAR);
+                preparedStatement.setNull(46, Types.VARCHAR);
+                preparedStatement.setNull(47, Types.VARCHAR);
+                preparedStatement.setBoolean(48, false);
+                preparedStatement.setBoolean(49, false);
+            }
             //where statement
-            preparedStatement.setInt(42, partner.getDBId());
+            preparedStatement.setInt(50, partner.getDBId());
             preparedStatement.executeUpdate();
             this.storeHTTPHeader(partner, configConnectionNoAutoCommit);
+            this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
             this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
             this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
-            //update visibility settings (only for remote partners)
-            if (!partner.isLocalStation()) {
-                // Ensure creator is always in visibility list if visibility is restricted
-                partner.ensureCreatorInVisibilityList();
-                this.updatePartnerVisibility(partner.getDBId(), partner.getVisibleToUserIds(), configConnectionNoAutoCommit);
-            }
         }
     }
 
@@ -400,6 +431,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "partnersystem"
                         });
                 try {
@@ -421,6 +453,7 @@ public class PartnerAccessDB {
     public void deletePartner(Partner partner, Connection configConnectionNoAutoCommit) throws Exception {
         PartnerSystemAccessDB partnerSystemAccess = new PartnerSystemAccessDB(this.dbDriverManager);
         this.deleteHTTPHeader(partner, configConnectionNoAutoCommit);
+        this.deleteInboundAuthCredentials(partner, configConnectionNoAutoCommit);
         this.certificateAccess.deletePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
         this.eventAccess.deletePartnerEvents(partner, configConnectionNoAutoCommit);
         partnerSystemAccess.deletePartnerSystem(partner, configConnectionNoAutoCommit);
@@ -457,6 +490,7 @@ public class PartnerAccessDB {
                             "certificates",
                             "partnerevent",
                             "httpheader",
+                            "partner_inbound_auth_credentials",
                             "oauth2"
                         });
                 try {
@@ -483,15 +517,17 @@ public class PartnerAccessDB {
                 + "as2ident,partnername,islocal,sign,encrypt,email,url,mdnurl,"
                 + "msgsubject,contenttype,syncmdn,pollignorelist,pollinterval,"
                 + "msgcompression,signedmdn,"
-                + "authmodehttp,httpauthuser,httpauthpass,authmodehttpasynmdn,"
-                + "httpauthuserasnymdn,httpauthpassasnymdn,keeporiginalfilenameonreceipt,"
+                + "authmodehttp,httpauthuser,httpauthpass,httpauth_cert_fingerprint_message,authmodehttpasynmdn,"
+                + "httpauthuserasnymdn,httpauthpassasnymdn,httpauth_cert_fingerprint_mdn,keeporiginalfilenameonreceipt,"
                 + "partnercomment,notifysend,notifyreceive,notifysendreceive,"
                 + "notifysendenabled,notifyreceiveenabled,notifysendreceiveenabled,"
                 + "contenttransferencoding,httpversion,"
                 + "maxpollfiles,partnercontact,partneraddress,algidentprotatt,enabledirpoll,"
-                + "useoauth2message,useoauth2mdn,oauth2idmessage,oauth2idmdn,overwritelocalsecurity,created_by_user_id"
+                + "useoauth2message,useoauth2mdn,oauth2idmessage,oauth2idmdn,overwritelocalsecurity,created_by_user_id,"
+                + "inbound_auth_mode,inbound_auth_user,inbound_auth_password,inbound_auth_cert_fingerprint,"
+                + "inbound_auth_basic_enabled,inbound_auth_cert_enabled"
                 + ")VALUES("
-                + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setString(1, partner.getAS2Identification());
             preparedStatement.setString(2, partner.getName());
             preparedStatement.setInt(3, partner.isLocalStation() ? 1 : 0);
@@ -507,53 +543,74 @@ public class PartnerAccessDB {
             preparedStatement.setInt(13, partner.getPollInterval());
             preparedStatement.setInt(14, partner.getCompressionType());
             preparedStatement.setInt(15, partner.isSignedMDN() ? 1 : 0);
-            preparedStatement.setInt(16, partner.getAuthenticationCredentialsMessage().getAuthMode());
+
+            // Log HTTP authentication mode being saved
+            int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
+           
+            preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
             preparedStatement.setString(18, partner.getAuthenticationCredentialsMessage().getPassword());
-            preparedStatement.setInt(19, partner.getAuthenticationCredentialsAsyncMDN().getAuthMode());
-            preparedStatement.setString(20, partner.getAuthenticationCredentialsAsyncMDN().getUser());
-            preparedStatement.setString(21, partner.getAuthenticationCredentialsAsyncMDN().getPassword());
-            preparedStatement.setInt(22, partner.getKeepOriginalFilenameOnReceipt() ? 1 : 0);
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 23, partner.getComment());
-            preparedStatement.setInt(24, partner.getNotifySend());
-            preparedStatement.setInt(25, partner.getNotifyReceive());
-            preparedStatement.setInt(26, partner.getNotifySendReceive());
-            preparedStatement.setInt(27, partner.isNotifySendEnabled() ? 1 : 0);
-            preparedStatement.setInt(28, partner.isNotifyReceiveEnabled() ? 1 : 0);
-            preparedStatement.setInt(29, partner.isNotifySendReceiveEnabled() ? 1 : 0);
-            preparedStatement.setInt(30, partner.getContentTransferEncoding());
-            preparedStatement.setString(31, partner.getHttpProtocolVersion());
-            preparedStatement.setInt(32, partner.getMaxPollFiles());
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 33, partner.getContactAS2());
-            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 34, partner.getContactCompany());
-            preparedStatement.setInt(35, partner.getUseAlgorithmIdentifierProtectionAttribute() ? 1 : 0);
-            preparedStatement.setInt(36, partner.isEnableDirPoll() ? 1 : 0);
-            preparedStatement.setInt(37, partner.usesOAuth2Message() ? 1 : 0);
-            preparedStatement.setInt(38, partner.usesOAuth2MDN() ? 1 : 0);
+            preparedStatement.setString(19, partner.getAuthenticationCredentialsMessage().getCertificateFingerprint());
+            preparedStatement.setInt(20, partner.getAuthenticationCredentialsAsyncMDN().getAuthMode());
+            preparedStatement.setString(21, partner.getAuthenticationCredentialsAsyncMDN().getUser());
+            preparedStatement.setString(22, partner.getAuthenticationCredentialsAsyncMDN().getPassword());
+            preparedStatement.setString(23, partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint());
+            preparedStatement.setInt(24, partner.getKeepOriginalFilenameOnReceipt() ? 1 : 0);
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 25, partner.getComment());
+            preparedStatement.setInt(26, partner.getNotifySend());
+            preparedStatement.setInt(27, partner.getNotifyReceive());
+            preparedStatement.setInt(28, partner.getNotifySendReceive());
+            preparedStatement.setInt(29, partner.isNotifySendEnabled() ? 1 : 0);
+            preparedStatement.setInt(30, partner.isNotifyReceiveEnabled() ? 1 : 0);
+            preparedStatement.setInt(31, partner.isNotifySendReceiveEnabled() ? 1 : 0);
+            preparedStatement.setInt(32, partner.getContentTransferEncoding());
+            preparedStatement.setString(33, partner.getHttpProtocolVersion());
+            preparedStatement.setInt(34, partner.getMaxPollFiles());
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 35, partner.getContactAS2());
+            this.dbDriverManager.setTextParameterAsJavaObject(preparedStatement, 36, partner.getContactCompany());
+            preparedStatement.setInt(37, partner.getUseAlgorithmIdentifierProtectionAttribute() ? 1 : 0);
+            preparedStatement.setInt(38, partner.isEnableDirPoll() ? 1 : 0);
+            preparedStatement.setInt(39, partner.usesOAuth2Message() ? 1 : 0);
+            preparedStatement.setInt(40, partner.usesOAuth2MDN() ? 1 : 0);
             if (partner.getOAuth2Message() != null) {
                 this.oAuth2Access.insertOrUpdateOAuth2(partner.getOAuth2Message(), configConnectionNoAutoCommit);
-                preparedStatement.setInt(39, partner.getOAuth2Message().getDBId());
+                preparedStatement.setInt(41, partner.getOAuth2Message().getDBId());
             } else {
-                preparedStatement.setNull(39, Types.INTEGER);
+                preparedStatement.setNull(41, Types.INTEGER);
             }
             if (partner.getOAuth2MDN() != null) {
                 this.oAuth2Access.insertOrUpdateOAuth2(partner.getOAuth2MDN(), configConnectionNoAutoCommit);
-                preparedStatement.setInt(40, partner.getOAuth2MDN().getDBId());
+                preparedStatement.setInt(42, partner.getOAuth2MDN().getDBId());
             } else {
-                preparedStatement.setNull(40, Types.INTEGER);
+                preparedStatement.setNull(42, Types.INTEGER);
             }
-            preparedStatement.setInt(41, partner.isOverwriteLocalStationSecurity() ? 1 : 0);
-            preparedStatement.setInt(42, partner.getCreatedByUserId());
+            preparedStatement.setInt(43, partner.isOverwriteLocalStationSecurity() ? 1 : 0);
+            preparedStatement.setInt(44, partner.getCreatedByUserId());
+            // Set inbound auth for local stations
+            if (partner.isLocalStation()) {
+                HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                preparedStatement.setInt(45, inboundAuth.getAuthMode());
+                preparedStatement.setString(46, inboundAuth.getUser());
+                preparedStatement.setString(47, inboundAuth.getPassword());
+                preparedStatement.setString(48, inboundAuth.getCertificateFingerprint());
+                preparedStatement.setBoolean(49, partner.isInboundAuthBasicEnabled());
+                preparedStatement.setBoolean(50, partner.isInboundAuthCertEnabled());
+            } else {
+                // Set nulls for remote partners
+                preparedStatement.setInt(45, 0);
+                preparedStatement.setNull(46, Types.VARCHAR);
+                preparedStatement.setNull(47, Types.VARCHAR);
+                preparedStatement.setNull(48, Types.VARCHAR);
+                preparedStatement.setBoolean(49, false);
+                preparedStatement.setBoolean(50, false);
+            }
             preparedStatement.executeUpdate();
         }
         partner.setDBId(this.getDBIdForPartner(partner.getAS2Identification(), configConnectionNoAutoCommit));
         this.storeHTTPHeader(partner, configConnectionNoAutoCommit);
+        this.storeInboundAuthCredentials(partner, configConnectionNoAutoCommit);
         this.certificateAccess.storePartnerCertificateInformationList(partner, configConnectionNoAutoCommit);
         this.eventAccess.storePartnerEvents(partner, configConnectionNoAutoCommit);
-
-        // Ensure creator is always in visibility list if visibility is restricted
-        partner.ensureCreatorInVisibilityList();
-        this.updatePartnerVisibility(partner.getDBId(), partner.getVisibleToUserIds(), configConnectionNoAutoCommit);
     }
 
     /**
@@ -618,6 +675,193 @@ public class PartnerAccessDB {
             return (null);
         }
         return (partner.get(0));
+    }
+
+    /**
+     * Loads a specified partner from the DB for a specific user
+     * User-scoped version for user isolation
+     *
+     * @param partnerName Partner name to search for
+     * @param userId User ID who owns the partner
+     * @param dataCompleteness Level of data to load
+     * @return null if the partner does not exist for that user
+     */
+    public Partner getPartnerByNameForUser(String partnerName, int userId, int dataCompleteness) {
+        if (partnerName == null) {
+            return null;
+        }
+        String query = "SELECT * FROM partner WHERE upper(partnername)=? AND created_by_user_id=?";
+        List<Partner> partnerList = new ArrayList<Partner>();
+        String transactionName = "Partner_read_by_name_user";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            configConnectionNoAutoCommit.setReadOnly(true);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{
+                            "partner",
+                            "certificates",
+                            "httpheader",
+                            "partnerevent",
+                            "oauth2"
+                        });
+                try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
+                    preparedStatement.setString(1, partnerName.toUpperCase());
+                    preparedStatement.setInt(2, userId);
+                    try (ResultSet result = preparedStatement.executeQuery()) {
+                        partnerList = this.processPartnerResultSet(result, dataCompleteness, configConnectionNoAutoCommit);
+                    }
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+        if (partnerList == null || partnerList.isEmpty()) {
+            return null;
+        }
+        return partnerList.get(0);
+    }
+
+    /**
+     * Loads a specified partner from the DB by AS2 ID for a specific user
+     * User-scoped version for user isolation
+     *
+     * @param as2ident AS2 identifier to search for
+     * @param userId User ID who owns the partner
+     * @param dataCompleteness Level of data to load
+     * @return null if the partner does not exist for that user
+     */
+    public Partner getPartnerByAS2IdForUser(String as2ident, int userId, int dataCompleteness) {
+        if (as2ident == null) {
+            return null;
+        }
+        String query = "SELECT * FROM partner WHERE as2ident=? AND created_by_user_id=?";
+        List<Partner> partnerList = new ArrayList<Partner>();
+        String transactionName = "Partner_read_by_as2id_user";
+        try (Connection configConnectionNoAutoCommit = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
+            configConnectionNoAutoCommit.setAutoCommit(false);
+            configConnectionNoAutoCommit.setReadOnly(true);
+            try (Statement transactionStatement = configConnectionNoAutoCommit.createStatement()) {
+                this.dbDriverManager.startTransaction(transactionStatement, transactionName);
+                this.dbDriverManager.setTableLockINSERTAndUPDATE(transactionStatement,
+                        new String[]{
+                            "partner",
+                            "certificates",
+                            "httpheader",
+                            "partnerevent",
+                            "oauth2"
+                        });
+                try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(query)) {
+                    preparedStatement.setString(1, as2ident);
+                    preparedStatement.setInt(2, userId);
+                    try (ResultSet result = preparedStatement.executeQuery()) {
+                        partnerList = this.processPartnerResultSet(result, dataCompleteness, configConnectionNoAutoCommit);
+                    }
+                    this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
+                } catch (Throwable e) {
+                    SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
+                    this.dbDriverManager.rollbackTransaction(transactionStatement);
+                }
+            }
+        } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+        if (partnerList == null || partnerList.isEmpty()) {
+            return null;
+        }
+        return partnerList.get(0);
+    }
+
+    /**
+     * Process ResultSet into Partner list - extracted to avoid code duplication
+     */
+    private List<Partner> processPartnerResultSet(ResultSet result, int dataCompleteness,
+            Connection configConnectionNoAutoCommit) throws Exception {
+        List<Partner> partnerList = new ArrayList<Partner>();
+        while (result.next()) {
+            Partner partner = new Partner();
+            partner.setAS2Identification(result.getString("as2ident"));
+            partner.setName(result.getString("partnername"));
+            partner.setDBId(result.getInt("id"));
+            partner.setLocalStation(result.getInt("islocal") == 1);
+            //All partner data is requested - deliver it
+            if (dataCompleteness == DATA_COMPLETENESS_FULL) {
+                partner.setSignType(result.getInt("sign"));
+                partner.setEncryptionType(result.getInt("encrypt"));
+                partner.setEmail(result.getString("email"));
+                partner.setURL(result.getString("url"));
+                partner.setMdnURL(result.getString("mdnurl"));
+                partner.setSubject(result.getString("msgsubject"));
+                partner.setContentType(result.getString("contenttype"));
+                partner.setSyncMDN(result.getInt("syncmdn") == 1);
+                partner.setPollIgnoreListString(result.getString("pollignorelist"));
+                partner.setPollInterval(result.getInt("pollinterval"));
+                partner.setCompressionType(result.getInt("msgcompression"));
+                partner.setSignedMDN(result.getInt("signedmdn") == 1);
+                partner.setKeepOriginalFilenameOnReceipt(result.getInt("keeporiginalfilenameonreceipt") == 1);
+                HTTPAuthentication authentication = partner.getAuthenticationCredentialsMessage();
+                authentication.setUser(result.getString("httpauthuser"));
+                authentication.setPassword(result.getString("httpauthpass"));
+                authentication.setAuthMode(result.getInt("authmodehttp"));
+                authentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_message"));
+                HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
+                asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
+                asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));
+                asyncAuthentication.setAuthMode(result.getInt("authmodehttpasynmdn"));
+                asyncAuthentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_mdn"));
+                // Load inbound auth credentials for local stations
+                if (partner.isLocalStation()) {
+                    HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                    inboundAuth.setUser(result.getString("inbound_auth_user"));
+                    inboundAuth.setPassword(result.getString("inbound_auth_password"));
+                    inboundAuth.setAuthMode(result.getInt("inbound_auth_mode"));
+                    inboundAuth.setCertificateFingerprint(result.getString("inbound_auth_cert_fingerprint"));
+                }
+                partner.setComment(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercomment"));
+                partner.setContactAS2(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercontact"));
+                partner.setContactCompany(this.dbDriverManager.readTextStoredAsJavaObject(result, "partneraddress"));
+                partner.setNotifyReceive(result.getInt("notifyreceive"));
+                partner.setNotifySend(result.getInt("notifysend"));
+                partner.setNotifySendReceive(result.getInt("notifysendreceive"));
+                partner.setNotifyReceiveEnabled(result.getInt("notifyreceiveenabled") == 1);
+                partner.setNotifySendEnabled(result.getInt("notifysendenabled") == 1);
+                partner.setNotifySendReceiveEnabled(result.getInt("notifysendreceiveenabled") == 1);
+                partner.setContentTransferEncoding(result.getInt("contenttransferencoding"));
+                partner.setHttpProtocolVersion(result.getString("httpversion"));
+                partner.setMaxPollFiles(result.getInt("maxpollfiles"));
+                partner.setUseAlgorithmIdentifierProtectionAttribute(result.getInt("algidentprotatt") == 1);
+                partner.setEnableDirPoll(result.getInt("enabledirpoll") == 1);
+                partner.setOverwriteLocalStationSecurity(result.getInt("overwritelocalsecurity") == 1);
+                partner.setCreatedByUserId(result.getInt("created_by_user_id"));
+                //ensure to have a valid partner DB id before loading the releated data
+                this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
+                this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
+                this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
+                this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
+                partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
+                int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
+                if (!result.wasNull()) {
+                    OAuth2Config oAuth2ConfigMessage = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMessage, configConnectionNoAutoCommit);
+                    partner.setOAuth2Message(oAuth2ConfigMessage);
+                }
+                partner.setUseOAuth2MDN(result.getInt("useoauth2mdn") == 1);
+                int oAuth2ReferenceMDN = result.getInt("oauth2idmdn");
+                if (!result.wasNull()) {
+                    OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
+                    partner.setOAuth2MDN(oAuth2ConfigMDN);
+                }
+            }
+            partnerList.add(partner);
+        }
+        Collections.sort(partnerList);
+        return partnerList;
     }
 
     /**
@@ -692,62 +936,98 @@ public class PartnerAccessDB {
     }
 
     /**
-     * Load the list of user IDs who can see this partner when sending messages.
-     * Empty list means visible to all users.
+     * Loads the partner-specific inbound authentication credentials from the DB
+     * and assigns them to the passed partner (local stations only)
      */
-    private List<Integer> loadPartnerVisibility(int partnerId, Connection configConnection) throws Exception {
-        List<Integer> userIds = new ArrayList<>();
+    private void loadInboundAuthCredentialsIntoPartner(Partner partner, Connection configConnection) throws Exception {
+        if (!partner.isLocalStation()) {
+            return; // Only local stations have inbound auth
+        }
+
+        int partnerId = partner.getDBId();
+
         try (PreparedStatement statement = configConnection.prepareStatement(
-                "SELECT user_id FROM partner_user_visibility WHERE partner_id=? ORDER BY user_id")) {
+                "SELECT * FROM partner_inbound_auth_credentials WHERE partner_id=? ORDER BY id")) {
             statement.setInt(1, partnerId);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
-                    userIds.add(result.getInt("user_id"));
+                    PartnerInboundAuthCredential credential = new PartnerInboundAuthCredential();
+                    credential.setDbId(result.getInt("id"));
+                    credential.setAuthType(result.getInt("auth_type"));
+                    credential.setUsername(result.getString("username"));
+                    credential.setPassword(result.getString("password"));
+                    credential.setCertFingerprint(result.getString("cert_fingerprint"));
+                    credential.setCertAlias(result.getString("cert_alias"));
+                    credential.setEnabled(result.getBoolean("enabled"));
+                    partner.addInboundAuthCredential(credential);
                 }
-            }
-        }
-        return userIds;
-    }
-
-    /**
-     * Update partner visibility settings.
-     * Replaces all existing visibility records for this partner.
-     */
-    public void updatePartnerVisibility(int partnerId, List<Integer> userIds, Connection configConnectionNoAutoCommit) throws Exception {
-        // Delete existing visibility records
-        try (PreparedStatement statementDelete = configConnectionNoAutoCommit.prepareStatement(
-                "DELETE FROM partner_user_visibility WHERE partner_id=?")) {
-            statementDelete.setInt(1, partnerId);
-            statementDelete.executeUpdate();
-        }
-
-        // Insert new records if specific users selected
-        if (userIds != null && !userIds.isEmpty()) {
-            try (PreparedStatement statementInsert = configConnectionNoAutoCommit.prepareStatement(
-                    "INSERT INTO partner_user_visibility(partner_id, user_id) VALUES (?,?)")) {
-                for (Integer userId : userIds) {
-                    statementInsert.setInt(1, partnerId);
-                    statementInsert.setInt(2, userId);
-                    statementInsert.addBatch();
-                }
-                statementInsert.executeBatch();
             }
         }
     }
 
     /**
-     * Get all partners visible to a specific WebUI user.
-     * Returns all local stations + remote partners that are either:
-     * - Visible to all (no visibility records), OR
-     * - Specifically assigned to this user
+     * Deletes all inbound authentication credentials for a partner from the database.
+     * Requires DELETE lock on partner_inbound_auth_credentials
      */
-    public List<Partner> getPartnersVisibleToUser(int userId, int dataCompleteness) {
+    private void deleteInboundAuthCredentials(Partner partner, Connection configConnection) throws Exception {
+        int partnerId = partner.getDBId();
+
+        try (PreparedStatement statement = configConnection.prepareStatement(
+                "DELETE FROM partner_inbound_auth_credentials WHERE partner_id=?")) {
+            statement.setInt(1, partnerId);
+            statement.executeUpdate();
+        }
+    }
+
+    /**
+     * Updates inbound authentication credentials for a partner in the DB.
+     * Requires DELETE lock on partner_inbound_auth_credentials
+     */
+    private void storeInboundAuthCredentials(Partner partner, Connection configConnectionNoAutoCommit) throws Exception {
+        if (!partner.isLocalStation()) {
+            return; // Only local stations have inbound auth
+        }
+
+        // Delete existing credentials
+        this.deleteInboundAuthCredentials(partner, configConnectionNoAutoCommit);
+
+        // Remove empty entries
+        partner.deleteEmptyInboundAuthCredentials();
+
+        // Insert all current credentials
+        List<PartnerInboundAuthCredential> credentialList = partner.getInboundAuthCredentialsList();
+
+        if (!credentialList.isEmpty()) {
+            try (PreparedStatement statement = configConnectionNoAutoCommit.prepareStatement(
+                    "INSERT INTO partner_inbound_auth_credentials(partner_id, auth_type, username, password, cert_fingerprint, cert_alias, enabled) VALUES(?,?,?,?,?,?,?)")) {
+                for (PartnerInboundAuthCredential credential : credentialList) {
+                    statement.setInt(1, partner.getDBId());
+                    statement.setInt(2, credential.getAuthType());
+                    statement.setString(3, credential.getUsername());
+                    statement.setString(4, credential.getPassword());
+                    statement.setString(5, credential.getCertFingerprint());
+                    statement.setString(6, credential.getCertAlias());
+                    statement.setBoolean(7, credential.isEnabled());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+        }
+    }
+
+    /**
+    /**
+     * Get all partners owned by a specific user (filtered by created_by_user_id).
+     * Returns all local stations + remote partners where created_by_user_id matches the given userId.
+     * This ensures complete partner isolation between users.
+     */
+    public List<Partner> getPartnersOwnedByUser(int userId, int dataCompleteness) {
+        // Ownership-based filtering:
+        // - Users only see partners they created (both local stations and remote partners)
+        // - Each user (including admin) is isolated to their own partners
         String sql
                 = "SELECT DISTINCT p.* FROM partner p "
-                + "LEFT JOIN partner_user_visibility pv ON p.id = pv.partner_id AND pv.user_id = ? "
-                + "WHERE p.islocal = 1 " // All local stations
-                + "OR NOT EXISTS (SELECT 1 FROM partner_user_visibility WHERE partner_id = p.id) " // Remote partners visible to all
-                + "OR pv.user_id = ? " // Remote partners specifically assigned to this user
+                + "WHERE p.created_by_user_id = ? "
                 + "ORDER BY p.partnername";
 
         List<Partner> partnerList = new ArrayList<Partner>();
@@ -764,13 +1044,11 @@ public class PartnerAccessDB {
                             "certificates",
                             "httpheader",
                             "partnerevent",
-                            "oauth2",
-                            "partner_user_visibility"
+                            "oauth2"
                         });
                 try {
                     try (PreparedStatement preparedStatement = configConnectionNoAutoCommit.prepareStatement(sql)) {
                         preparedStatement.setInt(1, userId);
-                        preparedStatement.setInt(2, userId);
                         try (ResultSet result = preparedStatement.executeQuery()) {
                             while (result.next()) {
                                 Partner partner = new Partner();
@@ -797,10 +1075,22 @@ public class PartnerAccessDB {
                                     authentication.setUser(result.getString("httpauthuser"));
                                     authentication.setPassword(result.getString("httpauthpass"));
                                     authentication.setAuthMode(result.getInt("authmodehttp"));
+                                    String certFpFromDB = result.getString("httpauth_cert_fingerprint_message");
+                                    authentication.setCertificateFingerprint(certFpFromDB);
+                                  
                                     HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
                                     asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
                                     asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));
                                     asyncAuthentication.setAuthMode(result.getInt("authmodehttpasynmdn"));
+                                    asyncAuthentication.setCertificateFingerprint(result.getString("httpauth_cert_fingerprint_mdn"));
+                                    // Load inbound auth credentials for local stations
+                                    if (partner.isLocalStation()) {
+                                        HTTPAuthentication inboundAuth = partner.getInboundAuthCredentials();
+                                        inboundAuth.setUser(result.getString("inbound_auth_user"));
+                                        inboundAuth.setPassword(result.getString("inbound_auth_password"));
+                                        inboundAuth.setAuthMode(result.getInt("inbound_auth_mode"));
+                                        inboundAuth.setCertificateFingerprint(result.getString("inbound_auth_cert_fingerprint"));
+                                    }
                                     partner.setComment(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercomment"));
                                     partner.setContactAS2(this.dbDriverManager.readTextStoredAsJavaObject(result, "partnercontact"));
                                     partner.setContactCompany(this.dbDriverManager.readTextStoredAsJavaObject(result, "partneraddress"));
@@ -817,10 +1107,13 @@ public class PartnerAccessDB {
                                     partner.setEnableDirPoll(result.getInt("enabledirpoll") == 1);
                                     partner.setOverwriteLocalStationSecurity(result.getInt("overwritelocalsecurity") == 1);
                                     partner.setCreatedByUserId(result.getInt("created_by_user_id"));
+                                    partner.setInboundAuthBasicEnabled(result.getBoolean("inbound_auth_basic_enabled"));
+                                    partner.setInboundAuthCertEnabled(result.getBoolean("inbound_auth_cert_enabled"));
                                     //ensure to have a valid partner DB id before loading the releated data
                                     this.certificateAccess.loadPartnerCertificateInformation(partner, configConnectionNoAutoCommit);
                                     this.loadHTTPHeaderIntoPartner(partner, configConnectionNoAutoCommit);
                                     this.eventAccess.loadPartnerEvents(partner, configConnectionNoAutoCommit);
+                                    this.loadInboundAuthCredentialsIntoPartner(partner, configConnectionNoAutoCommit);
                                     partner.setUseOAuth2Message(result.getInt("useoauth2message") == 1);
                                     int oAuth2ReferenceMessage = result.getInt("oauth2idmessage");
                                     if (!result.wasNull()) {
@@ -832,11 +1125,6 @@ public class PartnerAccessDB {
                                     if (!result.wasNull()) {
                                         OAuth2Config oAuth2ConfigMDN = this.oAuth2Access.getOAuth2Config(oAuth2ReferenceMDN, configConnectionNoAutoCommit);
                                         partner.setOAuth2MDN(oAuth2ConfigMDN);
-                                    }
-                                    //load visibility settings (only for remote partners)
-                                    if (!partner.isLocalStation()) {
-                                        List<Integer> visibleUsers = this.loadPartnerVisibility(partner.getDBId(), configConnectionNoAutoCommit);
-                                        partner.setVisibleToUserIds(visibleUsers);
                                     }
                                 }
                                 partnerList.add(partner);

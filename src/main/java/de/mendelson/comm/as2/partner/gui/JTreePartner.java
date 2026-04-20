@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
@@ -32,7 +33,7 @@ import javax.swing.tree.TreePath;
  */
 public class JTreePartner extends JTree {
 
-    public static final int ICON_HEIGHT = AS2Gui.IMAGE_SIZE_TREENODE;
+    public static final int ICON_HEIGHT = IconManager.IMAGE_SIZE_TREENODE;
     
     /**
      * Holds a new partner ID for every created partner that is always negativ
@@ -44,13 +45,27 @@ public class JTreePartner extends JTree {
      */
     private final SortableTreeNode root;
     private final BaseClient baseClient;
+    /**
+     * User ID for filtering partners (0 = admin sees all)
+     */
+    private int userId = 1;
 
     /**
      * Tree constructor
      */
     public JTreePartner(BaseClient baseClient) {
+        this(baseClient, 0);
+    }
+
+    /**
+     * Tree constructor with user filtering
+     * @param baseClient the base client for server communication
+     * @param userId the user ID for filtering partners (0 = admin sees all)
+     */
+    public JTreePartner(BaseClient baseClient, int userId) {
         super(new SortableTreeNode());
         this.baseClient = baseClient;
+        this.userId = userId;
         this.setRootVisible(false);
         this.root = (SortableTreeNode) this.getModel().getRoot();
         this.setCellRenderer(new TreeCellRendererPartner());
@@ -129,8 +144,10 @@ public class JTreePartner extends JTree {
     public List<Partner> buildTree() throws Exception {
         synchronized (this.getModel()) {
             this.root.removeAllChildren();
+            PartnerListRequest request = new PartnerListRequest(PartnerListRequest.LIST_ALL);
+            request.setUserId(this.userId);  // Set user context for filtering
             PartnerListResponse response = (PartnerListResponse) this.baseClient.sendSync(
-                    new PartnerListRequest(PartnerListRequest.LIST_ALL), Partner.TIMEOUT_PARTNER_REQUEST);
+                    request, Partner.TIMEOUT_PARTNER_REQUEST);
             List<Partner> partnerList = response.getList();
             SortableTreeNode nodePartner = null;
             SortableTreeNode firstNodePartner = null;
@@ -181,19 +198,32 @@ public class JTreePartner extends JTree {
         partner.setURL(partner.getDefaultURL());
         partner.setMdnURL(partner.getDefaultURL());
         partner.setLocalStation(false);
+        partner.setCreatedByUserId(this.userId);  // Set owner to current user
+
+        // Auto-assign first certificate with private key (isKeyPair=true) if available
+        // For local stations, only certificates with private keys can be used for signing/encryption
         List<KeystoreCertificate> list = certificateManagerEncSign.getKeyStoreCertificateList();
-        if (!list.isEmpty()) {
-            KeystoreCertificate certificate = list.get(0);
-            //just take the first entry
+        KeystoreCertificate defaultCert = null;
+        for (KeystoreCertificate cert : list) {
+            if (cert.getIsKeyPair()) {
+                defaultCert = cert;
+                break;  // Use first certificate with private key
+            }
+        }
+
+        if (defaultCert != null) {
+            // Assign the first certificate with private key
             PartnerCertificateInformation signInfo = new PartnerCertificateInformation(
-                    certificate.getFingerPrintSHA1(),
+                    defaultCert.getFingerPrintSHA1(),
                     PartnerCertificateInformation.CATEGORY_SIGN);
             partner.setCertificateInformation(signInfo);
             PartnerCertificateInformation cryptInfo = new PartnerCertificateInformation(
-                    certificate.getFingerPrintSHA1(),
+                    defaultCert.getFingerPrintSHA1(),
                     PartnerCertificateInformation.CATEGORY_CRYPT);
             partner.setCertificateInformation(cryptInfo);
         }
+        // else: No certificate with private key available - partner will have no default cert
+
         this.addPartner(partner);
         return (partner);
     }

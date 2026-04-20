@@ -146,6 +146,13 @@ public class PreferencesAS2 {
     public static final String TRACKER_RATE_LIMIT_FAILURES = "tracker.ratelimit.failures";
     public static final String TRACKER_RATE_LIMIT_WINDOW_HOURS = "tracker.ratelimit.window.hours";
     public static final String TRACKER_RATE_LIMIT_BLOCK_MINUTES = "tracker.ratelimit.block.minutes";
+    // IP Whitelist configuration keys
+    public static final String IP_WHITELIST_ENABLED_AS2 = "ip.whitelist.enabled.as2";
+    public static final String IP_WHITELIST_ENABLED_TRACKER = "ip.whitelist.enabled.tracker";
+    public static final String IP_WHITELIST_ENABLED_WEBUI = "ip.whitelist.enabled.webui";
+    public static final String IP_WHITELIST_ENABLED_API = "ip.whitelist.enabled.api";
+    public static final String IP_WHITELIST_MODE = "ip.whitelist.mode"; // GLOBAL_ONLY, PARTNER_ONLY, USER_ONLY, GLOBAL_AND_SPECIFIC
+    public static final String IP_WHITELIST_LOG_RETENTION_DAYS = "ip.whitelist.log.retention.days";
     // Login rate limiting configuration keys
     public static final String LOGIN_RATE_LIMIT_ENABLED = "login.ratelimit.enabled";
     public static final String LOGIN_RATE_LIMIT_FAILURES = "login.ratelimit.failures";
@@ -249,12 +256,12 @@ public class PreferencesAS2 {
                     Map.entry(SHOW_QUOTA_NOTIFICATION_IN_PARTNER_CONFIG, "FALSE"),
                     Map.entry(CEM, "FALSE"),
                     Map.entry(WRITE_OUTBOUND_STATUS_FILE, "FALSE"),
-                    Map.entry(MAX_CONNECTION_RETRY_COUNT, "10"),
+                    Map.entry(MAX_CONNECTION_RETRY_COUNT, "1"),
                     Map.entry(CONNECTION_RETRY_WAIT_TIME_IN_S, "30"),
                     Map.entry(DATASHEET_RECEIPT_URL, "http://localhost:8080/as2/HttpReceiver"),
-                    Map.entry(HIDDENCOLSDEFAULT, "1111111111100"),
-                    Map.entry(HIDDENCOLS, "1111111111000"),
-                    Map.entry(HIDEABLECOLS, "0011111111111"),
+                    Map.entry(HIDDENCOLSDEFAULT, "11111111111001"),
+                    Map.entry(HIDDENCOLS, "11111111110001"),
+                    Map.entry(HIDEABLECOLS, "00111111111111"),
                     Map.entry(LOG_POLL_PROCESS, "FALSE"),
                     Map.entry(MAX_OUTBOUND_CONNECTIONS, "9999"),
                     Map.entry(DISPLAY_MODE_CLIENT, "LIGHT"),
@@ -273,6 +280,12 @@ public class PreferencesAS2 {
                     Map.entry(TRACKER_RATE_LIMIT_FAILURES, "3"),
                     Map.entry(TRACKER_RATE_LIMIT_WINDOW_HOURS, "1"),
                     Map.entry(TRACKER_RATE_LIMIT_BLOCK_MINUTES, "60"),
+                    Map.entry(IP_WHITELIST_ENABLED_AS2, "false"),
+                    Map.entry(IP_WHITELIST_ENABLED_TRACKER, "false"),
+                    Map.entry(IP_WHITELIST_ENABLED_WEBUI, "true"),
+                    Map.entry(IP_WHITELIST_ENABLED_API, "true"),
+                    Map.entry(IP_WHITELIST_MODE, "GLOBAL_AND_SPECIFIC"),
+                    Map.entry(IP_WHITELIST_LOG_RETENTION_DAYS, "30"),
                     Map.entry(LOGIN_RATE_LIMIT_ENABLED, "true"),
                     Map.entry(LOGIN_RATE_LIMIT_FAILURES, "5"),
                     Map.entry(LOGIN_RATE_LIMIT_WINDOW_HOURS, "1"),

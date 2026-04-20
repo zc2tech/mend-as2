@@ -53,10 +53,15 @@ public class UserManagementResource {
 
     /**
      * GET /api/v1/users - List all users
+     * Query parameters:
+     *   excludeAdmins: true/false - Exclude users with USER_MANAGE permission
+     *   enabledOnly: true/false - Only return enabled users
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getAllUsers() {
+    public Response getAllUsers(
+            @QueryParam("excludeAdmins") @DefaultValue("false") boolean excludeAdmins,
+            @QueryParam("enabledOnly") @DefaultValue("false") boolean enabledOnly) {
         try {
             UserManagementAccessDB userMgmt = getUserManagementAccess();
             if (userMgmt == null) {
@@ -66,12 +71,59 @@ public class UserManagementResource {
 
             List<WebUIUser> users = userMgmt.getAllUsers();
 
-            // Remove password hashes from response for security
+            // Apply filters and build response with role information
+            List<Map<String, Object>> filteredUsers = new java.util.ArrayList<>();
             for (WebUIUser user : users) {
-                user.setPasswordHash(null);
+                // Filter by enabled status
+                if (enabledOnly && !user.isEnabled()) {
+                    continue;
+                }
+
+                // Filter out admins (users with USER_MANAGE permission)
+                if (excludeAdmins) {
+                    try {
+                        java.util.Set<String> userPermissions = userMgmt.getUserPermissions(user.getUsername());
+                        if (userPermissions != null && userPermissions.contains("USER_MANAGE")) {
+                            continue; // Skip admin users
+                        }
+                    } catch (Exception e) {
+                        LOGGER.log(Level.WARNING, "Could not get permissions for user: " + user.getUsername(), e);
+                    }
+                }
+
+                // Build user response with role information
+                Map<String, Object> userMap = new HashMap<>();
+                userMap.put("id", user.getId());
+                userMap.put("username", user.getUsername());
+                userMap.put("email", user.getEmail());
+                userMap.put("fullName", user.getFullName());
+                userMap.put("enabled", user.isEnabled());
+                userMap.put("mustChangePassword", user.isMustChangePassword());
+                userMap.put("createdAt", user.getCreatedAt());
+                userMap.put("updatedAt", user.getUpdatedAt());
+                userMap.put("lastLogin", user.getLastLogin());
+
+                // Add role information
+                try {
+                    List<Role> userRoles = userMgmt.getUserRoles(user.getId());
+                    userMap.put("roles", userRoles);
+
+                    // Extract role IDs
+                    List<Integer> roleIds = new java.util.ArrayList<>();
+                    for (Role role : userRoles) {
+                        roleIds.add(role.getId());
+                    }
+                    userMap.put("roleIds", roleIds);
+                } catch (Exception e) {
+                    LOGGER.log(Level.WARNING, "Could not get roles for user: " + user.getUsername(), e);
+                    userMap.put("roles", new java.util.ArrayList<>());
+                    userMap.put("roleIds", new java.util.ArrayList<>());
+                }
+
+                filteredUsers.add(userMap);
             }
 
-            return Response.ok(users).build();
+            return Response.ok(filteredUsers).build();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error getting users", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -132,6 +184,13 @@ public class UserManagementResource {
             if (username == null || username.trim().isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity("{\"error\":\"Username is required\"}").build();
+            }
+
+            // Validate username format for security and URL safety
+            String validationError = UsernameValidator.validateUsername(username);
+            if (validationError != null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("{\"error\":\"" + validationError + "\"}").build();
             }
 
             // If generatePassword is true, generate a random password
@@ -535,12 +594,29 @@ public class UserManagementResource {
                         .entity("{\"error\":\"User not found\"}").build();
             }
 
-            // Return user info
+            // Return user info with role information
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", user.getId());
             userInfo.put("username", user.getUsername());
             userInfo.put("fullName", user.getFullName());
             userInfo.put("email", user.getEmail());
+
+            // Add role information
+            try {
+                List<Role> userRoles = userMgmt.getUserRoles(user.getId());
+                userInfo.put("roles", userRoles);
+
+                // Extract role IDs
+                List<Integer> roleIds = new java.util.ArrayList<>();
+                for (Role role : userRoles) {
+                    roleIds.add(role.getId());
+                }
+                userInfo.put("roleIds", roleIds);
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Could not get roles for user: " + user.getUsername(), e);
+                userInfo.put("roles", new java.util.ArrayList<>());
+                userInfo.put("roleIds", new java.util.ArrayList<>());
+            }
 
             return Response.ok(userInfo).build();
         } catch (Exception e) {

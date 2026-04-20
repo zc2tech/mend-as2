@@ -78,7 +78,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * Allows to disable the dir poll - the send orders have to be placed using
      * the command line interface if enabled
      */
-    private boolean enableDirPoll = true;
+    private boolean enableDirPoll = false;  // Default to OFF
     /**
      * Compression type for this partner, used if you send messages to the
      * partner
@@ -87,7 +87,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
     /**
      * MDNs to this partner should be signed?
      */
-    private boolean signedMDN = true;
+    private boolean signedMDN = false;
     /**
      * Stores an async MDN HTTP authentication if requested
      */
@@ -141,6 +141,30 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * ID of the WebUI user who created this partner (0 = created via SwingUI/admin)
      */
     private int createdByUserId = 0;
+    /**
+     * Inbound authentication credentials for local station only.
+     * Used to validate incoming AS2 messages to this local station.
+     */
+    private HTTPAuthentication inboundAuthCredentials = new HTTPAuthentication();
+    /**
+     * List of inbound authentication credentials for local station (supports multiple credentials).
+     * This replaces the single-credential approach in inboundAuthCredentials.
+     * Only applies to local stations (isLocalStation=true).
+     */
+    @JsonProperty("inboundAuthCredentialsList")
+    private List<PartnerInboundAuthCredential> inboundAuthCredentialsList = new ArrayList<>();
+
+    /**
+     * Whether basic authentication is enabled for inbound messages (local station only).
+     */
+    @JsonProperty("inboundAuthBasicEnabled")
+    private boolean inboundAuthBasicEnabled = false;
+
+    /**
+     * Whether certificate authentication is enabled for inbound messages (local station only).
+     */
+    @JsonProperty("inboundAuthCertEnabled")
+    private boolean inboundAuthCertEnabled = false;
 
     public Partner() {
     }
@@ -225,7 +249,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
      * Returns the default URL where to connect to
      */
     public String getDefaultURL() {
-        return ("http://localhost:8080/as2/HttpReceiver");
+        return ("<protocol>://<host>:<port>/<context>");
     }
 
     /**
@@ -573,6 +597,14 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
         this.authenticationCredentialsMessage = authenticationCredentialsMessage;
     }
 
+    public HTTPAuthentication getInboundAuthCredentials() {
+        return inboundAuthCredentials;
+    }
+
+    public void setInboundAuthCredentials(HTTPAuthentication inboundAuthCredentials) {
+        this.inboundAuthCredentials = inboundAuthCredentials;
+    }
+
     public void setKeepOriginalFilenameOnReceipt(boolean keepFilenameOnReceipt) {
         this.keepFilenameOnReceipt = keepFilenameOnReceipt;
     }
@@ -835,6 +867,9 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
         if (this.authenticationCredentialsAsyncMDN != null) {
             builder.append(this.authenticationCredentialsAsyncMDN.toXML(level + 1, "asyncmdn"));
         }
+        if (this.localStation && this.inboundAuthCredentials != null) {
+            builder.append(this.inboundAuthCredentials.toXML(level + 1, "inbound"));
+        }
         if (this.oauth2Message != null) {
             builder.append(this.oauth2Message.toXML(level + 1, "standard", this.useOAuth2Message));
         }
@@ -998,6 +1033,8 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
                 partner.setAuthentication(HTTPAuthentication.fromXML(authenticationElement));
             } else if (authenticationElement.getAttribute("type").equalsIgnoreCase("asyncmdn")) {
                 partner.setAuthenticationAsyncMDN(HTTPAuthentication.fromXML(authenticationElement));
+            } else if (authenticationElement.getAttribute("type").equalsIgnoreCase("inbound")) {
+                partner.setInboundAuthCredentials(HTTPAuthentication.fromXML(authenticationElement));
             }
         }
         //deserialize the oauth2 authentications
@@ -1076,6 +1113,74 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
     }
 
     /**
+     * Get inbound authentication credentials list for local station
+     * @return List of inbound auth credentials
+     */
+    public List<PartnerInboundAuthCredential> getInboundAuthCredentialsList() {
+        return this.inboundAuthCredentialsList;
+    }
+
+    /**
+     * Set inbound authentication credentials list
+     * @param credentials List of credentials to set
+     */
+    public void setInboundAuthCredentialsList(List<PartnerInboundAuthCredential> credentials) {
+        synchronized (this.inboundAuthCredentialsList) {
+            this.inboundAuthCredentialsList.clear();
+            if (credentials != null) {
+                this.inboundAuthCredentialsList.addAll(credentials);
+            }
+        }
+    }
+
+    /**
+     * Add a single inbound authentication credential
+     * @param credential Credential to add
+     */
+    public void addInboundAuthCredential(PartnerInboundAuthCredential credential) {
+        synchronized (this.inboundAuthCredentialsList) {
+            this.inboundAuthCredentialsList.add(credential);
+        }
+    }
+
+    /**
+     * Delete empty inbound authentication credentials from the list
+     */
+    public void deleteEmptyInboundAuthCredentials() {
+        synchronized (this.inboundAuthCredentialsList) {
+            this.inboundAuthCredentialsList.removeIf(cred -> cred.isEmpty());
+        }
+    }
+
+    /**
+     * @return whether basic authentication is enabled for inbound messages
+     */
+    public boolean isInboundAuthBasicEnabled() {
+        return inboundAuthBasicEnabled;
+    }
+
+    /**
+     * @param enabled whether basic authentication is enabled for inbound messages
+     */
+    public void setInboundAuthBasicEnabled(boolean enabled) {
+        this.inboundAuthBasicEnabled = enabled;
+    }
+
+    /**
+     * @return whether certificate authentication is enabled for inbound messages
+     */
+    public boolean isInboundAuthCertEnabled() {
+        return inboundAuthCertEnabled;
+    }
+
+    /**
+     * @param enabled whether certificate authentication is enabled for inbound messages
+     */
+    public void setInboundAuthCertEnabled(boolean enabled) {
+        this.inboundAuthCertEnabled = enabled;
+    }
+
+    /**
      * @return the httpProtocolVersion
      */
     public String getHttpProtocolVersion() {
@@ -1133,17 +1238,25 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
                     clonedPartner.httpHeader.addAll(this.httpHeader);
                 }
             }
+            // Clone inbound auth credentials list
+            clonedPartner.inboundAuthCredentialsList = new ArrayList<>();
+            synchronized (this.inboundAuthCredentialsList) {
+                for (PartnerInboundAuthCredential cred : this.inboundAuthCredentialsList) {
+                    clonedPartner.inboundAuthCredentialsList.add(new PartnerInboundAuthCredential(cred));
+                }
+            }
+
             if( this.authenticationCredentialsAsyncMDN != null ){
                 clonedPartner.authenticationCredentialsAsyncMDN = new HTTPAuthentication(this.authenticationCredentialsAsyncMDN);
             }
             if( this.authenticationCredentialsMessage != null ){
                 clonedPartner.authenticationCredentialsMessage = new HTTPAuthentication(this.authenticationCredentialsMessage);
             }
-            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_RECEIPT, 
+            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_RECEIPT,
                     this.partnerEvents.getParameter(PartnerEventInformation.TYPE_ON_RECEIPT));
-            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_SENDERROR, 
+            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_SENDERROR,
                     this.partnerEvents.getParameter(PartnerEventInformation.TYPE_ON_SENDERROR));
-            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_SENDSUCCESS, 
+            clonedPartner.partnerEvents.setParameter(PartnerEventInformation.TYPE_ON_SENDSUCCESS,
                     this.partnerEvents.getParameter(PartnerEventInformation.TYPE_ON_SENDSUCCESS));
             if( this.oauth2MDN != null ){
                 clonedPartner.setOAuth2MDN((OAuth2Config)this.oauth2MDN.clone());
@@ -1151,6 +1264,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
             if( this.oauth2Message != null ){
                 clonedPartner.setOAuth2Message((OAuth2Config)this.oauth2Message.clone());
             }
+
             return (clonedPartner);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();

@@ -21,6 +21,10 @@
 
 package de.mendelson.comm.as2.servlet;
 
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
+import de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService;
+import de.mendelson.comm.as2.server.AS2ServerProcessing;
+import de.mendelson.comm.as2.servlet.rest.RestApplication;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +32,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.logging.Logger;
 
 /**
  * Servlet to serve React Admin UI static files from classpath
@@ -35,10 +40,60 @@ import java.io.OutputStream;
 public class AdminUIServlet extends HttpServlet {
 
     private static final String RESOURCE_BASE = "/webapp/admin";
+    private static final Logger LOGGER = Logger.getLogger("de.mendelson.as2.server");
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+
+        // Check IP whitelist for WebUI access BEFORE serving any content
+        try {
+            AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+            if (processing != null) {
+                PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
+                boolean webUIWhitelistEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
+
+                if (webUIWhitelistEnabled) {
+                    String clientIP = IPWhitelistService.normalizeIP(req.getRemoteAddr());
+                    IPWhitelistService whitelistService = IPWhitelistService.getInstance(processing.getDBDriverManager());
+
+                    // Check against global whitelist (userId=-1 for system-wide check)
+                    if (!whitelistService.isAllowedForWebUI(clientIP, -1)) {
+                        // Log blocked attempt
+                        whitelistService.logBlockedAttempt(
+                            clientIP,
+                            "WEBUI",
+                            null,  // No username yet - they're just loading the page
+                            null,  // No partner for WebUI
+                            req.getHeader("User-Agent"),
+                            req.getRequestURI()
+                        );
+
+                        LOGGER.warning("IP " + clientIP + " blocked by WebUI whitelist when accessing " + req.getRequestURI());
+
+                        // Return 403 Forbidden with a simple HTML message
+                        resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        resp.setContentType("text/html");
+                        resp.getWriter().write(
+                            "<!DOCTYPE html>" +
+                            "<html>" +
+                            "<head><title>Access Denied</title>" +
+                            "<style>body{font-family:Arial,sans-serif;text-align:center;margin-top:50px;}" +
+                            "h1{color:#d32f2f;}p{color:#666;}</style></head>" +
+                            "<body>" +
+                            "<h1>Access Denied</h1>" +
+                            "<p>Please contact your system administrator.</p>" +
+                            "</body>" +
+                            "</html>"
+                        );
+                        return;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Log error but don't block request (graceful degradation)
+            LOGGER.warning("IP whitelist check failed for WebUI: " + e.getMessage());
+        }
 
         String pathInfo = req.getPathInfo();
 

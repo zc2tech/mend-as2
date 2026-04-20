@@ -1,6 +1,5 @@
 package de.mendelson.comm.as2.partner;
 
-import de.mendelson.comm.as2.cem.CEMEntry;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.MecResourceBundle;
 import java.io.Serializable;
@@ -56,11 +55,11 @@ public class PartnerCertificateInformationList implements Serializable {
      * Returns the right info container for the passed category
      */
     private PartnerCertificateInformation getContainerByCategory(int category) {
-        if (category == CEMEntry.CATEGORY_CRYPT) {
+        if (category == 1) {
             return (this.infoCrypt);
-        } else if (category == CEMEntry.CATEGORY_SIGN) {
+        } else if (category == 2) {
             return (this.infoSign);
-        } else if (category == CEMEntry.CATEGORY_TLS) {
+        } else if (category == 3) {
             return (this.infoSSL);
         } else if (category == PartnerCertificateInformation.CATEGORY_CRYPT_OVERWRITE_LOCALSTATION) {
             return (this.infoCryptOverwriteLocalstation);

@@ -657,7 +657,16 @@ function UserFormModal({ user, onClose, onSuccess }) {
             onChange={(e) => setFormData({...formData, username: e.target.value})}
             disabled={!!user}
             style={inputStyle}
+            pattern="[a-zA-Z0-9._-]{3,50}"
+            title="3-50 characters: letters, numbers, underscore, hyphen, or dot. Must start and end with letter/number."
+            placeholder="e.g., john.doe, user_123"
           />
+          {!user && (
+            <div style={{ fontSize: '0.75rem', color: '#6c757d', marginTop: '-0.75rem', marginBottom: '1rem', lineHeight: '1.4' }}>
+              <strong>Requirements:</strong> 3-50 characters, letters/numbers/underscore/hyphen/dot only.
+              Must start and end with letter or number. No consecutive special characters.
+            </div>
+          )}
 
           {!user && (
             <>

@@ -91,7 +91,8 @@ public class MessageResource {
             @QueryParam("localStationId") Integer localStationId,
             @QueryParam("userdefinedId") String userdefinedId,
             @QueryParam("messageId") String messageId,
-            @QueryParam("format") String format) {
+            @QueryParam("format") String format,
+            @QueryParam("userId") Integer userFilterId) {
 
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
@@ -109,19 +110,36 @@ public class MessageResource {
             MessageOverviewFilter filter = new MessageOverviewFilter();
 
             // Get current user's ID and role for partner visibility filtering
+            int currentUserId = -1;
+            boolean isAdmin = false;
             try {
                 String username = securityContext.getUserPrincipal().getName();
                 UserManagementAccessDB userMgmt = new UserManagementAccessDB(
                         processing.getDBDriverManager(), null);
                 WebUIUser user = userMgmt.getUserByUsername(username);
                 if (user != null) {
-                    filter.setUserId(user.getId());
+                    currentUserId = user.getId();
 
                     // Check if user has ADMIN role
                     List<Role> roles = userMgmt.getUserRoles(user.getId());
-                    boolean isAdmin = roles.stream()
+                    isAdmin = roles.stream()
                             .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
-                    filter.setAdmin(isAdmin);
+
+                    // If userFilterId is provided, use it for filtering (admin selected specific user)
+                    // Otherwise, use currentUserId for non-admin users
+                    if (userFilterId != null && userFilterId > 0) {
+                        // Admin selected a specific user from dropdown
+                        filter.setUserId(userFilterId);
+                        filter.setAdmin(false);  // Force filtering by this user
+                    } else if (isAdmin) {
+                        // Admin with no user filter - show all messages
+                        filter.setUserId(currentUserId);
+                        filter.setAdmin(true);
+                    } else {
+                        // Non-admin user - only see their own messages
+                        filter.setUserId(currentUserId);
+                        filter.setAdmin(false);
+                    }
                 }
             } catch (Exception e) {
                 // If we can't get user info, treat as non-admin with no user context
@@ -188,6 +206,15 @@ public class MessageResource {
             }
 
             request = new MessageOverviewRequest(filter);
+
+            // CRITICAL: Copy user context from filter to request for message ownership filtering
+            // The filter is used for partner visibility, but request.userId is checked for message ownership
+            if (currentUserId > 0) {
+                request.setUserId(currentUserId);
+                // ADMIN users can see all messages (similar to USER_MANAGE permission)
+                // This allows admin users to monitor all AS2 message traffic
+                request.setHasUserManagePermission(isAdmin);
+            } 
         }
 
         MessageOverviewResponse response = processing.processMessageOverviewRequest(request);
@@ -687,6 +714,185 @@ public class MessageResource {
     }
 
     /**
+     * Download encrypted raw AS2 message
+     * Returns the raw encrypted AS2 message as received/sent (before decryption)
+     */
+    @GET
+    @Path("/{messageId}/download/encrypted")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadEncryptedRaw(
+            @PathParam("messageId") String messageId,
+            @QueryParam("entryMessageId") String entryMessageId) {
+
+        AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+        if (processing == null) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(new ErrorResponse("Server processing not available"))
+                    .build();
+        }
+
+        try {
+            // Get message details to find raw filename
+            MessageDetailRequest detailRequest = new MessageDetailRequest(messageId);
+            MessageDetailResponse detailResponse = processing.processMessageDetailRequest(detailRequest);
+
+            if (detailResponse.getException() != null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(detailResponse.getException().getMessage()))
+                        .build();
+            }
+
+            List<?> details = detailResponse.getList();
+            if (details == null || details.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No details found for this message"))
+                        .build();
+            }
+
+            // Find the matching detail entry
+            AS2Info targetInfo = null;
+            String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+
+            for (Object obj : details) {
+                AS2Info info = (AS2Info) obj;
+                if (searchMessageId.equals(info.getMessageId())) {
+                    targetInfo = info;
+                    break;
+                }
+            }
+
+            if (targetInfo == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No matching detail found"))
+                        .build();
+            }
+
+            // Get raw encrypted filename
+            String rawFilename = targetInfo.getRawFilename();
+            if (rawFilename == null || rawFilename.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No encrypted raw data available"))
+                        .build();
+            }
+
+            // Read raw file content
+            java.nio.file.Path rawFile = java.nio.file.Paths.get(rawFilename);
+            if (!java.nio.file.Files.exists(rawFile)) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("Encrypted raw file not found"))
+                        .build();
+            }
+
+            byte[] rawData = java.nio.file.Files.readAllBytes(rawFile);
+
+            // Generate filename for download
+            String filename = messageId + "_encrypted_raw.dat";
+
+            return Response.ok(rawData)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .header("Content-Type", "application/octet-stream")
+                    .build();
+
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Failed to download encrypted raw data: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
+     * Download decrypted raw AS2 message
+     * Returns the decrypted AS2 message (after removing encryption layer)
+     */
+    @GET
+    @Path("/{messageId}/download/decrypted")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response downloadDecryptedRaw(
+            @PathParam("messageId") String messageId,
+            @QueryParam("entryMessageId") String entryMessageId) {
+
+        AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
+        if (processing == null) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(new ErrorResponse("Server processing not available"))
+                    .build();
+        }
+
+        try {
+            // Get message details to find raw decrypted filename
+            MessageDetailRequest detailRequest = new MessageDetailRequest(messageId);
+            MessageDetailResponse detailResponse = processing.processMessageDetailRequest(detailRequest);
+
+            if (detailResponse.getException() != null) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(new ErrorResponse(detailResponse.getException().getMessage()))
+                        .build();
+            }
+
+            List<?> details = detailResponse.getList();
+            if (details == null || details.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No details found for this message"))
+                        .build();
+            }
+
+            // Find the matching detail entry
+            AS2Info targetInfo = null;
+            String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+
+            for (Object obj : details) {
+                AS2Info info = (AS2Info) obj;
+                if (searchMessageId.equals(info.getMessageId())) {
+                    targetInfo = info;
+                    break;
+                }
+            }
+
+            if (targetInfo == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No matching detail found"))
+                        .build();
+            }
+
+            // Get raw decrypted filename (only available for messages, not MDNs)
+            String rawDecryptedFilename = null;
+            if (!targetInfo.isMDN()) {
+                AS2MessageInfo messageInfo = (AS2MessageInfo) targetInfo;
+                rawDecryptedFilename = messageInfo.getRawFilenameDecrypted();
+            }
+
+            if (rawDecryptedFilename == null || rawDecryptedFilename.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("No decrypted raw data available (message may not be encrypted)"))
+                        .build();
+            }
+
+            // Read raw decrypted file content
+            java.nio.file.Path rawFile = java.nio.file.Paths.get(rawDecryptedFilename);
+            if (!java.nio.file.Files.exists(rawFile)) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("Decrypted raw file not found"))
+                        .build();
+            }
+
+            byte[] rawData = java.nio.file.Files.readAllBytes(rawFile);
+
+            // Generate filename for download
+            String filename = messageId + "_decrypted_raw.dat";
+
+            return Response.ok(rawData)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .header("Content-Type", "application/octet-stream")
+                    .build();
+
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Failed to download decrypted raw data: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
      * Get last message entry for a message
      */
     @GET
@@ -739,8 +945,9 @@ public class MessageResource {
                     .build();
         }
 
-        // Get current WebUI user ID for HTTP auth preferences
+        // Get current WebUI user ID for HTTP auth preferences and partner filtering
         int currentUserId = -1;
+        boolean isAdmin = false;
         try {
             String username = securityContext.getUserPrincipal().getName();
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(
@@ -750,6 +957,14 @@ public class MessageResource {
             WebUIUser user = userMgmt.getUserByUsername(username);
             if (user != null) {
                 currentUserId = user.getId();
+                // Check if user has ADMIN role
+                List<Role> roles = userMgmt.getUserRoles(user.getId());
+                for (Role role : roles) {
+                    if ("ADMIN".equalsIgnoreCase(role.getName())) {
+                        isAdmin = true;
+                        break;
+                    }
+                }
             }
         } catch (Exception e) {
             System.err.println("Warning: Could not resolve user ID for HTTP auth: " + e.getMessage());
@@ -774,10 +989,11 @@ public class MessageResource {
                     .build();
         }
 
-        List<File> tempFiles = new java.util.ArrayList<>();
         try {
             // Get partner list to find AS2 IDs from database IDs
+            // IMPORTANT: Admin users see ALL partners (userId=-1), regular users see only their own
             PartnerListRequest partnerRequest = new PartnerListRequest();
+            partnerRequest.setUserId(isAdmin ? -1 : currentUserId);
             PartnerListResponse partnerResponse = processing.processPartnerListRequest(partnerRequest);
 
             if (partnerResponse.getException() != null) {
@@ -813,7 +1029,14 @@ public class MessageResource {
                         .build();
             }
 
-            // Save all uploaded files to temporary locations
+            // Save all uploaded files to persistent temp directory
+            // IMPORTANT: Do NOT delete these files - SendOrderReceiver will read them asynchronously
+            // and clean them up after processing
+            java.nio.file.Path tempDir = java.nio.file.Paths.get("temp");
+            if (!java.nio.file.Files.exists(tempDir)) {
+                java.nio.file.Files.createDirectories(tempDir);
+            }
+
             java.nio.file.Path[] sendFiles = new java.nio.file.Path[fileParts.size()];
             String[] originalFilenames = new String[fileParts.size()];
             String[] payloadContentTypes = new String[fileParts.size()];
@@ -826,11 +1049,14 @@ public class MessageResource {
                 // Get entity as byte array directly
                 byte[] fileBytes = part.getValueAs(byte[].class);
 
-                File tempFile = File.createTempFile("as2_upload_", "_" + originalFilename);
-                java.nio.file.Files.write(tempFile.toPath(), fileBytes);
-                tempFiles.add(tempFile);
+                // Save to persistent temp directory (not Java's temp dir which may be cleaned up)
+                // Use timestamp + random to ensure uniqueness
+                String tempFilename = "webui_upload_" + System.currentTimeMillis() + "_" +
+                                     (int)(Math.random() * 100000) + "_" + originalFilename;
+                java.nio.file.Path tempFile = tempDir.resolve(tempFilename);
+                java.nio.file.Files.write(tempFile, fileBytes);
 
-                sendFiles[i] = tempFile.toPath();
+                sendFiles[i] = tempFile;
                 originalFilenames[i] = originalFilename;
 
                 // First file uses specified content type, others auto-detect from filename
@@ -843,9 +1069,15 @@ public class MessageResource {
             }
 
             // Send the message using SendOrderSender with userId
-            SendOrderSender orderSender = new SendOrderSender(processing.getDBDriverManager());
+            SendOrderSender orderSender = processing.getSendOrderSender();
 
-            AS2Message message = orderSender.send(
+            System.out.println("[DEBUG MessageResource] Attempting to send message:");
+            System.out.println("  Sender: " + sender.getName() + " (ID: " + sender.getDBId() + ")");
+            System.out.println("  Receiver: " + receiver.getName() + " (ID: " + receiver.getDBId() + ")");
+            System.out.println("  Files: " + sendFiles.length);
+            System.out.println("  User ID: " + currentUserId);
+
+            de.mendelson.comm.as2.sendorder.SendResult sendResult = orderSender.sendWithResult(
                     processing.getCertificateManagerSignEncrypt(),
                     sender,
                     receiver,
@@ -857,18 +1089,24 @@ public class MessageResource {
                     currentUserId // userId for HTTP auth preferences
             );
 
-            if (message == null) {
+            if (sendResult.isFailure()) {
+                System.err.println("[ERROR MessageResource] Send failed: " + sendResult.getErrorMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .entity(new ErrorResponse("Failed to send message"))
+                        .entity(new ErrorResponse("Failed to send message: " + sendResult.getErrorMessage()))
                         .build();
             }
+
+            System.out.println("[DEBUG MessageResource] Send result: " + sendResult);
 
             // Broadcast refresh to connected clients (if ClientServer is available)
             if (processing.getClientserver() != null) {
                 processing.getClientserver().broadcastToClients(new RefreshClientMessageOverviewList());
             }
 
-            String messageId = ((AS2MessageInfo)message.getAS2Info()).getMessageId();
+            // Generate response message
+            String messageId = sendResult.hasMessage()
+                    ? ((AS2MessageInfo)sendResult.getMessage().getAS2Info()).getMessageId()
+                    : "order-" + sendResult.getOrderId(); // For IN_MEMORY, use order ID
             String successMsg = fileParts.size() == 1
                     ? "File sent successfully"
                     : fileParts.size() + " files sent successfully (1 main + " + (fileParts.size() - 1) + " attachment" + (fileParts.size() > 2 ? "s" : "") + ")";
@@ -883,18 +1121,11 @@ public class MessageResource {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new ErrorResponse("Error processing file: " + e.getMessage()))
                     .build();
-        } finally {
-            // Clean up temp files
-            for (File tempFile : tempFiles) {
-                if (tempFile != null && tempFile.exists()) {
-                    try {
-                        tempFile.delete();
-                    } catch (Exception e) {
-                        // Ignore cleanup errors
-                    }
-                }
-            }
         }
+        // NOTE: Do NOT delete temp files here!
+        // The SendOrderReceiver processes send orders asynchronously in IN_MEMORY mode,
+        // so files are read AFTER this method returns. The SendOrderReceiver will
+        // clean up the temp files after successfully reading them.
     }
 
     /**

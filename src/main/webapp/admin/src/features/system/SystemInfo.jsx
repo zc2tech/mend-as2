@@ -22,16 +22,20 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import HTTPServerConfig from './HTTPServerConfig';
-import InboundAuth from './InboundAuth';
 import TrackerConfig from './TrackerConfig';
 import SystemEvents from './SystemEvents';
 import ServerLogSearch from './ServerLogSearch';
 import MaintenanceSettings from './MaintenanceSettings';
 import NotificationSettings from './NotificationSettings';
+import SystemTLS from './SystemTLS';
+import QueueConfig from './QueueConfig';
+import { useAuth } from '../auth/useAuth';
+import { PERMISSIONS } from '../../constants/permissions';
 
 export default function SystemInfo() {
   const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('httpConfig');
+  const { hasPermission } = useAuth();
 
   // Check for tab parameter in URL on mount
   useEffect(() => {
@@ -40,6 +44,16 @@ export default function SystemInfo() {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Check permissions for each tab
+  const hasHTTPConfigPermission = hasPermission(PERMISSIONS.SYSTEM_CONFIG_CONNECTIVITY);
+  const hasTLSReadPermission = hasPermission(PERMISSIONS.CERT_TLS_READ);
+  const hasTrackerReadPermission = hasPermission(PERMISSIONS.TRACKER_CONFIG_READ);
+  const hasEventsReadPermission = hasPermission(PERMISSIONS.SYSTEM_EVENTS_READ);
+  const hasLogsReadPermission = hasPermission(PERMISSIONS.SYSTEM_LOGS_READ);
+  const hasMaintenancePermission = hasPermission(PERMISSIONS.SYSTEM_CONFIG_MAINTENANCE);
+  const hasNotificationPermission = hasPermission(PERMISSIONS.SYSTEM_CONFIG_NOTIFICATIONS);
+  const hasInfoReadPermission = hasPermission(PERMISSIONS.SYSTEM_INFO_READ);
 
   const tabStyle = {
     display: 'flex',
@@ -66,57 +80,80 @@ export default function SystemInfo() {
       <h1>System</h1>
 
       <div style={tabStyle}>
-        <button
-          style={tabButtonStyle(activeTab === 'httpConfig')}
-          onClick={() => setActiveTab('httpConfig')}
-        >
-          HTTP Server Configuration
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'inboundAuth')}
-          onClick={() => setActiveTab('inboundAuth')}
-        >
-          Inb. AS2 Auth
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'tracker')}
-          onClick={() => setActiveTab('tracker')}
-        >
-          Tracker Conf
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'events')}
-          onClick={() => setActiveTab('events')}
-        >
-          System Events
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'serverlog')}
-          onClick={() => setActiveTab('serverlog')}
-        >
-          Search in Server Log
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'maintenance')}
-          onClick={() => setActiveTab('maintenance')}
-        >
-          Maintenance
-        </button>
-        <button
-          style={tabButtonStyle(activeTab === 'notification')}
-          onClick={() => setActiveTab('notification')}
-        >
-          Notification
-        </button>
+        {hasHTTPConfigPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'httpConfig')}
+            onClick={() => setActiveTab('httpConfig')}
+          >
+            HTTP Server Configuration
+          </button>
+        )}
+        {hasTLSReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'tls')}
+            onClick={() => setActiveTab('tls')}
+          >
+            TLS
+          </button>
+        )}
+        {hasTrackerReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'tracker')}
+            onClick={() => setActiveTab('tracker')}
+          >
+            Tracker Conf
+          </button>
+        )}
+        {hasEventsReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'events')}
+            onClick={() => setActiveTab('events')}
+          >
+            System Events
+          </button>
+        )}
+        {hasLogsReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'serverlog')}
+            onClick={() => setActiveTab('serverlog')}
+          >
+            Search in Server Log
+          </button>
+        )}
+        {hasMaintenancePermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'maintenance')}
+            onClick={() => setActiveTab('maintenance')}
+          >
+            Maintenance
+          </button>
+        )}
+        {hasNotificationPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'notification')}
+            onClick={() => setActiveTab('notification')}
+          >
+            Notification
+          </button>
+        )}
+        {hasInfoReadPermission && (
+          <button
+            style={tabButtonStyle(activeTab === 'queue')}
+            onClick={() => setActiveTab('queue')}
+          >
+            Queue
+          </button>
+        )}
       </div>
 
-      {activeTab === 'httpConfig' && <HTTPServerConfig />}
-      {activeTab === 'inboundAuth' && <InboundAuth />}
-      {activeTab === 'tracker' && <TrackerConfig />}
-      {activeTab === 'events' && <SystemEvents />}
-      {activeTab === 'serverlog' && <ServerLogSearch />}
-      {activeTab === 'maintenance' && <MaintenanceSettings />}
-      {activeTab === 'notification' && <NotificationSettings />}
+      {activeTab === 'httpConfig' && hasHTTPConfigPermission && <HTTPServerConfig />}
+      {activeTab === 'tracker' && hasTrackerReadPermission && <TrackerConfig />}
+      {activeTab === 'events' && hasEventsReadPermission && <SystemEvents />}
+      {activeTab === 'serverlog' && hasLogsReadPermission && <ServerLogSearch />}
+      {activeTab === 'maintenance' && hasMaintenancePermission && <MaintenanceSettings />}
+      {activeTab === 'notification' && hasNotificationPermission && <NotificationSettings />}
+      {activeTab === 'tls' && hasTLSReadPermission && <SystemTLS />}
+      {activeTab === 'queue' && hasInfoReadPermission && <QueueConfig />}
     </div>
   );
 }

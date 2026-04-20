@@ -235,8 +235,6 @@ public class MessageAccessDB {
                         payload.setOriginalFilename(result.getString("originalfilename"));
                         payload.setContentId(result.getString("contentid"));
                         payload.setContentType(result.getString("contenttype"));
-                        payload.setPayloadFormat(result.getString("payload_format"));
-                        payload.setPayloadDocType(result.getString("payload_doctype"));
                         payloadList.add(payload);
                     }
                 }
@@ -323,6 +321,9 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setPayloadFormat(result.getString("payloadformat"));
+                        info.setPayloadDocType(result.getString("payloaddoctype"));
                         return (info);
                     }
                 }
@@ -378,8 +379,9 @@ public class MessageAccessDB {
                             info.setResendCounter(result.getInt("resendcounter"));
                             info.setUserdefinedId(result.getString("userdefinedid"));
                             info.setUsesTLS(result.getInt("secureconnection") == 1);
-                            // Load first payload's format and doctype
-                            this.loadPayloadMetadata(runtimeConnectionNoAutoCommit, info);
+                            info.setOwnerUserId(result.getInt("owner_user_id"));
+                            info.setPayloadFormat(result.getString("payloadformat"));
+                            info.setPayloadDocType(result.getString("payloaddoctype"));
                             messageList.add(info);
                         }
                     }
@@ -487,8 +489,8 @@ public class MessageAccessDB {
                 } else {
                     queryCondition.append(" AND");
                 }
-                // Join with payload table to filter by format
-                queryCondition.append(" messageid IN (SELECT DISTINCT messageid FROM payload WHERE payload_format=?)");
+                // Filter by format in messages table
+                queryCondition.append(" payloadformat=?");
                 parameterList.add(filter.getPayloadFormat());
             }
             boolean hasStartTime = filter.getStartTime() != 0L;
@@ -549,38 +551,17 @@ public class MessageAccessDB {
                 parameterList.add(new Timestamp(calendar.getTimeInMillis()));
             }
 
-            // Partner visibility filtering for non-admin users
+            // User filtering for non-admin users
             // Admin users or users without userId context (SwingUI) see all messages
             if (filter.getUserId() != null && !filter.isAdmin()) {
-                try (Connection configConnectionAutoCommit = this.dbDriverManager
-                        .getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG)) {
-                    // Build subquery to get AS2 IDs of partners visible to this user
-                    // Include:
-                    // 1. All local stations (always visible)
-                    // 2. Remote partners with no visibility records (visible to all)
-                    // 3. Remote partners specifically assigned to this user
-                    String visibilitySubquery =
-                        "(SELECT as2ident FROM partner WHERE islocal=1 " +
-                        "UNION " +
-                        "SELECT p.as2ident FROM partner p " +
-                        "WHERE p.islocal=0 AND NOT EXISTS (SELECT 1 FROM partner_user_visibility WHERE partner_id=p.id) " +
-                        "UNION " +
-                        "SELECT p.as2ident FROM partner p " +
-                        "INNER JOIN partner_user_visibility pv ON p.id=pv.partner_id " +
-                        "WHERE pv.user_id=?)";
-
-                    if (queryCondition.length() == 0) {
-                        queryCondition.append(" WHERE");
-                    } else {
-                        queryCondition.append(" AND");
-                    }
-                    queryCondition.append(" (senderid IN ").append(visibilitySubquery)
-                                   .append(" OR receiverid IN ").append(visibilitySubquery).append(")");
-
-                    // Add userId parameter twice (once for sender, once for receiver)
-                    parameterList.add(filter.getUserId());
-                    parameterList.add(filter.getUserId());
+                // Normal users: only see their own messages (by owner_user_id)
+                if (queryCondition.length() == 0) {
+                    queryCondition.append(" WHERE");
+                } else {
+                    queryCondition.append(" AND");
                 }
+                queryCondition.append(" owner_user_id=?");
+                parameterList.add(filter.getUserId());
             }
 
             // Order by initdateutc DESC to show newest messages first
@@ -628,8 +609,9 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
-                        // Load first payload's format and doctype
-                        this.loadPayloadMetadata(runtimeConnectionAutoCommit, info);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setPayloadFormat(result.getString("payloadformat"));
+                        info.setPayloadDocType(result.getString("payloaddoctype"));
                         // Append to list normally (MySQL/PostgreSQL handle ORDER BY DESC correctly)
                         messageList.add(info);
                     }
@@ -995,15 +977,13 @@ public class MessageAccessDB {
             for (AS2Payload payload : payloadList) {
                 try (PreparedStatement statementInsert
                         = runtimeConnectionNoAutoCommit.prepareStatement(
-                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype,payload_format,payload_doctype)"
-                                + "VALUES(?,?,?,?,?,?,?)")) {
+                                "INSERT INTO payload(messageid,originalfilename,payloadfilename,contentid,contenttype)"
+                                + "VALUES(?,?,?,?,?)")) {
                     statementInsert.setString(1, messageId);
                     statementInsert.setString(2, payload.getOriginalFilename());
                     statementInsert.setString(3, payload.getPayloadFilename());
                     statementInsert.setString(4, payload.getContentId());
                     statementInsert.setString(5, payload.getContentType());
-                    statementInsert.setString(6, payload.getPayloadFormat());
-                    statementInsert.setString(7, payload.getPayloadDocType());
                     statementInsert.executeUpdate();
                 }
             }
@@ -1049,8 +1029,8 @@ public class MessageAccessDB {
                         "INSERT INTO messages(initdateutc,encryption,direction,messageid,rawfilename,receiverid,senderid,"
                         + "signature,state,syncmdn,headerfilename,rawdecryptedfilename,senderhost,useragent,"
                         + "contentmic,msgcompression,messagetype,asyncmdnurl,msgsubject,userdefinedid,"
-                        + "secureconnection)VALUES("
-                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        + "secureconnection,owner_user_id,payloadformat,payloaddoctype)VALUES("
+                        + "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setTimestamp(1, new java.sql.Timestamp(info.getInitDate().getTime()), this.calendarUTC);
             preparedStatement.setInt(2, info.getEncryptionType());
             preparedStatement.setInt(3, info.getDirection());
@@ -1076,6 +1056,9 @@ public class MessageAccessDB {
                 preparedStatement.setNull(20, Types.VARCHAR);
             }
             preparedStatement.setInt(21, info.usesTLS() ? 1 : 0);
+            preparedStatement.setInt(22, info.getOwnerUserId());
+            preparedStatement.setString(23, info.getPayloadFormat());
+            preparedStatement.setString(24, info.getPayloadDocType());
             preparedStatement.executeUpdate();
             //insert payload and inc transaction counter
             AS2Message message = new AS2Message(info);
@@ -1096,7 +1079,7 @@ public class MessageAccessDB {
                 + "senderid=?,signature=?,state=?,syncmdn=?,headerfilename=?,useragent=?,"
                 + "rawdecryptedfilename=?,senderhost=?,"
                 + "contentmic=?,msgcompression=?,messagetype=?,asyncmdnurl=?,msgsubject=?,userdefinedid=?,"
-                + "secureconnection=?"
+                + "secureconnection=?,owner_user_id=?,payloadformat=?,payloaddoctype=?"
                 + " WHERE messageid=?")) {
             preparedStatement.setInt(1, info.getEncryptionType());
             preparedStatement.setInt(2, info.getDirection());
@@ -1121,8 +1104,11 @@ public class MessageAccessDB {
                 preparedStatement.setNull(18, Types.VARCHAR);
             }
             preparedStatement.setInt(19, info.usesTLS() ? 1 : 0);
+            preparedStatement.setInt(20, info.getOwnerUserId());
+            preparedStatement.setString(21, info.getPayloadFormat());
+            preparedStatement.setString(22, info.getPayloadDocType());
             //condition
-            preparedStatement.setString(20, info.getMessageId());
+            preparedStatement.setString(23, info.getMessageId());
             updatedEntries = preparedStatement.executeUpdate();
             if (updatedEntries > 0) {
                 //insert payload and inc transaction counter
@@ -1170,6 +1156,8 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1221,6 +1209,8 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }
@@ -1272,6 +1262,8 @@ public class MessageAccessDB {
                         info.setResendCounter(result.getInt("resendcounter"));
                         info.setUserdefinedId(result.getString("userdefinedid"));
                         info.setUsesTLS(result.getInt("secureconnection") == 1);
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
+                        info.setOwnerUserId(result.getInt("owner_user_id"));
                         messageList.add(info);
                     }
                 }

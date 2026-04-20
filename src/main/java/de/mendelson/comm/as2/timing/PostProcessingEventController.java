@@ -12,6 +12,7 @@ import de.mendelson.comm.as2.message.postprocessingevent.ProcessingEventAccessDB
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.PartnerEventInformation;
 import de.mendelson.comm.as2.server.AS2Server;
+import de.mendelson.comm.as2.sendorder.SendOrderSender;
 import de.mendelson.util.NamedThreadFactory;
 import de.mendelson.util.clientserver.ClientServer;
 import de.mendelson.util.database.IDBDriverManager;
@@ -45,13 +46,16 @@ public class PostProcessingEventController {
     private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor(
             new NamedThreadFactory("postprocessing"));
     private final IDBDriverManager dbDriverManager;
+    private final SendOrderSender sendOrderSender;
 
     public PostProcessingEventController(ClientServer clientserver,
             CertificateManager certificateManagerEncSign,
-            IDBDriverManager dbDriverManager) throws Exception {
+            IDBDriverManager dbDriverManager,
+            SendOrderSender sendOrderSender) throws Exception {
         this.certificateManagerEncSign = certificateManagerEncSign;
         this.messageAccess = new MessageAccessDB(dbDriverManager);
         this.dbDriverManager = dbDriverManager;
+        this.sendOrderSender = sendOrderSender;
     }
 
     /**
@@ -92,7 +96,8 @@ public class PostProcessingEventController {
                         entryFound = true;
                     } else if (event != null && event.getProcessType() == PartnerEventInformation.PROCESS_MOVE_TO_PARTNER) {
                         processExecution = new ExecuteMoveToPartner(this.dbDriverManager,
-                                PostProcessingEventController.this.certificateManagerEncSign);
+                                PostProcessingEventController.this.certificateManagerEncSign,
+                                PostProcessingEventController.this.sendOrderSender);
                         entryFound = true;
                     }
                     if (entryFound && processExecution != null) {

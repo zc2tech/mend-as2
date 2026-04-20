@@ -21,14 +21,56 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
+import { useAuth } from '../auth/useAuth';
+import { PERMISSIONS } from '../../constants/permissions';
 
 export function useCertificates(keystoreType = 'sign') {
+  const { user } = useAuth();
+
+  console.log('[DEBUG useCertificates] Called with keystoreType:', keystoreType);
+  console.log('[DEBUG useCertificates] User:', user);
+  console.log('[DEBUG useCertificates] user?.id:', user?.id);
+  console.log('[DEBUG useCertificates] Query enabled:', !!user?.id);
+
   return useQuery({
-    queryKey: ['certificates', keystoreType],
+    queryKey: ['certificates', keystoreType, user?.id],
     queryFn: async () => {
-      const response = await api.get(`/certificates?keystoreType=${keystoreType}`);
+      console.log('[DEBUG useCertificates] queryFn executing...');
+      // For filtering: use 0 for admin user (legacy compatibility), database ID for others
+      const filterUserId = user?.username === 'admin' ? 0 : user?.id;
+      console.log('[DEBUG useCertificates] filterUserId:', filterUserId);
+
+      // Fetch only certificates visible to the current user
+      console.log('[DEBUG useCertificates] Calling API with params:', { keystoreType, visibleToUser: filterUserId });
+      const response = await api.get('/certificates', {
+        params: {
+          keystoreType,
+          visibleToUser: filterUserId
+        }
+      });
+      console.log('[DEBUG useCertificates] API response:', response.data);
       return response.data;
-    }
+    },
+    enabled: !!user?.id // Only run query if user ID is available
+  });
+}
+
+/**
+ * Fetch ALL users' certificates (admin only)
+ */
+export function useAllUsersCertificates(keystoreType = 'sign') {
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission(PERMISSIONS.USER_MANAGE);
+
+  return useQuery({
+    queryKey: ['certificates', 'all-users', keystoreType],
+    queryFn: async () => {
+      const response = await api.get('/certificates/all-users', {
+        params: { keystoreType }
+      });
+      return response.data;
+    },
+    enabled: isAdmin // Only fetch if user is admin
   });
 }
 

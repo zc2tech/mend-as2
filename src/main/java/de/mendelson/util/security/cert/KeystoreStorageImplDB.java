@@ -60,86 +60,138 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
     private final String keystoreStorageType;
     private final SystemEventManager systemEventManager;
     private final IDBDriverManager dbDriverManager;
+    private final int userId; // User ID for user-scoped keystores (-1 = system-wide, 0+ = specific user)
 
     /**
+     * @param userId User ID for user-scoped keystores (-1 = system-wide, 0+ =
+     *               specific user)
      */
     public KeystoreStorageImplDB(SystemEventManager systemEventManager,
             IDBDriverManager dbDriverManager, final int KEYSTORE_USAGE,
-            final String KEYSTORE_STORAGE_TYPE) throws Exception {
+            final String KEYSTORE_STORAGE_TYPE, final int userId) throws Exception {
         this.systemEventManager = systemEventManager;
         this.dbDriverManager = dbDriverManager;
-        KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
-        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE);
-        if (keystoreData == null) {
-            throw new Exception("Unable to access keystore data (DB, usage="
-                    + this.getKeystoreUsage()
-                    + ", storageType=" + this.getKeystoreStorageType() + ")");
-        }
+        this.userId = userId;
         this.keystoreUsage = KEYSTORE_USAGE;
         this.keystoreStorageType = KEYSTORE_STORAGE_TYPE;
+
+        KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
+        KeystoreData keystoreData = dataAccessDB.getKeydata(KEYSTORE_USAGE, userId);
+
         BCCryptoHelper cryptoHelper = new BCCryptoHelper();
-        this.keystore = cryptoHelper.createKeyStoreInstance(keystoreData.getStorageTypeAsStr(),
-                keystoreData.getSecurityProvider());
-        KeyStoreUtil.loadKeyStore(this.keystore, keystoreData.getData(), this.getKeystorePass());
+
+        if (keystoreData == null) {
+            // No keystore exists for this user - create an empty one
+            System.out.println("INFO: Creating empty keystore for userId=" + userId +
+                    ", usage=" + KEYSTORE_USAGE + ", storageType=" + KEYSTORE_STORAGE_TYPE);
+
+            // Determine security provider based on keystore type
+            String securityProvider = KEYSTORE_STORAGE_TYPE.equals(KEYSTORE_STORAGE_TYPE_PKCS12)
+                    ? org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME
+                    : "SUN";
+
+            // Create empty keystore with the specified storage type
+            this.keystore = cryptoHelper.createKeyStoreInstance(KEYSTORE_STORAGE_TYPE);
+
+            // Load empty keystore (pass null to KeyStore.load() to create empty keystore)
+            this.keystore.load(null, this.getKeystorePass());
+
+            // Save the empty keystore to database using INSERT (not UPDATE)
+            byte[] keyData;
+            try (java.io.ByteArrayOutputStream memOut = new java.io.ByteArrayOutputStream()) {
+                KeyStoreUtil.saveKeyStore(this.keystore, this.getKeystorePass(), memOut);
+                keyData = memOut.toByteArray();
+            }
+
+            // Insert the keystore data into database
+            dataAccessDB.insertEmptyKeydata(keyData, KEYSTORE_STORAGE_TYPE, KEYSTORE_USAGE, securityProvider, userId);
+        } else {
+            // Load existing keystore from database
+            this.keystore = cryptoHelper.createKeyStoreInstance(keystoreData.getStorageTypeAsStr(),
+                    keystoreData.getSecurityProvider());
+            KeyStoreUtil.loadKeyStore(this.keystore, keystoreData.getData(), this.getKeystorePass());
+        }
     }
 
     @Override
     public void save() throws Exception {
-        synchronized (this.keystoreLock) {
-            if (this.keystore == null) {
-                //internal error, should not happen
-                throw new Exception(rb.getResourceString("error.save.notloaded"));
-            }
-            byte[] keyData;
-            try (ByteArrayOutputStream memOut = new ByteArrayOutputStream()) {
-                KeyStoreUtil.saveKeyStore(this.keystore, this.getKeystorePass(), memOut);
-                keyData = memOut.toByteArray();
-            }
-            KeydataAccessDB dataAccessDB = new KeydataAccessDB(this.dbDriverManager, this.systemEventManager);
-            dataAccessDB.updateKeydata(keyData, this.keystoreStorageType, this.keystoreUsage,
-                    this.keystore.getProvider().getName());
+
+        if (this.keystore == null) {
+            // internal error, should not happen
+            System.err.println("[DEBUG KeystoreStorageImplDB] ERROR: keystore is null!");
+            throw new Exception(rb.getResourceString("error.save.notloaded"));
         }
+
+        // Log keystore contents before saving
+        try {
+            int entryCount = this.keystore.size();
+            java.util.Enumeration<String> aliases = this.keystore.aliases();
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+
+            }
+        } catch (Exception e) {
+            System.err.println("[DEBUG KeystoreStorageImplDB] Error logging keystore contents: " + e.getMessage());
+        }
+
+        byte[] keyData;
+        try (ByteArrayOutputStream memOut = new ByteArrayOutputStream()) {
+            KeyStoreUtil.saveKeyStore(this.keystore, this.getKeystorePass(), memOut);
+            keyData = memOut.toByteArray();
+        }
+
+        KeydataAccessDB dataAccessDB = new KeydataAccessDB(this.dbDriverManager, this.systemEventManager);
+        dataAccessDB.updateKeydata(keyData, this.keystoreStorageType, this.keystoreUsage,
+                this.keystore.getProvider().getName(), this.userId);
     }
 
     @Override
     public void loadKeystoreFromServer() throws Exception {
-        throw new IllegalAccessException("KeystoreStorageImplDB: loadKeystoreFromServer() is not available for this implementation of storage.");
+        throw new IllegalAccessException(
+                "KeystoreStorageImplDB: loadKeystoreFromServer() is not available for this implementation of storage.");
     }
 
     @Override
-    public void replaceAllEntriesAndSave(List<KeystoreCertificate> oldList, List<KeystoreCertificate> newList) throws Exception {
+    public void replaceAllEntriesAndSave(List<KeystoreCertificate> oldList, List<KeystoreCertificate> newList)
+            throws Exception {
         synchronized (this.keystoreLock) {
             if (this.keystore == null) {
-                //internal error, should not happen
+                // internal error, should not happen
                 throw new Exception(rb.getResourceString("error.save.notloaded"));
             }
+            // Collect all aliases first to avoid ConcurrentModificationException
+            List<String> aliasesToDelete = new ArrayList<>();
             Enumeration<String> enumeration = this.keystore.aliases();
             while (enumeration.hasMoreElements()) {
-                String alias = enumeration.nextElement();
+                aliasesToDelete.add(enumeration.nextElement());
+            }
+            // Now delete all entries
+            for (String alias : aliasesToDelete) {
                 this.keystore.deleteEntry(alias);
             }
-            //ensure that there are not two same aliases in the new list
+            // ensure that there are not two same aliases in the new list
             List<String> newAliasList = new ArrayList<String>();
             long uniqueCounter = System.currentTimeMillis();
-            for( KeystoreCertificate certificate : newList){
+            for (KeystoreCertificate certificate : newList) {
                 String newAlias = certificate.getAlias();
-                if( newAliasList.contains(newAlias)){
-                    //this alias already exists - add a counter to make it unique
+                if (newAliasList.contains(newAlias)) {
+                    // this alias already exists - add a counter to make it unique
                     certificate.setAlias(certificate.getAlias() + "_" + uniqueCounter);
                     uniqueCounter++;
                 }
                 newAliasList.add(certificate.getAlias());
             }
-            //ensure that there are not two same entries with the same fingerprint to import - just take the first one
+            // ensure that there are not two same entries with the same fingerprint to
+            // import - just take the first one
             List<KeystoreCertificate> newUniqueListToImport = new ArrayList<KeystoreCertificate>();
             List<String> newFingerprintList = new ArrayList<String>();
-            for( KeystoreCertificate certificate : newList){
+            for (KeystoreCertificate certificate : newList) {
                 String fingerprint = certificate.getFingerPrintSHA1();
-                if( !newFingerprintList.contains(fingerprint)){
+                if (!newFingerprintList.contains(fingerprint)) {
                     newFingerprintList.add(fingerprint);
-                    newUniqueListToImport.add( certificate );
+                    newUniqueListToImport.add(certificate);
                 }
-            }            
+            }
             for (KeystoreCertificate certificate : newUniqueListToImport) {
                 if (certificate.getIsKeyPair()) {
                     char[] keyPass = null;
@@ -211,7 +263,7 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
     private void deleteEntryAndSave(String alias) throws Exception {
         synchronized (this.keystoreLock) {
             if (this.keystore == null) {
-                //internal error, should not happen
+                // internal error, should not happen
                 throw new Exception(rb.getResourceString("error.delete.notloaded"));
             }
             this.keystore.deleteEntry(alias);
@@ -221,16 +273,17 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
 
     @Override
     public void deleteEntry(String alias) throws Exception {
-        //because this is the direct file implementation a save is required as a reload from the keystore 
-        //file might follow.
-        //This is a special behavior for the file based certificate manager.
+        // because this is the direct file implementation a save is required as a reload
+        // from the keystore
+        // file might follow.
+        // This is a special behavior for the file based certificate manager.
         this.deleteEntryAndSave(alias);
     }
 
     @Override
     public Map<String, Certificate> loadCertificatesFromKeystore() throws Exception {
         KeydataAccessDB dataAccessDB = new KeydataAccessDB(dbDriverManager, systemEventManager);
-        KeystoreData keystoreData = dataAccessDB.getKeydata(this.getKeystoreUsage());
+        KeystoreData keystoreData = dataAccessDB.getKeydata(this.getKeystoreUsage(), this.userId);
         if (keystoreData == null) {
             throw new Exception("Unable to access keystore data (DB, usage="
                     + this.getKeystoreUsage()

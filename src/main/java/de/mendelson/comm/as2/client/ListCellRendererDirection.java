@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.client;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.awt.Component;
@@ -23,7 +24,7 @@ import javax.swing.border.EmptyBorder;
  */
 public class ListCellRendererDirection extends JLabel implements ListCellRenderer<String> {
 
-    private final static int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_MENU_ITEM;
+    private final static int IMAGE_HEIGHT = IconManager.IMAGE_SIZE_MENU_ITEM;
     private final static int ROW_HEIGHT = IMAGE_HEIGHT + 2;
 
     private final static MendelsonMultiResolutionImage IMAGE_DIRECTION_INBOUND

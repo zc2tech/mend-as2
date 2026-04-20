@@ -51,6 +51,7 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
     private final BaseClient baseClient;
     private int keystoreUsage = KEYSTORE_USAGE_ENC_SIGN;
     private String keystoreStorageType = KEYSTORE_STORAGE_TYPE_PKCS12;
+    private int userId = 1;  // User ID for user-specific keystores (0 = admin/system)
     private final static MecResourceBundle rb;
 
     static {
@@ -75,9 +76,22 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
     public KeystoreStorageImplClientServer(BaseClient baseClient,
             final int KEYSTORE_USAGE,
             final String KEYSTORE_STORAGE_TYPE) throws Throwable {
+        this(baseClient, KEYSTORE_USAGE, KEYSTORE_STORAGE_TYPE, 0);
+    }
+
+    /**
+     * @param KEYSTORE_USAGE keystore type as defined in the class
+     * BCCryptoHelper
+     * @param userId User ID for user-specific keystores (0 = admin/system, >0 = specific user)
+     */
+    public KeystoreStorageImplClientServer(BaseClient baseClient,
+            final int KEYSTORE_USAGE,
+            final String KEYSTORE_STORAGE_TYPE,
+            final int userId) throws Throwable {
         this.baseClient = baseClient;
         this.keystoreUsage = KEYSTORE_USAGE;
         this.keystoreStorageType = KEYSTORE_STORAGE_TYPE;
+        this.userId = userId;
         this.loadKeystoreFromServer();
     }
 
@@ -102,7 +116,7 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
     @Override
     public void loadKeystoreFromServer() throws Throwable {
         //request the keystore from the server
-        DownloadRequestKeystore request = new DownloadRequestKeystore(this.keystoreUsage);
+        DownloadRequestKeystore request = new DownloadRequestKeystore(this.keystoreUsage, this.userId);
         DownloadResponseKeystore response = (DownloadResponseKeystore) baseClient.sendSync(request);
         if (response == null) {
             throw new Exception(rb.getResourceString("error.nodata"));
@@ -185,7 +199,7 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
             certificateList.remove(entry);
         }
         certificateList.addAll(addEntry);
-        UploadRequestKeystore request = new UploadRequestKeystore(this.keystoreUsage);
+        UploadRequestKeystore request = new UploadRequestKeystore(this.keystoreUsage, this.userId);
         request.addCertificateList(certificateList);
         UploadResponseKeystore response = (UploadResponseKeystore) this.baseClient.sendSync(request);
         if (response == null) {
@@ -277,6 +291,13 @@ public class KeystoreStorageImplClientServer implements KeystoreStorage {
     @Override
     public int getKeystoreUsage() {
         return (this.keystoreUsage);
+    }
+
+    /**
+     * @return the userId for user-specific keystores (0 = admin/system, >0 = specific user)
+     */
+    public int getUserId() {
+        return (this.userId);
     }
 
     @Override

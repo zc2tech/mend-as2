@@ -35,7 +35,7 @@ public class MDNText {
             case ERROR:
                 return ("Thank you for exchanging AS2 messages with " + AS2ServerVersion.getProductName()
                         + "." + CRLF + "Please download your free copy of " + AS2ServerVersion.getProductName()
-                        + " + today at http://opensource.mendelson-e-c.com." + CRLF + CRLF + "An error occured during the AS2 message processing: ");
+                        + " + today at https://github.com/zc2tech/mend-as2" + CRLF + CRLF + "An error occured during the AS2 message processing: ");
             default:
                 return ("");
         }

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.message.loggui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.message.AS2Message;
 import de.mendelson.comm.as2.message.AS2MessageInfo;
@@ -36,7 +37,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class TableModelMessageOverview extends AbstractTableModel {
     
-    protected static final int IMAGE_HEIGHT = AS2Gui.IMAGE_SIZE_TABLE;
+    protected static final int IMAGE_HEIGHT = IconManager.IMAGE_SIZE_TABLE;
     public static final int ROW_HEIGHT = IMAGE_HEIGHT+2;
 
     public static final ImageIcon ICON_IN
@@ -199,7 +200,7 @@ public class TableModelMessageOverview extends AbstractTableModel {
      */
     @Override
     public int getColumnCount() {
-        return (13);
+        return (14);  // Added column 13 for User/Owner
     }
 
     /**
@@ -311,6 +312,13 @@ public class TableModelMessageOverview extends AbstractTableModel {
                 } else {
                     return (Boolean.FALSE);
                 }
+            case 13:
+                // Owner/User column
+                if (info.getOwnerUsername() != null) {
+                    return (info.getOwnerUsername());
+                } else {
+                    return ("--");
+                }
         }
         return (null);
     }
@@ -349,6 +357,8 @@ public class TableModelMessageOverview extends AbstractTableModel {
                 return (this.rb.getResourceString("header.subject"));
             case 12:
                 return (this.rb.getResourceString("header.compression"));
+            case 13:
+                return ("User");
         }
         return (null);
     }
@@ -373,6 +383,8 @@ public class TableModelMessageOverview extends AbstractTableModel {
             String.class,
             String.class,
             String.class,
-            Boolean.class,}[col]);
+            Boolean.class,
+            String.class,  // User column
+        }[col]);
     }
 }

@@ -72,6 +72,7 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
     private JButton jButtonDownloadPayloads;
     private TrackerMessageInfo currentSelectedMessage;
     private javax.swing.Timer autoRefreshTimer;
+    private boolean isAdmin = false;
 
     public JDialogTrackerMessage(JFrame parent, BaseClient baseClient, IStatusBar statusBar) {
         super(parent, false);  // Non-modal
@@ -87,6 +88,7 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
 
         initComponents();
         initializeDefaultDates();
+        initializeUserFilter();
         initializeAutoRefreshTimer();
         performSearch();
     }
@@ -124,6 +126,45 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
 
         cal.add(Calendar.DAY_OF_MONTH, -7); // Last 7 days by default
         jDateChooserStartDate.setDate(cal.getTime());
+    }
+
+    private void initializeUserFilter() {
+        // Get current username from BaseClient
+        String username = this.baseClient.getUsername();
+        if (username == null || username.isEmpty()) {
+            username = "admin";
+        }
+
+        // Set default value
+        jTextFieldUserFilter.setText(username);
+
+        // Check if user is admin
+        try {
+            de.mendelson.comm.as2.server.DirectServiceClient serviceClient =
+                de.mendelson.comm.as2.server.DirectServiceClient.getInstance();
+            de.mendelson.comm.as2.server.AS2ServerProcessing processing = serviceClient.getServerProcessing();
+            de.mendelson.util.database.IDBDriverManager dbDriverManager = processing.getDBDriverManager();
+
+            de.mendelson.comm.as2.usermanagement.UserManagementAccessDB userDB =
+                new de.mendelson.comm.as2.usermanagement.UserManagementAccessDB(
+                    dbDriverManager,
+                    java.util.logging.Logger.getLogger("TrackerMessage"));
+
+            java.util.Set<String> permissions = userDB.getUserPermissions(username);
+            isAdmin = permissions.contains("USER_MANAGE");
+
+            // Disable field for normal users (standard disabled styling)
+            jTextFieldUserFilter.setEnabled(isAdmin);
+            if (!isAdmin) {
+                jTextFieldUserFilter.setToolTipText(rb.getResourceString("label.user.filter.readonly.tooltip"));
+            }
+
+        } catch (Exception e) {
+            // If permission check fails, default to non-admin (safe default)
+            System.err.println("Failed to check user permissions: " + e.getMessage());
+            isAdmin = false;
+            jTextFieldUserFilter.setEnabled(false);
+        }
     }
 
     private void initComponents() {
@@ -431,7 +472,14 @@ public class JDialogTrackerMessage extends JDialog implements ListSelectionListe
     private void resetFilter() {
         initializeDefaultDates();
         jTextFieldTrackerIdFilter.setText("");
-        jTextFieldUserFilter.setText("");
+
+        // Reset user filter to logged-in username
+        String username = this.baseClient.getUsername();
+        if (username == null || username.isEmpty()) {
+            username = "admin";
+        }
+        jTextFieldUserFilter.setText(username);
+
         jComboBoxFormatFilter.setSelectedIndex(0); // Select "All"
         switchAuthNone.setSelected(true);
         switchAuthSuccess.setSelected(true);

@@ -26,14 +26,19 @@ CREATE TABLE oauth2(
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Keystore data storage - stores certificate keystores in database
+-- User-scoped: each user has their own keystores
+-- user_id: -1=system-wide, 1=admin (default), >1=other users
 -- purpose: 1=TLS keystore, 2=ENC/SIGN keystore
 -- storagetype: 1=JKS, 2=PKCS12
 CREATE TABLE keydata(
-    purpose INT NOT NULL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL DEFAULT 1,
+    purpose INT NOT NULL,
     storagedata LONGBLOB,
     storagetype INT,
     lastchanged BIGINT,
-    securityprovider VARCHAR(255)
+    securityprovider VARCHAR(255),
+    UNIQUE KEY unique_user_purpose (user_id, purpose)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE partner(
@@ -56,9 +61,11 @@ CREATE TABLE partner(
     authmodehttp INT DEFAULT 0 NOT NULL,
     httpauthuser VARCHAR(256),
     httpauthpass VARCHAR(256),
+    httpauth_cert_fingerprint_message VARCHAR(255),
     authmodehttpasynmdn INT DEFAULT 0 NOT NULL,
     httpauthuserasnymdn VARCHAR(256),
     httpauthpassasnymdn VARCHAR(256),
+    httpauth_cert_fingerprint_mdn VARCHAR(255),
     keeporiginalfilenameonreceipt INT,
     partnercomment TEXT,
     notifysend INT,
@@ -79,7 +86,13 @@ CREATE TABLE partner(
     oauth2idmessage INT,
     oauth2idmdn INT,
     overwritelocalsecurity INT DEFAULT 0 NOT NULL,
-    created_by_user_id INT DEFAULT 0,
+    created_by_user_id INT DEFAULT 1,
+    inbound_auth_mode INT DEFAULT 0 NOT NULL,
+    inbound_auth_user VARCHAR(256),
+    inbound_auth_password VARCHAR(256),
+    inbound_auth_cert_fingerprint VARCHAR(255),
+    inbound_auth_basic_enabled TINYINT(1) DEFAULT 0,
+    inbound_auth_cert_enabled TINYINT(1) DEFAULT 0,
     FOREIGN KEY(oauth2idmessage) REFERENCES oauth2(id),
     FOREIGN KEY(oauth2idmdn) REFERENCES oauth2(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -233,6 +246,21 @@ CREATE TABLE httpheader(
     -- ,FOREIGN KEY(partnerid) REFERENCES partner(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE partner_inbound_auth_credentials(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    partner_id INT NOT NULL,
+    auth_type INT NOT NULL COMMENT '1=basic, 2=certificate',
+    username VARCHAR(256) COMMENT 'For basic auth (null for cert auth)',
+    password VARCHAR(256) COMMENT 'For basic auth (null for cert auth)',
+    cert_fingerprint VARCHAR(255) COMMENT 'For certificate auth (null for basic auth)',
+    cert_alias VARCHAR(255) COMMENT 'Certificate alias/name for display',
+    enabled TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(partner_id) REFERENCES partner(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_partner_inbound_auth ON partner_inbound_auth_credentials(partner_id);
+
 CREATE TABLE certificates(
     id INT AUTO_INCREMENT PRIMARY KEY,
     partnerid INT,
@@ -299,17 +327,12 @@ VALUES(
 -- User Management System - Default Data
 -- ============================================================================
 
--- Default Roles
-INSERT INTO webui_roles (name, description) VALUES
-('ADMIN', 'Full system access - can manage all resources and users'),
-('PARTNER_MANAGER', 'Can manage trading partners and their configurations'),
-('CERTIFICATE_MANAGER', 'Can manage certificates, keystores, and key generation'),
-('MESSAGE_OPERATOR', 'Can view and send messages'),
-('MESSAGE_VIEWER', 'Can view messages'),
-('SYSTEM_MANAGER', 'Can manage/view system settings/logs/events'),
-('VIEWER', 'Read-only access - can only view data');
+-- Default Roles (simplified to ADMIN and USER only)
+INSERT INTO webui_roles (id, name, description) VALUES
+(1, 'ADMIN', 'Administrator with full system access - can manage all resources and users'),
+(2, 'USER', 'Regular user with access to own partners, certificates, and messages');
 
--- Default Permissions
+-- Default Permissions (kept for future extensibility, but currently not enforced)
 INSERT INTO webui_permissions (name, description, category) VALUES
 -- Partner permissions
 ('PARTNER_READ', 'View partners', 'Partners'),
@@ -328,11 +351,41 @@ INSERT INTO webui_permissions (name, description, category) VALUES
 ('SYSTEM_WRITE', 'Modify system settings', 'System'),
 
 -- User management permissions
-('USER_MANAGE', 'Manage users and roles', 'Administration');
+('USER_MANAGE', 'Manage users and roles', 'Administration'),
+
+-- System Configuration permissions (per-panel)
+('SYSTEM_CONFIG_CONNECTIVITY', 'Modify HTTP/HTTPS ports and proxy settings', 'System Configuration'),
+('SYSTEM_CONFIG_INBOUND_AUTH', 'Configure inbound authentication', 'System Configuration'),
+('SYSTEM_CONFIG_DIRECTORIES', 'Change message directories', 'System Configuration'),
+('SYSTEM_CONFIG_MAINTENANCE', 'Configure auto-delete and cleanup settings', 'System Configuration'),
+('SYSTEM_CONFIG_NOTIFICATIONS', 'Configure email notifications', 'System Configuration'),
+('SYSTEM_CONFIG_INTERFACE', 'Modify UI preferences', 'System Configuration'),
+('SYSTEM_CONFIG_LOGGING', 'Configure logging settings', 'System Configuration'),
+
+-- System Monitoring permissions
+('SYSTEM_INFO_READ', 'View HTTP server information', 'System Monitoring'),
+('SYSTEM_EVENTS_READ', 'View system events', 'System Monitoring'),
+('SYSTEM_LOGS_READ', 'Search server logs', 'System Monitoring'),
+
+-- Tracker permissions
+('TRACKER_CONFIG_READ', 'View tracker configuration', 'Tracker'),
+('TRACKER_CONFIG_WRITE', 'Modify tracker settings', 'Tracker'),
+('TRACKER_MESSAGE_READ', 'View tracker messages', 'Tracker'),
+
+-- User switching permission
+('USER_SWITCH', 'Impersonate other users', 'User Management'),
+
+-- TLS Certificate permissions (separate from sign/crypt)
+('CERT_TLS_READ', 'View TLS/SSL certificates', 'Certificates - TLS'),
+('CERT_TLS_WRITE', 'Manage TLS/SSL certificates', 'Certificates - TLS');
 
 -- Default admin user (password: "admin" - MUST be changed on first login)
-INSERT INTO webui_users (username, password_hash, full_name, enabled, must_change_password) VALUES
-('admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+-- Admin is id=1 like any other user - no special hardcoded userId
+INSERT INTO webui_users (id, username, password_hash, full_name, enabled, must_change_password) VALUES
+(1, 'admin', '75000#efbfbd5207efbfbd0159efbfbd4befbfbd2befbfbdefbfbd1f22277e#13fbcaadc6706ff58a7666b6fa82dbed', 'System Administrator', TRUE, TRUE);
+
+-- Reset auto_increment to start from 2 for additional users
+ALTER TABLE webui_users AUTO_INCREMENT = 2;
 
 -- Grant ALL permissions to ADMIN role
 INSERT INTO webui_role_permissions (role_id, permission_id)
@@ -341,54 +394,14 @@ FROM webui_roles r
 CROSS JOIN webui_permissions p
 WHERE r.name = 'ADMIN';
 
--- Grant partner management permissions to PARTNER_MANAGER role
+-- Grant basic permissions to USER role
 INSERT INTO webui_role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM webui_roles r
 CROSS JOIN webui_permissions p
-WHERE r.name = 'PARTNER_MANAGER'
-  AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE');
-
--- Grant certificate management permissions to CERTIFICATE_MANAGER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'CERTIFICATE_MANAGER'
-  AND p.name IN ('CERT_READ', 'CERT_WRITE');
-
--- Grant message operations permissions to MESSAGE_OPERATOR role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'MESSAGE_OPERATOR'
-  AND p.name IN ('MESSAGE_READ', 'MESSAGE_WRITE');
-
--- Grant message read permission to MESSAGE_VIEWER role
--- MESSAGE_VIEWER also needs PARTNER_READ to see partner info in message lists
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'MESSAGE_VIEWER'
-  AND p.name IN ('MESSAGE_READ', 'PARTNER_READ');
-
--- Grant system monitoring permissions to SYSTEM_MANAGER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'SYSTEM_MANAGER'
-  AND p.name IN ('SYSTEM_READ', 'SYSTEM_WRITE');
-
--- Grant READ-ONLY permissions to VIEWER role
-INSERT INTO webui_role_permissions (role_id, permission_id)
-SELECT r.id, p.id
-FROM webui_roles r
-CROSS JOIN webui_permissions p
-WHERE r.name = 'VIEWER'
-  AND p.name IN ('PARTNER_READ', 'CERT_READ', 'MESSAGE_READ', 'SYSTEM_READ');
+WHERE r.name = 'USER'
+  AND p.name IN ('PARTNER_READ', 'PARTNER_WRITE', 'CERT_READ', 'CERT_WRITE',
+                 'MESSAGE_READ', 'MESSAGE_WRITE', 'TRACKER_MESSAGE_READ');
 
 -- Assign ADMIN role to default admin user
 INSERT INTO webui_user_roles (user_id, role_id)
@@ -396,3 +409,62 @@ SELECT u.id, r.id
 FROM webui_users u
 CROSS JOIN webui_roles r
 WHERE u.username = 'admin' AND r.name = 'ADMIN';
+
+-- IP Whitelist Tables
+
+-- Global IP whitelist for system-wide access control
+CREATE TABLE ip_whitelist_global (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  target_type VARCHAR(50) NOT NULL,
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by VARCHAR(255),
+  UNIQUE KEY unique_ip_target (ip_pattern, target_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_ip_whitelist_target ON ip_whitelist_global(target_type, enabled);
+
+-- Partner-specific IP whitelist
+CREATE TABLE ip_whitelist_partner (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  partner_id INT NOT NULL,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_partner_ip (partner_id, ip_pattern),
+  FOREIGN KEY (partner_id) REFERENCES partner(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_ip_whitelist_partner_id ON ip_whitelist_partner(partner_id, enabled);
+
+-- User-specific IP whitelist for WebUI/API access
+CREATE TABLE ip_whitelist_user (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  ip_pattern VARCHAR(255) NOT NULL,
+  description VARCHAR(512),
+  enabled BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_user_ip (user_id, ip_pattern),
+  FOREIGN KEY (user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_ip_whitelist_user_id ON ip_whitelist_user(user_id, enabled);
+
+-- IP whitelist block log for audit trail
+CREATE TABLE ip_whitelist_block_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  blocked_ip VARCHAR(255) NOT NULL,
+  target_type VARCHAR(50) NOT NULL,
+  attempted_user VARCHAR(255),
+  attempted_partner VARCHAR(255),
+  block_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  user_agent VARCHAR(512),
+  request_path VARCHAR(512)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_ip_block_log_time ON ip_whitelist_block_log(block_time);
+CREATE INDEX idx_ip_block_log_ip ON ip_whitelist_block_log(blocked_ip);

@@ -1,5 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
+import de.mendelson.comm.as2.client.IconManager;
 import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.comm.as2.clientserver.message.PartnerConfigurationChanged;
@@ -10,7 +11,7 @@ import de.mendelson.comm.as2.partner.PartnerSystem;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListRequest;
 import de.mendelson.comm.as2.partner.clientserver.PartnerListResponse;
 import de.mendelson.comm.as2.partner.clientserver.PartnerModificationRequest;
-import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
+// Removed: import de.mendelson.comm.as2.partner.gui.global.JDialogGlobalChange;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.ColorUtil;
 import de.mendelson.util.KeyboardShortcutUtil;
@@ -93,6 +94,7 @@ public class JDialogPartnerConfig extends JDialog {
     private final CertificateManager certificateManagerEncSign;
     private final CertificateManager certificateManagerSSL;
     private final GUIClient guiClient;
+    private final int userId;  // User ID for filtering partners
     private final static Logger logger = Logger.getLogger("de.mendelson.as2.client");
     private final AS2StatusBar status;
     private final List<AllowModificationCallback> allowModificationCallbackList
@@ -100,16 +102,16 @@ public class JDialogPartnerConfig extends JDialog {
     private final LockClientInformation lockKeeper;
     private final static MendelsonMultiResolutionImage IMAGE_DELETE
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/delete.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_COPY
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/copypartner.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_ADD
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/add.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private final static MendelsonMultiResolutionImage IMAGE_PARTNER_GROUP
             = MendelsonMultiResolutionImage.fromSVG("/de/mendelson/comm/as2/partner/gui/global/partner_group.svg",
-                    AS2Gui.IMAGE_SIZE_TOOLBAR);
+                    IconManager.IMAGE_SIZE_TOOLBAR);
     private Color colorRed = Color.RED.darker();
 
     /**
@@ -122,14 +124,16 @@ public class JDialogPartnerConfig extends JDialog {
             CertificateManager certificateManagerEncSign,
             CertificateManager certificateManagerSSL,
             List<PartnerSystem> partnerSystemList,
-            String activatedPlugins) {
+            String activatedPlugins,
+            int userId) {
         super(parent, true);
         this.status = status;
         this.guiClient = guiClient;
+        this.userId = userId;
         this.lockKeeper = lockKeeper;
         this.certificateManagerEncSign = certificateManagerEncSign;
         this.certificateManagerSSL = certificateManagerSSL;
-        this.jTreePartner = new JTreePartner(guiClient.getBaseClient());
+        this.jTreePartner = new JTreePartner(guiClient.getBaseClient(), userId);
         //create tree gap
         this.jTreePartner.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         this.initComponents();
@@ -145,7 +149,8 @@ public class JDialogPartnerConfig extends JDialog {
         this.jPanelPartner.add(this.panelEditPartner, BorderLayout.CENTER);
         this.getRootPane().setDefaultButton(this.jButtonPartnerConfigOk);
         try {
-            this.partnerList.addAll(this.jTreePartner.buildTree());
+            List<Partner> loadedPartners = this.jTreePartner.buildTree();
+            this.partnerList.addAll(loadedPartners);
         } catch (Exception e) {
             UINotification.instance().addNotification(e);
             return;
@@ -179,6 +184,8 @@ public class JDialogPartnerConfig extends JDialog {
     private void setupKeyboardShortcuts() {
         // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
         KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonPartnerConfigOk, this.jButtonCancel);
+        // Cmd+S (Mac) / Ctrl+S (Windows/Linux) to save
+        KeyboardShortcutUtil.addButtonShortcutWithTooltip(this.jButtonPartnerConfigOk, java.awt.event.KeyEvent.VK_S, "SAVE_PARTNER");
     }
 
     @Override
@@ -190,10 +197,10 @@ public class JDialogPartnerConfig extends JDialog {
     }
 
     private void setMultiresolutionIcons() {
-        this.jButtonDeletePartner.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonClonePartner.setIcon(new ImageIcon(IMAGE_COPY.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonNewPartner.setIcon(new ImageIcon(IMAGE_ADD.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
-        this.jButtonGlobalSettings.setIcon(new ImageIcon(IMAGE_PARTNER_GROUP.toMinResolution(AS2Gui.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonDeletePartner.setIcon(new ImageIcon(IMAGE_DELETE.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonClonePartner.setIcon(new ImageIcon(IMAGE_COPY.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        this.jButtonNewPartner.setIcon(new ImageIcon(IMAGE_ADD.toMinResolution(IconManager.IMAGE_SIZE_TOOLBAR)));
+        // Removed: this.jButtonGlobalSettings.setIcon(...)
 
     }
 
@@ -270,6 +277,24 @@ public class JDialogPartnerConfig extends JDialog {
     private void deleteSelectedPartner() {
         Partner partner = this.jTreePartner.getSelectedPartner();
         if (partner != null) {
+            // Check if this is the last local station - prevent deletion
+            if (partner.isLocalStation()) {
+                int localStationCount = 0;
+                for (Partner p : this.partnerList) {
+                    if (p.isLocalStation()) {
+                        localStationCount++;
+                    }
+                }
+                if (localStationCount <= 1) {
+                    UINotification.instance().addNotification(
+                        null,
+                        UINotification.TYPE_ERROR,
+                        "Cannot Delete Local Station",
+                        "You cannot delete the last local station. There must be at least one local station in the system.");
+                    return;
+                }
+            }
+
             //ask the user if the partner should be really deleted, all data is lost
             int requestValue = JOptionPane.showConfirmDialog(
                     this, rb.getResourceString("dialog.partner.delete.message", partner.getName()),
@@ -278,10 +303,12 @@ public class JDialogPartnerConfig extends JDialog {
             if (requestValue != JOptionPane.YES_OPTION) {
                 return;
             }
-            partner = this.jTreePartner.deleteSelectedPartner();
-            if (partner != null) {
-                this.partnerList.remove(partner);
-            }
+            // Store the partner reference before calling deleteSelectedPartner
+            // because deleteSelectedPartner may return null if it's the last node
+            Partner partnerToDelete = partner;
+            this.jTreePartner.deleteSelectedPartner();
+            // Always remove from partnerList, even if tree deletion returned null
+            this.partnerList.remove(partnerToDelete);
         }
     }
 
@@ -289,16 +316,49 @@ public class JDialogPartnerConfig extends JDialog {
         List<Partner> localStations = this.jTreePartner.getLocalStations();
         //no local station? should not happen
         if (localStations == null || localStations.isEmpty()) {
-            return (false);
+                        return (false);
         }
+
+
         for (Partner localStation : localStations) {
             String signSerial = localStation.getSignFingerprintSHA1();
             String cryptSerial = localStation.getCryptFingerprintSHA1();
+
+                                    
             try {
                 this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(signSerial);
-                this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(cryptSerial);
-            } catch (Exception e) {
-                UINotification.instance().addNotification(e);
+                                this.certificateManagerEncSign.getPrivateKeyByFingerprintSHA1(cryptSerial);
+                            } catch (Exception e) {
+                
+                // Find the certificate by fingerprint to show its alias
+                String problemAlias = "unknown";
+                for (de.mendelson.util.security.cert.KeystoreCertificate cert :
+                     this.certificateManagerEncSign.getKeyStoreCertificateList()) {
+                    if (cert.getFingerPrintSHA1().equals(signSerial) ||
+                        cert.getFingerPrintSHA1().equals(cryptSerial)) {
+                        problemAlias = cert.getAlias();
+                        break;
+                    }
+                }
+
+                String errorMessage = "The certificate '" + problemAlias + "' does not have a private key.\n\n" +
+                    "Local stations need certificates WITH private keys (key pairs) for signing and decryption.\n" +
+                    "Please select a certificate that shows a key icon (isKeyPair=true).\n\n" +
+                    "Available certificates with private keys:\n";
+
+                for (de.mendelson.util.security.cert.KeystoreCertificate cert :
+                     this.certificateManagerEncSign.getKeyStoreCertificateList()) {
+                    if (cert.getIsKeyPair()) {
+                        errorMessage += "  - " + cert.getAlias() + "\n";
+                    }
+                }
+
+                e.printStackTrace();
+                UINotification.instance().addNotification(
+                    null,
+                    UINotification.TYPE_ERROR,
+                    "Invalid certificate selection",
+                    errorMessage);
                 return (false);
             }
         }
@@ -420,6 +480,7 @@ public class JDialogPartnerConfig extends JDialog {
                         if (newPartner.getDBId() != -1) {
                             PartnerListRequest request = new PartnerListRequest(PartnerListRequest.LIST_BY_DB_ID);
                             request.setAdditionalListOptionInt(newPartner.getDBId());
+                            request.setUserId(JDialogPartnerConfig.this.userId);  // Set user context
                             List<Partner> checkList = ((PartnerListResponse) JDialogPartnerConfig.this.guiClient.getBaseClient().
                                     sendSync(request, Partner.TIMEOUT_PARTNER_REQUEST)).getList();
                             if (checkList != null && !checkList.isEmpty() && !newPartner.getName().equals(checkList.get(0).getName())) {
@@ -428,8 +489,10 @@ public class JDialogPartnerConfig extends JDialog {
                         }
                     }
                     //detect if a partner has been deleted
+                    PartnerListRequest existingPartnerRequest = new PartnerListRequest(PartnerListRequest.LIST_ALL);
+                    existingPartnerRequest.setUserId(JDialogPartnerConfig.this.userId);  // Set user context
                     List<Partner> existingPartnerArray = ((PartnerListResponse) JDialogPartnerConfig.this.guiClient.getBaseClient().
-                            sendSync(new PartnerListRequest(PartnerListRequest.LIST_ALL), Partner.TIMEOUT_PARTNER_REQUEST)).getList();
+                            sendSync(existingPartnerRequest, Partner.TIMEOUT_PARTNER_REQUEST)).getList();
                     for (Partner existingPartner : existingPartnerArray) {
                         boolean doesStillExist = false;
                         for (Partner newPartner : JDialogPartnerConfig.this.partnerList) {
@@ -443,6 +506,8 @@ public class JDialogPartnerConfig extends JDialog {
                         }
                     }
                     JDialogPartnerConfig.this.lock();
+                    //Sync inbound auth credentials from tables to partner objects before saving
+                    JDialogPartnerConfig.this.panelEditPartner.syncInboundAuthCredentials();
                     //display wait indicator
                     JDialogPartnerConfig.this.status.startProgressIndeterminate(
                             JDialogPartnerConfig.rb.getResourceString("saving"), uniqueId);
@@ -458,6 +523,7 @@ public class JDialogPartnerConfig extends JDialog {
                     PartnerConfigurationChanged signal = new PartnerConfigurationChanged();
                     JDialogPartnerConfig.this.guiClient.sendAsync(signal);
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     JDialogPartnerConfig.this.unlock();
                     JDialogPartnerConfig.this.status.stopProgressIfExists(uniqueId);
                     UINotification.instance().addNotification(e);
@@ -538,7 +604,7 @@ public class JDialogPartnerConfig extends JDialog {
         jButtonNewPartner = new javax.swing.JButton();
         jButtonClonePartner = new javax.swing.JButton();
         jButtonDeletePartner = new javax.swing.JButton();
-        jButtonGlobalSettings = new javax.swing.JButton();
+        // Removed: jButtonGlobalSettings = new javax.swing.JButton();
         jPanelMain = new javax.swing.JPanel();
         jPanelModuleLockWarning = new javax.swing.JPanel();
         jLabelModuleLockedWarning = new javax.swing.JLabel();
@@ -597,17 +663,8 @@ public class JDialogPartnerConfig extends JDialog {
         });
         jToolBar.add(jButtonDeletePartner);
 
-        jButtonGlobalSettings.setIcon(new javax.swing.ImageIcon(getClass().getResource("/de/mendelson/comm/as2/partner/gui/missing_image24x24.gif"))); // NOI18N
-        jButtonGlobalSettings.setText(JDialogPartnerConfig.rb.getResourceString( "button.globalchange"));
-        jButtonGlobalSettings.setFocusable(false);
-        jButtonGlobalSettings.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        jButtonGlobalSettings.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jButtonGlobalSettings.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonGlobalSettingsActionPerformed(evt);
-            }
-        });
-        jToolBar.add(jButtonGlobalSettings);
+        // Removed Global Settings button
+        // jButtonGlobalSettings was here
 
         getContentPane().add(jToolBar, java.awt.BorderLayout.NORTH);
 
@@ -785,18 +842,13 @@ public class JDialogPartnerConfig extends JDialog {
         ModuleLock.displayDialogModuleLocked(parent, this.lockKeeper, ModuleLock.MODULE_PARTNER);
     }//GEN-LAST:event_jButtonModuleLockInfoActionPerformed
 
-    private void jButtonGlobalSettingsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonGlobalSettingsActionPerformed
-        JFrame parent = (JFrame) SwingUtilities.getAncestorOfClass(JFrame.class, this);
-        JDialog dialog = new JDialogGlobalChange(parent, this.partnerList);
-        dialog.setVisible(true);
-        this.displayPartnerValues();
-    }//GEN-LAST:event_jButtonGlobalSettingsActionPerformed
+    // Removed: jButtonGlobalSettingsActionPerformed method
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonClonePartner;
     private javax.swing.JButton jButtonDeletePartner;
-    private javax.swing.JButton jButtonGlobalSettings;
+    // Removed: private javax.swing.JButton jButtonGlobalSettings;
     private javax.swing.JButton jButtonModuleLockInfo;
     private javax.swing.JButton jButtonNewPartner;
     private de.mendelson.comm.as2.partner.gui.JButtonPartnerConfigOk jButtonPartnerConfigOk;

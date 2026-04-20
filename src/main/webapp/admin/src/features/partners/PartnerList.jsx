@@ -19,19 +19,27 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePartners, useDeletePartner } from './usePartners';
 import { useToast } from '../../components/Toast';
 import { LoadingPage } from '../../components/Loading';
 import PartnerFormTabs from './PartnerFormTabs';
+import { useAuth } from '../auth/useAuth';
 
 export default function PartnerList() {
-  const { data: partners, isLoading, error } = usePartners();
+  const [ownershipFilter, setOwnershipFilter] = useState('mine'); // 'all', 'mine'
+  const { data: partners, isLoading, error } = usePartners(ownershipFilter === 'mine');
   const deletePartner = useDeletePartner();
   const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingPartner, setEditingPartner] = useState(null);
+  const { user } = useAuth();
+
+  // Check if current user has ADMIN role - recalculate when user changes
+  const isAdmin = useMemo(() => {
+    return user?.roleIds?.includes(1) || user?.roles?.some(r => r.name === 'ADMIN');
+  }, [user?.roleIds, user?.roles]);
 
   if (isLoading) {
     return <LoadingPage message="Loading partners..." />;
@@ -41,10 +49,12 @@ export default function PartnerList() {
     return <div style={{ color: 'red' }}>Error loading partners: {error.message}</div>;
   }
 
-  const filteredPartners = partners?.filter(partner =>
-    partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredPartners = partners?.filter(partner => {
+    // Search filter only - ownership filter is handled by backend
+    const matchesSearch = partner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      partner.as2Identification?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  }) || [];
 
   const handleDelete = async (as2id, name) => {
     if (window.confirm(`Are you sure you want to delete partner "${name}"?`)) {
@@ -106,7 +116,7 @@ export default function PartnerList() {
   return (
     <div>
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1 style={{ margin: 0 }}>Partners</h1>
+        <h1 style={{ margin: 0 }}>My Partners</h1>
         <button
           style={{
             ...buttonStyle,
@@ -121,19 +131,39 @@ export default function PartnerList() {
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
-          placeholder="Search partners..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            maxWidth: '400px',
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px'
-          }}
-        />
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <input
+            type="text"
+            placeholder="Search partners..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              flex: 1,
+              maxWidth: '400px',
+              padding: '0.5rem',
+              border: '1px solid #ddd',
+              borderRadius: '4px'
+            }}
+          />
+          {isAdmin && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.875rem', color: '#6c757d' }}>Show:</span>
+              <select
+                value={ownershipFilter}
+                onChange={(e) => setOwnershipFilter(e.target.value)}
+                style={{
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="mine">My Partners</option>
+                <option value="all">All Partners</option>
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       <table style={tableStyle}>
@@ -143,13 +173,14 @@ export default function PartnerList() {
             <th style={thStyle}>AS2 ID</th>
             <th style={thStyle}>URL</th>
             <th style={thStyle}>Direction</th>
+            <th style={thStyle}>Owner</th>
             <th style={thStyle}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredPartners.length === 0 ? (
             <tr>
-              <td colSpan="5" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan="6" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 {searchTerm ? 'No partners match your search' : 'No partners configured'}
               </td>
             </tr>
@@ -171,6 +202,9 @@ export default function PartnerList() {
                   ) : (
                     <span title="Remote Partner" style={{ fontSize: '1.5rem' }}>🌐</span>
                   )}
+                </td>
+                <td style={tdStyle}>
+                  {partner.createdByUsername || `User ${partner.createdByUserId}`}
                 </td>
                 <td style={tdStyle}>
                   <button

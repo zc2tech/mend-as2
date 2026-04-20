@@ -58,6 +58,7 @@ export function useMessages(filters = {}) {
       if (serverFilters.partnerId) params.append('partnerId', serverFilters.partnerId);
       if (serverFilters.localStationId) params.append('localStationId', serverFilters.localStationId);
       if (serverFilters.format) params.append('format', serverFilters.format);
+      if (serverFilters.userId) params.append('userId', serverFilters.userId);
 
       const response = await api.get(`/messages?${params.toString()}`);
       return response.data;

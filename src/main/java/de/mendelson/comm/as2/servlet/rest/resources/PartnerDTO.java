@@ -25,6 +25,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.comm.as2.partner.HTTPAuthentication;
+import de.mendelson.comm.as2.partner.PartnerInboundAuthCredential;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Data Transfer Object for Partner REST API
@@ -32,6 +35,9 @@ import de.mendelson.comm.as2.partner.HTTPAuthentication;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PartnerDTO {
+    // Database ID (for updates)
+    private int dbid;
+
     // General tab
     private String name;
 
@@ -83,6 +89,16 @@ public class PartnerDTO {
     @JsonProperty("authenticationCredentialsAsyncMDN")
     private HTTPAuthentication authenticationCredentialsAsyncMDN;
 
+    // Inbound Authentication (for local stations only) - supports multiple credentials
+    @JsonProperty("inboundAuthCredentialsList")
+    private List<PartnerInboundAuthCredential> inboundAuthCredentialsList = new ArrayList<>();
+
+    @JsonProperty("inboundAuthBasicEnabled")
+    private boolean inboundAuthBasicEnabled = false;
+
+    @JsonProperty("inboundAuthCertEnabled")
+    private boolean inboundAuthCertEnabled = false;
+
     // Contact tab
     private String contactAS2;
     private String contactCompany;
@@ -95,12 +111,17 @@ public class PartnerDTO {
     private boolean notifyReceiveEnabled;
     private boolean notifySendReceiveEnabled;
 
+    // Ownership tracking
+    private int createdByUserId;
+    private String createdByUsername;
+
     // Default constructor for Jackson
     public PartnerDTO() {
     }
 
     // Constructor from Partner object
     public PartnerDTO(Partner partner) {
+        this.dbid = partner.getDBId();
         this.name = partner.getName();
         this.as2Identification = partner.getAS2Identification();
         this.localStation = partner.isLocalStation();
@@ -137,8 +158,18 @@ public class PartnerDTO {
         this.authenticationCredentialsMessage = partner.getAuthenticationCredentialsMessage();
         this.authenticationCredentialsAsyncMDN = partner.getAuthenticationCredentialsAsyncMDN();
 
+        // Only include inbound auth credentials list for local stations
+        if (partner.isLocalStation()) {
+            this.inboundAuthCredentialsList = partner.getInboundAuthCredentialsList();
+            this.inboundAuthBasicEnabled = partner.isInboundAuthBasicEnabled();
+            this.inboundAuthCertEnabled = partner.isInboundAuthCertEnabled();
+        }
+
         this.contactAS2 = partner.getContactAS2();
         this.contactCompany = partner.getContactCompany();
+
+        this.createdByUserId = partner.getCreatedByUserId();
+        // createdByUsername will be set by PartnerResource when needed
     }
 
     /**
@@ -218,6 +249,17 @@ public class PartnerDTO {
             partner.setAuthenticationAsyncMDN(this.authenticationCredentialsAsyncMDN);
         }
 
+        // Inbound Auth credentials list (for local stations only)
+        if (partner.isLocalStation() && this.inboundAuthCredentialsList != null && !this.inboundAuthCredentialsList.isEmpty()) {
+            partner.setInboundAuthCredentialsList(this.inboundAuthCredentialsList);
+        }
+
+        // Inbound Auth enable flags (for local stations only)
+        if (partner.isLocalStation()) {
+            partner.setInboundAuthBasicEnabled(this.inboundAuthBasicEnabled);
+            partner.setInboundAuthCertEnabled(this.inboundAuthCertEnabled);
+        }
+
         // Contact tab
         if (this.contactAS2 != null) {
             partner.setContactAS2(this.contactAS2);
@@ -230,6 +272,9 @@ public class PartnerDTO {
     }
 
     // Getters and setters
+    public int getDbid() { return dbid; }
+    public void setDbid(int dbid) { this.dbid = dbid; }
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -340,4 +385,19 @@ public class PartnerDTO {
 
     public boolean isNotifySendReceiveEnabled() { return notifySendReceiveEnabled; }
     public void setNotifySendReceiveEnabled(boolean notifySendReceiveEnabled) { this.notifySendReceiveEnabled = notifySendReceiveEnabled; }
+
+    public List<PartnerInboundAuthCredential> getInboundAuthCredentialsList() { return inboundAuthCredentialsList; }
+    public void setInboundAuthCredentialsList(List<PartnerInboundAuthCredential> inboundAuthCredentialsList) { this.inboundAuthCredentialsList = inboundAuthCredentialsList; }
+
+    public boolean isInboundAuthBasicEnabled() { return inboundAuthBasicEnabled; }
+    public void setInboundAuthBasicEnabled(boolean inboundAuthBasicEnabled) { this.inboundAuthBasicEnabled = inboundAuthBasicEnabled; }
+
+    public boolean isInboundAuthCertEnabled() { return inboundAuthCertEnabled; }
+    public void setInboundAuthCertEnabled(boolean inboundAuthCertEnabled) { this.inboundAuthCertEnabled = inboundAuthCertEnabled; }
+
+    public int getCreatedByUserId() { return createdByUserId; }
+    public void setCreatedByUserId(int createdByUserId) { this.createdByUserId = createdByUserId; }
+
+    public String getCreatedByUsername() { return createdByUsername; }
+    public void setCreatedByUsername(String createdByUsername) { this.createdByUsername = createdByUsername; }
 }

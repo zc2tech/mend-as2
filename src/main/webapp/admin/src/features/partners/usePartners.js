@@ -21,14 +21,31 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../api/client';
+import { useAuth } from '../auth/useAuth';
 
-export function usePartners() {
+export function usePartners(filterByUser = false) {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['partners'],
+    queryKey: ['partners', user?.id, filterByUser],
     queryFn: async () => {
-      const response = await api.get('/partners');
+      const params = {};
+
+      // Only filter by user if explicitly requested
+      if (filterByUser) {
+        // For filtering: use 1 for admin user (legacy compatibility), database ID for others
+        const filterUserId = user?.username === 'admin' ? 1 : user?.id;
+        params.visibleToUser = filterUserId;
+      }
+
+      console.log('Fetching partners with params:', params, 'filterByUser:', filterByUser);
+
+      // Fetch partners (all or filtered by user)
+      const response = await api.get('/partners', { params });
+      console.log('Received partners count:', response.data?.length);
       return response.data;
-    }
+    },
+    enabled: !!user?.id // Only run query if user ID is available
   });
 }
 

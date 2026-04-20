@@ -40,11 +40,12 @@ export default function InboundAuth() {
   const { isLoading } = useQuery({
     queryKey: ['inboundAuth'],
     queryFn: async () => {
-      const [configRes, basicRes, certRes, certsRes] = await Promise.all([
+      const [configRes, basicRes, certRes, signCertsRes, tlsCertsRes] = await Promise.all([
         api.get('/system/inbound-auth/config'),
         api.get('/system/inbound-auth/credentials/basic'),
         api.get('/system/inbound-auth/credentials/cert'),
-        api.get('/certificates')
+        api.get('/certificates', { params: { keystoreType: 'sign' } }),
+        api.get('/certificates', { params: { keystoreType: 'tls' } })
       ]);
 
       const authMode = configRes.data.authMode || 0;
@@ -52,7 +53,13 @@ export default function InboundAuth() {
       setEnableCertAuth((authMode & 2) !== 0);
       setBasicAuthCreds(basicRes.data || []);
       setCertAuthCreds(certRes.data || []);
-      setCertificates(certsRes.data || []);
+
+      // Combine certificates from both keystores
+      const allCertificates = [
+        ...(signCertsRes.data || []).map(cert => ({ ...cert, source: 'Sign/Crypt' })),
+        ...(tlsCertsRes.data || []).map(cert => ({ ...cert, source: 'TLS' }))
+      ];
+      setCertificates(allCertificates);
 
       return { authMode };
     }
@@ -331,9 +338,10 @@ export default function InboundAuth() {
                     style={inputStyle}
                     disabled={!enableCertAuth}
                   >
+                    <option value="">-- Select a certificate --</option>
                     {certificates.map(cert => (
-                      <option key={cert.alias} value={cert.alias}>
-                        {cert.alias}
+                      <option key={`${cert.source}-${cert.alias}`} value={cert.alias}>
+                        {cert.alias} ({cert.source})
                       </option>
                     ))}
                   </select>

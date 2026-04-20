@@ -24,10 +24,11 @@ public class HTTPAuthentication implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**Auth mode: 0=No Authentication, 1=Basic Auth (credentials in this object), 2=Use User Preference*/
+    /**Auth mode: 0=No Authentication, 1=Basic Auth (credentials in this object), 2=Use User Preference, 3=Client Certificate*/
     public static final int AUTH_MODE_NONE = 0;
     public static final int AUTH_MODE_BASIC = 1;
     public static final int AUTH_MODE_USER_PREFERENCE = 2;
+    public static final int AUTH_MODE_CERTIFICATE = 3;
 
     @JsonProperty("authMode")
     private int authMode = AUTH_MODE_NONE;
@@ -37,6 +38,9 @@ public class HTTPAuthentication implements Serializable {
 
     @JsonProperty("password")
     private String password = "";
+
+    @JsonProperty("certificateFingerprint")
+    private String certificateFingerprint = "";
 
     /**Use it or dont use it? @deprecated Use authMode instead*/
     @Deprecated
@@ -55,6 +59,7 @@ public class HTTPAuthentication implements Serializable {
         this.user = authentication.user;
         this.password = authentication.password;
         this.enabled = authentication.enabled;
+        this.certificateFingerprint = authentication.certificateFingerprint;
     }
 
     public int getAuthMode() {
@@ -81,6 +86,14 @@ public class HTTPAuthentication implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getCertificateFingerprint() {
+        return certificateFingerprint;
+    }
+
+    public void setCertificateFingerprint(String certificateFingerprint) {
+        this.certificateFingerprint = certificateFingerprint;
     }
 
     /**
@@ -122,6 +135,9 @@ public class HTTPAuthentication implements Serializable {
         if (this.password != null && !this.password.isEmpty()) {
             builder.append(offset).append("\t<password>").append(this.toCDATA(this.password)).append("</password>\n");
         }
+        if (this.certificateFingerprint != null && !this.certificateFingerprint.isEmpty()) {
+            builder.append(offset).append("\t<certificatefingerprint>").append(this.toCDATA(this.certificateFingerprint)).append("</certificatefingerprint>\n");
+        }
         builder.append(offset).append("</httpauthentication>\n");
         return (builder.toString());
     }
@@ -155,6 +171,8 @@ public class HTTPAuthentication implements Serializable {
                     if (authentication.getAuthMode() == AUTH_MODE_NONE) {
                         authentication.setEnabled(value.equalsIgnoreCase("true"));
                     }
+                } else if (key.equals("certificatefingerprint")) {
+                    authentication.setCertificateFingerprint(value);
                 }
             }
         }
