@@ -100,8 +100,6 @@ const partnerSchema = z.object({
 const getFlattenedPartnerData = (partner) => {
   if (!partner) return null;
 
-  console.log('DEBUG [getFlattenedPartnerData]: partner.authenticationCredentialsMessage =', partner.authenticationCredentialsMessage);
-  console.log('DEBUG [getFlattenedPartnerData]: partner.authenticationCredentialsAsyncMDN =', partner.authenticationCredentialsAsyncMDN);
 
   const authModeMessageValue = partner.authenticationCredentialsMessage?.authMode ?? 0;
   const authModeAsyncMDNValue = partner.authenticationCredentialsAsyncMDN?.authMode ?? 0;
@@ -125,9 +123,6 @@ const getFlattenedPartnerData = (partner) => {
     httpAuthAsyncMDNCertFingerprint: partner.authenticationCredentialsAsyncMDN?.certificateFingerprint ?? '',
     useHttpAuthAsyncMDN: partner.authenticationCredentialsAsyncMDN?.enabled ?? false
   };
-
-  console.log('DEBUG [getFlattenedPartnerData]: flattened.httpAuthMessageCertFingerprint =', flattened.httpAuthMessageCertFingerprint);
-  console.log('DEBUG [getFlattenedPartnerData]: flattened.authModeMessage =', flattened.authModeMessage);
 
   return flattened;
 };
@@ -170,15 +165,6 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     ...(tlsCertificates || []).map(cert => ({ ...cert, source: 'TLS' }))
   ];
   const certsLoading = signCertsLoading || tlsCertsLoading;
-
-  // Debug: log certificate list
-  useEffect(() => {
-    if (certificates && certificates.length > 0) {
-      console.log('DEBUG [PartnerFormTabs]: Available certificates:', certificates.length);
-      console.log('DEBUG [PartnerFormTabs]: Certificate fingerprints:',
-        certificates.map(c => ({ alias: c.alias, fingerprint: c.fingerprintSHA1, isKeyPair: c.isKeyPair })));
-    }
-  }, [certificates]);
 
   const {
     register,
@@ -337,9 +323,6 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     const httpAuthMessageCertFingerprint = getValues('httpAuthMessageCertFingerprint');
     const httpAuthAsyncMDNCertFingerprint = getValues('httpAuthAsyncMDNCertFingerprint');
 
-    console.log('DEBUG [onSubmit]: Form data - httpAuthMessageCertFingerprint =', httpAuthMessageCertFingerprint);
-    console.log('DEBUG [onSubmit]: From data object =', data.httpAuthMessageCertFingerprint);
-
     const backendData = {
       ...otherData,
       authenticationCredentialsMessage: {
@@ -359,10 +342,6 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       // Include inbound auth credentials list (for local stations)
       inboundAuthCredentialsList: [...inboundAuthBasicList, ...inboundAuthCertList]
     };
-
-    console.log('DEBUG [onSubmit]: Form data - httpAuthMessageCertFingerprint =', httpAuthMessageCertFingerprint);
-    console.log('DEBUG [onSubmit]: backendData.authenticationCredentialsMessage =', backendData.authenticationCredentialsMessage);
-    console.log('DEBUG [onSubmit]: Sending to backend:', JSON.stringify(backendData, null, 2));
 
     try {
       let savedPartnerId;
@@ -1168,9 +1147,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                             value={watch('httpAuthMessageCertFingerprint') || ''}
                             onChange={(e) => {
                               const value = e.target.value;
-                              console.log('DEBUG [Certificate onChange]: selected value =', value);
                               setValue('httpAuthMessageCertFingerprint', value, { shouldValidate: true, shouldDirty: true });
-                              console.log('DEBUG [Certificate onChange]: after setValue, getValues =', getValues('httpAuthMessageCertFingerprint'));
                             }}
                             style={{ ...inputStyle, flex: 1 }}
                             disabled={isSubmitting || certsLoading}

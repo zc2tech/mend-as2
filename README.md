@@ -357,6 +357,28 @@ Control which IP addresses can access specific endpoints with multi-level whitel
 - Wildcards: `192.168.*.*`, `10.0.*.100`
 - IPv6: `2001:db8::1`, `2001:db8::/32`
 
+**Bulk Import from JSON:**
+
+For importing large numbers of IP CIDR entries, use the batch import utility:
+
+```bash
+# Import for all endpoint types (AS2, TRACKER, WEBUI, API)
+cd dev-scripts
+./import-whitelist.sh ../private/public_ip_cidr.json
+
+# Import for specific endpoint type
+./import-whitelist.sh ../private/public_ip_cidr.json WEBUI
+```
+
+**Features:**
+- High-performance batch processing (500-1000+ entries/second)
+- Database-agnostic (PostgreSQL/MySQL auto-detection)
+- Transaction safety (automatic rollback on errors)
+- Progress display every 50 entries
+- Duplicate handling (updates existing entries)
+
+**📖 Full Documentation:** [dev-scripts/IMPORT_WHITELIST.md](dev-scripts/IMPORT_WHITELIST.md)
+
 ### Inbound Authentication
 
 Configure authentication required for incoming AS2 messages:

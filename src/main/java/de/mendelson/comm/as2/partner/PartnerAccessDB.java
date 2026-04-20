@@ -347,13 +347,6 @@ public class PartnerAccessDB {
 
             // Log HTTP authentication mode being saved
             int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
-            System.out.println("DEBUG [PartnerAccessDB.updatePartner]: Saving partner id=" + partner.getDBId() +
-                           ", name='" + partner.getName() + "'" +
-                           ", authmodehttp=" + authModeMessage +
-                           " (0=NONE, 1=BASIC, 2=USER_PREF, 3=CERT)" +
-                           ", user=[" + partner.getAuthenticationCredentialsMessage().getUser() + "]" +
-                           ", pass=[" + partner.getAuthenticationCredentialsMessage().getPassword() + "]" +
-                           ", certFingerprint=[" + partner.getAuthenticationCredentialsMessage().getCertificateFingerprint() + "]");
 
             preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
@@ -553,13 +546,7 @@ public class PartnerAccessDB {
 
             // Log HTTP authentication mode being saved
             int authModeMessage = partner.getAuthenticationCredentialsMessage().getAuthMode();
-            System.out.println("DEBUG [PartnerAccessDB.insertPartner]: Inserting partner name='" + partner.getName() + "'" +
-                           ", authmodehttp=" + authModeMessage +
-                           " (0=NONE, 1=BASIC, 2=USER_PREF, 3=CERT)" +
-                           ", user=[" + partner.getAuthenticationCredentialsMessage().getUser() + "]" +
-                           ", pass=[" + partner.getAuthenticationCredentialsMessage().getPassword() + "]" +
-                           ", certFingerprint=[" + partner.getAuthenticationCredentialsMessage().getCertificateFingerprint() + "]");
-
+           
             preparedStatement.setInt(16, authModeMessage);
             preparedStatement.setString(17, partner.getAuthenticationCredentialsMessage().getUser());
             preparedStatement.setString(18, partner.getAuthenticationCredentialsMessage().getPassword());
@@ -1090,10 +1077,7 @@ public class PartnerAccessDB {
                                     authentication.setAuthMode(result.getInt("authmodehttp"));
                                     String certFpFromDB = result.getString("httpauth_cert_fingerprint_message");
                                     authentication.setCertificateFingerprint(certFpFromDB);
-                                    System.out.println("DEBUG [PartnerAccessDB.getPartnersOwnedByUser]: Partner id=" + partner.getDBId() +
-                                        ", name=" + partner.getName() +
-                                        ", certFpFromDB=[" + certFpFromDB + "]" +
-                                        ", authentication.getCertificateFingerprint()=[" + authentication.getCertificateFingerprint() + "]");
+                                  
                                     HTTPAuthentication asyncAuthentication = partner.getAuthenticationCredentialsAsyncMDN();
                                     asyncAuthentication.setUser(result.getString("httpauthuserasnymdn"));
                                     asyncAuthentication.setPassword(result.getString("httpauthpassasnymdn"));

@@ -27,6 +27,9 @@ import IPWhitelistForm from './IPWhitelistForm';
 
 export default function GlobalWhitelistTab() {
   const [targetTypeFilter, setTargetTypeFilter] = useState(null);
+  const [ipPatternFilter, setIpPatternFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const { data: entries, isLoading, error } = useGlobalWhitelist(targetTypeFilter);
   const addMutation = useAddGlobalWhitelist();
   const updateMutation = useUpdateGlobalWhitelist();
@@ -78,6 +81,30 @@ export default function GlobalWhitelistTab() {
     } catch (error) {
       toast.error('Failed to save entry: ' + (error.response?.data?.error || error.message));
     }
+  };
+
+  // Filter entries by IP pattern
+  const filteredEntries = entries?.filter(entry => {
+    if (!ipPatternFilter) return true;
+    return entry.ipPattern.toLowerCase().includes(ipPatternFilter.toLowerCase());
+  }) || [];
+
+  // Calculate pagination
+  const totalEntries = filteredEntries.length;
+  const totalPages = Math.ceil(totalEntries / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedEntries = filteredEntries.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  const handleTargetTypeChange = (value) => {
+    setTargetTypeFilter(value || null);
+    setCurrentPage(1);
+  };
+
+  const handleIpPatternChange = (value) => {
+    setIpPatternFilter(value);
+    setCurrentPage(1);
   };
 
   const headerStyle = {
@@ -137,6 +164,34 @@ export default function GlobalWhitelistTab() {
     fontSize: '0.85rem'
   };
 
+  const paginationStyle = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: '1rem',
+    padding: '1rem',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '4px'
+  };
+
+  const paginationButtonStyle = {
+    padding: '0.5rem 1rem',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    marginLeft: '0.5rem'
+  };
+
+  const paginationButtonDisabledStyle = {
+    ...paginationButtonStyle,
+    backgroundColor: '#6c757d',
+    cursor: 'not-allowed',
+    opacity: 0.5
+  };
+
   return (
     <div>
       {showForm ? (
@@ -154,29 +209,58 @@ export default function GlobalWhitelistTab() {
       ) : (
         <>
           <div style={headerStyle}>
-            <div>
-              <label style={{ marginRight: '0.5rem', fontSize: '0.9rem' }}>Filter by Target Type:</label>
-              <select
-                value={targetTypeFilter || ''}
-                onChange={(e) => setTargetTypeFilter(e.target.value || null)}
-                style={filterStyle}
-              >
-                <option value="">All</option>
-                <option value="AS2">AS2</option>
-                <option value="TRACKER">TRACKER</option>
-                <option value="WEBUI">WEBUI</option>
-                <option value="API">API</option>
-                <option value="ALL">ALL</option>
-              </select>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div>
+                <label style={{ marginRight: '0.5rem', fontSize: '0.9rem' }}>Target Type:</label>
+                <select
+                  value={targetTypeFilter || ''}
+                  onChange={(e) => handleTargetTypeChange(e.target.value)}
+                  style={filterStyle}
+                >
+                  <option value="">All</option>
+                  <option value="AS2">AS2</option>
+                  <option value="TRACKER">TRACKER</option>
+                  <option value="WEBUI">WEBUI</option>
+                  <option value="API">API</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ marginRight: '0.5rem', fontSize: '0.9rem' }}>IP Pattern:</label>
+                <input
+                  type="text"
+                  placeholder="Filter by IP pattern..."
+                  value={ipPatternFilter}
+                  onChange={(e) => handleIpPatternChange(e.target.value)}
+                  style={{ ...filterStyle, minWidth: '200px' }}
+                />
+              </div>
+              <div>
+                <label style={{ marginRight: '0.5rem', fontSize: '0.9rem' }}>Page Size:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={filterStyle}
+                >
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                  <option value="200">200</option>
+                </select>
+              </div>
             </div>
             <button onClick={handleAdd} style={buttonStyle}>
               + Add Entry
             </button>
           </div>
 
-          {entries && entries.length === 0 ? (
+          {filteredEntries.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
-              No entries found. Add an entry to start whitelisting IPs.
+              {ipPatternFilter || targetTypeFilter
+                ? 'No entries match the current filters.'
+                : 'No entries found. Add an entry to start whitelisting IPs.'}
             </div>
           ) : (
             <table style={tableStyle}>
@@ -191,7 +275,7 @@ export default function GlobalWhitelistTab() {
                 </tr>
               </thead>
               <tbody>
-                {entries?.map((entry) => (
+                {paginatedEntries.map((entry) => (
                   <tr key={entry.id}>
                     <td style={tdStyle}>
                       <code>{entry.ipPattern}</code>
@@ -240,6 +324,48 @@ export default function GlobalWhitelistTab() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {filteredEntries.length > 0 && (
+            <div style={paginationStyle}>
+              <div style={{ fontSize: '0.9rem', color: '#666' }}>
+                Showing {startIndex + 1}-{Math.min(endIndex, totalEntries)} of {totalEntries} entries
+                {(ipPatternFilter || targetTypeFilter) && entries && ` (filtered from ${entries.length} total)`}
+              </div>
+              <div>
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  style={currentPage === 1 ? paginationButtonDisabledStyle : paginationButtonStyle}
+                >
+                  First
+                </button>
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  style={currentPage === 1 ? paginationButtonDisabledStyle : paginationButtonStyle}
+                >
+                  Previous
+                </button>
+                <span style={{ margin: '0 1rem', fontSize: '0.9rem' }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  style={currentPage === totalPages ? paginationButtonDisabledStyle : paginationButtonStyle}
+                >
+                  Next
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  style={currentPage === totalPages ? paginationButtonDisabledStyle : paginationButtonStyle}
+                >
+                  Last
+                </button>
+              </div>
+            </div>
           )}
         </>
       )}

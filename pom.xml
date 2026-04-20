@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.zc2tech</groupId>
@@ -187,14 +188,18 @@
                             <shadeSourcesContent>false</shadeSourcesContent>
                             <transformers>
                                 <!-- Add Main-Class to manifest -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>de.mendelson.comm.as2.AS2</mainClass>
                                 </transformer>
                                 <!-- Merge service files -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                 <!-- Merge META-INF/services -->
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>META-INF/services/javax.servlet.ServletContainerInitializer</resource>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>
+                                        META-INF/services/javax.servlet.ServletContainerInitializer</resource>
                                 </transformer>
                             </transformers>
                             <filters>
@@ -229,8 +234,10 @@
                                         <exclude>META-INF/maven/**/pom.properties</exclude>
                                     </excludes>
                                 </filter>
-                                <!-- Keep angus-mail classes, exclude ALL from angus-core to avoid duplicates -->
-                                <!-- angus-mail contains all classes from angus-core, so we exclude everything from angus-core -->
+                                <!-- Keep angus-mail classes, exclude ALL from angus-core to avoid
+                                duplicates -->
+                                <!-- angus-mail contains all classes from angus-core, so we exclude
+                                everything from angus-core -->
                                 <filter>
                                     <artifact>org.eclipse.angus:angus-core</artifact>
                                     <excludes>
@@ -367,6 +374,7 @@
     </build>
 
     <dependencies>
+        <!-- SLF4J NOP implementation - suppresses SLF4J warnings from Jetty -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -403,6 +411,12 @@
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <version>8.3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.6</version>
         </dependency>
 
         <!-- Bouncy Castle JSSE provider 
@@ -771,7 +785,7 @@
                         <artifactId>maven-dependency-plugin</artifactId>
                         <version>3.6.1</version>
                         <executions>
-                            <execution>
+                            <execution> 
                                 <id>copy-non-central-dependencies</id>
                                 <phase>prepare-package</phase>
                                 <goals>

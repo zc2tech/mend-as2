@@ -716,7 +716,7 @@ public class JPanelPartner extends JPanel {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMessage.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
-                    System.out.println("DEBUG [JPanelPartner]: Certificate auth mode with empty fingerprint - showing placeholder");
+                   
                 }
             }
         } else {
@@ -745,7 +745,7 @@ public class JPanelPartner extends JPanel {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMDN.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
-                    System.out.println("DEBUG [JPanelPartner]: MDN Certificate auth mode with empty fingerprint - showing placeholder");
+                   
                 }
             }
         } else {

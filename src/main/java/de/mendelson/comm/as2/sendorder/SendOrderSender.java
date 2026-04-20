@@ -95,7 +95,7 @@ public class SendOrderSender {
 
             if (isPersistentStrategy) {
                 // PERSISTENT strategy: pre-build message
-                System.out.println("DEBUG [SendOrderSender]: PERSISTENT strategy - building message");
+             
                 AS2MessageCreation messageCreation = new AS2MessageCreation(certificateManager, certificateManager);
                 messageCreation.setLogger(this.logger);
                 messageCreation.setServerResources(this.dbDriverManager);
@@ -118,7 +118,6 @@ public class SendOrderSender {
                                     (userdefinedId == null ? "--" : userdefinedId)
                                 }),
                         message.getAS2Info());
-                System.out.println("DEBUG [SendOrderSender]: Creating SendOrder for PERSISTENT");
                 SendOrder sendOrder = new SendOrder()
                         .setReceiverDBId(receiver.getDBId())
                         .setSenderDBId(sender.getDBId())
@@ -129,7 +128,6 @@ public class SendOrderSender {
                 return SendResult.successWithMessage(message);
             } else {
                 // IN_MEMORY strategy: just enqueue metadata, message will be built on-demand
-                System.out.println("DEBUG [SendOrderSender]: IN_MEMORY strategy - enqueueing metadata only");
                 SendOrderRequest request = new SendOrderRequest()
                         .setSenderDBId(sender.getDBId())
                         .setReceiverDBId(receiver.getDBId())

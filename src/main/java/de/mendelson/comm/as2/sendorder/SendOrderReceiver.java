@@ -237,10 +237,6 @@ public class SendOrderReceiver {
                     sender = partnerAccess.getPartner(item.getSenderDBId());
                     receiver = partnerAccess.getPartner(item.getReceiverDBId());
 
-                    System.out.println("DEBUG [SendOrderReceiver.processOrder]: PERSISTENT strategy");
-                    System.out.println("  Using pre-built AS2Message");
-                    System.out.println("  Sender reloaded: " + (sender != null ? sender.getName() : "null"));
-                    System.out.println("  Receiver reloaded: " + (receiver != null ? receiver.getName() : "null"));
                 } else {
                     // IN_MEMORY strategy: build message on-demand OR use cached message for retries
                     logger.info("═════════════════════════════════════════════════");

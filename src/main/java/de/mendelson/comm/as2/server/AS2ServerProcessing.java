@@ -2235,7 +2235,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             //reload the partner from the database using direct DB ID lookup
             Partner sender = null;
             int senderDBId = request.getSenderDBId();
-            System.out.println("DEBUG [AS2ServerProcessing.processManualSendRequest]: Looking up sender by DB ID: " + senderDBId);
+          
             if (senderDBId > 0) {
                 sender = this.partnerAccess.getPartner(senderDBId);
                 if (sender != null) {

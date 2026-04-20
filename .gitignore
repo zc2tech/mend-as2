@@ -14,6 +14,7 @@ certificates.p12
 temp/
 *.lock
 testpod/
+/private
 
 # Frontend
 src/main/webapp/admin/node_modules/
