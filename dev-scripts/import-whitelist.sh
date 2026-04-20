@@ -81,14 +81,22 @@ echo ""
 # For release (fat JAR), JAR is self-contained
 CLASSPATH="$JAR_FILE"
 
-# Check if this is a thin JAR (development) - add Maven dependencies
+# Check if this is a thin JAR (deployment or development) - add dependencies
 JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
 if [ "$JAR_SIZE" -lt 50000000 ]; then
     # Thin JAR detected (< 50MB), need dependencies
     echo -e "${YELLOW}Thin JAR detected - checking for dependencies...${NC}"
 
-    # Check if dependencies are already copied
-    if [ ! -d "$PROJECT_ROOT/target/dependency" ]; then
+    # Priority 1: Check for lib folder (thin release deployment)
+    if [ -d "$PROJECT_ROOT/lib" ] && [ -n "$(ls -A $PROJECT_ROOT/lib/*.jar 2>/dev/null)" ]; then
+        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/lib/*"
+        echo -e "${GREEN}Using dependencies from lib folder${NC}"
+    # Priority 2: Check if dependencies are already copied (development)
+    elif [ -d "$PROJECT_ROOT/target/dependency" ]; then
+        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/target/dependency/*"
+        echo -e "${GREEN}Using dependencies from target/dependency${NC}"
+    else
+        # Priority 3: Try to copy dependencies with Maven (development)
         echo "Copying Maven dependencies (one-time setup)..."
         cd "$PROJECT_ROOT"
         mvn dependency:copy-dependencies -DoutputDirectory=target/dependency -Dsilent=true >/dev/null 2>&1
@@ -96,23 +104,24 @@ if [ "$JAR_SIZE" -lt 50000000 ]; then
             echo -e "${RED}Warning: Failed to copy dependencies. Trying Maven repository...${NC}"
         fi
         cd "$SCRIPT_DIR"
-    fi
 
-    if [ -d "$PROJECT_ROOT/target/dependency" ]; then
-        # Maven dependency:copy-dependencies output
-        CLASSPATH="$CLASSPATH:$PROJECT_ROOT/target/dependency/*"
-        echo -e "${GREEN}Using dependencies from target/dependency${NC}"
-    elif [ -d "$HOME/.m2/repository" ]; then
-        # Fallback: Add common Maven dependencies directly
-        echo -e "${YELLOW}Using dependencies from Maven repository${NC}"
-        CLASSPATH="$CLASSPATH:$HOME/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar"
-        CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/mysql/mysql-connector-j/9.0.0/mysql-connector-j-9.0.0.jar"
-        CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar"
-        CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar"
-        CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar"
-    else
-        echo -e "${RED}Error: Dependencies not found. Please run: mvn package${NC}"
-        exit 1
+        # Priority 4: Use target/dependency if copy succeeded
+        if [ -d "$PROJECT_ROOT/target/dependency" ]; then
+            # Maven dependency:copy-dependencies output
+            CLASSPATH="$CLASSPATH:$PROJECT_ROOT/target/dependency/*"
+            echo -e "${GREEN}Using dependencies from target/dependency${NC}"
+        elif [ -d "$HOME/.m2/repository" ]; then
+            # Fallback: Add common Maven dependencies directly
+            echo -e "${YELLOW}Using dependencies from Maven repository${NC}"
+            CLASSPATH="$CLASSPATH:$HOME/.m2/repository/org/postgresql/postgresql/42.7.4/postgresql-42.7.4.jar"
+            CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/mysql/mysql-connector-j/9.0.0/mysql-connector-j-9.0.0.jar"
+            CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.17.2/jackson-databind-2.17.2.jar"
+            CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.17.2/jackson-core-2.17.2.jar"
+            CLASSPATH="$CLASSPATH:$HOME/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.17.2/jackson-annotations-2.17.2.jar"
+        else
+            echo -e "${RED}Error: Dependencies not found. Please run start.sh first to download dependencies, or run: mvn package${NC}"
+            exit 1
+        fi
     fi
     echo ""
 fi

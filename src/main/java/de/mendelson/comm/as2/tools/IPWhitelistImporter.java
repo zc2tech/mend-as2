@@ -245,10 +245,13 @@ public class IPWhitelistImporter {
                 String location = entry.has("location") ? entry.get("location").asText() : "Unknown";
                 String building = entry.has("building") ? entry.get("building").asText() : "";
 
+                // Convert IP range to wildcard pattern if needed
+                String ipPattern = convertToWildcardPattern(cidr);
+
                 String description = country + " - " + location +
                         (building.isEmpty() ? "" : " (" + building + ")");
 
-                pstmt.setString(1, cidr);
+                pstmt.setString(1, ipPattern);
                 pstmt.setString(2, description);
                 pstmt.setString(3, targetType);
                 pstmt.setBoolean(4, true);
@@ -329,5 +332,86 @@ public class IPWhitelistImporter {
                 .println("  java -cp mend-as2.jar de.mendelson.comm.as2.tools.IPWhitelistImporter public_ip_cidr.json");
         System.out.println(
                 "  java -cp mend-as2.jar de.mendelson.comm.as2.tools.IPWhitelistImporter public_ip_cidr.json AS2");
+    }
+
+    /**
+     * Convert CIDR notation or IP range to wildcard pattern
+     *
+     * Examples:
+     * - "106.120.93.35 - 106.120.93.36" -> "106.120.93.*"
+     * - "12.3.5.5 - 12.3.6.7" -> "12.3.*"
+     * - "10.0.0.1 - 10.255.255.254" -> "10.*"
+     * - "192.168.1.0/24" -> "192.168.1.0/24" (unchanged - keep CIDR notation)
+     * - "192.168.1.100" -> "192.168.1.100" (unchanged)
+     */
+    private static String convertToWildcardPattern(String cidr) {
+        if (cidr == null || cidr.trim().isEmpty()) {
+            return cidr;
+        }
+
+        cidr = cidr.trim();
+
+        // Case 1: IP range (contains " - ") - convert to wildcard
+        if (cidr.contains(" - ")) {
+            return convertRangeToWildcard(cidr);
+        }
+
+        // Case 2: CIDR notation or single IP - keep as-is
+        return cidr;
+    }
+
+    /**
+     * Convert IP range to wildcard pattern
+     * Example: "106.120.93.35 - 106.120.93.36" -> "106.120.93.*"
+     */
+    private static String convertRangeToWildcard(String range) {
+        try {
+            String[] parts = range.split(" - ");
+            if (parts.length != 2) {
+                System.err.println("WARNING: Invalid IP range format: " + range);
+                return range;
+            }
+
+            String startIP = parts[0].trim();
+            String endIP = parts[1].trim();
+
+            String[] startOctets = startIP.split("\\.");
+            String[] endOctets = endIP.split("\\.");
+
+            if (startOctets.length != 4 || endOctets.length != 4) {
+                System.err.println("WARNING: Invalid IP format in range: " + range);
+                return range;
+            }
+
+            // Find the common prefix octets
+            StringBuilder pattern = new StringBuilder();
+            int commonOctets = 0;
+
+            for (int i = 0; i < 4; i++) {
+                if (startOctets[i].equals(endOctets[i])) {
+                    if (commonOctets > 0) {
+                        pattern.append(".");
+                    }
+                    pattern.append(startOctets[i]);
+                    commonOctets++;
+                } else {
+                    break;
+                }
+            }
+
+            // Add wildcard for remaining octets
+            if (commonOctets < 4) {
+                if (commonOctets > 0) {
+                    pattern.append(".");
+                }
+                pattern.append("*");
+            }
+
+            return pattern.toString();
+
+        } catch (Exception e) {
+            System.err.println("WARNING: Failed to convert range to wildcard: " + range + " - " + e.getMessage());
+            return range;
+        }
     }
 }

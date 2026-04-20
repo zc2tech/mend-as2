@@ -26,7 +26,7 @@ import { LoadingPage } from '../../components/Loading';
 import IPWhitelistForm from './IPWhitelistForm';
 
 export default function GlobalWhitelistTab() {
-  const [targetTypeFilter, setTargetTypeFilter] = useState(null);
+  const [targetTypeFilter, setTargetTypeFilter] = useState('WEBUI');
   const [ipPatternFilter, setIpPatternFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -98,7 +98,7 @@ export default function GlobalWhitelistTab() {
 
   // Reset to page 1 when filters change
   const handleTargetTypeChange = (value) => {
-    setTargetTypeFilter(value || null);
+    setTargetTypeFilter(value || 'WEBUI');
     setCurrentPage(1);
   };
 

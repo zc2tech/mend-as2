@@ -539,9 +539,13 @@ public class IPWhitelistResource {
                         .build();
             }
 
-            // Calculate date range
-            Date endDate = new Date();
-            Date startDate = new Date(endDate.getTime() - (days * 24L * 60L * 60L * 1000L));
+            // Calculate date range in UTC (since block_time is stored in UTC from Java side)
+            // Use System.currentTimeMillis() which is always UTC epoch time
+            long nowMillis = System.currentTimeMillis();
+            long startMillis = nowMillis - (days * 24L * 60L * 60L * 1000L);
+
+            Date endDate = new Date(nowMillis);
+            Date startDate = new Date(startMillis);
 
             IPWhitelistAccessDB accessDB = new IPWhitelistAccessDB(processing.getDBDriverManager());
             List<IPWhitelistBlockLog> logs = accessDB.getBlockLog(startDate, endDate, targetType);

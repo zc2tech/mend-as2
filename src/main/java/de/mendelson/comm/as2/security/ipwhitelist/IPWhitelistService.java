@@ -194,41 +194,31 @@ public class IPWhitelistService {
      * Check if IP is allowed for WebUI
      */
     public boolean isAllowedForWebUI(String ip, int userId) {
-        LOGGER.warning("DEBUG: Checking WebUI access for IP: " + ip + ", userId: " + userId);
-
         PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
         if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI))) {
-            LOGGER.warning("DEBUG: WebUI whitelist is disabled, allowing access");
             return true; // Whitelist disabled, allow all
         }
 
-        LOGGER.warning("DEBUG: WebUI whitelist is enabled");
-
         // Always allow localhost (important for first deployment)
         if (isLocalhost(ip)) {
-            LOGGER.warning("DEBUG: Allowing localhost IP for WebUI: " + ip);
             return true;
         }
 
         String mode = prefs.get(PreferencesAS2.IP_WHITELIST_MODE);
-        LOGGER.warning("DEBUG: Whitelist mode: " + mode);
 
         // Check global whitelist
         if (isAllowedByMode(mode, "GLOBAL")) {
             if (matchesGlobalWhitelist(ip, IPWhitelistEntry.TARGET_WEBUI)) {
-                LOGGER.warning("DEBUG: IP " + ip + " matched global whitelist");
                 return true;
             }
         }
 
         // Check user-specific whitelist
         if (isAllowedByMode(mode, "USER") && matchesUserWhitelist(ip, userId)) {
-            LOGGER.warning("DEBUG: IP " + ip + " matched user-specific whitelist");
             return true;
         }
 
         // Default: block
-        LOGGER.warning("DEBUG: IP " + ip + " blocked by WebUI whitelist (no match found)");
         return false;
     }
 
@@ -299,7 +289,6 @@ public class IPWhitelistService {
      */
     private boolean isLocalhost(String ip) {
         if (ip == null) {
-            LOGGER.warning("isLocalhost: IP is null");
             return false;
         }
 
@@ -310,11 +299,8 @@ public class IPWhitelistService {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
 
-        LOGGER.info("isLocalhost: Checking IP [" + ip + "], normalized: [" + normalized + "]");
-
         // IPv4 localhost
         if (normalized.equals("127.0.0.1") || normalized.startsWith("127.")) {
-            LOGGER.info("IP " + ip + " identified as localhost (IPv4)");
             return true;
         }
 
@@ -325,11 +311,9 @@ public class IPWhitelistService {
         if (normalized.equals("::1") ||
             normalized.equals("0:0:0:0:0:0:0:1") ||
             normalized.equals("0000:0000:0000:0000:0000:0000:0000:0001")) {
-            LOGGER.info("IP " + ip + " identified as localhost (IPv6)");
             return true;
         }
 
-        LOGGER.warning("IP [" + ip + "] is NOT localhost - normalized: [" + normalized + "]");
         return false;
     }
 
@@ -439,5 +423,36 @@ public class IPWhitelistService {
             cacheRefreshExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
+    }
+
+    /**
+     * Normalize IP address for consistent display and logging
+     * Converts IPv6 localhost to IPv4 for better readability
+     *
+     * @param ip IP address from request
+     * @return Normalized IP address
+     */
+    public static String normalizeIP(String ip) {
+        if (ip == null) {
+            return null;
+        }
+
+        String normalized = ip.trim();
+
+        // Convert IPv6 localhost variants to IPv4 localhost
+        // ::1, 0:0:0:0:0:0:0:1, [::1], etc.
+        if (normalized.equals("::1") ||
+            normalized.equals("0:0:0:0:0:0:0:1") ||
+            normalized.equals("[::1]") ||
+            normalized.equals("[0:0:0:0:0:0:0:1]")) {
+            return "127.0.0.1";
+        }
+
+        // Remove brackets from IPv6 addresses (e.g., [2001:db8::1] -> 2001:db8::1)
+        if (normalized.startsWith("[") && normalized.endsWith("]")) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+
+        return normalized;
     }
 }

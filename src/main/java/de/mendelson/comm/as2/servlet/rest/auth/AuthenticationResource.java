@@ -23,6 +23,7 @@ package de.mendelson.comm.as2.servlet.rest.auth;
 
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.security.LoginRateLimiter;
+import de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
@@ -65,7 +66,7 @@ public class AuthenticationResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response login(LoginRequest loginRequest, @Context HttpServletRequest httpRequest) {
-        String remoteAddr = httpRequest.getRemoteAddr();
+        String remoteAddr = IPWhitelistService.normalizeIP(httpRequest.getRemoteAddr());
         Connection connection = null;
 
         try {
@@ -90,6 +91,34 @@ public class AuthenticationResource {
                         .entity(new ErrorResponse("Too many failed login attempts. Access temporarily blocked for " +
                                 remainingSeconds + " seconds."))
                         .build();
+            }
+
+            // Check IP whitelist for WebUI access BEFORE authentication
+            // This prevents unauthorized IPs from even attempting login
+            boolean webUIWhitelistEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
+            if (webUIWhitelistEnabled) {
+                IPWhitelistService whitelistService = IPWhitelistService.getInstance(processing.getDBDriverManager());
+
+                // Check against global whitelist only at this stage (before we know the user)
+                // User-specific whitelist will be checked after authentication
+                if (!whitelistService.isAllowedForWebUI(remoteAddr, -1)) {  // -1 = system-wide check only
+                    // Log blocked attempt
+                    whitelistService.logBlockedAttempt(
+                        remoteAddr,
+                        "WEBUI",
+                        loginRequest.getUsername(),  // attempted username
+                        null,  // no partner for WebUI
+                        httpRequest.getHeader("User-Agent"),
+                        "/auth/login"
+                    );
+
+                    logger.warning("IP " + remoteAddr + " blocked by WebUI whitelist for login attempt (user: " +
+                                  loginRequest.getUsername() + ")");
+
+                    return Response.status(Response.Status.FORBIDDEN)
+                            .entity(new ErrorResponse("Access denied"))
+                            .build();
+                }
             }
 
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(

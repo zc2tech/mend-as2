@@ -115,7 +115,7 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
                               new Object[]{clientIP, username, path});
                     requestContext.abortWith(
                             Response.status(Response.Status.FORBIDDEN)
-                                    .entity("{\"error\":\"Access denied: Your IP address is not whitelisted for WebUI access\"}")
+                                    .entity("{\"error\":\"Access denied\"}")
                                     .build()
                     );
                     return;
@@ -349,12 +349,12 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
                 // X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2, ...)
                 // Take the first one (original client)
                 String[] ips = xForwardedFor.split(",");
-                return ips[0].trim();
+                return IPWhitelistService.normalizeIP(ips[0].trim());
             }
 
             // Fall back to direct remote address
             if (httpServletRequest != null) {
-                return httpServletRequest.getRemoteAddr();
+                return IPWhitelistService.normalizeIP(httpServletRequest.getRemoteAddr());
             }
 
             return null;

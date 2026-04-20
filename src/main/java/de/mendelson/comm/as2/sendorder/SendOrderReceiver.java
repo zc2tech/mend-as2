@@ -83,7 +83,6 @@ public class SendOrderReceiver {
         }
         this.dbDriverManager = dbDriverManager;
         this.queue = queue; // Use injected queue
-        System.out.println("*** SendOrderReceiver created with queue: " + queue.getClass().getName() + "@" + System.identityHashCode(queue));
         this.partnerAccess = new PartnerAccessDB(dbDriverManager);
         this.messageAccess = new MessageAccessDB(dbDriverManager);
         this.messageStoreHandler = new MessageStoreHandler(dbDriverManager);

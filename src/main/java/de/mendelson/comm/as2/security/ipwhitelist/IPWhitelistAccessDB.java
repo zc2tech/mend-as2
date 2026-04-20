@@ -392,14 +392,19 @@ public class IPWhitelistAccessDB {
 
     /**
      * Log a blocked IP attempt
+     *
+     * IMPORTANT: This method uses UTC time from Java side (System.currentTimeMillis())
+     * to store timestamps, independent of database timezone or Java process timezone.
+     * This ensures consistent timestamp handling across different deployment environments.
+     * Browser will automatically convert to local timezone for display.
      */
     public void logBlockedAttempt(IPWhitelistBlockLog log) {
         try (Connection configConnection = dbDriverManager.getConnectionWithoutErrorHandling(
                 IDBDriverManager.DB_CONFIG)) {
 
             String sql = "INSERT INTO ip_whitelist_block_log " +
-                    "(blocked_ip, target_type, attempted_user, attempted_partner, user_agent, request_path) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)";
+                    "(blocked_ip, target_type, attempted_user, attempted_partner, user_agent, request_path, block_time) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             try (PreparedStatement statement = configConnection.prepareStatement(sql)) {
                 statement.setString(1, log.getBlockedIp());
@@ -408,6 +413,11 @@ public class IPWhitelistAccessDB {
                 statement.setString(4, log.getAttemptedPartner());
                 statement.setString(5, log.getUserAgent());
                 statement.setString(6, log.getRequestPath());
+
+                // Always use UTC time from Java side (System.currentTimeMillis() returns UTC epoch)
+                // This works regardless of server timezone (UTC+10) or database timezone
+                statement.setTimestamp(7, new Timestamp(System.currentTimeMillis()));
+
                 statement.executeUpdate();
             }
         } catch (Throwable e) {
@@ -417,6 +427,15 @@ public class IPWhitelistAccessDB {
 
     /**
      * Get block log entries
+     *
+     * IMPORTANT: This method compares timestamps using UTC epoch milliseconds.
+     * The startDate and endDate parameters should be created using System.currentTimeMillis()
+     * to ensure correct comparison with stored timestamps, independent of Java process timezone.
+     *
+     * @param startDate Start of time range (UTC epoch-based)
+     * @param endDate End of time range (UTC epoch-based)
+     * @param targetType Optional filter by target type (AS2, TRACKER, WEBUI, API)
+     * @return List of block log entries
      */
     public List<IPWhitelistBlockLog> getBlockLog(Date startDate, Date endDate, String targetType) {
         List<IPWhitelistBlockLog> logs = new ArrayList<>();
@@ -495,6 +514,56 @@ public class IPWhitelistAccessDB {
                 }
             }
         } catch (Throwable e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
+     * Insert dummy block log data for testing
+     * Creates sample blocked attempts across different target types
+     */
+    public void insertDummyBlockLogs() {
+        System.out.println("[DEBUG] Inserting dummy block log data...");
+
+        try (Connection configConnection = dbDriverManager.getConnectionWithoutErrorHandling(
+                IDBDriverManager.DB_CONFIG)) {
+
+            String sql = "INSERT INTO ip_whitelist_block_log " +
+                    "(blocked_ip, target_type, attempted_user, attempted_partner, user_agent, request_path, block_time) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            try (PreparedStatement statement = configConnection.prepareStatement(sql)) {
+                long now = System.currentTimeMillis();
+
+                // Create various test scenarios
+                Object[][] testData = {
+                    {"192.168.1.100", "WEBUI", "admin", null, "Mozilla/5.0 (Windows NT 10.0)", "/as2/webui/", now},
+                    {"10.0.0.50", "WEBUI", "testuser", null, "Mozilla/5.0 (Macintosh)", "/as2/webui/login", now - 3600000}, // 1 hour ago
+                    {"172.16.0.25", "API", "apiuser", null, "curl/7.68.0", "/as2/api/messages", now - 7200000}, // 2 hours ago
+                    {"203.0.113.45", "AS2", null, "partner1", "AS2 Client/1.0", "/as2/HttpReceiver", now - 86400000}, // 1 day ago
+                    {"198.51.100.10", "TRACKER", null, "partner2", "Mozilla/5.0", "/as2/tracker/status", now - 172800000}, // 2 days ago
+                    {"192.0.2.30", "WEBUI", "user1", null, "Chrome/90.0", "/as2/webui/dashboard", now - 259200000}, // 3 days ago
+                    {"198.18.0.15", "API", "admin", null, "PostmanRuntime/7.26.8", "/as2/api/partners", now - 345600000} // 4 days ago
+                };
+
+                int inserted = 0;
+                for (Object[] data : testData) {
+                    statement.setString(1, (String) data[0]);
+                    statement.setString(2, (String) data[1]);
+                    statement.setString(3, (String) data[2]);
+                    statement.setString(4, (String) data[3]);
+                    statement.setString(5, (String) data[4]);
+                    statement.setString(6, (String) data[5]);
+                    statement.setTimestamp(7, new Timestamp((Long) data[6]));
+                    statement.executeUpdate();
+                    inserted++;
+                }
+
+                System.out.println("[DEBUG] Inserted " + inserted + " dummy block log entries");
+            }
+        } catch (Throwable e) {
+            System.err.println("[DEBUG] Failed to insert dummy data: " + e.getMessage());
+            e.printStackTrace();
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
         }
     }

@@ -85,20 +85,30 @@ REM For development (thin JAR), need to include Maven dependencies
 REM For release (fat JAR), JAR is self-contained
 set CLASSPATH=%JAR_FILE%
 
-REM Check if this is a thin JAR (development) - add Maven dependencies
+REM Check if this is a thin JAR (deployment or development) - add dependencies
 for %%A in ("%JAR_FILE%") do set JAR_SIZE=%%~zA
 if %JAR_SIZE% LSS 50000000 (
-    REM Thin JAR detected (less than 50MB), add Maven dependencies
-    if exist "%PROJECT_ROOT%\target\dependency\*" (
-        REM Maven dependency:copy-dependencies output
+    REM Thin JAR detected (less than 50MB), need to add dependencies
+
+    REM Priority 1: Check for lib folder (thin release deployment)
+    if exist "%PROJECT_ROOT%\lib\*" (
+        set CLASSPATH=%CLASSPATH%;%PROJECT_ROOT%\lib\*
+        echo [INFO] Using dependencies from lib folder
+    ) else if exist "%PROJECT_ROOT%\target\dependency\*" (
+        REM Priority 2: Maven dependency:copy-dependencies output (development)
         set CLASSPATH=%CLASSPATH%;%PROJECT_ROOT%\target\dependency\*
+        echo [INFO] Using dependencies from target/dependency
     ) else if exist "%USERPROFILE%\.m2\repository" (
-        REM Add common Maven dependencies directly
+        REM Priority 3: Add common Maven dependencies directly from Maven repository
         set CLASSPATH=%CLASSPATH%;%USERPROFILE%\.m2\repository\org\postgresql\postgresql\42.7.4\postgresql-42.7.4.jar
         set CLASSPATH=%CLASSPATH%;%USERPROFILE%\.m2\repository\com\mysql\mysql-connector-j\9.0.0\mysql-connector-j-9.0.0.jar
         set CLASSPATH=%CLASSPATH%;%USERPROFILE%\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.17.2\jackson-databind-2.17.2.jar
         set CLASSPATH=%CLASSPATH%;%USERPROFILE%\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.17.2\jackson-core-2.17.2.jar
         set CLASSPATH=%CLASSPATH%;%USERPROFILE%\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.17.2\jackson-annotations-2.17.2.jar
+        echo [INFO] Using dependencies from Maven repository
+    ) else (
+        echo [WARNING] Thin JAR detected but no dependencies found.
+        echo [WARNING] Please run start.bat first to download dependencies, or run: mvn dependency:copy-dependencies
     )
 )
 
