@@ -143,7 +143,7 @@ public class UserNotificationMailer {
         }
 
         // Enable debug output to help diagnose issues
-        session.setDebug(true);
+        // session.setDebug(true);
 
         return session;
     }

@@ -128,24 +128,19 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
         while (count < maxCount) {
             LightweightSendOrder order = waitingQueue.peek();
             if (order == null) {
-                logger.info("[DEQUEUE-DEBUG] Queue is empty");
                 break; // Queue empty
             }
 
             // Check if order is ready (nextExecutionTime <= now)
             if (order.getNextExecutionTime() > now) {
-                logger.info("[DEQUEUE-DEBUG] Order not ready yet, stopping");
                 break; // Next order not ready yet (queue sorted by execution time)
             }
 
             // Remove from waiting queue
             order = waitingQueue.poll();
             if (order == null) {
-                logger.info("[DEQUEUE-DEBUG] Concurrent modification, order disappeared");
                 break; // Concurrent modification
             }
-
-            logger.info("[DEQUEUE-DEBUG] Dequeuing order " + order.getOrderId());
 
             // Move to processing
             order.setState(LightweightSendOrder.OrderState.PROCESSING);

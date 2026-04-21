@@ -54,7 +54,6 @@ public class AuthenticationResource {
     private final Logger logger = Logger.getLogger("de.mendelson.as2.server");
 
     public AuthenticationResource() {
-        System.out.println("AuthenticationResource: Initialized - /auth endpoint should be available");
     }
 
     /**
