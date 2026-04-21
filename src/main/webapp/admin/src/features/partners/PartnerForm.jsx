@@ -89,7 +89,15 @@ export default function PartnerForm({ partner, onClose, onSuccess }) {
   const onSubmit = async (data) => {
     try {
       if (isEdit) {
-        await updatePartner.mutateAsync({ as2id: partner.as2Identification, partner: data });
+        // Use database ID for update - property name varies (dbid, dbId, id, DBId)
+        const dbId = partner.dbid || partner.dbId || partner.id || partner.DBId;
+
+        if (!dbId) {
+          toast.error('Failed to update: Database ID not found');
+          return;
+        }
+
+        await updatePartner.mutateAsync({ id: dbId, partner: data });
         toast.success('Partner updated successfully');
       } else {
         await createPartner.mutateAsync(data);

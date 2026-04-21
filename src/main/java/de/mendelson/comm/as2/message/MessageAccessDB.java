@@ -997,8 +997,6 @@ public class MessageAccessDB {
      */
     public void initializeOrUpdateMessage(AS2MessageInfo info) {
         String transactionName = "MessageAccessDB_initializeOrUpdateMessage";
-        System.out.println("[DEBUG MessageAccessDB] initializeOrUpdateMessage START for: " + info.getMessageId());
-        System.out.println("[DEBUG MessageAccessDB]   owner_user_id: " + info.getOwnerUserId());
         try (Connection runtimeConnectionNoAutoCommit = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
             runtimeConnectionNoAutoCommit.setAutoCommit(false);
@@ -1009,29 +1007,20 @@ public class MessageAccessDB {
                 try {
                     int updatedMessageCount = this.updateMessage(info, runtimeConnectionNoAutoCommit);
                     if (updatedMessageCount == 0) {
-                        System.out.println("[DEBUG MessageAccessDB] Inserting NEW message: " + info.getMessageId());
                         this.initializeMessage(info, runtimeConnectionNoAutoCommit);
-                        System.out.println("[DEBUG MessageAccessDB] Insert completed for: " + info.getMessageId());
                     } else {
-                        System.out.println("[DEBUG MessageAccessDB] Updated EXISTING message: " + info.getMessageId());
                     }
-                    System.out.println("[DEBUG MessageAccessDB] About to COMMIT transaction for: " + info.getMessageId());
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
-                    System.out.println("[DEBUG MessageAccessDB] COMMIT successful for: " + info.getMessageId());
                 } catch (Throwable e) {
-                    System.out.println("[DEBUG MessageAccessDB] EXCEPTION during transaction for: " + info.getMessageId());
-                    System.out.println("[DEBUG MessageAccessDB]   Exception: " + e.getClass().getName() + ": " + e.getMessage());
                     e.printStackTrace();
                     SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
                     this.dbDriverManager.rollbackTransaction(transactionStatement);
                 }
             }
         } catch (Throwable e) {
-            System.out.println("[DEBUG MessageAccessDB] OUTER EXCEPTION in initializeOrUpdateMessage: " + e.getMessage());
             e.printStackTrace();
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
         }
-        System.out.println("[DEBUG MessageAccessDB] initializeOrUpdateMessage END for: " + info.getMessageId());
     }
 
     /**

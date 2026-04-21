@@ -41,6 +41,10 @@ public class AS2Payload implements Serializable {
      */
     private String contentId = null;
     /**
+     * Content description of this payload. Optional field for describing the payload content
+     */
+    private String contentDescription = null;
+    /**
      * content type of this payload. Is not important any may be null for normal
      * AS2 messages but is important for CEM because the description xml is
      * identified by its content type
@@ -136,6 +140,20 @@ public class AS2Payload implements Serializable {
             contentId = contentId.substring(1, contentId.length() - 1);
         }
         this.contentId = contentId;
+    }
+
+    /**
+     * @return the contentDescription
+     */
+    public String getContentDescription() {
+        return contentDescription;
+    }
+
+    /**
+     * @param contentDescription the contentDescription to set
+     */
+    public void setContentDescription(String contentDescription) {
+        this.contentDescription = contentDescription;
     }
 
     /**

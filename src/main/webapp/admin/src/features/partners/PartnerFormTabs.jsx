@@ -215,6 +215,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   // State for inbound auth credentials
   const [inboundAuthBasicList, setInboundAuthBasicList] = useState([]);
   const [inboundAuthCertList, setInboundAuthCertList] = useState([]);
+  const [passwordVisibility, setPasswordVisibility] = useState({}); // Track password visibility by index
 
   // State for certificate filtering (remote partners only - show only public certificates by default)
   const [showOnlyPublicCerts, setShowOnlyPublicCerts] = useState(true);
@@ -551,7 +552,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       <div style={{
         backgroundColor: 'white',
         borderRadius: '8px',
-        maxWidth: '800px',
+        maxWidth: '1000px',
         width: '100%',
         maxHeight: '90vh',
         display: 'flex',
@@ -1368,17 +1369,50 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                                 />
                               </td>
                               <td style={{ padding: '0.75rem' }}>
-                                <input
-                                  type="password"
-                                  value={cred.password || ''}
-                                  onChange={(e) => {
-                                    const updated = [...inboundAuthBasicList];
-                                    updated[index] = { ...updated[index], password: e.target.value };
-                                    setInboundAuthBasicList(updated);
-                                  }}
-                                  style={{ width: '100%', padding: '0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
-                                  placeholder="password"
-                                />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <input
+                                    type={passwordVisibility[index] ? "text" : "password"}
+                                    value={cred.password || ''}
+                                    onChange={(e) => {
+                                      const updated = [...inboundAuthBasicList];
+                                      updated[index] = { ...updated[index], password: e.target.value };
+                                      setInboundAuthBasicList(updated);
+                                    }}
+                                    style={{ width: '100%', padding: '0.375rem 2.5rem 0.375rem 0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                    placeholder="password"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPasswordVisibility(prev => ({ ...prev, [index]: !prev[index] }));
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      right: '0.5rem',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0.25rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#6c757d'
+                                    }}
+                                    title={passwordVisibility[index] ? "Hide password" : "Show password"}
+                                  >
+                                    {passwordVisibility[index] ? (
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                      </svg>
+                                    ) : (
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                      </svg>
+                                    )}
+                                  </button>
+                                </div>
                               </td>
                               <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                 <input
@@ -1476,7 +1510,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#f8f9fa' }}>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '250px' }}>Certificate</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '500px' }}>Certificate</th>
                           <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem' }}>Fingerprint (SHA-1)</th>
                           <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Enabled</th>
                           <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Actions</th>
