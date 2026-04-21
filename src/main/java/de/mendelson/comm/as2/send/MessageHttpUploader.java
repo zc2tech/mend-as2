@@ -1038,7 +1038,6 @@ public class MessageHttpUploader {
 
             // DEBUG: List certificates in trustStore
             try {
-                System.out.println("=== TRUST STORE CONTENTS ===");
                 java.util.Enumeration<String> trustAliases = this.trustStore.getKeystore().aliases();
                 int trustCount = 0;
                 while (trustAliases.hasMoreElements()) {
@@ -1273,7 +1272,6 @@ public class MessageHttpUploader {
 
             // DEBUG: List certificates in certStore
             try {
-                System.out.println("=== CERT STORE CONTENTS ===");
                 java.util.Enumeration<String> certAliases = this.certStore.getKeystore().aliases();
                 int certCount = 0;
                 while (certAliases.hasMoreElements()) {
@@ -1281,14 +1279,11 @@ public class MessageHttpUploader {
                     certCount++;
                     boolean isCertEntry = this.certStore.getKeystore().isCertificateEntry(alias);
                     boolean isKeyEntry = this.certStore.getKeystore().isKeyEntry(alias);
-                    System.out.println("  [" + certCount + "] " + alias +
-                                     " | CertEntry: " + isCertEntry +
-                                     " | KeyEntry: " + isKeyEntry);
+                   
                     if (isCertEntry || isKeyEntry) {
                         java.security.cert.Certificate cert = this.certStore.getKeystore().getCertificate(alias);
                         if (cert instanceof java.security.cert.X509Certificate) {
                             java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) cert;
-                            System.out.println("      Subject: " + x509.getSubjectX500Principal());
                             // Calculate fingerprint
                             java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-1");
                             byte[] der = x509.getEncoded();
@@ -1305,11 +1300,9 @@ public class MessageHttpUploader {
                                     hexString.append(':');
                                 }
                             }
-                            System.out.println("      Fingerprint: " + hexString.toString());
                         }
                     }
                 }
-                System.out.println("Total certificates in certStore: " + certCount);
             } catch (Exception e) {
                 System.out.println("Error listing certStore contents: " + e.getMessage());
             }
@@ -1318,25 +1311,7 @@ public class MessageHttpUploader {
         // TrustStrategy for trusting self-signed certificates
         TrustStrategy trustSelfSignedStrategy = (chain, authType) -> true;
 
-        // Log HTTP authentication configuration
-        if (this.logger != null) {
-            if (httpAuthentication != null) {
-                this.logger.log(Level.INFO,
-                    "[OUTBOUND] HTTP Authentication mode: " +
-                    (httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE ? "CERTIFICATE" :
-                     httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_BASIC ? "BASIC" : "NONE") +
-                    ", Partner: " + as2Info.getSenderId() + " -> " + as2Info.getReceiverId(),
-                    as2Info);
-            } else {
-                this.logger.log(Level.INFO,
-                    "[OUTBOUND] HTTP Authentication is NULL, Partner: " +
-                    as2Info.getSenderId() + " -> " + as2Info.getReceiverId(),
-                    as2Info);
-            }
-        }
-
         if (connectionParameter.getTrustAllRemoteServerCertificates()) {
-            System.out.println("=== SSL CONTEXT SETUP: TrustAllRemoteServerCertificates = TRUE ===");
             SSLContextBuilder builder = SSLContexts.custom()
                     .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
 
@@ -1346,57 +1321,28 @@ public class MessageHttpUploader {
 
                 String fingerprint = httpAuthentication.getCertificateFingerprint();
 
-                if (this.logger != null) {
-                    this.logger.log(Level.INFO,
-                        "[OUTBOUND CERT AUTH] Certificate authentication requested. Configured fingerprint: " +
-                        (fingerprint != null ? fingerprint : "NULL"),
-                        as2Info);
-                }
-
                 if (fingerprint != null && !fingerprint.isEmpty()) {
-                    System.out.println("=== CLIENT CERTIFICATE AUTH CONFIGURATION (TRUST ALL MODE) ===");
-                    System.out.println("Requested fingerprint: " + fingerprint);
 
                     // Find the alias for the certificate with this fingerprint
                     String targetAlias = this.findAliasByFingerprint(
                         this.certStore.getKeystore(), fingerprint);
 
-                    System.out.println("After findAliasByFingerprint, targetAlias = " + targetAlias);
-
-                    if (this.logger != null) {
-                        this.logger.log(Level.INFO,
-                            "[OUTBOUND CERT AUTH] Looking for certificate with fingerprint: " + fingerprint +
-                            ", Found alias: " + (targetAlias != null ? targetAlias : "NOT FOUND"),
-                            as2Info);
-                    }
-
                     if (targetAlias != null) {
-                        System.out.println("Target alias found: " + targetAlias);
 
                         // Create a KeyManagerFactory to get the default KeyManager
                         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                             KeyManagerFactory.getDefaultAlgorithm());
-                        System.out.println("KeyManagerFactory algorithm: " + KeyManagerFactory.getDefaultAlgorithm());
 
                         kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
-                        System.out.println("KeyManagerFactory initialized with keystore and password");
 
                         // Wrap the first X509KeyManager with our single-certificate filter
                         KeyManager[] keyManagers = kmf.getKeyManagers();
-                        System.out.println("KeyManagers count: " + keyManagers.length);
 
                         for (int i = 0; i < keyManagers.length; i++) {
-                            System.out.println("KeyManager[" + i + "]: " + keyManagers[i].getClass().getName());
                             if (keyManagers[i] instanceof X509KeyManager) {
-                                System.out.println("Wrapping X509KeyManager with SingleCertificateKeyManager for alias: " + targetAlias);
                                 keyManagers[i] = new SingleCertificateKeyManager(
                                     (X509KeyManager) keyManagers[i], targetAlias);
 
-                                if (this.logger != null) {
-                                    this.logger.log(Level.INFO,
-                                        "[OUTBOUND CERT AUTH] Successfully configured SingleCertificateKeyManager with alias: " + targetAlias,
-                                        as2Info);
-                                }
                                 break;
                             }
                         }
@@ -1404,7 +1350,6 @@ public class MessageHttpUploader {
                         // Build SSL context with custom key manager
                         // IMPORTANT: Build first to get the TrustManagers, then init with both KeyManagers and TrustManagers
                         sslcontext = builder.build();
-                        System.out.println("SSLContext built, now re-initializing with custom KeyManagers while preserving TrustManagers...");
 
                         // Get the default TrustManagers from a TrustManagerFactory
                         javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
@@ -1415,21 +1360,9 @@ public class MessageHttpUploader {
 
                         // Re-init with both custom KeyManagers and TrustManagers
                         sslcontext.init(keyManagers, trustManagers, null);
-                        System.out.println("SSLContext initialized successfully with custom KeyManagers and TrustManagers");
 
-                        if (this.logger != null) {
-                            this.logger.log(Level.INFO,
-                                "[OUTBOUND CERT AUTH] SSL context initialized with client certificate. Certificate will be sent during TLS handshake.",
-                                as2Info);
-                        }
                     } else {
-                        // Certificate not found - log warning and proceed without client cert
-                        if (this.logger != null) {
-                            this.logger.log(Level.WARNING,
-                                "[OUTBOUND CERT AUTH] Client certificate with fingerprint " + fingerprint +
-                                " not found in keystore. Proceeding without client certificate.",
-                                as2Info);
-                        }
+                  
                         // Fall back to loading all keys
                         builder.loadKeyMaterial(
                             this.certStore.getKeystore(),
@@ -1439,7 +1372,6 @@ public class MessageHttpUploader {
                 } else {
                     // No fingerprint specified - find and use user-specific certificate only
                     // This ensures the correct user certificate is presented for authentication
-                    System.out.println("=== NO FINGERPRINT SPECIFIED - Looking for user-specific certificate ===");
 
                     String userSpecificAlias = null;
                     try {
@@ -1464,7 +1396,6 @@ public class MessageHttpUploader {
 
                     if (userSpecificAlias != null) {
                         // Use SingleCertificateKeyManager to present ONLY the user-specific certificate
-                        System.out.println("Using user-specific certificate: " + userSpecificAlias);
 
                         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                             KeyManagerFactory.getDefaultAlgorithm());
@@ -1485,7 +1416,6 @@ public class MessageHttpUploader {
                         javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
                         sslcontext.init(keyManagers, trustManagers, null);
 
-                        System.out.println("SSL context initialized with user-specific certificate");
 
                         if (this.logger != null) {
                             this.logger.log(Level.INFO,
@@ -1493,13 +1423,7 @@ public class MessageHttpUploader {
                                 as2Info);
                         }
                     } else {
-                        // No user-specific cert found - fall back to all keys
-                        System.out.println("No user-specific certificate found, using all certificates");
-                        if (this.logger != null) {
-                            this.logger.log(Level.WARNING,
-                                "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no user-specific certificate found.",
-                                as2Info);
-                        }
+                    
                         builder.loadKeyMaterial(
                             this.certStore.getKeystore(),
                             this.certStore.getKeystorePass());
@@ -1508,11 +1432,9 @@ public class MessageHttpUploader {
                 }
             } else {
                 // Not using certificate authentication - build simple SSL context
-                System.out.println("Not using certificate authentication in TRUST ALL mode");
                 sslcontext = builder.build();
             }
         } else {
-            System.out.println("=== SSL CONTEXT SETUP: TrustAllRemoteServerCertificates = FALSE ===");
             SSLContextBuilder builder = SSLContexts.custom()
                     .loadTrustMaterial(this.trustStore.getKeystore(), trustSelfSignedStrategy);
 
@@ -1522,57 +1444,29 @@ public class MessageHttpUploader {
 
                 String fingerprint = httpAuthentication.getCertificateFingerprint();
 
-                if (this.logger != null) {
-                    this.logger.log(Level.INFO,
-                        "[OUTBOUND CERT AUTH] Certificate authentication requested. Configured fingerprint: " +
-                        (fingerprint != null ? fingerprint : "NULL"),
-                        as2Info);
-                }
-
                 if (fingerprint != null && !fingerprint.isEmpty()) {
-                    System.out.println("=== CLIENT CERTIFICATE AUTH CONFIGURATION ===");
-                    System.out.println("Requested fingerprint: " + fingerprint);
 
                     // Find the alias for the certificate with this fingerprint
                     String targetAlias = this.findAliasByFingerprint(
                         this.certStore.getKeystore(), fingerprint);
 
-                    System.out.println("After findAliasByFingerprint, targetAlias = " + targetAlias);
-
-                    if (this.logger != null) {
-                        this.logger.log(Level.INFO,
-                            "[OUTBOUND CERT AUTH] Looking for certificate with fingerprint: " + fingerprint +
-                            ", Found alias: " + (targetAlias != null ? targetAlias : "NOT FOUND"),
-                            as2Info);
-                    }
 
                     if (targetAlias != null) {
-                        System.out.println("Target alias found: " + targetAlias);
 
                         // Create a KeyManagerFactory to get the default KeyManager
                         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                             KeyManagerFactory.getDefaultAlgorithm());
-                        System.out.println("KeyManagerFactory algorithm: " + KeyManagerFactory.getDefaultAlgorithm());
 
                         kmf.init(this.certStore.getKeystore(), this.certStore.getKeystorePass());
-                        System.out.println("KeyManagerFactory initialized with keystore and password");
 
                         // Wrap the first X509KeyManager with our single-certificate filter
                         KeyManager[] keyManagers = kmf.getKeyManagers();
-                        System.out.println("KeyManagers count: " + keyManagers.length);
 
                         for (int i = 0; i < keyManagers.length; i++) {
-                            System.out.println("KeyManager[" + i + "]: " + keyManagers[i].getClass().getName());
                             if (keyManagers[i] instanceof X509KeyManager) {
-                                System.out.println("Wrapping X509KeyManager with SingleCertificateKeyManager for alias: " + targetAlias);
                                 keyManagers[i] = new SingleCertificateKeyManager(
                                     (X509KeyManager) keyManagers[i], targetAlias);
 
-                                if (this.logger != null) {
-                                    this.logger.log(Level.INFO,
-                                        "[OUTBOUND CERT AUTH] Successfully configured SingleCertificateKeyManager with alias: " + targetAlias,
-                                        as2Info);
-                                }
                                 break;
                             }
                         }
@@ -1580,18 +1474,15 @@ public class MessageHttpUploader {
                         // Build SSL context with custom key manager
                         // IMPORTANT: Build first to get the TrustManagers, then init with both KeyManagers and TrustManagers
                         sslcontext = builder.build();
-                        System.out.println("SSLContext built, now re-initializing with custom KeyManagers while preserving TrustManagers...");
 
                         // Get the default TrustManagers from a TrustManagerFactory
                         javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
                             javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
                         tmf.init(this.trustStore.getKeystore());
                         javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
-                        System.out.println("TrustManagers count: " + trustManagers.length);
 
                         // Re-init with both custom KeyManagers and TrustManagers
                         sslcontext.init(keyManagers, trustManagers, null);
-                        System.out.println("SSLContext initialized successfully with custom KeyManagers and TrustManagers");
 
                         if (this.logger != null) {
                             this.logger.log(Level.INFO,
@@ -1599,13 +1490,7 @@ public class MessageHttpUploader {
                                 as2Info);
                         }
                     } else {
-                        // Certificate not found - log warning and proceed without client cert
-                        if (this.logger != null) {
-                            this.logger.log(Level.WARNING,
-                                "[OUTBOUND CERT AUTH] Client certificate with fingerprint " + fingerprint +
-                                " not found in keystore. Proceeding without client certificate.",
-                                as2Info);
-                        }
+                     
                         // Fall back to loading all keys
                         builder.loadKeyMaterial(
                             this.certStore.getKeystore(),
@@ -1614,7 +1499,6 @@ public class MessageHttpUploader {
                     }
                 } else {
                     // No fingerprint specified - find and use user-specific certificate only
-                    System.out.println("=== NO FINGERPRINT SPECIFIED (non-trust-all) - Looking for user-specific certificate ===");
 
                     String userSpecificAlias = null;
                     try {
@@ -1639,7 +1523,6 @@ public class MessageHttpUploader {
 
                     if (userSpecificAlias != null) {
                         // Use SingleCertificateKeyManager to present ONLY the user-specific certificate
-                        System.out.println("Using user-specific certificate: " + userSpecificAlias);
 
                         KeyManagerFactory kmf = KeyManagerFactory.getInstance(
                             KeyManagerFactory.getDefaultAlgorithm());
@@ -1660,7 +1543,6 @@ public class MessageHttpUploader {
                         javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
                         sslcontext.init(keyManagers, trustManagers, null);
 
-                        System.out.println("SSL context initialized with user-specific certificate (non-trust-all)");
 
                         if (this.logger != null) {
                             this.logger.log(Level.INFO,
@@ -1669,12 +1551,7 @@ public class MessageHttpUploader {
                         }
                     } else {
                         // No user-specific cert found - fall back to all keys
-                        System.out.println("No user-specific certificate found, using all certificates");
-                        if (this.logger != null) {
-                            this.logger.log(Level.WARNING,
-                                "[OUTBOUND CERT AUTH] Certificate authentication mode selected but no user-specific certificate found.",
-                                as2Info);
-                        }
+                        
                         builder.loadKeyMaterial(
                             this.certStore.getKeystore(),
                             this.certStore.getKeystorePass());
@@ -1682,12 +1559,7 @@ public class MessageHttpUploader {
                     }
                 }
             } else {
-                // Not using certificate authentication - load all keys as before
-                if (this.logger != null) {
-                    this.logger.log(Level.INFO,
-                        "[OUTBOUND] Not using certificate authentication (mode is not CERTIFICATE or httpAuthentication is null)",
-                        as2Info);
-                }
+              
                 builder.loadKeyMaterial(
                     this.certStore.getKeystore(),
                     this.certStore.getKeystorePass());
@@ -1729,20 +1601,12 @@ public class MessageHttpUploader {
         // Remove colons and convert to uppercase for comparison
         String normalizedFingerprint = fingerprint.replace(":", "").toUpperCase();
 
-        System.out.println("=== findAliasByFingerprint ===");
-        System.out.println("Looking for fingerprint: " + fingerprint);
-        System.out.println("Normalized: " + normalizedFingerprint);
-        System.out.println("Keystore has " + java.util.Collections.list(keystore.aliases()).size() + " aliases");
-
         Enumeration<String> aliases = keystore.aliases();
         while (aliases.hasMoreElements()) {
             String alias = aliases.nextElement();
-            System.out.println("Checking alias: " + alias);
-            System.out.println("  Is key entry: " + keystore.isKeyEntry(alias));
-
+         
             if (keystore.isKeyEntry(alias)) {
                 Certificate cert = keystore.getCertificate(alias);
-                System.out.println("  Certificate class: " + (cert != null ? cert.getClass().getName() : "NULL"));
 
                 if (cert instanceof X509Certificate) {
                     X509Certificate x509 = (X509Certificate) cert;
@@ -1750,17 +1614,10 @@ public class MessageHttpUploader {
                     MessageDigest md = MessageDigest.getInstance("SHA-1");
                     byte[] certFingerprint = md.digest(encoded);
                     String certFingerprintHex = HexFormat.of().formatHex(certFingerprint).toUpperCase();
-                    System.out.println("  Certificate fingerprint: " + certFingerprintHex);
-                    System.out.println("  Match: " + certFingerprintHex.equals(normalizedFingerprint));
-
+                 
                     // Check if private key is available
                     try {
                         Key key = keystore.getKey(alias, this.certStore.getKeystorePass());
-                        System.out.println("  Private key available: " + (key != null));
-                        if (key != null) {
-                            System.out.println("  Private key class: " + key.getClass().getName());
-                            System.out.println("  Private key algorithm: " + key.getAlgorithm());
-                        }
                     } catch (Exception e) {
                         System.out.println("  Error retrieving private key: " + e.getMessage());
                     }
@@ -1772,7 +1629,6 @@ public class MessageHttpUploader {
                 }
             }
         }
-        System.out.println("=== NO MATCH FOUND ===");
         return null;
     }
 

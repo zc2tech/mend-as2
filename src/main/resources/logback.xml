@@ -9,7 +9,7 @@
 
     <!-- Silence Jetty -->
     <logger name="org.eclipse.jetty" level="OFF"/>
-    <logger name="org.eclipse.jetty.server" level="ON"/>
+    <logger name="org.eclipse.jetty.server" level="OFF"/>
     <logger name="org.eclipse.jetty.util" level="OFF"/>
     <logger name="org.eclipse.jetty.http" level="OFF"/>
 
