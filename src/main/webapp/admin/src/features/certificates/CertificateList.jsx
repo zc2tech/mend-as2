@@ -345,7 +345,7 @@ export default function CertificateList() {
     <div>
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ margin: 0 }}>
-          My Sign/Crypt
+          My Sign/Crypt/Auth
         </h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {/* Export Menu - read-only operation */}
