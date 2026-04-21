@@ -550,6 +550,14 @@ curl -X POST http://localhost:8080/as2/tracker/alice \
 
 Navigate to `http://localhost:8080/as2/webui/` and login.
 
+**Note on HTTPS Certificate Prompts:**  
+When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), your browser may prompt you to "Select a certificate for authentication". This is normal behavior because the server is configured to accept (but not require) client certificates for AS2 message transmission with certificate-based authentication.
+
+**What to do:**
+- Click **Cancel** or **Skip** - The browser will remember your choice and stop prompting
+- This does NOT affect AS2 message certificate authentication, which works at the application level
+- Alternatively, use HTTP access (`http://localhost:8080/as2/webui/`) to avoid the prompt entirely
+
 **Available Sections (permission-based):**
 - **Dashboard** - Quick access to all sections
 - **Partners** - Manage trading partners with visibility controls
