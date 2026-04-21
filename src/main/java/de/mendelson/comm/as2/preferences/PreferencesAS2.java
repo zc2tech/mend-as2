@@ -131,6 +131,7 @@ public class PreferencesAS2 {
     public static final String EMBEDDED_HTTP_SERVER_STARTED = "embeddedhttpserverstarted";
     public static final String HTTP_LISTEN_PORT = "jetty.http.port";
     public static final String HTTPS_LISTEN_PORT = "jetty.ssl.port";
+    public static final String SERVER_HOSTNAME = "server.hostname"; // Optional hostname for email URLs
     public static final String EMBEDDED_HTTP_SERVER_SETTINGS_ACCESSIBLE = "embeddedhttpserversettingsaccessible";
     public static final String EMBEDDED_HTTP_SERVER_REQUESTLOG = "embeddedhttpserverrequestlog";
     public static final String MAX_INBOUND_CONNECTIONS = "jetty.connectionlimit.maxConnections";
@@ -269,6 +270,7 @@ public class PreferencesAS2 {
                     Map.entry(TLS_STRICT_HOST_CHECK, "FALSE"),
                     Map.entry(HTTPS_LISTEN_PORT, "8443"),
                     Map.entry(HTTP_LISTEN_PORT, "8080"),
+                    Map.entry(SERVER_HOSTNAME, ""),
                     Map.entry(EMBEDDED_HTTP_SERVER_REQUESTLOG, "FALSE"),
                     Map.entry(MAX_INBOUND_CONNECTIONS, "1000"),
                     Map.entry(SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG, "FALSE"),

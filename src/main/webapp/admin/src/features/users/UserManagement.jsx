@@ -19,7 +19,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
 import api from '../../api/client';
@@ -504,6 +504,17 @@ function UserFormModal({ user, onClose, onSuccess }) {
     generatePassword: false
   });
 
+  // Handle ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: async () => {
@@ -543,6 +554,8 @@ function UserFormModal({ user, onClose, onSuccess }) {
       alert('Failed to update user: ' + (error.response?.data?.error || error.message));
     }
   });
+
+  const isSubmitting = createUserMutation.isPending || updateUserMutation.isPending;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -813,25 +826,27 @@ function UserFormModal({ user, onClose, onSuccess }) {
           </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
-            <button type="submit" style={{
+            <button type="submit" disabled={isSubmitting} style={{
               padding: '0.5rem 1rem',
-              backgroundColor: '#007bff',
+              backgroundColor: isSubmitting ? '#6c757d' : '#007bff',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
-              flex: 1
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              flex: 1,
+              opacity: isSubmitting ? 0.6 : 1
             }}>
-              {user ? 'Update' : 'Create'}
+              {isSubmitting ? (user ? 'Updating...' : 'Creating...') : (user ? 'Update' : 'Create')}
             </button>
-            <button type="button" onClick={onClose} style={{
+            <button type="button" onClick={onClose} disabled={isSubmitting} style={{
               padding: '0.5rem 1rem',
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
-              flex: 1
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              flex: 1,
+              opacity: isSubmitting ? 0.6 : 1
             }}>
               Cancel
             </button>
@@ -846,6 +861,17 @@ function UserFormModal({ user, onClose, onSuccess }) {
 function PasswordChangeModal({ userId, onClose, onSuccess }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Handle ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data) => {

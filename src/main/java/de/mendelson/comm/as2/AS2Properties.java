@@ -202,6 +202,14 @@ public class AS2Properties {
     }
 
     /**
+     * Get server hostname for email notifications
+     * Returns null/empty if not set (caller should auto-detect)
+     */
+    public String getServerHostname() {
+        return getString("as2.server.hostname", "AS2_SERVER_HOSTNAME", "");
+    }
+
+    /**
      * Get integer property with priority: ENV > System Property > File > Default
      */
     private int getInt(String propertyKey, String envVar, int defaultValue) {

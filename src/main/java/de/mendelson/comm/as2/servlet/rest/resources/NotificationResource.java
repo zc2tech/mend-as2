@@ -104,6 +104,18 @@ public class NotificationResource {
                     .build();
         }
 
+        // Get existing notification data to preserve password if not provided
+        NotificationGetRequest request = new NotificationGetRequest();
+        NotificationGetResponse response = processing.processNotificationGetRequest(request);
+
+        if (response.getException() != null) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse(response.getException().getMessage()))
+                    .build();
+        }
+
+        NotificationDataImplAS2 existingData = (NotificationDataImplAS2) response.getData();
+
         NotificationDataImplAS2 notificationData = new NotificationDataImplAS2();
         notificationData.setMailServer(dto.getMailServer());
         notificationData.setMailServerPort(dto.getMailServerPort());
@@ -113,9 +125,12 @@ public class NotificationResource {
         notificationData.setUsesSMTPAuthCredentials(dto.isUseSMTPAuthCredentials());
         notificationData.setSMTPUser(dto.getSmtpUser());
 
-        // Only update password if provided
+        // Only update password if provided, otherwise preserve existing password
         if (dto.getSmtpPass() != null && !dto.getSmtpPass().isEmpty()) {
             notificationData.setSMTPPass(dto.getSmtpPass().toCharArray());
+        } else {
+            // Preserve existing password from database
+            notificationData.setSMTPPass(existingData.getSMTPPass());
         }
 
         notificationData.setMaxNotificationsPerMin(dto.getMaxNotificationsPerMin());

@@ -70,7 +70,8 @@ export default function NotificationSettings() {
     border: '1px solid #ced4da',
     borderRadius: '4px',
     fontSize: '0.875rem',
-    width: '100%'
+    width: '100%',
+    maxWidth: '100%'
   };
 
   const selectStyle = {
@@ -207,7 +208,7 @@ export default function NotificationSettings() {
       <div style={cardStyle}>
         <h2 style={{ marginTop: 0, marginBottom: '1.5rem' }}>SMTP Server Configuration</h2>
 
-        <div style={rowStyle}>
+        <div style={{ display: 'grid', gridTemplateColumns: '300px 200px 100px', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={labelStyle}>Mail Server (SMTP)</label>
             <input
@@ -217,6 +218,18 @@ export default function NotificationSettings() {
               onChange={(e) => setSettings({ ...settings, mailServer: e.target.value })}
               placeholder="smtp.example.com"
             />
+          </div>
+          <div>
+            <label style={labelStyle}>Connection Security</label>
+            <select
+              style={selectStyle}
+              value={settings.connectionSecurity}
+              onChange={(e) => setSettings({ ...settings, connectionSecurity: parseInt(e.target.value) })}
+            >
+              {securityOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={labelStyle}>Port</label>
@@ -229,20 +242,8 @@ export default function NotificationSettings() {
           </div>
         </div>
 
-        <div style={{ marginBottom: '1rem' }}>
-          <label style={labelStyle}>Connection Security</label>
-          <select
-            style={selectStyle}
-            value={settings.connectionSecurity}
-            onChange={(e) => setSettings({ ...settings, connectionSecurity: parseInt(e.target.value) })}
-          >
-            {securityOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <div style={helpTextStyle}>
-            STARTTLS: Port 587, TLS/SSL: Port 465, Plain: Port 25
-          </div>
+        <div style={helpTextStyle}>
+          STARTTLS: Port 587, TLS/SSL: Port 465, Plain: Port 25
         </div>
 
         <div style={checkboxContainerStyle}>

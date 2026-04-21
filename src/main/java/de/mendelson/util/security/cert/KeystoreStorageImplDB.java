@@ -81,10 +81,7 @@ public class KeystoreStorageImplDB implements KeystoreStorage {
         BCCryptoHelper cryptoHelper = new BCCryptoHelper();
 
         if (keystoreData == null) {
-            // No keystore exists for this user - create an empty one
-            System.out.println("INFO: Creating empty keystore for userId=" + userId +
-                    ", usage=" + KEYSTORE_USAGE + ", storageType=" + KEYSTORE_STORAGE_TYPE);
-
+         
             // Determine security provider based on keystore type
             String securityProvider = KEYSTORE_STORAGE_TYPE.equals(KEYSTORE_STORAGE_TYPE_PKCS12)
                     ? org.bouncycastle.jce.provider.BouncyCastleProvider.PROVIDER_NAME

@@ -11,6 +11,7 @@
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Exception;
+import de.mendelson.comm.as2.AS2Properties;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
@@ -3776,9 +3777,28 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     de.mendelson.util.systemevents.notification.NotificationData notificationData
                         = notificationAccess.getNotificationData();
 
-                    // Get server URL from preferences (construct from HTTP port)
-                    String httpPort = this.preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
-                    String serverUrl = "http://localhost:" + httpPort + "/as2";
+                    // Get hostname - from as2.properties first, fall back to Java detection
+                    String hostname = AS2Properties.getInstance().getServerHostname();
+                    if (hostname == null || hostname.trim().isEmpty()) {
+                        hostname = ServerConfigurationHelper.getHostname();
+                    }
+
+                    // Get actual HTTPS port from running Jetty server
+                    AS2Server server = AS2Server.getStaticServerReference();
+                    Integer httpsPort = null;
+                    if (server != null) {
+                        de.mendelson.util.httpconfig.server.HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+                        if (configInfo != null) {
+                            httpsPort = ServerConfigurationHelper.getHttpsPort(configInfo);
+                        }
+                    }
+
+                    // Fall back to default if we couldn't get the actual port
+                    if (httpsPort == null) {
+                        httpsPort = 8443; // Default fallback
+                    }
+
+                    String serverUrl = "https://" + hostname + ":" + httpsPort + "/as2";
 
                     de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
                         user, password, notificationData, serverUrl);
