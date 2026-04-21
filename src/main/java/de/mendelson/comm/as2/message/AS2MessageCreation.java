@@ -530,6 +530,10 @@ public class AS2MessageCreation {
         info.setRequestsSyncMDN(receiver.isSyncMDN());
         // Set owner_user_id from sender's created_by_user_id (sender is the local station for outbound messages)
         info.setOwnerUserId(sender.getCreatedByUserId());
+        System.out.println("[DEBUG AS2MessageCreation] Creating message: " + messageId);
+        System.out.println("[DEBUG AS2MessageCreation]   Sender: " + sender.getName() + " (created_by_user_id=" + sender.getCreatedByUserId() + ")");
+        System.out.println("[DEBUG AS2MessageCreation]   Receiver: " + receiver.getName());
+        System.out.println("[DEBUG AS2MessageCreation]   owner_user_id will be: " + sender.getCreatedByUserId());
         if (!receiver.isSyncMDN()) {
             info.setAsyncMDNURL(sender.getMdnURL());
         }
@@ -545,8 +549,14 @@ public class AS2MessageCreation {
         }
         info.setUserdefinedId(userdefinedId);
         if (this.dbDriverManager != null) {
+            System.out.println("[DEBUG AS2MessageCreation] dbDriverManager is available, will save to DB");
+            System.out.println("[DEBUG AS2MessageCreation] About to call initializeOrUpdateMessage for: " + messageId);
             MessageAccessDB messageAccess = new MessageAccessDB(this.dbDriverManager);
+            System.out.println("[DEBUG AS2MessageCreation] MessageAccessDB instance created, calling initializeOrUpdateMessage...");
             messageAccess.initializeOrUpdateMessage(info);
+            System.out.println("[DEBUG AS2MessageCreation] initializeOrUpdateMessage returned successfully");
+        } else {
+            System.out.println("[DEBUG AS2MessageCreation] WARNING: dbDriverManager is NULL, message will NOT be saved!");
         }
         if (this.logger != null) {
             this.logger.log(Level.FINE,

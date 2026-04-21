@@ -1067,8 +1067,10 @@ public class MessageHttpUploader {
             // User-specific is only added if client cert auth requires it
 
             if (needToMergeKeystores) {
-                // Load both system-wide and sender's user-specific keystores, then merge them
-                System.out.println("=== MERGING KEYSTORES: system-wide + user-specific ===");
+                // Load both system-wide TLS and sender's user-specific Sign/Crypt keystores, then merge them
+                // System TLS: for HTTPS connection
+                // User Sign/Crypt: ONLY the specific certificate selected for authentication
+                System.out.println("=== MERGING KEYSTORES: system-wide TLS + selected Sign/Crypt cert ===");
 
                 KeystoreStorageImplDB systemWideStore = null;
                 boolean hasSystemWideAccess = false;
@@ -1084,25 +1086,27 @@ public class MessageHttpUploader {
                     // Try to access the keystore to verify permissions
                     systemWideStore.getKeystore();
                     hasSystemWideAccess = true;
-                    System.out.println("Loaded system-wide keystore (user_id=-1)");
+                    System.out.println("Loaded system-wide TLS keystore (user_id=-1)");
                 } catch (Exception e) {
                     System.out.println("Cannot access system-wide keystore (user_id=-1): " + e.getMessage());
                     System.out.println("This is normal for non-admin users. Will use user-specific keystore only.");
                     if (this.logger != null) {
                         this.logger.log(Level.INFO,
-                            "[TLS] User does not have access to system-wide TLS keystore. Using user-specific TLS keystore only.",
+                            "[TLS] User does not have access to system-wide TLS keystore. Using user-specific Sign/Crypt keystore only.",
                             as2Info);
                     }
                 }
 
+                // Use user-specific Sign/Crypt keystore (not TLS keystore anymore)
+                // This allows users to use their signing/encryption certificates for client authentication
                 final KeystoreStorageImplDB userSpecificStore = new KeystoreStorageImplDB(
                         SystemEventManagerImplAS2.instance(),
                         this.dbDriverManager,
-                        KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
-                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
+                        KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                         senderUserId
                 );
-                System.out.println("Loaded user-specific keystore (user_id=" + senderUserId + ")");
+                System.out.println("Loaded user-specific Sign/Crypt keystore (user_id=" + senderUserId + ")");
 
                 // Create a new merged keystore
                 final KeyStore mergedKeystore = KeyStore.getInstance("JKS");
@@ -1116,7 +1120,7 @@ public class MessageHttpUploader {
                     keystorePassword = userSpecificStore.getKeystorePass();
                 }
 
-                // Copy all entries from system-wide keystore (if accessible)
+                // Copy all entries from system-wide TLS keystore (if accessible)
                 int systemCount = 0;
                 if (hasSystemWideAccess) {
                     KeyStore systemKS = systemWideStore.getKeystore();
@@ -1134,29 +1138,38 @@ public class MessageHttpUploader {
                             systemCount++;
                         }
                     }
-                    System.out.println("Copied " + systemCount + " entries from system-wide keystore");
+                    System.out.println("Copied " + systemCount + " entries from system-wide TLS keystore");
                 } else {
-                    System.out.println("Skipped system-wide keystore (no access)");
+                    System.out.println("Skipped system-wide TLS keystore (no access)");
                 }
 
-                // Copy all entries from user-specific keystore (may overwrite system entries with same alias)
+                // Copy ONLY the specific certificate from user-specific Sign/Crypt keystore
+                // Find the certificate that matches the configured fingerprint
+                String authCertFingerprint = httpAuthentication.getCertificateFingerprint();
+                System.out.println("Looking for auth cert with fingerprint: " + authCertFingerprint);
+
                 KeyStore userKS = userSpecificStore.getKeystore();
-                java.util.Enumeration<String> userAliases = userKS.aliases();
+                String targetAlias = this.findAliasByFingerprint(userKS, authCertFingerprint);
+
                 int userCount = 0;
-                while (userAliases.hasMoreElements()) {
-                    String alias = userAliases.nextElement();
-                    if (userKS.isKeyEntry(alias)) {
-                        Key key = userKS.getKey(alias, userSpecificStore.getKeystorePass());
-                        Certificate[] chain = userKS.getCertificateChain(alias);
-                        mergedKeystore.setKeyEntry(alias, key, keystorePassword, chain);
+                if (targetAlias != null) {
+                    System.out.println("Found auth cert with alias: " + targetAlias);
+                    if (userKS.isKeyEntry(targetAlias)) {
+                        Key key = userKS.getKey(targetAlias, userSpecificStore.getKeystorePass());
+                        Certificate[] chain = userKS.getCertificateChain(targetAlias);
+                        mergedKeystore.setKeyEntry(targetAlias, key, keystorePassword, chain);
                         userCount++;
-                    } else if (userKS.isCertificateEntry(alias)) {
-                        Certificate cert = userKS.getCertificate(alias);
-                        mergedKeystore.setCertificateEntry(alias, cert);
+                        System.out.println("Copied key entry: " + targetAlias);
+                    } else if (userKS.isCertificateEntry(targetAlias)) {
+                        Certificate cert = userKS.getCertificate(targetAlias);
+                        mergedKeystore.setCertificateEntry(targetAlias, cert);
                         userCount++;
+                        System.out.println("Copied cert entry: " + targetAlias);
                     }
+                } else {
+                    System.out.println("WARNING: Could not find certificate with fingerprint " + authCertFingerprint + " in user Sign/Crypt keystore");
                 }
-                System.out.println("Copied " + userCount + " entries from user-specific keystore");
+                System.out.println("Copied " + userCount + " certificate from user-specific Sign/Crypt keystore");
 
                 // Create a wrapper that implements KeystoreStorage interface with our merged keystore
                 this.certStore = new KeystoreStorage() {

@@ -246,7 +246,7 @@ export default function Layout() {
           <h2 style={{ margin: 0, marginRight: '2rem' }}>AS2 Server</h2>
           <Link to="/" style={linkStyle}>Dashboard</Link>
           {showPartners && <Link to="/partners" style={linkStyle}>My Partners</Link>}
-          {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt/TLS</Link>}
+          {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt</Link>}
           {showMessages && <Link to="/messages" style={linkStyle}>AS2 Messages</Link>}
           {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
           {showSystem && <Link to="/system" style={linkStyle}>System</Link>}

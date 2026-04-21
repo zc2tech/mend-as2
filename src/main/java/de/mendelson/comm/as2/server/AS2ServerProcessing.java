@@ -2830,15 +2830,25 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         int userId = request.getUserId();
         boolean hasUserManagePermission = request.hasUserManagePermission();
 
+        System.out.println("[DEBUG MessageOverview] Request userId: " + userId);
+        System.out.println("[DEBUG MessageOverview] hasUserManagePermission: " + hasUserManagePermission);
+        System.out.println("[DEBUG MessageOverview] Total messages before filter: " + messageList.size());
+
         if (userId > 0 && !hasUserManagePermission) {
             // Regular user - filter to show only their own messages (based on owner_user_id)
             List<AS2MessageInfo> filteredList = new java.util.ArrayList<>();
             for (AS2MessageInfo message : messageList) {
+                System.out.println("[DEBUG MessageOverview] Message " + message.getMessageId() +
+                                 " owner_user_id=" + message.getOwnerUserId() +
+                                 " (looking for userId=" + userId + ")");
                 if (message.getOwnerUserId() == userId) {
                     filteredList.add(message);
                 }
             }
+            System.out.println("[DEBUG MessageOverview] Filtered messages count: " + filteredList.size());
             messageList = filteredList;
+        } else {
+            System.out.println("[DEBUG MessageOverview] No filtering applied (admin or USER_MANAGE permission)");
         }
         // else: admin (userId=1) or USER_MANAGE permission - see all messages
 

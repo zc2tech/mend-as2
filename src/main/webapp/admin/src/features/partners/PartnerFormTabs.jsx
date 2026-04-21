@@ -143,6 +143,10 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const { user } = useAuth();
   const [generatingUrl, setGeneratingUrl] = useState(false);
 
+  // Password visibility state for HTTP Authentication tab
+  const [showMessagePassword, setShowMessagePassword] = useState(false);
+  const [showAsyncMDNPassword, setShowAsyncMDNPassword] = useState(false);
+
   // Handle ESC key to close dialog
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -155,16 +159,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     return () => document.removeEventListener('keydown', handleEscKey);
   }, [onClose]);
 
-  // Fetch certificates from both keystores for the dropdowns
-  const { data: signCertificates, isLoading: signCertsLoading } = useCertificates('sign');
-  const { data: tlsCertificates, isLoading: tlsCertsLoading } = useCertificates('tls');
-
-  // Combine certificates from both keystores
-  const certificates = [
-    ...(signCertificates || []).map(cert => ({ ...cert, source: 'Sign/Crypt' })),
-    ...(tlsCertificates || []).map(cert => ({ ...cert, source: 'TLS' }))
-  ];
-  const certsLoading = signCertsLoading || tlsCertsLoading;
+  // Fetch certificates from sign keystore only (no user-specific TLS)
+  const { data: certificates, isLoading: certsLoading } = useCertificates('sign');
 
   const {
     register,
@@ -1116,13 +1112,37 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
-                          <input
-                            type="password"
-                            {...register('httpAuthMessagePassword')}
-                            placeholder="HTTP password"
-                            style={{ ...inputStyle, flex: 1 }}
-                            disabled={isSubmitting}
-                          />
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                              type={showMessagePassword ? "text" : "password"}
+                              {...register('httpAuthMessagePassword')}
+                              placeholder="HTTP password"
+                              style={{ ...inputStyle, width: '100%', paddingRight: '2.5rem' }}
+                              disabled={isSubmitting}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowMessagePassword(!showMessagePassword)}
+                              style={{
+                                position: 'absolute',
+                                right: '0.5rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#6c757d',
+                                fontSize: '1.1rem'
+                              }}
+                              title={showMessagePassword ? "Hide password" : "Show password"}
+                            >
+                              {showMessagePassword ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1212,13 +1232,37 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
-                          <input
-                            type="password"
-                            {...register('httpAuthAsyncMDNPassword')}
-                            placeholder="HTTP password for async MDN"
-                            style={{ ...inputStyle, flex: 1 }}
-                            disabled={isSubmitting}
-                          />
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                              type={showAsyncMDNPassword ? "text" : "password"}
+                              {...register('httpAuthAsyncMDNPassword')}
+                              placeholder="HTTP password for async MDN"
+                              style={{ ...inputStyle, width: '100%', paddingRight: '2.5rem' }}
+                              disabled={isSubmitting}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowAsyncMDNPassword(!showAsyncMDNPassword)}
+                              style={{
+                                position: 'absolute',
+                                right: '0.5rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#6c757d',
+                                fontSize: '1.1rem'
+                              }}
+                              title={showAsyncMDNPassword ? "Hide password" : "Show password"}
+                            >
+                              {showAsyncMDNPassword ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1465,8 +1509,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                                 >
                                   <option value="">-- Select Certificate --</option>
                                   {certificates?.map((cert) => (
-                                    <option key={`${cert.source}-${cert.fingerprintSHA1}`} value={cert.fingerprintSHA1}>
-                                      {cert.alias} ({cert.source})
+                                    <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                                      {cert.alias}
                                     </option>
                                   ))}
                                 </select>

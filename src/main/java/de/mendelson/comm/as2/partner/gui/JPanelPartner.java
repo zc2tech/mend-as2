@@ -701,12 +701,16 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMessage, true);
         } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMessage, true);
-            // Set selected certificate (use TLS certificate manager for HTTP auth)
+            // Set selected certificate (use Sign/Crypt certificate manager for HTTP auth)
             String fingerprint = this.partner.getAuthenticationCredentialsMessage().getCertificateFingerprint();
+            System.out.println("GUI [LOAD]: HTTP Auth Message Certificate mode");
+            System.out.println("GUI [LOAD]:   Fingerprint from DB: " + fingerprint);
             if (fingerprint != null && !fingerprint.isEmpty()) {
-                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint);
+                KeystoreCertificate cert = this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprint);
+                System.out.println("GUI [LOAD]:   Certificate found in keystore: " + (cert != null ? cert.getAlias() : "NOT FOUND"));
                 if (cert != null) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, cert);
+                    System.out.println("GUI [LOAD]:   Set combobox to: " + cert.getAlias());
                 } else {
                     // Fingerprint in DB but certificate not found in keystore - select placeholder
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
@@ -716,7 +720,7 @@ public class JPanelPartner extends JPanel {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMessage.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
-                   
+                    System.out.println("GUI [LOAD]:   No fingerprint in DB, selecting placeholder");
                 }
             }
         } else {
@@ -730,12 +734,16 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMDN, true);
         } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMDN, true);
-            // Set selected certificate (use TLS certificate manager for HTTP auth)
+            // Set selected certificate (use Sign/Crypt certificate manager for HTTP auth)
             String fingerprintMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint();
+            System.out.println("GUI [LOAD]: HTTP Auth Async MDN Certificate mode");
+            System.out.println("GUI [LOAD]:   Fingerprint from DB: " + fingerprintMDN);
             if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
-                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN);
+                KeystoreCertificate cert = this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN);
+                System.out.println("GUI [LOAD]:   Certificate found in keystore: " + (cert != null ? cert.getAlias() : "NOT FOUND"));
                 if (cert != null) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, cert);
+                    System.out.println("GUI [LOAD]:   Set combobox to: " + cert.getAlias());
                 } else {
                     // Fingerprint in DB but certificate not found in keystore - select placeholder
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
@@ -745,7 +753,7 @@ public class JPanelPartner extends JPanel {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMDN.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
-                   
+                    System.out.println("GUI [LOAD]:   No fingerprint in DB, selecting placeholder");
                 }
             }
         } else {
@@ -4181,20 +4189,34 @@ public class JPanelPartner extends JPanel {
     private void jComboBoxHttpAuthCertMessageActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxHttpAuthCertMessageActionPerformed
         if (this.partner != null && this.jComboBoxHttpAuthCertMessage.getSelectedItem() != null) {
             KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMessage.getSelectedItem();
+            String fingerprint = certificate.getFingerPrintSHA1();
+            System.out.println("GUI [SAVE]: HTTP Auth Message Certificate selected");
+            System.out.println("GUI [SAVE]:   Selected cert: " + certificate.getAlias());
+            System.out.println("GUI [SAVE]:   Fingerprint: " + fingerprint);
             this.partner.getAuthenticationCredentialsMessage()
-                    .setCertificateFingerprint(certificate.getFingerPrintSHA1());
+                    .setCertificateFingerprint(fingerprint);
+            System.out.println("GUI [SAVE]:   Saved to partner object");
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
+        } else {
+            System.out.println("GUI [SAVE]: HTTP Auth Message Certificate - partner or selectedItem is null");
         }
     }// GEN-LAST:event_jComboBoxHttpAuthCertMessageActionPerformed
 
     private void jComboBoxHttpAuthCertMDNActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxHttpAuthCertMDNActionPerformed
         if (this.partner != null && this.jComboBoxHttpAuthCertMDN.getSelectedItem() != null) {
             KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMDN.getSelectedItem();
+            String fingerprint = certificate.getFingerPrintSHA1();
+            System.out.println("GUI [SAVE]: HTTP Auth Async MDN Certificate selected");
+            System.out.println("GUI [SAVE]:   Selected cert: " + certificate.getAlias());
+            System.out.println("GUI [SAVE]:   Fingerprint: " + fingerprint);
             this.partner.getAuthenticationCredentialsAsyncMDN()
-                    .setCertificateFingerprint(certificate.getFingerPrintSHA1());
+                    .setCertificateFingerprint(fingerprint);
+            System.out.println("GUI [SAVE]:   Saved to partner object");
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
+        } else {
+            System.out.println("GUI [SAVE]: HTTP Auth Async MDN Certificate - partner or selectedItem is null");
         }
     }// GEN-LAST:event_jComboBoxHttpAuthCertMDNActionPerformed
 
@@ -4264,10 +4286,10 @@ public class JPanelPartner extends JPanel {
             return;
         }
 
-        // Show certificate selection dialog
+        // Show certificate selection dialog - use Sign/Crypt certificates only
         JDialogSelectCertificate dialog = new JDialogSelectCertificate(
                 SwingUtilities.getWindowAncestor(this),
-                this.certificateManagerSSL,
+                this.certificateManagerEncSign,
                 rb.getResourceString("inboundauth.cert.select.title"),
                 rb.getResourceString("inboundauth.cert.select.message"));
         dialog.setVisible(true);

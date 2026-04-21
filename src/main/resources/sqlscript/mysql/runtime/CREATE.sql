@@ -34,7 +34,9 @@ CREATE TABLE messages (
   resendcounter INT DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
   secureconnection INT DEFAULT 0 NOT NULL,
-  owner_user_id INT DEFAULT 0 NOT NULL
+  owner_user_id INT DEFAULT 0 NOT NULL,
+  payloadformat VARCHAR(50),
+  payloaddoctype VARCHAR(100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);

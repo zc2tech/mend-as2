@@ -56,10 +56,11 @@ public class JDialogSelectCertificate extends JDialog {
         messagePanel.add(messageLabel, BorderLayout.CENTER);
         add(messagePanel, BorderLayout.NORTH);
 
-        // Certificate list in center
+        // Certificate list in center - show all user-specific certificates (both key pairs and public certs)
         listModel = new DefaultListModel<>();
         List<KeystoreCertificate> certList = certificateManager.getKeyStoreCertificateList();
         for (KeystoreCertificate cert : certList) {
+            // Add all certificates (no filtering by key type)
             listModel.addElement(cert);
         }
 
