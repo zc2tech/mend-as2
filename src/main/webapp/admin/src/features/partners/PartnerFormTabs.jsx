@@ -277,15 +277,15 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       if (response.data.url) {
         // Replace protocol in the generated URL
         let generatedUrl = response.data.url;
-        if (protocol === 'http') {
-          generatedUrl = generatedUrl.replace('https://', 'http://');
-          // Also update port if default HTTPS port (8443) to default HTTP port (8080)
-          generatedUrl = generatedUrl.replace(':8443/', ':8080/');
-        } else if (protocol === 'https') {
-          generatedUrl = generatedUrl.replace('http://', 'https://');
-          // Also update port if default HTTP port (8080) to default HTTPS port (8443)
-          generatedUrl = generatedUrl.replace(':8080/', ':8443/');
-        }
+        // if (protocol === 'http') {
+        //   generatedUrl = generatedUrl.replace('https://', 'http://');
+        //   // Also update port if default HTTPS port (8443) to default HTTP port (8080)
+        //   generatedUrl = generatedUrl.replace(':8443/', ':8080/');
+        // } else if (protocol === 'https') {
+        //   generatedUrl = generatedUrl.replace('http://', 'https://');
+        //   // Also update port if default HTTP port (8080) to default HTTPS port (8443)
+        //   generatedUrl = generatedUrl.replace(':8080/', ':8443/');
+        // }
 
         setValue('url', generatedUrl);
         setValue('mdnURL', generatedUrl);

@@ -153,10 +153,9 @@ public class ServerConfigurationHelper {
             if (protocol.toLowerCase().contains("ssl") && reqProtocol.equals("https")) {
                 return listener;
             } else {
-                // If the protocol doesn't match, we can check if it's a fallback option
-                if (reqProtocol.equals(reqProtocol)) {
-                    // Prefer HTTPS over HTTP
-                    return listener;
+                // if it's  not ssl/https, then it's http
+                if (reqProtocol.equals("http")) {
+                   return listener;
                 }
             }
         }
