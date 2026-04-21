@@ -35,6 +35,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Account enable/disable functionality
   - Admin user protection (cannot be disabled or deleted)
   - User switching for admin users (test permissions, immediate data refresh)
+  - ESC key support in Create/Edit User dialogs
+  - Double-submission prevention during user creation (button disabled while processing)
 
 - **HTTP Authentication (Outbound)**
   - Flexible HTTP Basic Auth for partner connections
@@ -226,6 +228,26 @@ export AS2_DATABASE_TYPE=mysql
 # or
 export AS2_DATABASE_TYPE=postgresql
 ```
+
+### Server Hostname Configuration
+
+For email notifications (user creation, password reset), configure the server hostname:
+
+Edit `config/as2.properties`:
+
+```properties
+# Server hostname for email links
+as2.server.hostname=as2.example.com
+```
+
+Or set environment variable:
+```bash
+export AS2_SERVER_HOSTNAME=as2.example.com
+```
+
+If not configured, the system will auto-detect using Java's `InetAddress.getLocalHost().getCanonicalHostName()`.
+
+The HTTPS port is always obtained from the running Jetty server (actual port, not hardcoded).
 
 ### PostgreSQL Configuration
 
@@ -550,17 +572,20 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
   - **TLS** - System-wide HTTPS server certificates (permission-based access)
-  - **Tracker Conf** - Configure tracker endpoint settings
+  - **Tracker Conf** - Configure tracker endpoint settings (save feedback with alerts)
   - **IP Whitelist** - Multi-level IP access control (5 tabs)
     - Settings: Enable per endpoint type and select mode
     - Global: Universal IP patterns
     - Partner-Specific: Per-partner IP restrictions
     - User-Specific: Per-user IP restrictions  
     - Block Log: View blocked access attempts
+  - **Notification** - Email notification settings with improved layout
+    - SMTP server configuration (hostname, security, port in single row)
+    - Email addresses for notifications
+    - Password preservation (blank field keeps existing password)
   - System Events
   - Search in Server Log
   - Maintenance
-  - Notification
 - **Users** - User and role management (Admin only)
   - Protected admin user (cannot disable/delete)
 - **Preferences** - HTTP authentication credentials (user-specific)
@@ -853,6 +878,12 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Admin user partner visibility bypass (see all partners)
 - [x] Restore scripts assume existing databases (drop tables only)
 - [x] IP Whitelist Management (multi-level, per endpoint, 3 modes)
+- [x] Notification Settings UI improvements (compact SMTP layout)
+- [x] Password preservation in notification settings (blank keeps existing)
+- [x] Server hostname configuration for email links (as2.properties)
+- [x] Dynamic port detection from running Jetty server
+- [x] ESC key support in user management dialogs
+- [x] Double-submission prevention in user creation
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -881,6 +912,9 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Test SMTP with "Send Test Mail"
 - For Gmail: use App Password
 - For Aliyun/163: use Authorization Code
+- Verify SMTP settings in System → Notification
+- Check that From address matches SMTP username (required by most providers)
+- Ensure SMTP password is set (blank field preserves existing password)
 
 **Partner Not Visible in Message Send**
 - Check partner visibility settings (Partners → Edit → Visibility tab)
