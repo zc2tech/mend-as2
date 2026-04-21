@@ -727,12 +727,10 @@ public class BCCryptoHelper {
      */
     public MimeMultipart sign(MimeBodyPart body, Certificate[] chain, Key key, String digest,
             boolean useAlgorithmIdentifierProtectionAttribute, String providerName) throws Exception {
-        System.out.println("[DEBUG BCCryptoHelper.sign] Input digest: " + digest);
         X509Certificate x509Cert = this.castCertificate(chain[0]);
         PrivateKey privKey = this.getPrivateKey(key);
         //call this generator with a S/MIME 3.1 compatible constructor
         SMIMESignedGenerator signedDataGenerator = new SMIMESignedGenerator("binary", SMIME_3_1_MICALGS);
-        System.out.println("[DEBUG BCCryptoHelper.sign] SMIME_3_1_MICALGS map: " + SMIME_3_1_MICALGS);
         //The SMIMECapabilityVector indicates the supported cryptographic
         //algorithms of an S/MIME client for secure email communication
         ASN1EncodableVector signedAttributes = new ASN1EncodableVector();
@@ -743,7 +741,6 @@ public class BCCryptoHelper {
         signedAttributes.add(new SMIMECapabilitiesAttribute(caps));
         boolean isECKey = x509Cert.getPublicKey().getAlgorithm().equals("EC");
         String algorithm = this.getSignAlgorithmByInternalDigestName(digest, isECKey);
-        System.out.println("[DEBUG BCCryptoHelper.sign] algorithm: " + algorithm + ", isECKey: " + isECKey);
         signedDataGenerator.addSignerInfoGenerator(
                 this.createSignerInfoGenerator(signedAttributes, privKey, x509Cert, algorithm,
                         useAlgorithmIdentifierProtectionAttribute, providerName)
@@ -754,7 +751,6 @@ public class BCCryptoHelper {
         Store<X509CertificateHolder> certStore = new JcaCertStore(certList);
         signedDataGenerator.addCertificates(certStore);
         MimeMultipart signedPart = signedDataGenerator.generate(body);
-        System.out.println("[DEBUG BCCryptoHelper.sign] Generated multipart Content-Type: " + signedPart.getContentType());
         return (signedPart);
     }
 

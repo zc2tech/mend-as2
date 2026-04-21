@@ -1118,7 +1118,6 @@ public class AS2MessageCreation {
         }
         Certificate[] chain = this.signatureCertManager.getCertificateChain(senderSignAlias);
         String digest = this.getDigestForInternalSignType(receiver.getSignType());
-        System.out.println("[DEBUG SIGN] Signing with digest algorithm: " + digest + ", receiver.getSignType()=" + receiver.getSignType());
         BCCryptoHelper helper = new BCCryptoHelper();
         boolean useAlgorithmIdentifierProtectionAttribute = receiver.getUseAlgorithmIdentifierProtectionAttribute();
         if (this.logger != null && !useAlgorithmIdentifierProtectionAttribute) {
@@ -1131,7 +1130,6 @@ public class AS2MessageCreation {
         MimeMultipart signedMultipart = helper.sign(body, chain, senderKey, digest,
                 useAlgorithmIdentifierProtectionAttribute,
                 providerName);
-        System.out.println("[DEBUG SIGN] After signing, checking micalg in multipart...");
         return (signedMultipart);
     }
 
