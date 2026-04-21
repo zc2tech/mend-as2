@@ -184,8 +184,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       email: 'sender@as2server.com',
       syncMDN: true,
       signedMDN: false,
-      encryptionType: 5, // AES-128-CBC
-      signType: 13, // SHA-256
+      encryptionType: 8, // AES-128-CBC
+      signType: 5, // SHA-256
       compressionType: 0, // None
       enableDirPoll: true,
       pollInterval: 30,
@@ -948,24 +948,28 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Digital Signature Algorithm</label>
                       <select {...register('signType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
-                        <option value="0">None</option>
-                        <option value="11">MD5</option>
-                        <option value="12">SHA-1</option>
-                        <option value="13">SHA-256</option>
-                        <option value="14">SHA-384</option>
-                        <option value="15">SHA-512</option>
-                        <option value="16">SHA-1 (RSASSA-PSS)</option>
-                        <option value="17">SHA-256 (RSASSA-PSS)</option>
-                        <option value="18">SHA-384 (RSASSA-PSS)</option>
-                        <option value="19">SHA-512 (RSASSA-PSS)</option>
-                        <option value="20">SHA3-224</option>
-                        <option value="21">SHA3-256</option>
-                        <option value="22">SHA3-384</option>
-                        <option value="23">SHA3-512</option>
-                        <option value="24">SHA3-224 (RSASSA-PSS)</option>
-                        <option value="25">SHA3-256 (RSASSA-PSS)</option>
-                        <option value="26">SHA3-384 (RSASSA-PSS)</option>
-                        <option value="27">SHA3-512 (RSASSA-PSS)</option>
+                        <option value="1">None</option>
+                        <option value="3">MD5</option>
+                        <option value="2">SHA-1</option>
+                        <option value="4">SHA-224</option>
+                        <option value="5">SHA-256</option>
+                        <option value="6">SHA-384</option>
+                        <option value="7">SHA-512</option>
+                        <option value="8">SHA-1 (RSASSA-PSS)</option>
+                        <option value="9">SHA-224 (RSASSA-PSS)</option>
+                        <option value="10">SHA-256 (RSASSA-PSS)</option>
+                        <option value="11">SHA-384 (RSASSA-PSS)</option>
+                        <option value="12">SHA-512 (RSASSA-PSS)</option>
+                        <option value="13">SHA3-224</option>
+                        <option value="14">SHA3-256</option>
+                        <option value="15">SHA3-384</option>
+                        <option value="16">SHA3-512</option>
+                        <option value="17">SHA3-224 (RSASSA-PSS)</option>
+                        <option value="18">SHA3-256 (RSASSA-PSS)</option>
+                        <option value="19">SHA3-384 (RSASSA-PSS)</option>
+                        <option value="20">SHA3-512 (RSASSA-PSS)</option>
+                        <option value="21">SPHINCS+</option>
+                        <option value="22">Dilithium</option>
                       </select>
                     </div>
 
@@ -973,35 +977,35 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Message Encryption Algorithm</label>
                       <select {...register('encryptionType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
-                        <option value="0">None</option>
-                        <option value="1">3DES</option>
-                        <option value="5">AES-128-CBC</option>
-                        <option value="6">AES-192-CBC</option>
-                        <option value="7">AES-256-CBC</option>
-                        <option value="2">AES-128-CCM</option>
-                        <option value="3">AES-192-CCM</option>
-                        <option value="4">AES-256-CCM</option>
-                        <option value="8">AES-128-GCM</option>
-                        <option value="9">AES-192-GCM</option>
-                        <option value="10">AES-256-GCM</option>
-                        <option value="30">AES-128-CBC (RSAES-OAEP)</option>
-                        <option value="31">AES-192-CBC (RSAES-OAEP)</option>
-                        <option value="32">AES-256-CBC (RSAES-OAEP)</option>
-                        <option value="33">AES-128-GCM (RSAES-OAEP)</option>
-                        <option value="34">AES-192-GCM (RSAES-OAEP)</option>
-                        <option value="35">AES-256-GCM (RSAES-OAEP)</option>
-                        <option value="40">Camellia-128-CBC</option>
-                        <option value="41">Camellia-192-CBC</option>
-                        <option value="42">Camellia-256-CBC</option>
-                        <option value="50">ChaCha20-Poly1305</option>
-                        <option value="60">DES</option>
-                        <option value="70">RC2-40</option>
-                        <option value="71">RC2-64</option>
-                        <option value="72">RC2-128</option>
-                        <option value="73">RC2-196</option>
-                        <option value="80">RC4-40</option>
-                        <option value="81">RC4-56</option>
-                        <option value="82">RC4-128</option>
+                        <option value="1">None</option>
+                        <option value="2">3DES</option>
+                        <option value="15">DES</option>
+                        <option value="3">RC2-40</option>
+                        <option value="4">RC2-64</option>
+                        <option value="5">RC2-128</option>
+                        <option value="6">RC2-196</option>
+                        <option value="11">RC4-40</option>
+                        <option value="12">RC4-56</option>
+                        <option value="13">RC4-128</option>
+                        <option value="8">AES-128-CBC</option>
+                        <option value="9">AES-192-CBC</option>
+                        <option value="10">AES-256-CBC</option>
+                        <option value="22">AES-128-CCM</option>
+                        <option value="23">AES-192-CCM</option>
+                        <option value="24">AES-256-CCM</option>
+                        <option value="19">AES-128-GCM</option>
+                        <option value="20">AES-192-GCM</option>
+                        <option value="21">AES-256-GCM</option>
+                        <option value="16">AES-128-CBC (RSAES-OAEP)</option>
+                        <option value="17">AES-192-CBC (RSAES-OAEP)</option>
+                        <option value="18">AES-256-CBC (RSAES-OAEP)</option>
+                        <option value="29">AES-128-GCM (RSAES-OAEP)</option>
+                        <option value="30">AES-192-GCM (RSAES-OAEP)</option>
+                        <option value="31">AES-256-GCM (RSAES-OAEP)</option>
+                        <option value="26">Camellia-128-CBC</option>
+                        <option value="27">Camellia-192-CBC</option>
+                        <option value="28">Camellia-256-CBC</option>
+                        <option value="25">ChaCha20-Poly1305</option>
                       </select>
                     </div>
 
