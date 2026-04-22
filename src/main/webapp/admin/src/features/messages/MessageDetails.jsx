@@ -554,7 +554,9 @@ export default function MessageDetails({ message, onClose }) {
         overflow: 'auto',
         maxHeight: '500px',
         fontFamily: 'monospace',
-        margin: 0
+        margin: 0,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word'
       }}>
         {rawData}
       </pre>
