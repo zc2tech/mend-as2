@@ -223,6 +223,29 @@ public class TrackerServlet extends HttpServlet {
                 boolean basicAuthEnabled = toggles[0];
                 boolean certAuthEnabled = toggles[1];
 
+                LOGGER.info("DEBUG: Loaded tracker auth config for user " + pathUsername +
+                        " (userId=" + userId + ")" +
+                        " - basicAuthEnabled=" + basicAuthEnabled +
+                        ", certAuthEnabled=" + certAuthEnabled +
+                        ", total credentials=" + credentials.size());
+
+                // Log credential details
+                for (int i = 0; i < credentials.size(); i++) {
+                    UserTrackerAuthCredential cred = credentials.get(i);
+                    if (cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                        LOGGER.info("DEBUG: Credential #" + (i + 1) +
+                                " - type=CERTIFICATE" +
+                                ", enabled=" + cred.isEnabled() +
+                                ", alias=" + cred.getCertAlias() +
+                                ", fingerprint=" + cred.getCertFingerprint());
+                    } else if (cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_BASIC) {
+                        LOGGER.info("DEBUG: Credential #" + (i + 1) +
+                                " - type=BASIC" +
+                                ", enabled=" + cred.isEnabled() +
+                                ", username=" + cred.getUsername());
+                    }
+                }
+
             // Check if authentication is required
             if (!basicAuthEnabled && !certAuthEnabled) {
                 // No authentication required - allow all
@@ -271,11 +294,31 @@ public class TrackerServlet extends HttpServlet {
                 if (certAuthEnabled && enabledCertCount > 0 && !basicAuthPassed) {
                     X509Certificate[] certs = (X509Certificate[]) request.getAttribute(
                             "jakarta.servlet.request.X509Certificate");
+
+                    LOGGER.info("DEBUG: Attempting certificate authentication for user " + pathUsername +
+                            " - certAuthEnabled=" + certAuthEnabled +
+                            ", enabledCertCount=" + enabledCertCount);
+
                     if (certs != null && certs.length > 0) {
+                        LOGGER.info("DEBUG: Client certificate found - Subject: " + certs[0].getSubjectX500Principal());
+                        try {
+                            String clientFingerprint = calculateFingerprint(certs[0]);
+                            LOGGER.info("DEBUG: Client certificate fingerprint: " + clientFingerprint);
+                        } catch (Exception e) {
+                            LOGGER.warning("DEBUG: Failed to calculate client cert fingerprint: " + e.getMessage());
+                        }
+
                         certAuthPassed = validateCertAuth(certs[0], credentials);
                         if (certAuthPassed) {
                             authenticatedUser = "cert:" + pathUsername;
+                            LOGGER.info("DEBUG: Certificate authentication PASSED for user " + pathUsername);
+                        } else {
+                            LOGGER.warning("DEBUG: Certificate authentication FAILED for user " + pathUsername +
+                                    " - fingerprint does not match any configured credentials");
                         }
+                    } else {
+                        LOGGER.warning("DEBUG: No client certificate provided for user " + pathUsername +
+                                " - certs array is " + (certs == null ? "null" : "empty"));
                     }
                 }
 
@@ -590,19 +633,43 @@ public class TrackerServlet extends HttpServlet {
         try {
             // Calculate SHA-1 fingerprint
             String certFingerprint = calculateFingerprint(cert);
+            LOGGER.info("DEBUG validateCertAuth: Checking client fingerprint: " + certFingerprint);
+
+            // Count total cert credentials
+            int totalCertCreds = 0;
+            for (UserTrackerAuthCredential credential : credentials) {
+                if (credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    totalCertCreds++;
+                }
+            }
+            LOGGER.info("DEBUG validateCertAuth: Total certificate credentials configured: " + totalCertCreds);
 
             // Check against ALL enabled cert credentials (OR logic)
+            int checkedCount = 0;
             for (UserTrackerAuthCredential credential : credentials) {
-                if (credential.isEnabled()
-                        && credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE
-                        && certFingerprint.equalsIgnoreCase(credential.getCertFingerprint())) {
-                    return true;
+                if (credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    checkedCount++;
+                    LOGGER.info("DEBUG validateCertAuth: Checking credential #" + checkedCount +
+                            " - enabled=" + credential.isEnabled() +
+                            ", alias=" + credential.getCertAlias() +
+                            ", fingerprint=" + credential.getCertFingerprint());
+
+                    if (credential.isEnabled()
+                            && certFingerprint.equalsIgnoreCase(credential.getCertFingerprint())) {
+                        LOGGER.info("DEBUG validateCertAuth: MATCH FOUND with credential: " + credential.getCertAlias());
+                        return true;
+                    } else if (credential.isEnabled()) {
+                        LOGGER.info("DEBUG validateCertAuth: No match - comparing '" +
+                                certFingerprint + "' with '" + credential.getCertFingerprint() + "'");
+                    }
                 }
             }
 
+            LOGGER.warning("DEBUG validateCertAuth: NO MATCH FOUND after checking " + checkedCount + " credentials");
             return false;
         } catch (Exception e) {
             LOGGER.warning("Error validating cert auth: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
