@@ -198,6 +198,13 @@ export default function TrackerMessageList() {
     return docType;
   };
 
+  const formatSize = (bytes) => {
+    if (!bytes) return '0 K';
+    const kb = bytes / 1024;
+    // Format with comma as thousands separator
+    return kb.toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' K';
+  };
+
   const handleDownloadContent = async (trackerId) => {
     setDownloading({ ...downloading, [trackerId]: 'content' });
     try {
@@ -585,7 +592,7 @@ export default function TrackerMessageList() {
                     (message.userAgent.length > 30 ? message.userAgent.substring(0, 30) + '...' : message.userAgent)
                     : '-'}
                 </td>
-                <td style={tdStyle}>{message.contentSize || 0} bytes</td>
+                <td style={tdStyle}>{formatSize(message.contentSize)}</td>
                 <td style={tdStyle}>
                   <span style={{
                     padding: '0.25rem 0.5rem',
