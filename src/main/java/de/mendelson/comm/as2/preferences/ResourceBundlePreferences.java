@@ -80,7 +80,7 @@ public class ResourceBundlePreferences extends MecResourceBundle {
         {"filechooser.keystore", "Please select the keystore file (jks format)."},
         {"label.days", "days"},
         {"label.autodelete", "Auto delete"},
-        {"label.deletemsgolderthan", "Transaction entries older than"},
+        {"label.deletemsgolderthan", "AS2 messages older than"},
         {"label.deletemsglog", "Inform in log and fire system event about auto deleted messages"},
         {"label.deletemsglog.help", "<HTML><strong>Inform in log and fire system event about auto deleted messages</strong><br><br>"
             + "You have the option of deleting old files in the settings (System maintenance).<br>"
@@ -90,6 +90,7 @@ public class ResourceBundlePreferences extends MecResourceBundle {
             + "</HTML>"},
         {"label.deletestatsolderthan", "Statistic data older than"},
         {"label.deletelogdirolderthan", "Log data older than"},
+        {"label.deletetrackerolderthan", "Tracker messages older than"},
         {"label.asyncmdn.timeout", "Max waiting time for async MDN"},
         {"label.asyncmdn.timeout.help", "<HTML><strong>Max waiting time for async MDN</strong>"
             + "<br><br>The time the system will wait for an asynchronous MDN (message delivery notification) for a sent AS2 message before setting the transaction to failed state.<br>"

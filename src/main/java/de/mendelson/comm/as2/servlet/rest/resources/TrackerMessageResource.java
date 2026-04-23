@@ -76,8 +76,8 @@ public class TrackerMessageResource {
             }
 
             IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
-            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
             PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, prefs);
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
 
             // Get current user
@@ -184,8 +184,8 @@ public class TrackerMessageResource {
             }
 
             IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
-            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
             PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, prefs);
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
 
             // Get current user
@@ -277,8 +277,8 @@ public class TrackerMessageResource {
             }
 
             IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
-            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
             PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, prefs);
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
 
             // Get current user
@@ -360,8 +360,8 @@ public class TrackerMessageResource {
             }
 
             IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
-            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
             PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, prefs);
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
 
             // Get current user
@@ -473,8 +473,8 @@ public class TrackerMessageResource {
             }
 
             IDBDriverManager dbDriverManager = server.getServerProcessing().getDBDriverManager();
-            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
             PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, prefs);
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(dbDriverManager, null);
 
             // Get current user

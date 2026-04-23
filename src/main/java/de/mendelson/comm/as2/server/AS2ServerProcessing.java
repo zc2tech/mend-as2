@@ -406,7 +406,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         //process signals
         try {
             if (message instanceof PartnerConfigurationChanged) {
-                this.dirPollManager.partnerConfigurationChanged();
+                if (this.dirPollManager != null) {
+                    this.dirPollManager.partnerConfigurationChanged();
+                }
                 EventBus.getInstance().publish(new RefreshTablePartnerData());
                 return (true);
             } else if (message instanceof RefreshKeystoreCertificates) {
@@ -678,7 +680,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
 
             this.partnerAccess.updatePartner(newPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -716,7 +720,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 }
             }
             this.partnerAccess.deletePartner(foundPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -757,7 +763,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
 
             this.partnerAccess.insertPartner(newPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -3060,9 +3068,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } else {
             response.setProperty(ServerInfoRequest.SERVER_START_METHOD_WINDOWS_SERVICE, "FALSE");
         }
-        //check the number of poll threads
-        response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, String.valueOf(this.dirPollManager.getPollThreadCount()));
-        response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, String.format("%.0f", this.dirPollManager.getPollsPerMinute()));
+        //check the number of poll threads (if DirPollManager is enabled)
+        if (this.dirPollManager != null) {
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, String.valueOf(this.dirPollManager.getPollThreadCount()));
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, String.format("%.0f", this.dirPollManager.getPollsPerMinute()));
+        } else {
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, "0");
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, "0");
+        }
         //display the instance id - this makes only sense if there are more than a single instance possible
         //or if ou are using an external database where the instance activity is logged 
         if (AS2Server.PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)

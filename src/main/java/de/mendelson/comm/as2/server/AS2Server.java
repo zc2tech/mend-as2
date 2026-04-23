@@ -40,6 +40,7 @@ import de.mendelson.comm.as2.timing.MDNReceiptController;
 import de.mendelson.comm.as2.timing.MessageDeleteController;
 import de.mendelson.comm.as2.timing.PostProcessingEventController;
 import de.mendelson.comm.as2.timing.StatisticDeleteController;
+import de.mendelson.comm.as2.timing.TrackerMessageDeleteController;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.clientserver.ClientServer;
@@ -167,6 +168,7 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     private MessageDeleteController logDeleteController = null;
     private MDNReceiptController receiptController = null;
     private StatisticDeleteController statsDeleteController = null;
+    private TrackerMessageDeleteController trackerDeleteController = null;
     private final Handler loggingHandlerSystemOut = new ConsoleHandlerStdout();
     public final static CryptoProvider CRYPTO_PROVIDER = new CryptoProvider();
     private final AS2Config config;
@@ -477,6 +479,8 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
             this.fileDeleteController.startAutoDeleteControl();
             this.statsDeleteController = new StatisticDeleteController(this.dbDriverManager);
             this.statsDeleteController.startAutoDeleteControl();
+            this.trackerDeleteController = new TrackerMessageDeleteController(this.dbDriverManager);
+            this.trackerDeleteController.startAutoDeleteControl();
 
 
             this.eventController = new PostProcessingEventController(this.clientserver,

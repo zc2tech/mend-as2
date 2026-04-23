@@ -105,6 +105,8 @@ public class PreferencesAS2 {
     public static final String AUTO_STATS_DELETE_OLDERTHAN = "autostatsdeleteolderthan";
     public static final String AUTO_LOGDIR_DELETE = "autologdirdelete";
     public static final String AUTO_LOGDIR_DELETE_OLDERTHAN = "autologdirdeleteolderthan";
+    public static final String AUTO_TRACKER_DELETE = "autotrackerdelete";
+    public static final String AUTO_TRACKER_DELETE_OLDERTHAN = "autotrackerdeleteolderthan";
     public static final String LOG_POLL_PROCESS = "logpollprocess";
     public static final String PROXY_HOST = "proxyhost";
     public static final String PROXY_PORT = "proxyport";
@@ -183,6 +185,8 @@ public class PreferencesAS2 {
                             AUTO_STATS_DELETE_OLDERTHAN,
                             AUTO_LOGDIR_DELETE,
                             AUTO_LOGDIR_DELETE_OLDERTHAN,
+                            AUTO_TRACKER_DELETE,
+                            AUTO_TRACKER_DELETE_OLDERTHAN,
                             LOG_POLL_PROCESS,
                             PROXY_HOST,
                             PROXY_PORT,
@@ -238,6 +242,8 @@ public class PreferencesAS2 {
                     Map.entry(COLOR_BLINDNESS, "FALSE"),
                     Map.entry(AUTO_LOGDIR_DELETE, "FALSE"),
                     Map.entry(AUTO_LOGDIR_DELETE_OLDERTHAN, "180"),
+                    Map.entry(AUTO_TRACKER_DELETE, "FALSE"),
+                    Map.entry(AUTO_TRACKER_DELETE_OLDERTHAN, "180"),
                     Map.entry(AUTO_MSG_DELETE_OLDERTHAN_MULTIPLIER_S, String.valueOf(TimeUnit.DAYS.toSeconds(1))),
                     Map.entry(NOTIFICATION_SMTP_CONNECTION_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(15))),
                     Map.entry(NOTIFICATION_SMTP_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(15))),

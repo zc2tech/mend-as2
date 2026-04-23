@@ -175,7 +175,8 @@ public class TrackerServlet extends HttpServlet {
         String userAgent = request.getHeader("User-Agent");
 
         // 4. Check rate limiting
-        TrackerMessageAccessDB dao = new TrackerMessageAccessDB(processing.getDBDriverManager());
+        PreferencesAS2 preferences = new PreferencesAS2(processing.getDBDriverManager());
+        TrackerMessageAccessDB dao = new TrackerMessageAccessDB(processing.getDBDriverManager(), preferences);
 
         if (TrackerRateLimiter.isBlocked(remoteAddr)) {
             long remainingSeconds = TrackerRateLimiter.getBlockRemainingSeconds(remoteAddr);

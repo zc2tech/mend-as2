@@ -57,9 +57,11 @@ public class TrackerMessageHandler {
             TrackerMessageResponse response = new TrackerMessageResponse(trackerRequest);
 
             try {
+                PreferencesAS2 preferences = new PreferencesAS2(dbDriverManager);
+
                 if (trackerRequest.getRequestType() == TrackerMessageRequest.TYPE_LIST_MESSAGES) {
                     // List messages with filters
-                    TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
+                    TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, preferences);
 
                     List<TrackerMessageInfo> messages;
                     if (trackerRequest.getTrackerIdFilter() != null
@@ -84,7 +86,7 @@ public class TrackerMessageHandler {
 
                 } else if (trackerRequest.getRequestType() == TrackerMessageRequest.TYPE_GET_MESSAGE_DETAILS) {
                     // Get single message details
-                    TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager);
+                    TrackerMessageAccessDB dao = new TrackerMessageAccessDB(dbDriverManager, preferences);
                     TrackerMessageInfo info = dao.getTrackerMessage(trackerRequest.getTrackerId());
 
                     response.setMessageDetails(info);

@@ -33,7 +33,9 @@ export default function MaintenanceSettings() {
     autoStatsDelete: true,
     autoStatsDeleteOlderThan: '180',
     autoLogdirDelete: false,
-    autoLogdirDeleteOlderThan: '180'
+    autoLogdirDeleteOlderThan: '180',
+    autoTrackerDelete: false,
+    autoTrackerDeleteOlderThan: '180'
   });
 
   const timeUnitOptions = [
@@ -158,7 +160,9 @@ export default function MaintenanceSettings() {
         'autostatsdelete',
         'autostatsdeleteolderthan',
         'autologdirdelete',
-        'autologdirdeleteolderthan'
+        'autologdirdeleteolderthan',
+        'autotrackerdelete',
+        'autotrackerdeleteolderthan'
       ];
 
       const values = {};
@@ -180,7 +184,9 @@ export default function MaintenanceSettings() {
         autoStatsDelete: values.autostatsdelete === 'TRUE',
         autoStatsDeleteOlderThan: values.autostatsdeleteolderthan || '180',
         autoLogdirDelete: values.autologdirdelete === 'TRUE',
-        autoLogdirDeleteOlderThan: values.autologdirdeleteolderthan || '180'
+        autoLogdirDeleteOlderThan: values.autologdirdeleteolderthan || '180',
+        autoTrackerDelete: values.autotrackerdelete === 'TRUE',
+        autoTrackerDeleteOlderThan: values.autotrackerdeleteolderthan || '180'
       });
     } catch (error) {
       console.error('Error loading maintenance settings:', error);
@@ -200,7 +206,9 @@ export default function MaintenanceSettings() {
         { key: 'autostatsdelete', value: settings.autoStatsDelete ? 'TRUE' : 'FALSE' },
         { key: 'autostatsdeleteolderthan', value: settings.autoStatsDeleteOlderThan },
         { key: 'autologdirdelete', value: settings.autoLogdirDelete ? 'TRUE' : 'FALSE' },
-        { key: 'autologdirdeleteolderthan', value: settings.autoLogdirDeleteOlderThan }
+        { key: 'autologdirdeleteolderthan', value: settings.autoLogdirDeleteOlderThan },
+        { key: 'autotrackerdelete', value: settings.autoTrackerDelete ? 'TRUE' : 'FALSE' },
+        { key: 'autotrackerdeleteolderthan', value: settings.autoTrackerDeleteOlderThan }
       ];
 
       for (const update of updates) {
@@ -309,6 +317,23 @@ export default function MaintenanceSettings() {
           <ToggleSwitch
             checked={settings.autoLogdirDelete}
             onChange={(val) => setSettings({ ...settings, autoLogdirDelete: val })}
+          />
+        </div>
+
+        <div style={rowStyle}>
+          <div style={labelStyle}>Tracker messages older than</div>
+          <input
+            type="number"
+            style={inputStyle}
+            value={settings.autoTrackerDeleteOlderThan}
+            onChange={(e) => setSettings({ ...settings, autoTrackerDeleteOlderThan: e.target.value })}
+            min="1"
+          />
+          <div style={{ ...labelStyle, textAlign: 'left' }}>days</div>
+          <div></div>
+          <ToggleSwitch
+            checked={settings.autoTrackerDelete}
+            onChange={(val) => setSettings({ ...settings, autoTrackerDelete: val })}
           />
         </div>
       </div>

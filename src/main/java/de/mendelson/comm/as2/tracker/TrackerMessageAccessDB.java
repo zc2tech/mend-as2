@@ -20,6 +20,7 @@
  */
 package de.mendelson.comm.as2.tracker;
 
+import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.util.database.IDBDriverManager;
 import de.mendelson.util.systemevents.SystemEvent;
 import de.mendelson.util.systemevents.SystemEventManagerImplAS2;
@@ -44,9 +45,11 @@ public class TrackerMessageAccessDB {
     // private static final Logger LOGGER = Logger.getLogger("de.mendelson.as2.server");
     private final Calendar calendarUTC = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     private final IDBDriverManager dbDriverManager;
+    private final PreferencesAS2 preferences;
 
-    public TrackerMessageAccessDB(IDBDriverManager dbDriverManager) {
+    public TrackerMessageAccessDB(IDBDriverManager dbDriverManager, PreferencesAS2 preferences) {
         this.dbDriverManager = dbDriverManager;
+        this.preferences = preferences;
     }
 
     /**
@@ -238,6 +241,37 @@ public class TrackerMessageAccessDB {
     public int deleteTrackerMessagesOlderThan(Date cutoffDate) {
         int deletedCount = 0;
         String transactionName = "TrackerMessageAccessDB_delete";
+
+        // Get distinct date folders that need to be deleted
+        java.util.Set<String> dateFoldersToDelete = new java.util.HashSet<>();
+        try (Connection conn = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT DISTINCT rawfilename FROM tracker_message WHERE initdateutc < ?")) {
+                stmt.setTimestamp(1, new Timestamp(cutoffDate.getTime()), calendarUTC);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        String rawFilename = rs.getString("rawfilename");
+                        if (rawFilename != null && !rawFilename.isEmpty()) {
+                            // Extract date folder from path: tracker/yyyyMMdd/filename
+                            java.nio.file.Path path = java.nio.file.Paths.get(rawFilename);
+                            if (path.getNameCount() >= 2) {
+                                String dateFolder = path.getName(path.getNameCount() - 2).toString();
+                                // Check if it's a valid date folder (8 digits)
+                                if (dateFolder.matches("\\d{8}")) {
+                                    dateFoldersToDelete.add(dateFolder);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+            return 0;
+        }
+
+        // Delete from database
         try (Connection conn = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
             conn.setAutoCommit(false);
@@ -250,6 +284,7 @@ public class TrackerMessageAccessDB {
                     stmt.setTimestamp(1, new Timestamp(cutoffDate.getTime()), calendarUTC);
                     deletedCount = stmt.executeUpdate();
                     this.dbDriverManager.commitTransaction(txnStmt, transactionName);
+                    conn.commit();
                 } catch (Throwable e) {
                     this.dbDriverManager.rollbackTransaction(txnStmt);
                     throw e;
@@ -257,7 +292,17 @@ public class TrackerMessageAccessDB {
             }
         } catch (Exception e) {
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+            return 0;
         }
+
+        // Delete the date folders (much more efficient than deleting individual files)
+        if (!dateFoldersToDelete.isEmpty()) {
+            TrackerMessageStoreHandler storeHandler = new TrackerMessageStoreHandler(this.preferences);
+            for (String dateFolder : dateFoldersToDelete) {
+                storeHandler.deleteTrackerFolder(dateFolder);
+            }
+        }
+
         return deletedCount;
     }
 

@@ -132,6 +132,7 @@ public class SystemEvent implements Serializable {
     public static final int TYPE_TRANSACTION_DELETE = 304;
     public static final int TYPE_TRANSACTION_CANCEL = 305;
     public static final int TYPE_TRANSACTION_RESEND = 306;
+    public static final int TYPE_TRACKER_MESSAGE_DELETE = 307;
     /**
      * Certificates
      */
