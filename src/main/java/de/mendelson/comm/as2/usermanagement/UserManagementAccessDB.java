@@ -141,8 +141,8 @@ public class UserManagementAccessDB {
      * Create a new user and return the generated ID
      */
     public int createUser(WebUIUser user) throws Exception {
-        String query = "INSERT INTO webui_users (username, password_hash, email, full_name, enabled, must_change_password) " +
-                      "VALUES (?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO webui_users (username, password_hash, email, full_name, enabled, must_change_password, tracker_auth_basic_enabled, tracker_auth_cert_enabled) " +
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = this.dbDriverManager.getConnectionWithoutErrorHandling(IDBDriverManager.DB_CONFIG);
              PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
@@ -152,6 +152,8 @@ public class UserManagementAccessDB {
             stmt.setString(4, user.getFullName());
             stmt.setBoolean(5, user.isEnabled());
             stmt.setBoolean(6, user.isMustChangePassword());
+            stmt.setBoolean(7, false);  // tracker_auth_basic_enabled = false (default)
+            stmt.setBoolean(8, true);   // tracker_auth_cert_enabled = true (default)
             stmt.executeUpdate();
 
             try (ResultSet rs = stmt.getGeneratedKeys()) {

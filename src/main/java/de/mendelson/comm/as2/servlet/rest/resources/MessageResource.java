@@ -650,7 +650,6 @@ public class MessageResource {
                 // MDN - just use raw filename
                 if (targetInfo.getRawFilename() != null) {
                     rawFilename = targetInfo.getRawFilename();
-                    System.out.println("MDN raw filename: " + rawFilename);
                 }
             }
 

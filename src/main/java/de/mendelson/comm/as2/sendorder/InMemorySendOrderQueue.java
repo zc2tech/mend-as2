@@ -109,7 +109,6 @@ public class InMemorySendOrderQueue implements SendOrderQueueInterface {
         LightweightSendOrder order = new LightweightSendOrder(orderId, request);
         waitingQueue.offer(order);
 
-        System.out.println("*** ENQUEUE on queue instance: " + System.identityHashCode(this) + ", waitingQueue.size=" + waitingQueue.size());
         logger.info("*** NEW CODE LOADED *** Enqueued send order " + orderId +
                    " (senderDBId=" + request.getSenderDBId() +
                    ", receiverDBId=" + request.getReceiverDBId() +

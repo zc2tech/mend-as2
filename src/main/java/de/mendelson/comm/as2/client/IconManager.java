@@ -53,6 +53,9 @@ public class IconManager {
     private static MendelsonMultiResolutionImage IMAGE_HIDE;
     private static MendelsonMultiResolutionImage IMAGE_SYSINFO;
     private static MendelsonMultiResolutionImage IMAGE_HOURGLASS;
+    private static MendelsonMultiResolutionImage IMAGE_TRACKER_CONFIG;
+    private static MendelsonMultiResolutionImage IMAGE_MY_TRACKER_CONFIG;
+    private static MendelsonMultiResolutionImage IMAGE_TRACKER_MESSAGES;
 
     private static boolean initialized = false;
 
@@ -115,6 +118,12 @@ public class IconManager {
                 "/de/mendelson/util/systemevents/gui/sysinfo.svg", IMAGE_SIZE_MENU_ITEM);
         IMAGE_HOURGLASS = MendelsonMultiResolutionImage.fromSVG(
                 "/de/mendelson/comm/as2/client/hourglass.svg", IMAGE_SIZE_MENU_ITEM, IMAGE_SIZE_TOOLBAR * 2);
+        IMAGE_TRACKER_CONFIG = MendelsonMultiResolutionImage.fromSVG(
+                "/de/mendelson/comm/as2/tracker/gui/tracker_config.svg", IMAGE_SIZE_MENU_ITEM);
+        IMAGE_MY_TRACKER_CONFIG = MendelsonMultiResolutionImage.fromSVG(
+                "/de/mendelson/comm/as2/tracker/gui/my_tracker_config.svg", IMAGE_SIZE_MENU_ITEM);
+        IMAGE_TRACKER_MESSAGES = MendelsonMultiResolutionImage.fromSVG(
+                "/de/mendelson/comm/as2/tracker/gui/tracker_messages.svg", IMAGE_SIZE_MENU_ITEM);
 
         initialized = true;
     }
@@ -223,6 +232,18 @@ public class IconManager {
         return new ImageIcon(IMAGE_HOURGLASS.toMinResolution(size));
     }
 
+    public static ImageIcon getTrackerConfigIcon(int size) {
+        return new ImageIcon(IMAGE_TRACKER_CONFIG.toMinResolution(size));
+    }
+
+    public static ImageIcon getMyTrackerConfigIcon(int size) {
+        return new ImageIcon(IMAGE_MY_TRACKER_CONFIG.toMinResolution(size));
+    }
+
+    public static ImageIcon getTrackerMessagesIcon(int size) {
+        return new ImageIcon(IMAGE_TRACKER_MESSAGES.toMinResolution(size));
+    }
+
     // Convenience methods for common sizes
 
     public static ImageIcon getDeleteIconToolbar() {
@@ -323,6 +344,18 @@ public class IconManager {
 
     public static ImageIcon getSysinfoIconMenuItem() {
         return getSysinfoIcon(IMAGE_SIZE_MENU_ITEM);
+    }
+
+    public static ImageIcon getTrackerConfigIconMenuItem() {
+        return getTrackerConfigIcon(IMAGE_SIZE_MENU_ITEM);
+    }
+
+    public static ImageIcon getMyTrackerConfigIconMenuItem() {
+        return getMyTrackerConfigIcon(IMAGE_SIZE_MENU_ITEM);
+    }
+
+    public static ImageIcon getTrackerMessagesIconMenuItem() {
+        return getTrackerMessagesIcon(IMAGE_SIZE_MENU_ITEM);
     }
 
     // Multi-resolution image getters (for cases where ImageIcon is not needed)

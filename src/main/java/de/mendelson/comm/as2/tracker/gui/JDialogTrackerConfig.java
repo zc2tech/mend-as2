@@ -46,7 +46,6 @@ public class JDialogTrackerConfig extends JDialog {
 
     // UI Components
     private ToggleSwitch toggleEnabled;
-    private ToggleSwitch toggleAuthRequired;
     private JTextField jTextFieldMaxSize;
     private JTextField jTextFieldRateLimitFailures;
     private JTextField jTextFieldRateLimitWindow;
@@ -183,17 +182,6 @@ public class JDialogTrackerConfig extends JDialog {
             gbc.gridx = 1;
             gbc.gridy = row++;
             jPanelMain.add(toggleEnabled, gbc);
-
-            // Require authentication
-            JLabel jLabelAuthRequired = new JLabel(rb.getResourceString("label.auth.required"));
-            gbc.gridx = 0;
-            gbc.gridy = row;
-            jPanelMain.add(jLabelAuthRequired, gbc);
-
-            toggleAuthRequired = new ToggleSwitch();
-            gbc.gridx = 1;
-            gbc.gridy = row++;
-            jPanelMain.add(toggleAuthRequired, gbc);
 
             // Separator
             JSeparator separator1 = new JSeparator();
@@ -401,7 +389,6 @@ public class JDialogTrackerConfig extends JDialog {
         // Only load settings into fields for admin users
         if (this.isAdmin) {
             toggleEnabled.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_ENABLED)));
-            toggleAuthRequired.setSelected("true".equals(preferences.get(PreferencesAS2.TRACKER_AUTH_REQUIRED)));
             jTextFieldMaxSize.setText(preferences.get(PreferencesAS2.TRACKER_MAX_SIZE_MB));
             jTextFieldRateLimitFailures.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES));
             jTextFieldRateLimitWindow.setText(preferences.get(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS));
@@ -471,8 +458,6 @@ public class JDialogTrackerConfig extends JDialog {
         // Save settings
         preferences.put(PreferencesAS2.TRACKER_ENABLED,
                 String.valueOf(toggleEnabled.isSelected()));
-        preferences.put(PreferencesAS2.TRACKER_AUTH_REQUIRED,
-                String.valueOf(toggleAuthRequired.isSelected()));
         preferences.put(PreferencesAS2.TRACKER_MAX_SIZE_MB,
                 jTextFieldMaxSize.getText().trim());
         preferences.put(PreferencesAS2.TRACKER_RATE_LIMIT_FAILURES,

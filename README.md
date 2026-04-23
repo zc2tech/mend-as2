@@ -106,7 +106,15 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 
 - **Tracker Messages**
   - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
-  - Authentication support (Basic Auth with user-specific credentials)
+  - **User-Specific Tracker Authentication**:
+    - Each user configures their own tracker auth settings (independent from system-wide config)
+    - Personal tracker URL: `/as2/tracker/{username}` uses user's settings
+    - System-wide URL: `/as2/tracker` is REJECTED with HTTP 410 Gone
+    - Two authentication types (can enable both):
+      - **Basic Authentication** - Multiple username/password pairs (OR logic - any match accepted)
+      - **Certificate Authentication** - Multiple certificates from user's Sign/Crypt keystore
+    - Configuration via WebUI: Username dropdown → **My Tracker Conf**
+    - Per-credential enable/disable (no deletion needed)
   - Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
   - WebUI for viewing, searching, and filtering messages
   - Message sorting by timestamp (newest first) with database indexes
@@ -500,27 +508,63 @@ HTTP endpoint for receiving and logging test messages (useful for development an
 
 **Endpoint URLs:**
 ```
-POST http://your-server:8080/as2/tracker
-POST http://your-server:8080/as2/tracker/{username}
+POST http://your-server:8080/as2/tracker/{username}  # User-specific (required)
 ```
+
+**Note:** The system-wide URL `/as2/tracker` (without username) is no longer supported and returns HTTP 410 Gone.
+
+**User-Specific Tracker Authentication:**
+
+Each user independently configures authentication for their personal tracker URL:
+
+1. **Configuration (WebUI)**:
+   - Login to WebUI
+   - Click username dropdown → **My Tracker Conf**
+   - Enable authentication types:
+     - ☑ **Enable Basic Authentication**
+       - Click **Add Credential** to add username/password pairs
+       - Support multiple credentials (OR logic - any match accepted)
+       - Password visibility toggle with eye icon
+       - Enable/disable individual credentials without deletion
+     - ☑ **Enable Certificate Authentication**
+       - Click **Add Certificate** to select from your Sign/Crypt keystore
+       - Support multiple certificates (OR logic - any match accepted)
+       - Shows SHA-1 fingerprint for identification
+       - Enable/disable individual certificates
+   - Your personal tracker URL is displayed at the top
+   - Click **Save Configuration**
+
+2. **Behavior**:
+   - User-specific URL (`/as2/tracker/{username}`): Required format, uses user's configured authentication
+   - System-wide URL (`/as2/tracker`): REJECTED with HTTP 410 Gone error
+   - If both auth types enabled: Must pass EITHER Basic OR Certificate auth (OR logic)
+   - Failed authentication returns HTTP 401 Unauthorized
+   - All authentication attempts logged
 
 **Features:**
 - Accepts any HTTP POST request
 - Logs full request details (headers, body, timestamp)
 - Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
-- Optional Basic Authentication (per-user credentials)
+- User-scoped authentication configuration (no system-wide setting)
 - View messages in WebUI → **Tracker Messages**
 
 **Example Usage:**
 ```bash
-# Without authentication
-curl -X POST http://localhost:8080/as2/tracker \
+# User-specific with Basic Auth
+curl -X POST http://localhost:8080/as2/tracker/alice \
+  -u alice:password123 \
   -H "Content-Type: application/xml" \
   -d @test-message.xml
 
-# With authentication (user-specific path)
+# User-specific with Certificate Auth
 curl -X POST http://localhost:8080/as2/tracker/alice \
-  -u alice:password123 \
+  --cert client-cert.pem \
+  --key client-key.pem \
+  -H "Content-Type: application/xml" \
+  -d @test-message.xml
+
+# User-specific without auth (if user disabled both auth types)
+curl -X POST http://localhost:8080/as2/tracker/alice \
   -H "Content-Type: application/xml" \
   -d @test-message.xml
 ```
@@ -539,12 +583,6 @@ curl -X POST http://localhost:8080/as2/tracker/alice \
 - Complete request reconstruction for Bruno HTTP Client
 - Includes: URL, headers, authentication, body, settings
 - Unzip and import into Bruno to recreate the exact request
-
-**Configuration:**
-- WebUI → **System** → **Tracker Conf**
-- Enable/disable tracker endpoint
-- Configure authentication requirements
-- Set retention period for old messages
 
 ### WebUI Access
 
@@ -580,7 +618,7 @@ When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), 
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
   - **TLS** - System-wide HTTPS server certificates (permission-based access)
-  - **Tracker Conf** - Configure tracker endpoint settings (save feedback with alerts)
+  - **Tracker Conf** - DEPRECATED: Old system-wide tracker config (no longer used)
   - **IP Whitelist** - Multi-level IP access control (5 tabs)
     - Settings: Enable per endpoint type and select mode
     - Global: Universal IP patterns
@@ -596,7 +634,9 @@ When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), 
   - Maintenance
 - **Users** - User and role management (Admin only)
   - Protected admin user (cannot disable/delete)
-- **Preferences** - HTTP authentication credentials (user-specific)
+- **Preferences** - User-specific settings
+  - HTTP Authentication credentials (outbound)
+  - **My Tracker Conf** - Configure personal tracker authentication (Basic Auth + Certificate Auth)
 
 ### SwingUI (Desktop)
 
@@ -892,6 +932,9 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Dynamic port detection from running Jetty server
 - [x] ESC key support in user management dialogs
 - [x] Double-submission prevention in user creation
+- [x] User-specific tracker authentication (Basic + Certificate Auth)
+- [x] My Tracker Conf menu (WebUI user dropdown)
+- [x] Database migration scripts for user tracker auth
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -953,6 +996,17 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Or use headless build profile: `mvn clean package -Pheadless`
 - Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
 - Access via WebUI at http://localhost:8080/as2/webui/
+
+**Tracker Authentication Not Working**
+- Each user has independent tracker authentication settings
+- Configure via username dropdown → **My Tracker Conf**
+- **IMPORTANT**: System-wide URL `/as2/tracker` is NO LONGER SUPPORTED (returns HTTP 410 Gone)
+- **Must use user-specific URL**: `http://server:8080/as2/tracker/{username}`
+- For Basic Auth: Ensure sending system uses one of your configured username/password pairs
+- For Certificate Auth: Ensure certificate is from your Sign/Crypt keystore and enabled
+- Check that at least one authentication type is enabled (Basic or Certificate)
+- If both auth types enabled, request must pass EITHER one (OR logic)
+- Check server logs for authentication failure details
 
 **New Messages Not Appearing**
 - Click the **Search** button to refresh from database (invalidates query cache)

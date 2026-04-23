@@ -45,7 +45,6 @@ export default function TrackerConfig() {
 
   // Local editable state - initialized from query data
   const [enabled, setEnabled] = useState(config?.enabled ?? true);
-  const [authRequired, setAuthRequired] = useState(config?.authRequired ?? true);
   const [maxSizeMB, setMaxSizeMB] = useState(config?.maxSizeMB ?? 2);
   const [rateLimitFailures, setRateLimitFailures] = useState(config?.rateLimitFailures ?? 3);
   const [rateLimitWindowHours, setRateLimitWindowHours] = useState(config?.rateLimitWindowHours ?? 1);
@@ -55,7 +54,6 @@ export default function TrackerConfig() {
   useEffect(() => {
     if (config) {
       setEnabled(config.enabled);
-      setAuthRequired(config.authRequired);
       setMaxSizeMB(config.maxSizeMB);
       setRateLimitFailures(config.rateLimitFailures);
       setRateLimitWindowHours(config.rateLimitWindowHours);
@@ -74,7 +72,6 @@ export default function TrackerConfig() {
     try {
       await api.post('/system/tracker/config', {
         enabled,
-        authRequired,
         maxSizeMB,
         rateLimitFailures,
         rateLimitWindowHours,
@@ -181,26 +178,6 @@ export default function TrackerConfig() {
           </div>
           <p style={descriptionStyle}>
             Allow messages to be posted to /as2/tracker endpoint
-          </p>
-        </div>
-
-        {/* Require Authentication */}
-        <div style={sectionStyle}>
-          <div style={checkboxContainerStyle}>
-            <input
-              type="checkbox"
-              id="requireAuth"
-              checked={authRequired}
-              onChange={(e) => setAuthRequired(e.target.checked)}
-              disabled={!canWrite}
-              style={{ cursor: canWrite ? 'pointer' : 'not-allowed' }}
-            />
-            <label htmlFor="requireAuth" style={{ ...labelStyle, marginBottom: 0, cursor: canWrite ? 'pointer' : 'not-allowed' }}>
-              Require Authentication
-            </label>
-          </div>
-          <p style={descriptionStyle}>
-            Require HTTP Basic Authentication for tracker endpoint access
           </p>
         </div>
 

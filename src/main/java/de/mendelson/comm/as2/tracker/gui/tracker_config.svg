@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .bg{fill:#fff;}
+      .border{fill:gray;}
+      .icon{fill:#534741;}
+    </style>
+  </defs>
+  <!-- Background -->
+  <rect class="bg" x="0.5" y="0.5" width="63" height="63"/>
+  <!-- Border -->
+  <path class="border" d="M63.5,64H.5a.5.5,0,0,1-.5-.5V.5A.5.5,0,0,1,.5,0h63a.5.5,0,0,1,.5.5v63A.5.5,0,0,1,63.5,64ZM1,63H63V1H1Z"/>
+  <!-- Tracker Config Icon: Location pin with gear -->
+  <!-- Location pin -->
+  <path class="icon" d="M32,12 C26,12 21,17 21,23 C21,29 32,42 32,42 C32,42 43,29 43,23 C43,17 38,12 32,12 Z M32,27 C29.8,27 28,25.2 28,23 C28,20.8 29.8,19 32,19 C34.2,19 36,20.8 36,23 C36,25.2 34.2,27 32,27 Z"/>
+  <!-- Gear overlay (smaller) -->
+  <g transform="translate(36, 36) scale(0.4)">
+    <circle class="bg" cx="0" cy="0" r="16"/>
+    <path class="icon" d="M10,-2 L12,-2 L12,2 L10,2 Z M-2,-10 L2,-10 L2,-12 L-2,-12 Z M-10,-2 L-12,-2 L-12,2 L-10,2 Z M-2,10 L2,10 L2,12 L-2,12 Z"/>
+    <path class="icon" d="M7,-7 L9,-5 L5,-1 L3,-3 Z M7,7 L5,9 L1,5 L3,3 Z M-7,7 L-9,5 L-5,1 L-3,3 Z M-7,-7 L-5,-9 L-1,-5 L-3,-3 Z"/>
+    <circle class="icon" cx="0" cy="0" r="4"/>
+  </g>
+</svg>

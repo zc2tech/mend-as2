@@ -2236,34 +2236,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             //reload the partner from the database using direct DB ID lookup
             Partner sender = null;
             int senderDBId = request.getSenderDBId();
-          
+
             if (senderDBId > 0) {
                 sender = this.partnerAccess.getPartner(senderDBId);
-                if (sender != null) {
-                    System.out.println("DEBUG: Found sender - name: " + sender.getName() +
-                                     ", dbId: " + sender.getDBId() +
-                                     ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
-                } else {
-                    System.out.println("DEBUG: ERROR - Sender not found with DB ID: " + senderDBId);
-                }
-            } else {
-                System.out.println("DEBUG: ERROR - Invalid sender DB ID: " + senderDBId);
             }
 
             Partner receiver = null;
             int receiverDBId = request.getReceiverDBId();
-            System.out.println("DEBUG: Looking up receiver by DB ID: " + receiverDBId);
             if (receiverDBId > 0) {
                 receiver = this.partnerAccess.getPartner(receiverDBId);
-                if (receiver != null) {
-                    System.out.println("DEBUG: Found receiver - name: " + receiver.getName() +
-                                     ", dbId: " + receiver.getDBId() +
-                                     ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
-                } else {
-                    System.out.println("DEBUG: ERROR - Receiver not found with DB ID: " + receiverDBId);
-                }
-            } else {
-                System.out.println("DEBUG: ERROR - Invalid receiver DB ID: " + receiverDBId);
             }
             if (sender == null) {
                 throw new Exception("Undefined message sender or message sender does not exist.");
@@ -2271,14 +2252,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             if (receiver == null) {
                 throw new Exception("Undefined message receiver or message receiver does not exist.");
             }
-
-            // CRITICAL DEBUG: Verify partner auth mode BEFORE sending
-            System.out.println("=== BEFORE SENDING ===");
-            System.out.println("Sender: " + sender.getName() + ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
-            System.out.println("Receiver: " + receiver.getName() + ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
-            System.out.println("Receiver auth user: " + receiver.getAuthenticationCredentialsMessage().getUser());
-            System.out.println("Receiver auth pass: " + receiver.getAuthenticationCredentialsMessage().getPassword());
-            System.out.println("Receiver auth cert FP: " + receiver.getAuthenticationCredentialsMessage().getCertificateFingerprint());
 
             // Load sender's user-specific certificate manager
             // Local station (sender) needs their own certificates to sign/encrypt

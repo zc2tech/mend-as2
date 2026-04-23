@@ -1472,64 +1472,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Display user-specific TLS certificate management dialog
      * Allows users to import trusted certificates for inbound authentication
      */
-    private void displayMyTLSCertificates() {
-        final String uniqueId = this.getClass().getName() + ".displayMyTLSCertificates." + System.currentTimeMillis();
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                JDialogCertificates dialog = null;
-                // display wait indicator
-                AS2Gui.this.as2StatusBar.startProgressIndeterminate(
-                        AS2Gui.this.rb.getResourceString("menu.file.certificates.tls.my"), uniqueId);
-                try {
-                    // Get current user ID (0 = admin, >0 = other users)
-                    int currentUserId = AS2Gui.this.userId;
-
-                                        
-                    // Check if user has admin privileges (USER_MANAGE permission)
-                    boolean isAdmin = (AS2Gui.this.permissionManager != null &&
-                                      AS2Gui.this.permissionManager.hasPermission(Permissions.USER_MANAGE));
-
-                    // Create user-specific keystore storage
-                    KeystoreStorage keystoreStorage = new KeystoreStorageImplClientServer(
-                        AS2Gui.this.getBaseClient(),
-                        KeystoreStorageImplClientServer.KEYSTORE_USAGE_SSL,
-                        KeystoreStorageImplClientServer.KEYSTORE_STORAGE_TYPE_JKS,
-                        currentUserId);  // User-specific (0=admin, >0=users)
-
-                    
-                    // Create and show dialog
-                    dialog = new JDialogCertificates(
-                        AS2Gui.this,
-                        AS2Gui.this.getLogger(),
-                        AS2Gui.this,
-                        AS2Gui.this.rb.getResourceString("menu.file.certificates.tls.my"),
-                        AS2ServerVersion.getFullProductName(),
-                        false,
-                        ModuleLock.MODULE_SSL_KEYSTORE,
-                        null);
-                    dialog.setImageSizePopup(IconManager.IMAGE_SIZE_POPUP);
-                    dialog.initialize(keystoreStorage);
-
-                    // Enable admin mode to show toggle for viewing all users' certificates
-                    // Must be called AFTER initialize() so the panel is fully set up
-                    if (isAdmin) {
-                        dialog.setAdminMode(AS2Gui.this.getBaseClient(), currentUserId,
-                            de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest.KEYSTORE_TYPE_TLS);
-                    }
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                    UINotification.instance().addNotification(e);
-                } finally {
-                    AS2Gui.this.as2StatusBar.stopProgressIfExists(uniqueId);
-                    if (dialog != null) {
-                        dialog.setVisible(true);
-                    }
-                }
-            }
-        };
-        GUIClient.submit(runnable);
-    }
 
     private void displayHelpSystem() {
         // Oracle JavaHelp removed - incompatible with JDK 17+
@@ -1759,7 +1701,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         jMenuItemHTTPServerInfo = new javax.swing.JMenuItem();
         jMenuItemSystemEvents = new javax.swing.JMenuItem();
         jMenuUserPreference = new javax.swing.JMenu();
-        jMenuItemMyTLSCertificates = new javax.swing.JMenuItem();
         jMenuItemSearchInServerLog = new javax.swing.JMenuItem();
         jMenuItemSwitchUser = new javax.swing.JMenuItem();
         jMenuItemFileExit = new javax.swing.JMenuItem();
@@ -2308,6 +2249,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         });
         jMenuSystem.add(jMenuItemIPWhitelist);
 
+        // Tracker Config
+        jMenuItemTrackerConfig = new javax.swing.JMenuItem();
+        jMenuItemTrackerConfig.setIcon(IconManager.getTrackerConfigIconMenuItem());
+        jMenuItemTrackerConfig.setText(this.rb.getResourceString("menu.tracker.config"));
+        jMenuItemTrackerConfig.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_K));
+        jMenuItemTrackerConfig.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemTrackerConfigActionPerformed(evt);
+            }
+        });
+        jMenuSystem.add(jMenuItemTrackerConfig);
+
         // TLS Certificates
         jMenuItemCertificatesSSL.setIcon(new javax.swing.ImageIcon(
                 getClass().getResource("/de/mendelson/comm/as2/client/missing_image16x16.gif"))); // NOI18N
@@ -2387,20 +2340,24 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
 
         // Tracker menu
         jMenuTracker = new javax.swing.JMenu();
-        jMenuItemTrackerConfig = new javax.swing.JMenuItem();
         jMenuItemTrackerMessage = new javax.swing.JMenuItem();
 
         jMenuTracker.setText(this.rb.getResourceString("menu.tracker"));
 
-        jMenuItemTrackerConfig.setText(this.rb.getResourceString("menu.tracker.config"));
-        jMenuItemTrackerConfig.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_K));
-        jMenuItemTrackerConfig.addActionListener(new java.awt.event.ActionListener() {
+        // My Tracker Config
+        jMenuItemMyTrackerConfig = new javax.swing.JMenuItem();
+        jMenuItemMyTrackerConfig.setIcon(IconManager.getMyTrackerConfigIconMenuItem());
+        jMenuItemMyTrackerConfig.setText("My Tracker Config");
+        jMenuItemMyTrackerConfig.setAccelerator(KeyboardShortcutUtil
+                .createMenuShortcut(java.awt.event.KeyEvent.VK_3, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
+        jMenuItemMyTrackerConfig.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemTrackerConfigActionPerformed(evt);
+                jMenuItemMyTrackerConfigActionPerformed(evt);
             }
         });
-        jMenuTracker.add(jMenuItemTrackerConfig);
+        jMenuTracker.add(jMenuItemMyTrackerConfig);
 
+        jMenuItemTrackerMessage.setIcon(IconManager.getTrackerMessagesIconMenuItem());
         jMenuItemTrackerMessage.setText(this.rb.getResourceString("menu.tracker.message"));
         jMenuItemTrackerMessage.setAccelerator(KeyboardShortcutUtil.createMenuShortcut(java.awt.event.KeyEvent.VK_K,
                 java.awt.event.InputEvent.SHIFT_DOWN_MASK));
@@ -2452,18 +2409,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             }
         });
         jMenuUserPreference.add(jMenuItemCertificatesSignCrypt);
-
-        // My TLS Certificates menu item
-        jMenuItemMyTLSCertificates.setIcon(IconManager.getCertificateIconMenuItem());
-        jMenuItemMyTLSCertificates.setText(this.rb.getResourceString("menu.file.certificates.tls.my"));
-        jMenuItemMyTLSCertificates.setAccelerator(KeyboardShortcutUtil
-                .createMenuShortcut(java.awt.event.KeyEvent.VK_2, java.awt.event.InputEvent.SHIFT_DOWN_MASK));
-        jMenuItemMyTLSCertificates.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                displayMyTLSCertificates();
-            }
-        });
-        jMenuUserPreference.add(jMenuItemMyTLSCertificates);
 
         jMenuBar.add(jMenuUserPreference);
 
@@ -2558,6 +2503,12 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private void jMenuItemTrackerConfigActionPerformed(java.awt.event.ActionEvent evt) {
         de.mendelson.comm.as2.tracker.gui.JDialogTrackerConfig dialog =
                 new de.mendelson.comm.as2.tracker.gui.JDialogTrackerConfig(this, this.getBaseClient());
+        dialog.setVisible(true);
+    }
+
+    private void jMenuItemMyTrackerConfigActionPerformed(java.awt.event.ActionEvent evt) {
+        de.mendelson.comm.as2.tracker.gui.JDialogMyTrackerConfig dialog =
+                new de.mendelson.comm.as2.tracker.gui.JDialogMyTrackerConfig(this, this.getBaseClient());
         dialog.setVisible(true);
     }
 
@@ -2710,7 +2661,7 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
     private javax.swing.JMenuBar jMenuBar;
     private javax.swing.JMenu jMenuSystem;
     private javax.swing.JMenu jMenuUserPreference;
-    private javax.swing.JMenuItem jMenuItemMyTLSCertificates;
+    private javax.swing.JMenuItem jMenuItemMyTrackerConfig;
     private javax.swing.JMenu jMenuTracker;
     private javax.swing.JMenuItem jMenuItemTrackerConfig;
     private javax.swing.JMenuItem jMenuItemTrackerMessage;
@@ -3200,10 +3151,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
             int originalUserId = getUserIdFromUsername(this.originalUsername);
             boolean includeAdmins = (originalUserId == 1 && "admin".equals(this.originalUsername));
 
-            System.out.println("Switch User: originalUsername=" + this.originalUsername +
-                             ", originalUserId=" + originalUserId +
-                             ", includeAdmins=" + includeAdmins);
-
             // Get list of users, optionally including admins, excluding disabled users
             UserListResponse response = (UserListResponse) this.sendSync(
                 new UserListRequest(!includeAdmins, true), // excludeAdmins=!includeAdmins, enabledOnly=true
@@ -3299,22 +3246,18 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
      * Called after permission loading or user switching
      */
     private void updateMenusForPermissions() {
-        System.out.println("[DEBUG] updateMenusForPermissions() called for user: " + this.username);
         this.getLogger().info("updateMenusForPermissions() called for user: " + this.username);
 
         if (this.permissionManager == null) {
-            System.out.println("[DEBUG] permissionManager is null!");
             this.getLogger().warning("permissionManager is null!");
             return;
         }
 
         if (!this.permissionManager.isLoaded()) {
-            System.out.println("[DEBUG] permissionManager not loaded!");
             this.getLogger().warning("permissionManager not loaded!");
             return;
         }
 
-        System.out.println("[DEBUG] permissionManager loaded successfully");
         this.getLogger().info("permissionManager loaded successfully");
 
         // System Menu items
@@ -3332,7 +3275,6 @@ public class AS2Gui extends GUIClient implements ListSelectionListener, RowSorte
         this.jButtonUserManagement.setVisible(this.permissionManager.hasPermission(Permissions.USER_MANAGE));
 
         boolean hasIPWhitelistPermission = this.permissionManager.hasPermission(Permissions.SYSTEM_CONFIG_IP_WHITELIST);
-        System.out.println("[DEBUG] IP Whitelist permission check: " + hasIPWhitelistPermission + " for user: " + this.username);
         this.getLogger().info("IP Whitelist permission check: " + hasIPWhitelistPermission + " for user: " + this.username);
         this.jMenuItemIPWhitelist.setVisible(hasIPWhitelistPermission);
 

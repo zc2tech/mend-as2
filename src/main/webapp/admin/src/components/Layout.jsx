@@ -159,14 +159,14 @@ export default function Layout() {
     textDecoration: 'none'
   };
 
-  const handlePreferences = () => {
-    setDropdownOpen(false);
-    navigate('/preferences');
-  };
-
   const handleChangePassword = () => {
     setDropdownOpen(false);
     navigate('/change-password');
+  };
+
+  const handleMyTrackerConfig = () => {
+    setDropdownOpen(false);
+    navigate('/my-tracker-config');
   };
 
   const handleSwitchUser = () => {
@@ -274,12 +274,12 @@ export default function Layout() {
             {dropdownOpen && (
               <div style={dropdownMenuStyle}>
                 <button
-                  onClick={handlePreferences}
+                  onClick={handleMyTrackerConfig}
                   style={dropdownItemStyle}
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                 >
-                  Preferences
+                  My Tracker Conf
                 </button>
                 <button
                   onClick={handleChangePassword}

@@ -1,8 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.client.IconManager;
-import de.mendelson.comm.as2.AS2ServerVersion;
-import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.util.security.signature.ListCellRendererSignature;
 import de.mendelson.comm.as2.message.AS2Message;
@@ -19,7 +17,6 @@ import de.mendelson.comm.as2.partner.gui.event.JDialogConfigureEventShell;
 import de.mendelson.comm.as2.partner.gui.event.ResourceBundlePartnerEvent;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.send.HttpConnectionParameter;
-import de.mendelson.comm.as2.server.ServerPlugins;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ButtonUtil;
 import de.mendelson.util.MecResourceBundle;
@@ -138,7 +135,6 @@ public class JPanelPartner extends JPanel {
     /**
      * Visibility panel reference (for remote partners only)
      */
-    private JPanelPartnerVisibility jPanelVisibility = null;
 
     private final static MendelsonMultiResolutionImage IMAGE_DELETE = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/delete.svg",
@@ -1514,10 +1510,6 @@ public class JPanelPartner extends JPanel {
         HttpAuthNoneMDN = new javax.swing.JLabel();
         jPanelSpace345 = new javax.swing.JPanel();
         jPanelSpace485 = new javax.swing.JPanel();
-        jPanelSpaceX11 = new javax.swing.JPanel();
-        jPanelSpaceX14 = new javax.swing.JPanel();
-        jPanelSpaceX12 = new javax.swing.JPanel();
-        jPanelSpaceX13 = new javax.swing.JPanel();
         jPanelHTTPHeader = new javax.swing.JPanel();
         jScrollPaneHttpHeader = new javax.swing.JScrollPane();
         jTableHttpHeader = new javax.swing.JTable();
@@ -4096,8 +4088,6 @@ public class JPanelPartner extends JPanel {
 
     private void jRadioButtonHttpAuthCredentialsMessageItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMessageItemStateChanged
         if (this.partner != null) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
 
             if (this.jRadioButtonHttpAuthNoneMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
@@ -4117,9 +4107,7 @@ public class JPanelPartner extends JPanel {
 
     private void jRadioButtonHttpAuthCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
         if (this.partner != null) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsAsyncMDN().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
-
+         
             if (this.jRadioButtonHttpAuthNoneMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
             } else if (this.jRadioButtonHttpAuthCredentialsMDN.isSelected()) {
@@ -4136,14 +4124,9 @@ public class JPanelPartner extends JPanel {
         this.updateHttpAuthState();
     }// GEN-LAST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
 
-    private void jRadioButtonHttpAuthNoneMDNItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthNoneMDNItemStateChanged
-        this.updateHttpAuthState();
-    }// GEN-LAST:event_jRadioButtonHttpAuthNoneMDNItemStateChanged
-
     private void jRadioButtonHttpAuthNoneMessageItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthNoneMessageItemStateChanged
         if (this.partner != null && this.jRadioButtonHttpAuthNoneMessage.isSelected()) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
+         
             this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
             this.informTreeModelNodeChanged();
         }
@@ -4663,10 +4646,6 @@ public class JPanelPartner extends JPanel {
     private javax.swing.JPanel jPanelSpaceSecurity;
     private javax.swing.JPanel jPanelSpaceSpace;
     private javax.swing.JPanel jPanelSpaceX;
-    private javax.swing.JPanel jPanelSpaceX11;
-    private javax.swing.JPanel jPanelSpaceX12;
-    private javax.swing.JPanel jPanelSpaceX13;
-    private javax.swing.JPanel jPanelSpaceX14;
     private javax.swing.JPanel jPanelSpaceX2;
     private javax.swing.JPanel jPanelSpacer12;
     private javax.swing.JPanel jPanelSpacer13;
@@ -4789,24 +4768,6 @@ public class JPanelPartner extends JPanel {
             setButtonState();
         }
 
-    }
-
-    /**
-     * Helper method to convert auth mode integer to readable name for logging
-     */
-    private String getAuthModeName(int authMode) {
-        switch (authMode) {
-            case HTTPAuthentication.AUTH_MODE_NONE:
-                return "NONE";
-            case HTTPAuthentication.AUTH_MODE_BASIC:
-                return "BASIC";
-            case HTTPAuthentication.AUTH_MODE_USER_PREFERENCE:
-                return "USER_PREFERENCE";
-            case HTTPAuthentication.AUTH_MODE_CERTIFICATE:
-                return "CERTIFICATE";
-            default:
-                return "UNKNOWN";
-        }
     }
 
 }

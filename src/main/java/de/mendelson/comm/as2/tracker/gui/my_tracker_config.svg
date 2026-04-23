@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .bg{fill:#fff;}
+      .border{fill:gray;}
+      .icon{fill:#534741;}
+    </style>
+  </defs>
+  <!-- Background -->
+  <rect class="bg" x="0.5" y="0.5" width="63" height="63"/>
+  <!-- Border -->
+  <path class="border" d="M63.5,64H.5a.5.5,0,0,1-.5-.5V.5A.5.5,0,0,1,.5,0h63a.5.5,0,0,1,.5.5v63A.5.5,0,0,1,63.5,64ZM1,63H63V1H1Z"/>
+  <!-- Location pin icon -->
+  <path class="icon" d="M32,10 C24,10 17,17 17,25 C17,35 32,52 32,52 C32,52 47,35 47,25 C47,17 40,10 32,10 Z M32,30 C29,30 26.5,27.5 26.5,24.5 C26.5,21.5 29,19 32,19 C35,19 37.5,21.5 37.5,24.5 C37.5,27.5 35,30 32,30 Z"/>
+</svg>

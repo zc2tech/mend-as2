@@ -856,9 +856,7 @@ public class MessageHttpUploader {
                     "[OUTBOUND CERT AUTH] About to execute HTTPS request. Client certificate should be sent during TLS handshake.",
                     message.getAS2Info());
             }
-            System.out.println("=== EXECUTING HTTPS REQUEST ===");
-            System.out.println("URL: " + filePost.getUri());
-            System.out.println("Method: " + filePost.getMethod());
+        
             httpClient.execute(filePost, response -> {
                 try {
                     if (response != null) {
@@ -990,22 +988,14 @@ public class MessageHttpUploader {
 
         //TLS key stores not set so far: take the trust store from the system
         if (this.certStore == null) {
-            System.out.println("=== INITIALIZING KEYSTORES ===");
-            System.out.println("as2Info type: " + as2Info.getClass().getName());
-            System.out.println("Sender partner: " + sender.getName() + " (created_by_user_id=" + sender.getCreatedByUserId() + ")");
 
             // For TLS trust validation (server certificate verification), always use system-wide keystore
             int trustStoreUserId = KeydataAccessDB.SYSTEM_WIDE_USER_ID;
-            System.out.println("trustStoreUserId (for server cert validation): " + trustStoreUserId);
 
             // For client certificate authentication:
             // Check if receiver requires certificate authentication
-            System.out.println("DEBUG: httpAuthentication = " + httpAuthentication);
-            System.out.println("DEBUG: httpAuthentication.getAuthMode() = " +
-                             (httpAuthentication != null ? httpAuthentication.getAuthMode() : "null"));
             boolean needsClientCertAuth = (httpAuthentication != null &&
                                           httpAuthentication.getAuthMode() == HTTPAuthentication.AUTH_MODE_CERTIFICATE);
-            System.out.println("Receiver requires client cert auth: " + needsClientCertAuth);
 
             // Determine which keystore to use for client cert
             // Always start with system-wide keystore (needed for HTTPS)
@@ -1014,17 +1004,8 @@ public class MessageHttpUploader {
             int senderUserId = sender.getCreatedByUserId();
 
             if (needsClientCertAuth && senderUserId > 0) {
-                System.out.println("Client cert auth required and sender is user-specific (user_id=" + senderUserId + ")");
-                System.out.println("Will merge system-wide + user-specific keystores");
                 needToMergeKeystores = true;
-            } else if (needsClientCertAuth) {
-                System.out.println("Client cert auth required but sender is system-wide (user_id=" + senderUserId + ")");
-                System.out.println("Will use system-wide keystore only");
-            } else {
-                System.out.println("No client cert auth required");
-                System.out.println("Will use system-wide keystore only");
-            }
-
+            } 
             // Initialize trustStore for server certificate validation
             // Always use system-wide TLS for trust validation
             this.trustStore = new KeystoreStorageImplDB(
@@ -1034,7 +1015,6 @@ public class MessageHttpUploader {
                     KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     trustStoreUserId  // Always use system-wide for trust validation
             );
-            System.out.println("trustStore initialized with userId: " + trustStoreUserId);
 
             // DEBUG: List certificates in trustStore
             try {
@@ -1045,20 +1025,15 @@ public class MessageHttpUploader {
                     trustCount++;
                     boolean isCertEntry = this.trustStore.getKeystore().isCertificateEntry(alias);
                     boolean isKeyEntry = this.trustStore.getKeystore().isKeyEntry(alias);
-                    System.out.println("  [" + trustCount + "] " + alias +
-                                     " | CertEntry: " + isCertEntry +
-                                     " | KeyEntry: " + isKeyEntry);
+          
                     if (isCertEntry || isKeyEntry) {
                         java.security.cert.Certificate cert = this.trustStore.getKeystore().getCertificate(alias);
                         if (cert instanceof java.security.cert.X509Certificate) {
                             java.security.cert.X509Certificate x509 = (java.security.cert.X509Certificate) cert;
-                            System.out.println("      Subject: " + x509.getSubjectX500Principal());
                         }
                     }
                 }
-                System.out.println("Total certificates in trustStore: " + trustCount);
             } catch (Exception e) {
-                System.out.println("Error listing trustStore contents: " + e.getMessage());
             }
 
             // Client certificate store: merge system-wide and user-specific keystores if needed
@@ -1069,7 +1044,6 @@ public class MessageHttpUploader {
                 // Load both system-wide TLS and sender's user-specific Sign/Crypt keystores, then merge them
                 // System TLS: for HTTPS connection
                 // User Sign/Crypt: ONLY the specific certificate selected for authentication
-                System.out.println("=== MERGING KEYSTORES: system-wide TLS + selected Sign/Crypt cert ===");
 
                 KeystoreStorageImplDB systemWideStore = null;
                 boolean hasSystemWideAccess = false;
@@ -1085,10 +1059,7 @@ public class MessageHttpUploader {
                     // Try to access the keystore to verify permissions
                     systemWideStore.getKeystore();
                     hasSystemWideAccess = true;
-                    System.out.println("Loaded system-wide TLS keystore (user_id=-1)");
                 } catch (Exception e) {
-                    System.out.println("Cannot access system-wide keystore (user_id=-1): " + e.getMessage());
-                    System.out.println("This is normal for non-admin users. Will use user-specific keystore only.");
                     if (this.logger != null) {
                         this.logger.log(Level.INFO,
                             "[TLS] User does not have access to system-wide TLS keystore. Using user-specific Sign/Crypt keystore only.",
@@ -1105,7 +1076,6 @@ public class MessageHttpUploader {
                         KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                         senderUserId
                 );
-                System.out.println("Loaded user-specific Sign/Crypt keystore (user_id=" + senderUserId + ")");
 
                 // Create a new merged keystore
                 final KeyStore mergedKeystore = KeyStore.getInstance("JKS");
@@ -1137,38 +1107,30 @@ public class MessageHttpUploader {
                             systemCount++;
                         }
                     }
-                    System.out.println("Copied " + systemCount + " entries from system-wide TLS keystore");
                 } else {
-                    System.out.println("Skipped system-wide TLS keystore (no access)");
                 }
 
                 // Copy ONLY the specific certificate from user-specific Sign/Crypt keystore
                 // Find the certificate that matches the configured fingerprint
                 String authCertFingerprint = httpAuthentication.getCertificateFingerprint();
-                System.out.println("Looking for auth cert with fingerprint: " + authCertFingerprint);
 
                 KeyStore userKS = userSpecificStore.getKeystore();
                 String targetAlias = this.findAliasByFingerprint(userKS, authCertFingerprint);
 
                 int userCount = 0;
                 if (targetAlias != null) {
-                    System.out.println("Found auth cert with alias: " + targetAlias);
                     if (userKS.isKeyEntry(targetAlias)) {
                         Key key = userKS.getKey(targetAlias, userSpecificStore.getKeystorePass());
                         Certificate[] chain = userKS.getCertificateChain(targetAlias);
                         mergedKeystore.setKeyEntry(targetAlias, key, keystorePassword, chain);
                         userCount++;
-                        System.out.println("Copied key entry: " + targetAlias);
                     } else if (userKS.isCertificateEntry(targetAlias)) {
                         Certificate cert = userKS.getCertificate(targetAlias);
                         mergedKeystore.setCertificateEntry(targetAlias, cert);
                         userCount++;
-                        System.out.println("Copied cert entry: " + targetAlias);
                     }
                 } else {
-                    System.out.println("WARNING: Could not find certificate with fingerprint " + authCertFingerprint + " in user Sign/Crypt keystore");
                 }
-                System.out.println("Copied " + userCount + " certificate from user-specific Sign/Crypt keystore");
 
                 // Create a wrapper that implements KeystoreStorage interface with our merged keystore
                 this.certStore = new KeystoreStorage() {
@@ -1257,7 +1219,6 @@ public class MessageHttpUploader {
                         return KeystoreStorageImplDB.KEYSTORE_USAGE_TLS;
                     }
                 };
-                System.out.println("Created merged keystore with " + (systemCount + userCount) + " total entries");
             } else {
                 // Just use system-wide keystore (either no cert auth needed, or cert is in system-wide)
                 this.certStore = new KeystoreStorageImplDB(
@@ -1267,7 +1228,6 @@ public class MessageHttpUploader {
                         KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                         KeydataAccessDB.SYSTEM_WIDE_USER_ID
                 );
-                System.out.println("Using system-wide keystore only");
             }
 
             // DEBUG: List certificates in certStore
@@ -1304,7 +1264,6 @@ public class MessageHttpUploader {
                     }
                 }
             } catch (Exception e) {
-                System.out.println("Error listing certStore contents: " + e.getMessage());
             }
         }
         SSLContext sslcontext;
@@ -1356,7 +1315,6 @@ public class MessageHttpUploader {
                             javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
                         tmf.init(this.trustStore.getKeystore());
                         javax.net.ssl.TrustManager[] trustManagers = tmf.getTrustManagers();
-                        System.out.println("TrustManagers count: " + trustManagers.length);
 
                         // Re-init with both custom KeyManagers and TrustManagers
                         sslcontext.init(keyManagers, trustManagers, null);
@@ -1381,17 +1339,14 @@ public class MessageHttpUploader {
                         while (aliases.hasMoreElements()) {
                             String alias = aliases.nextElement();
                             if (ks.isKeyEntry(alias)) {
-                                System.out.println("  Checking key entry: " + alias);
                                 // Skip system-wide certificates, find user-specific one
                                 if (!alias.equals("vscode-tls") && !alias.equals("testpod-tls")) {
                                     userSpecificAlias = alias;
-                                    System.out.println("  -> Found user-specific certificate: " + alias);
                                     break;
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        System.out.println("  Error searching for user-specific cert: " + e.getMessage());
                     }
 
                     if (userSpecificAlias != null) {
@@ -1508,17 +1463,14 @@ public class MessageHttpUploader {
                         while (aliases.hasMoreElements()) {
                             String alias = aliases.nextElement();
                             if (ks.isKeyEntry(alias)) {
-                                System.out.println("  Checking key entry: " + alias);
                                 // Skip system-wide certificates, find user-specific one
                                 if (!alias.equals("vscode-tls") && !alias.equals("testpod-tls")) {
                                     userSpecificAlias = alias;
-                                    System.out.println("  -> Found user-specific certificate: " + alias);
                                     break;
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        System.out.println("  Error searching for user-specific cert: " + e.getMessage());
                     }
 
                     if (userSpecificAlias != null) {
@@ -1619,11 +1571,9 @@ public class MessageHttpUploader {
                     try {
                         Key key = keystore.getKey(alias, this.certStore.getKeystorePass());
                     } catch (Exception e) {
-                        System.out.println("  Error retrieving private key: " + e.getMessage());
                     }
 
                     if (certFingerprintHex.equals(normalizedFingerprint)) {
-                        System.out.println("=== MATCH FOUND! Returning alias: " + alias + " ===");
                         return alias;
                     }
                 }
@@ -1643,8 +1593,6 @@ public class MessageHttpUploader {
             return -1;
         }
 
-        System.out.println("=== findKeystoreContainingCert ===");
-        System.out.println("Searching for certificate with fingerprint: " + fingerprint);
 
         try {
             // Query database to find which keystore contains this certificate
@@ -1663,11 +1611,9 @@ public class MessageHttpUploader {
             rs.close();
             stmt.close();
 
-            System.out.println("Found " + userIds.size() + " TLS keystores to search");
 
             // Search each keystore for the certificate
             for (int userId : userIds) {
-                System.out.println("Checking keystore for user_id=" + userId);
                 try {
                     KeystoreStorageImplDB storage = new KeystoreStorageImplDB(
                             SystemEventManagerImplAS2.instance(),
@@ -1681,19 +1627,15 @@ public class MessageHttpUploader {
                     String alias = this.findAliasByFingerprint(keystore, fingerprint);
 
                     if (alias != null) {
-                        System.out.println("Certificate found in keystore user_id=" + userId);
                         return userId;
                     }
                 } catch (Exception e) {
-                    System.out.println("Error checking keystore user_id=" + userId + ": " + e.getMessage());
                 }
             }
 
-            System.out.println("Certificate not found in any user-specific keystore");
             return -1;
 
         } catch (Exception e) {
-            System.out.println("Error searching keystores: " + e.getMessage());
             e.printStackTrace();
             return -1;
         }

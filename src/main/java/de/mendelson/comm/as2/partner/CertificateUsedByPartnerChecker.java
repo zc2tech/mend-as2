@@ -58,10 +58,6 @@ public class CertificateUsedByPartnerChecker implements CertificateInUseChecker 
      * Loads all the used certificates and their usage into the info Map
      */
     private void loadCertificateInUseInformation() {
-        // DEBUG LOG: Request details
-        System.out.println("=== CertificateUsedByPartnerChecker: Loading certificate usage info ===");
-        System.out.println("CertificateUsedByPartnerChecker: userId filter = " + this.userId +
-                         " (0=all users, >0=specific user)");
 
         PartnerListRequest request = new PartnerListRequest(PartnerListRequest.LIST_ALL);
         request.setUserId(this.userId);
@@ -71,20 +67,11 @@ public class CertificateUsedByPartnerChecker implements CertificateInUseChecker 
                 Partner.TIMEOUT_PARTNER_REQUEST);
         List<Partner> partnerList = response.getList();
 
-        // DEBUG LOG: How many partners returned
-        System.out.println("CertificateUsedByPartnerChecker: Received " + partnerList.size() + " partners");
-
         //build up list of all fingerprints that are in use
         List<String> fingerprintList = new ArrayList<String>();
         for (Partner singlePartner : partnerList) {
             String cryptFingerprint = singlePartner.getCryptFingerprintSHA1();
             String signFingerprint = singlePartner.getSignFingerprintSHA1();
-
-            // DEBUG LOG: Each partner and their certificates
-            System.out.println("  Partner: " + singlePartner.getName() +
-                             " | isLocal: " + singlePartner.isLocalStation() +
-                             " | Sign: " + signFingerprint +
-                             " | Crypt: " + cryptFingerprint);
 
             if (cryptFingerprint != null && !fingerprintList.contains(cryptFingerprint)) {
                 fingerprintList.add(cryptFingerprint);
@@ -106,13 +93,7 @@ public class CertificateUsedByPartnerChecker implements CertificateInUseChecker 
                 }
             }
         }
-        // DEBUG LOG: Total unique fingerprints
-        System.out.println("CertificateUsedByPartnerChecker: Total unique fingerprints in use: " +
-                          fingerprintList.size());
-        for (String fp : fingerprintList) {
-            System.out.println("  - " + fp);
-        }
-
+    
         for (String fingerPrintSHA1 : fingerprintList) {
             CertificateInUseInfo info = new CertificateInUseInfo(fingerPrintSHA1);
             for (Partner singlePartner : partnerList) {
@@ -165,16 +146,12 @@ public class CertificateUsedByPartnerChecker implements CertificateInUseChecker 
     public CertificateInUseInfo checkUsed(KeystoreCertificate certificate) {
         String fingerPrintSHA1 = certificate.getFingerPrintSHA1();
 
-        // DEBUG LOG: Check request
-        System.out.println("CertificateUsedByPartnerChecker.checkUsed() called for: " +
-                          certificate.getAlias() + " | Fingerprint: " + fingerPrintSHA1);
+      
 
         if (this.infoMap.containsKey(fingerPrintSHA1)) {
             CertificateInUseInfo info = this.infoMap.get(fingerPrintSHA1);
-            System.out.println("  -> FOUND IN USE (usage count: " + info.getUsageList().size() + ")");
             return info;
         } else {
-            System.out.println("  -> NOT FOUND IN USE MAP (will be grayed out)");
             return (new CertificateInUseInfo(fingerPrintSHA1));
         }
     }

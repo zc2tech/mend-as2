@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.client.IconManager;
-import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.partner.Partner;
 import de.mendelson.util.MendelsonMultiResolutionImage;
 import java.awt.Component;

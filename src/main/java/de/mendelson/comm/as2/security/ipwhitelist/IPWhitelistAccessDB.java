@@ -523,7 +523,6 @@ public class IPWhitelistAccessDB {
      * Creates sample blocked attempts across different target types
      */
     public void insertDummyBlockLogs() {
-        System.out.println("[DEBUG] Inserting dummy block log data...");
 
         try (Connection configConnection = dbDriverManager.getConnectionWithoutErrorHandling(
                 IDBDriverManager.DB_CONFIG)) {
@@ -559,7 +558,6 @@ public class IPWhitelistAccessDB {
                     inserted++;
                 }
 
-                System.out.println("[DEBUG] Inserted " + inserted + " dummy block log entries");
             }
         } catch (Throwable e) {
             System.err.println("[DEBUG] Failed to insert dummy data: " + e.getMessage());

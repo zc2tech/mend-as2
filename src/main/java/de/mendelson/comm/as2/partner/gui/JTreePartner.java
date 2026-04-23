@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.client.IconManager;
-import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.security.cert.CertificateManager;
 import de.mendelson.util.security.cert.KeystoreCertificate;
 import de.mendelson.comm.as2.partner.Partner;
