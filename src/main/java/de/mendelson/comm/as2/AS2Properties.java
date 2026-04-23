@@ -210,6 +210,14 @@ public class AS2Properties {
     }
 
     /**
+     * Check if DirPollManager should be enabled
+     * Priority: ENV > System Property > File > Default (false)
+     */
+    public boolean isDirPollManagerEnabled() {
+        return getBoolean("as2.dirpoll.enabled", "AS2_DIRPOLL_ENABLED", false);
+    }
+
+    /**
      * Get integer property with priority: ENV > System Property > File > Default
      */
     private int getInt(String propertyKey, String envVar, int defaultValue) {

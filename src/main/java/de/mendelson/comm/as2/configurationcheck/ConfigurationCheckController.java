@@ -448,6 +448,10 @@ public class ConfigurationCheckController {
          * 300polls/min. This might have impact on the file IO
          */
         private void checkDirPollAmount(List<ConfigurationIssue> newIssueList) {
+            // Skip check if pollManager is disabled
+            if (ConfigurationCheckController.this.pollManager == null) {
+                return;
+            }
             float pollsPerMin = ConfigurationCheckController.this.pollManager.getPollsPerMinute();
             if (pollsPerMin > 300f) {
                 ConfigurationIssue issue = new ConfigurationIssue(ConfigurationIssue.TOO_MANY_DIR_POLLS);

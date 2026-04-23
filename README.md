@@ -257,6 +257,36 @@ If not configured, the system will auto-detect using Java's `InetAddress.getLoca
 
 The HTTPS port is always obtained from the running Jetty server (actual port, not hardcoded).
 
+### Directory Polling Configuration
+
+Control automatic directory polling for file sending:
+
+Edit `config/as2.properties`:
+
+```properties
+# Enable/disable automatic directory polling (default: false)
+as2.dirpoll.enabled=false
+```
+
+Or set environment variable:
+```bash
+export AS2_DIRPOLL_ENABLED=true
+```
+
+Or use system property:
+```bash
+java -Das2.dirpoll.enabled=true -jar mend-as2.jar
+```
+
+**When disabled (default):**
+- Manual sends still work (via SwingUI or WebUI)
+- SendOrder queue processing continues normally
+- No automatic directory monitoring for outbound files
+
+**When enabled:**
+- Automatic polling of configured directories for files to send
+- Partners with poll directories configured will auto-send files
+
 ### PostgreSQL Configuration
 
 **Default port:** 5432  

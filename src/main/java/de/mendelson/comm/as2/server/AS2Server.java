@@ -242,8 +242,10 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
         this.start(importTLS, importSignEnc);
         // stop logging to the console here
         this.logger.removeHandler(this.loggingHandlerSystemOut);
-        // start the partner poll threads
-        this.pollManager.start();
+        // start the partner poll threads (if enabled)
+        if (this.pollManager != null) {
+            this.pollManager.start();
+        }
     }
 
     /**
@@ -483,8 +485,16 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
                     this.sendOrderSender);
             this.eventController.startEventExecution();
 
-            this.pollManager = new DirPollManager(this.certificateManagerEncSign,
-                    this.clientserver, this.dbDriverManager, this.sendOrderSender);
+            // Check if DirPollManager should be enabled
+            AS2Properties props = AS2Properties.getInstance();
+            if (props.isDirPollManagerEnabled()) {
+                this.pollManager = new DirPollManager(this.certificateManagerEncSign,
+                        this.clientserver, this.dbDriverManager, this.sendOrderSender);
+                this.logger.info("DirPollManager enabled");
+            } else {
+                this.pollManager = null;
+                this.logger.info("DirPollManager disabled by configuration (as2.dirpoll.enabled=false)");
+            }
             this.configCheckController = new ConfigurationCheckController(
                     this.certificateManagerEncSign,
                     this.certificateManagerTLS,
