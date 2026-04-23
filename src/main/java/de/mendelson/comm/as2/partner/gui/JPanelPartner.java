@@ -3754,7 +3754,7 @@ public class JPanelPartner extends JPanel {
     private void jTextFieldContentTypeKeyReleased(java.awt.event.KeyEvent evt) {// GEN-FIRST:event_jTextFieldContentTypeKeyReleased
         if (this.partner != null) {
             if (this.jTextFieldContentType.getText().trim().isEmpty()) {
-                this.partner.setContentType("application/EDI-Consent");
+                this.partner.setContentType("application/x12");
             } else {
                 this.partner.setContentType(this.jTextFieldContentType.getText());
             }

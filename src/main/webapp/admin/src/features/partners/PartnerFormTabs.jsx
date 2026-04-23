@@ -180,7 +180,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       url: '',
       mdnURL: '',
       subject: 'AS2 message',
-      contentType: 'application/EDI-Consent',
+      contentType: '',
       email: 'sender@as2server.com',
       syncMDN: true,
       signedMDN: false,

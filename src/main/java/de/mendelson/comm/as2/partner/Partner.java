@@ -61,7 +61,7 @@ public class Partner implements Serializable, Comparable<Partner>, Cloneable {
     private String email = "sender@as2server.com";
     private String url = this.getDefaultURL();
     private String subject = "AS2 message";
-    private String contentType = "application/EDI-Consent";
+    private String contentType = "application/x12";
     private String mdnURL = this.getDefaultURL();
     private boolean syncMDN = true;
     private boolean keepFilenameOnReceipt = false;

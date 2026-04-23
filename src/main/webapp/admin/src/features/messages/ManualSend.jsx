@@ -30,7 +30,7 @@ export default function ManualSend({ onClose }) {
   const [senderPartnerId, setSenderPartnerId] = useState('');
   const [receiverPartnerId, setReceiverPartnerId] = useState('');
   const [subject, setSubject] = useState('AS2 message');
-  const [contentType, setContentType] = useState('application/EDI-Consent');
+  const [contentType, setContentType] = useState('');
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [partners, setPartners] = useState([]);
@@ -83,6 +83,20 @@ export default function ManualSend({ onClose }) {
       setSenderPartnerId(id);
     }
   }, [localStations, senderPartnerId]);
+
+  // Update content type when receiver changes
+  useEffect(() => {
+    if (receiverPartnerId) {
+      const receiver = remotePartners.find(p => String(p.dbid) === receiverPartnerId);
+      if (receiver && receiver.contentType) {
+        setContentType(receiver.contentType);
+      } else {
+        setContentType('');
+      }
+    } else {
+      setContentType('');
+    }
+  }, [receiverPartnerId, remotePartners]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -445,7 +459,7 @@ export default function ManualSend({ onClose }) {
                   onChange={(e) => setContentType(e.target.value)}
                   style={inputStyle}
                   disabled={loading}
-                  placeholder="application/EDI-Consent"
+                  placeholder=""
                 />
                 <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.25rem' }}>
                   MIME type for the first file. Additional files will auto-detect content type from file extension.
