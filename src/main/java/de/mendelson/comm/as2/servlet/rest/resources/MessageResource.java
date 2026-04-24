@@ -480,17 +480,19 @@ public class MessageResource {
 
     /**
      * Get message header (raw HTTP headers)
-     * 
+     *
      * @param messageId      The overview message ID
      * @param entryMessageId Optional - specific entry's message ID (for MDN
      *                       selection)
+     * @param isMDN          Optional - true if selecting MDN entry, false for MSG entry
      */
     @GET
     @Path("/{messageId}/header")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMessageHeader(
             @PathParam("messageId") String messageId,
-            @QueryParam("entryMessageId") String entryMessageId) {
+            @QueryParam("entryMessageId") String entryMessageId,
+            @QueryParam("isMDN") Boolean isMDN) {
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -520,10 +522,11 @@ public class MessageResource {
             // Find the matching detail entry
             AS2Info targetInfo = null;
             String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+            boolean searchForMDN = (isMDN != null && isMDN);
 
             for (Object obj : details) {
                 AS2Info info = (AS2Info) obj;
-                if (searchMessageId.equals(info.getMessageId())) {
+                if (searchMessageId.equals(info.getMessageId()) && info.isMDN() == searchForMDN) {
                     targetInfo = info;
                     break;
                 }
@@ -531,7 +534,7 @@ public class MessageResource {
 
             if (targetInfo == null) {
                 RawDataResponse headerResponse = new RawDataResponse();
-                headerResponse.setRawData("No matching detail found for message ID: " + messageId);
+                headerResponse.setRawData("No matching detail found for message ID: " + searchMessageId + ", isMDN: " + searchForMDN);
                 headerResponse.setIsBase64(false);
                 return Response.ok(headerResponse).build();
             }
@@ -574,17 +577,19 @@ public class MessageResource {
 
     /**
      * Get raw message data (unencrypted)
-     * 
+     *
      * @param messageId      The overview message ID
      * @param entryMessageId Optional - specific entry's message ID (for MDN
      *                       selection)
+     * @param isMDN          Optional - true if selecting MDN entry, false for MSG entry
      */
     @GET
     @Path("/{messageId}/raw")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMessageRawData(
             @PathParam("messageId") String messageId,
-            @QueryParam("entryMessageId") String entryMessageId) {
+            @QueryParam("entryMessageId") String entryMessageId,
+            @QueryParam("isMDN") Boolean isMDN) {
 
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
@@ -618,21 +623,24 @@ public class MessageResource {
             }
 
             // Find the matching detail entry
+            // IMPORTANT: When MSG and MDN have the same messageId, we need to check BOTH
+            // the messageId AND whether it's an MDN to find the correct entry
             AS2Info targetInfo = null;
             String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+            boolean searchForMDN = (isMDN != null && isMDN);
 
             for (Object obj : details) {
                 AS2Info info = (AS2Info) obj;
-                if (searchMessageId.equals(info.getMessageId())) {
+                if (searchMessageId.equals(info.getMessageId()) && info.isMDN() == searchForMDN) {
                     targetInfo = info;
                     break;
                 }
             }
 
             if (targetInfo == null) {
-                System.err.println("ERROR: No matching detail found for message ID: " + messageId);
+                System.err.println("ERROR: No matching detail found for message ID: " + searchMessageId + ", isMDN: " + searchForMDN);
                 RawDataResponse rawResponse = new RawDataResponse();
-                rawResponse.setRawData("No matching detail found");
+                rawResponse.setRawData("No matching detail found for messageId: " + searchMessageId);
                 rawResponse.setIsBase64(false);
                 return Response.ok(rawResponse).build();
             }

@@ -59,7 +59,6 @@ export default function MessageDetails({ message, onClose }) {
           return { data: [] };
         });
 
-        console.log('Message details response:', detailsResponse.data);
         setDetails(detailsResponse.data || []);
 
         // Auto-select first entry if available
@@ -81,8 +80,20 @@ export default function MessageDetails({ message, onClose }) {
   useEffect(() => {
     if (details.length === 0 || selectedDetailIndex < 0) return;
 
-    // Reset to log tab when switching rows
-    setActiveTab('log');
+    // Preserve tab if it's valid for the new selection, otherwise reset to log
+    setActiveTab(prevTab => {
+      const selectedDetail = details[selectedDetailIndex];
+      // If switching to MDN and current tab is a payload tab, reset to log
+      if (selectedDetail?.mdn && prevTab.startsWith('payload-')) {
+        return 'log';
+      }
+      // If current tab is raw or header, keep it selected
+      if (prevTab === 'raw' || prevTab === 'header') {
+        return prevTab;
+      }
+      // Otherwise keep the current tab (log or valid payload)
+      return prevTab;
+    });
 
     const fetchDetailData = async () => {
       try {
@@ -91,11 +102,6 @@ export default function MessageDetails({ message, onClose }) {
 
         const selectedMessageId = selectedDetail.messageId;
         const overviewMessageId = message.messageId; // Use the original overview message ID
-
-        console.log('Selected detail:', selectedDetail);
-        console.log('Selected message ID:', selectedMessageId);
-        console.log('Overview message ID:', overviewMessageId);
-        console.log('Is MDN:', selectedDetail.mdn);
 
         if (!selectedMessageId) {
           console.error('No messageId found in selected detail');
@@ -120,32 +126,25 @@ export default function MessageDetails({ message, onClose }) {
           }),
           // Use overview messageId for raw data, with query param for specific entry
           api.get(`/messages/${overviewMessageId}/raw`, {
-            params: { entryMessageId: selectedMessageId }
+            params: {
+              entryMessageId: selectedMessageId,
+              isMDN: selectedDetail.mdn || false
+            }
           }).catch(e => {
             console.error('Raw data error:', e);
             return { data: { rawData: 'Raw data not available', isBase64: false } };
           }),
           // Use overview messageId for header, with query param for specific entry
           api.get(`/messages/${overviewMessageId}/header`, {
-            params: { entryMessageId: selectedMessageId }
+            params: {
+              entryMessageId: selectedMessageId,
+              isMDN: selectedDetail.mdn || false
+            }
           }).catch(e => {
             console.error('Header error:', e);
             return { data: { rawData: 'Header not available', isBase64: false } };
           })
         ]);
-
-        console.log('Message logs response:', logsResponse.data);
-        if (logsResponse.data && logsResponse.data.length > 0) {
-          console.log('First log entry structure:', logsResponse.data[0]);
-          console.log('First log keys:', Object.keys(logsResponse.data[0]));
-          console.log('First log level object:', logsResponse.data[0].level);
-          if (logsResponse.data[0].level && typeof logsResponse.data[0].level === 'object') {
-            console.log('Level object keys:', Object.keys(logsResponse.data[0].level));
-          }
-        }
-        console.log('Message payloads response:', payloadsResponse.data);
-        console.log('Message raw data response:', rawDataResponse.data);
-        console.log('Message header response:', headerResponse.data);
 
         setLogs(logsResponse.data || []);
         setPayloads(payloadsResponse.data || []);
@@ -497,43 +496,50 @@ export default function MessageDetails({ message, onClose }) {
   };
 
   // Render raw data tab
-  const renderRawData = () => (
-    <div style={{ padding: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0, fontSize: '1rem', color: '#495057' }}>
-          Raw data
-        </h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            onClick={handleDownloadEncrypted}
-            style={{
-              padding: '0.375rem 0.75rem',
-              backgroundColor: '#ffc107',
-              color: '#212529',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            🔒 Download Encrypted
-          </button>
-          <button
-            onClick={handleDownloadDecrypted}
-            style={{
-              padding: '0.375rem 0.75rem',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.875rem'
-            }}
-          >
-            🔓 Download Decrypted
-          </button>
+  const renderRawData = () => {
+    const selectedDetail = details[selectedDetailIndex];
+    const isMDN = selectedDetail?.mdn || false;
+
+    return (
+      <div style={{ padding: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', color: '#495057' }}>
+            Raw data
+          </h3>
+          {/* Hide Download Encrypted/Decrypted buttons for MDN */}
+          {!isMDN && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={handleDownloadEncrypted}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  backgroundColor: '#ffc107',
+                  color: '#212529',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                🔒 Download Encrypted
+              </button>
+              <button
+                onClick={handleDownloadDecrypted}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                🔓 Download Decrypted
+              </button>
+            </div>
+          )}
         </div>
-      </div>
       {rawDataTruncated && (
         <div style={{
           backgroundColor: '#fff3cd',
@@ -564,7 +570,8 @@ export default function MessageDetails({ message, onClose }) {
         {rawData}
       </pre>
     </div>
-  );
+    );
+  };
 
   // Render message header tab - just display raw header content like Swing UI
   const renderHeader = () => (
