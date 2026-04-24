@@ -76,16 +76,16 @@ The JSON file should be an array of objects with these fields:
     "region": "APJ",
     "country": "New Zealand",
     "location": "Auckland",
-    "building": "AKL02",
-    "cidr": "202.126.202.144/28",
+    "building": "Building002",
+    "cidr": "12.33.202.144/28",
     "last_modified": "2024-11-16T04:31Z"
   },
   {
     "region": "EMEA",
     "country": "Kazakhstan",
     "location": "Almaty",
-    "building": "ALA03",
-    "cidr": "80.242.212.240/28",
+    "building": "Building003",
+    "cidr": "80.11.5.240/28",
     "last_modified": "2025-03-07T04:05Z"
   }
 ]
