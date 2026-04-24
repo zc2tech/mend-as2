@@ -609,6 +609,15 @@ curl -X POST http://localhost:8080/as2/tracker/alice \
    - **📦 Payloads** - Extracted payloads (.zip)
    - **🐶 Bruno** - Bruno HTTP Client collection (.zip)
 
+**Sending AS2 Messages (WebUI):**
+1. Navigate to **Messages** → **Send File to Partner**
+2. Select or drag-and-drop files (first file is main payload, others are attachments)
+3. Select sender (local station) and receiver (remote partner)
+4. **Content Type field auto-fills** with selected receiver's configured content type
+5. Optionally override the auto-filled content type for first file
+6. Additional files use auto-detected content type from file extension
+7. Click **Send** to transmit the message
+
 **Bruno Collection:**
 - Complete request reconstruction for Bruno HTTP Client
 - Includes: URL, headers, authentication, body, settings
@@ -639,6 +648,7 @@ When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), 
   - Format filtering (cXML, X12, EDIFACT)
   - Payload format and document type display
   - Messages sorted by Init Date (newest first)
+  - Manual send with content type auto-fill from receiver partner configuration
 - **Tracker Messages** - View tracker endpoint submissions
   - Real-time search with database refresh
   - Format filtering (cXML, X12, EDIFACT, etc.)

@@ -81,6 +81,9 @@ export default function MessageDetails({ message, onClose }) {
   useEffect(() => {
     if (details.length === 0 || selectedDetailIndex < 0) return;
 
+    // Reset to log tab when switching rows
+    setActiveTab('log');
+
     const fetchDetailData = async () => {
       try {
         const selectedDetail = details[selectedDetailIndex];
@@ -923,9 +926,10 @@ export default function MessageDetails({ message, onClose }) {
             style={tabStyle(activeTab === 'header')}
             onClick={() => setActiveTab('header')}
           >
-            📨 Message header
+            📨 {details[selectedDetailIndex]?.mdn ? 'MDN Header' : 'Message header'}
           </button>
-          {payloads.map((payload, index) => (
+          {/* Only show payload tabs for MSG (non-MDN) entries */}
+          {!details[selectedDetailIndex]?.mdn && payloads.map((payload, index) => (
             <button
               key={index}
               style={tabStyle(activeTab === `payload-${index}`)}

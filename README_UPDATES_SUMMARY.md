@@ -1,6 +1,48 @@
 # README.md Updates Summary
 
-## Changes Made
+## Latest Changes (Content-Type Auto-Fill)
+
+Updated README.md to document the new **Content-Type Auto-Fill** feature in manual message sending.
+
+### Sections Updated:
+
+1. **Usage Section - Tracker Endpoint** (after line ~610)
+   - Added new "Sending AS2 Messages (WebUI)" subsection
+   - Documented 7-step process for manual message sending
+   - Highlighted content type auto-fill from receiver partner configuration
+   - Explained fallback behavior (auto-detect from extension for additional files)
+
+2. **WebUI Access Section - Messages** (line ~638)
+   - Added bullet: "Manual send with content type auto-fill from receiver partner configuration"
+
+## Key Messages Conveyed:
+
+- ✅ Content Type field automatically fills with selected receiver's configured content type
+- ✅ User can optionally override the auto-filled value
+- ✅ First file uses specified/auto-filled content type
+- ✅ Additional files use auto-detected content type from file extension
+- ✅ Improves user experience by reducing manual configuration
+
+## Implementation Details:
+
+**Backend Flow:**
+1. `Partner.getContentType()` - Returns partner's configured content type
+2. `AS2MessageCreation.java:458-468` - Fallback logic uses receiver's content type if not specified
+3. `MessageHttpUploader.java:706` - Sets Content-Type HTTP header
+
+**Frontend:**
+- `ManualSend.jsx:88-99` - Added useEffect hook that watches receiverPartnerId
+- Automatically updates contentType state when receiver changes
+- Sets to empty string if no receiver selected or receiver has no content type
+
+**Priority Order:**
+1. User-specified content type (first file only)
+2. Auto-detected from file extension (additional files)
+3. Partner configuration content type (fallback)
+
+---
+
+## Previous Changes (User-Specific Tracker Authentication)
 
 Updated README.md to document the new **User-Specific Tracker Authentication** feature.
 
