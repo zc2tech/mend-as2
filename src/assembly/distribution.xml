@@ -15,7 +15,7 @@
             <directory>${project.build.directory}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>mend-as2-${project.version}.jar</include>
+                <include>mend-as2-${project.version}-full.jar</include>
             </includes>
         </fileSet>
 

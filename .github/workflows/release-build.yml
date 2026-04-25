@@ -25,19 +25,19 @@ jobs:
       - name: Build with Maven Thin
         run: mvn clean package
 
-      - name: Upload Thin artifact to release
+      - name: Upload Thin distributions
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/*.jar
-            target/*.zip
+            target/*-thin-dist.tar.gz
+            target/*-thin-dist.zip
 
       - name: Build with Maven Full
         run: mvn clean package -P full
 
-      - name: Upload Full artifact to release
+      - name: Upload Full distributions
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/*.jar
-            target/*.zip
+            target/*-full-dist.tar.gz
+            target/*-full-dist.zip
