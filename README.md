@@ -35,13 +35,8 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Account enable/disable functionality
   - Admin user protection (cannot be disabled or deleted)
   - User switching for admin users (test permissions, immediate data refresh)
-
-- **HTTP Authentication (Outbound)**
-  - Flexible HTTP Basic Auth for partner connections
-  - Three modes: None, Always Use, Use User Preference
-  - User-specific credential management (WebUI & SwingUI)
-  - Separate credentials for Message and MDN requests
-  - Runtime credential resolution based on partner configuration
+  - ESC key support in Create/Edit User dialogs
+  - Double-submission prevention during user creation (button disabled while processing)
 
 - **Inbound Authentication**
   - System-wide authentication for incoming AS2 messages
@@ -53,13 +48,6 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password show/hide toggle in SwingUI Inbound Auth Basic table (eye icon)
   - HTTP 401 response for failed authentication
   - Authentication logging for security auditing
-
-- **Partner Visibility Control**
-  - User-based partner access restrictions
-  - "Visible to all" or "Specific users only" modes
-  - Message list filtering based on partner visibility
-  - Admin users bypass all visibility restrictions
-  - Only applies to remote partners (local stations always visible)
 
 - **Enhanced Security**
   - JWT-based authentication for WebUI
@@ -103,8 +91,16 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Multi-user certificate isolation for signing, encryption, and TLS
 
 - **Tracker Messages**
-  - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
-  - Authentication support (Basic Auth with user-specific credentials)
+  - HTTP endpoint for receiving and logging test messages (`/as2/tracker/{username}`)
+  - **User-Specific Tracker Authentication**:
+    - Each user configures their own tracker auth settings 
+    - Personal tracker URL: `/as2/tracker/{username}` uses user's settings
+    - System-wide URL: `/as2/tracker` is REJECTED with HTTP 410 Gone
+    - Two authentication types (can enable both):
+      - **Basic Authentication** - Multiple username/password pairs (OR logic - any match accepted)
+      - **Certificate Authentication** - Multiple certificates from user's Sign/Crypt keystore
+    - Configuration via WebUI: Username dropdown → **My Tracker Conf**
+    - Per-credential enable/disable (no deletion needed)
   - Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
   - WebUI for viewing, searching, and filtering messages
   - Message sorting by timestamp (newest first) with database indexes
@@ -128,16 +124,16 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 
 Download the latest release from [GitHub Releases](https://github.com/zc2tech/mend-as2/releases):
 
-**Single Distribution** (`mend-as2-1.1.0-dist.tar.gz`) - **81 MB**
+**Single Distribution** (`mend-as2-<version>-dist.tar.gz`) - **~80 MB**
 - Supports both GUI mode (SwingUI) and Headless mode (WebUI only)
 - Choose your mode at startup with command-line flag or config file
 
 **Quick Start:**
 ```bash
 # 1. Download and extract
-wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.0/mend-as2-1.1.0-dist.tar.gz
-tar -xzf mend-as2-1.1.0-dist.tar.gz
-cd mend-as2-1.1.0
+wget https://github.com/zc2tech/mend-as2/releases/latest/download/mend-as2-dist.tar.gz
+tar -xzf mend-as2-dist.tar.gz
+cd mend-as2
 
 # 2. Install PostgreSQL 14+ and create databases
 createdb -O as2user as2_db_config
@@ -154,7 +150,7 @@ nano config/database-postgresql.properties
 # Headless Mode (WebUI only):
 ./start-headless.sh
 # Or:
-java -jar mend-as2-1.1.0.jar -nogui
+java -jar mend-as2.jar -nogui
 
 # 5. Access WebUI
 # http://localhost:8080/as2/webui/
@@ -164,11 +160,11 @@ java -jar mend-as2-1.1.0.jar -nogui
 **Mode Selection:**
 - **GUI Mode**: Desktop client (SwingUI) + Web interface
   - Best for: Workstations, development environments
-  - Start with: `./start.sh` or `java -jar mend-as2-1.1.0.jar`
+  - Start with: `./start.sh` or `java -jar mend-as2.jar`
   
 - **Headless Mode**: Web interface only (no desktop GUI)
   - Best for: Servers, containers, cloud deployments
-  - Start with: `./start-headless.sh` or `java -jar mend-as2-1.1.0.jar -nogui`
+  - Start with: `./start-headless.sh` or `java -jar mend-as2.jar -nogui`
   - Can also set in config: `as2.startup.gui.enabled=false`
 
 **📖 Full Installation Guide:** [INSTALL.md](INSTALL.md)
@@ -194,10 +190,10 @@ cd mend-as2
 mvn clean package
 
 # Run in GUI mode
-java -jar target/mend-as2-1.1.0.jar
+java -jar target/mend-as2-*.jar
 
 # Run in headless mode
-java -jar target/mend-as2-1.1.0.jar -nogui
+java -jar target/mend-as2-*.jar -nogui
 ```
 
 **📖 Developer Guide:** [md-memo/BUILD.md](md-memo/BUILD.md)  
@@ -226,6 +222,56 @@ export AS2_DATABASE_TYPE=mysql
 # or
 export AS2_DATABASE_TYPE=postgresql
 ```
+
+### Server Hostname Configuration
+
+For email notifications (user creation, password reset), configure the server hostname:
+
+Edit `config/as2.properties`:
+
+```properties
+# Server hostname for email links
+as2.server.hostname=as2.example.com
+```
+
+Or set environment variable:
+```bash
+export AS2_SERVER_HOSTNAME=as2.example.com
+```
+
+If not configured, the system will auto-detect using Java's `InetAddress.getLocalHost().getCanonicalHostName()`.
+
+The HTTPS port is always obtained from the running Jetty server (actual port, not hardcoded).
+
+### Directory Polling Configuration
+
+Control automatic directory polling for file sending:
+
+Edit `config/as2.properties`:
+
+```properties
+# Enable/disable automatic directory polling (default: false)
+as2.dirpoll.enabled=false
+```
+
+Or set environment variable:
+```bash
+export AS2_DIRPOLL_ENABLED=true
+```
+
+Or use system property:
+```bash
+java -Das2.dirpoll.enabled=true -jar mend-as2.jar
+```
+
+**When disabled (default):**
+- Manual sends still work (via SwingUI or WebUI)
+- SendOrder queue processing continues normally
+- No automatic directory monitoring for outbound files
+
+**When enabled:**
+- Automatic polling of configured directories for files to send
+- Partners with poll directories configured will auto-send files
 
 ### PostgreSQL Configuration
 
@@ -478,27 +524,63 @@ HTTP endpoint for receiving and logging test messages (useful for development an
 
 **Endpoint URLs:**
 ```
-POST http://your-server:8080/as2/tracker
-POST http://your-server:8080/as2/tracker/{username}
+POST http://your-server:8080/as2/tracker/{username}  # User-specific (required)
 ```
+
+**Note:** The system-wide URL `/as2/tracker` (without username) is no longer supported and returns HTTP 410 Gone.
+
+**User-Specific Tracker Authentication:**
+
+Each user independently configures authentication for their personal tracker URL:
+
+1. **Configuration (WebUI)**:
+   - Login to WebUI
+   - Click username dropdown → **My Tracker Conf**
+   - Enable authentication types:
+     - ☑ **Enable Basic Authentication**
+       - Click **Add Credential** to add username/password pairs
+       - Support multiple credentials (OR logic - any match accepted)
+       - Password visibility toggle with eye icon
+       - Enable/disable individual credentials without deletion
+     - ☑ **Enable Certificate Authentication**
+       - Click **Add Certificate** to select from your Sign/Crypt keystore
+       - Support multiple certificates (OR logic - any match accepted)
+       - Shows SHA-1 fingerprint for identification
+       - Enable/disable individual certificates
+   - Your personal tracker URL is displayed at the top
+   - Click **Save Configuration**
+
+2. **Behavior**:
+   - User-specific URL (`/as2/tracker/{username}`): Required format, uses user's configured authentication
+   - System-wide URL (`/as2/tracker`): REJECTED with HTTP 410 Gone error
+   - If both auth types enabled: Must pass EITHER Basic OR Certificate auth (OR logic)
+   - Failed authentication returns HTTP 401 Unauthorized
+   - All authentication attempts logged
 
 **Features:**
 - Accepts any HTTP POST request
 - Logs full request details (headers, body, timestamp)
 - Automatic payload detection and parsing (cXML, X12, EDIFACT, etc.)
-- Optional Basic Authentication (per-user credentials)
+- User-scoped authentication configuration (no system-wide setting)
 - View messages in WebUI → **Tracker Messages**
 
 **Example Usage:**
 ```bash
-# Without authentication
-curl -X POST http://localhost:8080/as2/tracker \
+# User-specific with Basic Auth
+curl -X POST http://localhost:8080/as2/tracker/alice \
+  -u alice:password123 \
   -H "Content-Type: application/xml" \
   -d @test-message.xml
 
-# With authentication (user-specific path)
+# User-specific with Certificate Auth
 curl -X POST http://localhost:8080/as2/tracker/alice \
-  -u alice:password123 \
+  --cert client-cert.pem \
+  --key client-key.pem \
+  -H "Content-Type: application/xml" \
+  -d @test-message.xml
+
+# User-specific without auth (if user disabled both auth types)
+curl -X POST http://localhost:8080/as2/tracker/alice \
   -H "Content-Type: application/xml" \
   -d @test-message.xml
 ```
@@ -513,20 +595,31 @@ curl -X POST http://localhost:8080/as2/tracker/alice \
    - **📦 Payloads** - Extracted payloads (.zip)
    - **🐶 Bruno** - Bruno HTTP Client collection (.zip)
 
+**Sending AS2 Messages (WebUI):**
+1. Navigate to **Messages** → **Send File to Partner**
+2. Select or drag-and-drop files (first file is main payload, others are attachments)
+3. Select sender (local station) and receiver (remote partner)
+4. **Content Type field auto-fills** with selected receiver's configured content type
+5. Optionally override the auto-filled content type for first file
+6. Additional files use auto-detected content type from file extension
+7. Click **Send** to transmit the message
+
 **Bruno Collection:**
 - Complete request reconstruction for Bruno HTTP Client
 - Includes: URL, headers, authentication, body, settings
 - Unzip and import into Bruno to recreate the exact request
 
-**Configuration:**
-- WebUI → **System** → **Tracker Conf**
-- Enable/disable tracker endpoint
-- Configure authentication requirements
-- Set retention period for old messages
-
 ### WebUI Access
 
 Navigate to `http://localhost:8080/as2/webui/` and login.
+
+**Note on HTTPS Certificate Prompts:**  
+When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), your browser may prompt you to "Select a certificate for authentication". This is normal behavior because the server is configured to accept (but not require) client certificates for AS2 message transmission with certificate-based authentication.
+
+**What to do:**
+- Click **Cancel** or **Skip** - The browser will remember your choice and stop prompting
+- This does NOT affect AS2 message certificate authentication, which works at the application level
+- Alternatively, use HTTP access (`http://localhost:8080/as2/webui/`) to avoid the prompt entirely
 
 **Available Sections (permission-based):**
 - **Dashboard** - Quick access to all sections
@@ -541,6 +634,7 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
   - Format filtering (cXML, X12, EDIFACT)
   - Payload format and document type display
   - Messages sorted by Init Date (newest first)
+  - Manual send with content type auto-fill from receiver partner configuration
 - **Tracker Messages** - View tracker endpoint submissions
   - Real-time search with database refresh
   - Format filtering (cXML, X12, EDIFACT, etc.)
@@ -550,25 +644,30 @@ Navigate to `http://localhost:8080/as2/webui/` and login.
 - **System** - Server configuration and inbound authentication
   - HTTP Server Configuration
   - **TLS** - System-wide HTTPS server certificates (permission-based access)
-  - **Tracker Conf** - Configure tracker endpoint settings
+  - **Tracker Conf** - DEPRECATED: Old system-wide tracker config (no longer used)
   - **IP Whitelist** - Multi-level IP access control (5 tabs)
     - Settings: Enable per endpoint type and select mode
     - Global: Universal IP patterns
     - Partner-Specific: Per-partner IP restrictions
     - User-Specific: Per-user IP restrictions  
     - Block Log: View blocked access attempts
+  - **Notification** - Email notification settings with improved layout
+    - SMTP server configuration (hostname, security, port in single row)
+    - Email addresses for notifications
+    - Password preservation (blank field keeps existing password)
   - System Events
   - Search in Server Log
   - Maintenance
-  - Notification
 - **Users** - User and role management (Admin only)
   - Protected admin user (cannot disable/delete)
-- **Preferences** - HTTP authentication credentials (user-specific)
+- **Preferences** - User-specific settings
+  - HTTP Authentication credentials (outbound)
+  - **My Tracker Conf** - Configure personal tracker authentication (Basic Auth + Certificate Auth)
 
 ### SwingUI (Desktop)
 
 ```bash
-java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
+java -cp target/mend-as2-*.jar de.mendelson.comm.as2.client.AS2Gui
 ```
 
 **Menu Navigation:**
@@ -853,6 +952,15 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - [x] Admin user partner visibility bypass (see all partners)
 - [x] Restore scripts assume existing databases (drop tables only)
 - [x] IP Whitelist Management (multi-level, per endpoint, 3 modes)
+- [x] Notification Settings UI improvements (compact SMTP layout)
+- [x] Password preservation in notification settings (blank keeps existing)
+- [x] Server hostname configuration for email links (as2.properties)
+- [x] Dynamic port detection from running Jetty server
+- [x] ESC key support in user management dialogs
+- [x] Double-submission prevention in user creation
+- [x] User-specific tracker authentication (Basic + Certificate Auth)
+- [x] My Tracker Conf menu (WebUI user dropdown)
+- [x] Database migration scripts for user tracker auth
 - [ ] Read-only UI for all components
 - [ ] Enhanced message filtering options
 - [ ] Real-time monitoring dashboard
@@ -881,6 +989,9 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - Test SMTP with "Send Test Mail"
 - For Gmail: use App Password
 - For Aliyun/163: use Authorization Code
+- Verify SMTP settings in System → Notification
+- Check that From address matches SMTP username (required by most providers)
+- Ensure SMTP password is set (blank field preserves existing password)
 
 **Partner Not Visible in Message Send**
 - Check partner visibility settings (Partners → Edit → Visibility tab)
@@ -907,10 +1018,21 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - For password reset, use WebUI or database update: `UPDATE webui_users SET password_hash='...' WHERE username='admin'`
 
 **Headless Mode**
-- Use `-nogui` flag: `java -jar mend-as2-1.1.0-full.jar -nogui`
+- Use `-nogui` flag: `java -jar mend-as2.jar -nogui`
 - Or use headless build profile: `mvn clean package -Pheadless`
 - Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
 - Access via WebUI at http://localhost:8080/as2/webui/
+
+**Tracker Authentication Not Working**
+- Each user has independent tracker authentication settings
+- Configure via username dropdown → **My Tracker Conf**
+- **IMPORTANT**: System-wide URL `/as2/tracker` is NO LONGER SUPPORTED (returns HTTP 410 Gone)
+- **Must use user-specific URL**: `http://server:8080/as2/tracker/{username}`
+- For Basic Auth: Ensure sending system uses one of your configured username/password pairs
+- For Certificate Auth: Ensure certificate is from your Sign/Crypt keystore and enabled
+- Check that at least one authentication type is enabled (Basic or Certificate)
+- If both auth types enabled, request must pass EITHER one (OR logic)
+- Check server logs for authentication failure details
 
 **New Messages Not Appearing**
 - Click the **Search** button to refresh from database (invalidates query cache)

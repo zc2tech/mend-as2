@@ -30,6 +30,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jakarta.activation.DataHandler;
@@ -475,6 +476,10 @@ public class AS2MessageCreation {
                 AS2Payload payload = new AS2Payload();
                 payload.setOriginalFilename(originalFilenames[i]);
                 payload.setContentType(payloadContentTypes[i]);
+                //Auto-generate Content-ID using UUID with <> brackets
+                payload.setContentId("<" + UUID.randomUUID().toString() + "@" + sender.getAS2Identification() + ">");
+                //Set Content-Description based on filename
+                payload.setContentDescription(originalFilenames[i]);
                 try (ByteArrayOutputStream payloadOut = new ByteArrayOutputStream()) {
                     inStream.transferTo(payloadOut);
                     payload.setData(payloadOut.toByteArray());
@@ -547,6 +552,7 @@ public class AS2MessageCreation {
         if (this.dbDriverManager != null) {
             MessageAccessDB messageAccess = new MessageAccessDB(this.dbDriverManager);
             messageAccess.initializeOrUpdateMessage(info);
+        } else {
         }
         if (this.logger != null) {
             this.logger.log(Level.FINE,
@@ -581,7 +587,10 @@ public class AS2MessageCreation {
                 bodyPart.setDataHandler(new DataHandler(new ByteArrayDataSource(as2Payload.getData(), contentType)));
                 bodyPart.addHeader("Content-Type", contentType);
                 if (as2Payload.getContentId() != null) {
-                    bodyPart.addHeader("Content-ID", as2Payload.getContentId());
+                    bodyPart.addHeader("Content-ID", "<" + as2Payload.getContentId() + ">");
+                }
+                if (as2Payload.getContentDescription() != null) {
+                    bodyPart.addHeader("Content-Description", as2Payload.getContentDescription());
                 }
 
                 // For multipart messages with binary content types (PDF, images, etc.),
@@ -1098,18 +1107,10 @@ public class AS2MessageCreation {
                     + sender.getName() + " to " + receiver.getName());
         }
 
-        System.out.println("[AS2-SIGN-DEBUG] ========================================");
-        System.out.println("[AS2-SIGN-DEBUG] Looking up signing certificate:");
-        System.out.println("[AS2-SIGN-DEBUG]   Sender: " + sender.getName());
-        System.out.println("[AS2-SIGN-DEBUG]   Fingerprint: " + signKeyFingerprintSHA1);
-        System.out.println("[AS2-SIGN-DEBUG]   CertManager class: " + this.signatureCertManager.getClass().getName());
-
+   
         PrivateKey senderKey = this.signatureCertManager.getPrivateKeyByFingerprintSHA1(signKeyFingerprintSHA1);
         String senderSignAlias = this.signatureCertManager.getAliasByFingerprint(signKeyFingerprintSHA1);
 
-        System.out.println("[AS2-SIGN-DEBUG]   Alias found: " + senderSignAlias);
-        System.out.println("[AS2-SIGN-DEBUG]   Private key found: " + (senderKey != null));
-        System.out.println("[AS2-SIGN-DEBUG] ========================================");
 
         if (senderKey == null) {
             throw new Exception("AS2MessageCreation.signContent: Key with serial " + sender.getSignFingerprintSHA1()

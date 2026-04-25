@@ -24,6 +24,8 @@ import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
+import de.mendelson.comm.as2.tracker.auth.UserTrackerAuthCredential;
+import de.mendelson.comm.as2.tracker.auth.UserTrackerAuthDB;
 import de.mendelson.comm.as2.usermanagement.UserManagementAccessDB;
 import de.mendelson.comm.as2.usermanagement.WebUIUser;
 import de.mendelson.util.systemevents.notification.NotificationAccessDBImplAS2;
@@ -37,9 +39,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
+import java.sql.Connection;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -169,7 +175,8 @@ public class TrackerServlet extends HttpServlet {
         String userAgent = request.getHeader("User-Agent");
 
         // 4. Check rate limiting
-        TrackerMessageAccessDB dao = new TrackerMessageAccessDB(processing.getDBDriverManager());
+        PreferencesAS2 preferences = new PreferencesAS2(processing.getDBDriverManager());
+        TrackerMessageAccessDB dao = new TrackerMessageAccessDB(processing.getDBDriverManager(), preferences);
 
         if (TrackerRateLimiter.isBlocked(remoteAddr)) {
             long remainingSeconds = TrackerRateLimiter.getBlockRemainingSeconds(remoteAddr);
@@ -182,50 +189,173 @@ public class TrackerServlet extends HttpServlet {
         }
 
         // 5. Authentication handling
-        boolean authRequired = "true".equals(prefs.get(PreferencesAS2.TRACKER_AUTH_REQUIRED));
         String authenticatedUser = null;
+        boolean authRequired = false;
 
-        // If path contains username, authentication is REQUIRED
-        if (pathUsername != null) {
-            authRequired = true;
-        }
+        if (pathUsername != null && !pathUsername.isEmpty()) {
+            // ============================================================
+            // USER-SPECIFIC URL: /as2/tracker/<username>
+            // Use user's personal authentication configuration
+            // ============================================================
 
-        if (authRequired) {
-            authenticatedUser = authenticateRequest(request, processing);
-            if (authenticatedUser == null) {
-                // Record auth failure
-                dao.recordAuthFailure(remoteAddr, userAgent, extractAttemptedUsername(request));
+            try {
+                // Get user ID from username
+                UserManagementAccessDB userMgmt = new UserManagementAccessDB(
+                        processing.getDBDriverManager(), null);
+                WebUIUser targetUser = userMgmt.getUserByUsername(pathUsername);
 
-                // Check if should block after this failure
-                if (TrackerRateLimiter.checkAndBlock(remoteAddr, dao, prefs)) {
-                    int recentFailures = dao.countRecentFailures(remoteAddr,
-                            Integer.parseInt(prefs.get(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS)));
-
-                    // Send attack notification
-                    sendAttackNotification(remoteAddr, recentFailures,
-                            "Rate limit threshold exceeded", processing);
-
-                    LOGGER.warning("IP blocked due to rate limit: " + remoteAddr +
-                            " (" + recentFailures + " failures)");
+                if (targetUser == null) {
+                    LOGGER.warning("User not found for tracker URL: " + pathUsername);
+                    response.sendError(HttpServletResponse.SC_NOT_FOUND, "User not found");
+                    return;
                 }
 
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setHeader("WWW-Authenticate", "Basic realm=\"Tracker\"");
+                int userId = targetUser.getId();
+
+                // Load user's tracker auth configuration
+                Connection configConnection = processing.getDBDriverManager()
+                        .getConnectionWithoutErrorHandling(de.mendelson.util.database.IDBDriverManager.DB_CONFIG);
+                UserTrackerAuthDB authDB = new UserTrackerAuthDB();
+
+                boolean[] toggles = authDB.loadMasterToggles(userId, configConnection);
+                List<UserTrackerAuthCredential> credentials = authDB.loadCredentials(userId, configConnection);
+                configConnection.close();
+
+                boolean basicAuthEnabled = toggles[0];
+                boolean certAuthEnabled = toggles[1];
+
+
+                // Log credential details
+                for (int i = 0; i < credentials.size(); i++) {
+                    UserTrackerAuthCredential cred = credentials.get(i);
+                    if (cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    } else if (cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_BASIC) {
+                    }
+                }
+
+            // Check if authentication is required
+            if (!basicAuthEnabled && !certAuthEnabled) {
+                // No authentication required - allow all
+                authRequired = false;
+                LOGGER.info("Tracker request for user " + pathUsername + " - no auth required, ip=" + remoteAddr);
+            } else {
+                // Authentication is required
+                authRequired = true;
+
+                // Count enabled credentials by type
+                int enabledBasicCount = 0;
+                int enabledCertCount = 0;
+
+                if (basicAuthEnabled) {
+                    for (UserTrackerAuthCredential cred : credentials) {
+                        if (cred.isEnabled() && cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_BASIC) {
+                            enabledBasicCount++;
+                        }
+                    }
+                }
+
+                if (certAuthEnabled) {
+                    for (UserTrackerAuthCredential cred : credentials) {
+                        if (cred.isEnabled() && cred.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                            enabledCertCount++;
+                        }
+                    }
+                }
+
+                // Validate authentication
+                boolean basicAuthPassed = false;
+                boolean certAuthPassed = false;
+
+                // Try Basic Auth (only if basic auth is enabled AND has credentials configured)
+                if (basicAuthEnabled && enabledBasicCount > 0) {
+                    String authHeader = request.getHeader("Authorization");
+                    if (authHeader != null && authHeader.startsWith("Basic ")) {
+                        basicAuthPassed = validateBasicAuth(authHeader, credentials);
+                        if (basicAuthPassed) {
+                            authenticatedUser = extractUsernameFromBasicAuth(authHeader);
+                        }
+                    }
+                }
+
+                // Try Certificate Auth (only if cert auth is enabled AND has credentials configured)
+                if (certAuthEnabled && enabledCertCount > 0 && !basicAuthPassed) {
+                    X509Certificate[] certs = (X509Certificate[]) request.getAttribute(
+                            "jakarta.servlet.request.X509Certificate");
+
+
+                    if (certs != null && certs.length > 0) {
+                        try {
+                            String clientFingerprint = calculateFingerprint(certs[0]);
+                        } catch (Exception e) {
+                        }
+
+                        certAuthPassed = validateCertAuth(certs[0], credentials);
+                        if (certAuthPassed) {
+                            authenticatedUser = "cert:" + pathUsername;
+                        } else {
+                        }
+                    } else {
+                    }
+                }
+
+                // Check if authentication passed
+                if (!basicAuthPassed && !certAuthPassed) {
+                    // Authentication failed - neither method passed
+                    // Log specific reason for failure
+                    if (basicAuthEnabled && enabledBasicCount == 0 && certAuthEnabled && enabledCertCount == 0) {
+                        LOGGER.warning("Tracker auth failed for user " + pathUsername +
+                                " - both auth types enabled but no credentials configured, ip=" + remoteAddr);
+                    } else if (basicAuthEnabled && enabledBasicCount == 0) {
+                        LOGGER.warning("Tracker auth failed for user " + pathUsername +
+                                " - basic auth enabled but no credentials configured, ip=" + remoteAddr);
+                    } else if (certAuthEnabled && enabledCertCount == 0) {
+                        LOGGER.warning("Tracker auth failed for user " + pathUsername +
+                                " - cert auth enabled but no credentials configured, ip=" + remoteAddr);
+                    } else {
+                        LOGGER.warning("Tracker auth failed for user " + pathUsername +
+                                " - credentials provided but validation failed, ip=" + remoteAddr);
+                    }
+
+                    dao.recordAuthFailure(remoteAddr, userAgent, pathUsername);
+
+                    // Check rate limiting
+                    if (TrackerRateLimiter.checkAndBlock(remoteAddr, dao, prefs)) {
+                        int recentFailures = dao.countRecentFailures(remoteAddr,
+                                Integer.parseInt(prefs.get(PreferencesAS2.TRACKER_RATE_LIMIT_WINDOW_HOURS)));
+
+                        sendAttackNotification(remoteAddr, recentFailures,
+                                "Rate limit threshold exceeded", processing);
+
+                        LOGGER.warning("IP blocked due to rate limit: " + remoteAddr +
+                                " (" + recentFailures + " failures)");
+                    }
+
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setHeader("WWW-Authenticate", "Basic realm=\"Tracker\"");
+                    return;
+                }
+
+                LOGGER.info("Tracker request authenticated for user " + pathUsername +
+                        ", method=" + (basicAuthPassed ? "basic" : "cert") +
+                        ", ip=" + remoteAddr);
+            }
+
+            } catch (Exception e) {
+                LOGGER.severe("Failed to load user tracker auth config: " + e.getMessage());
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Failed to load authentication configuration");
                 return;
             }
 
-            // If path contains username, validate it matches authenticated user
-            if (pathUsername != null && !pathUsername.equals(authenticatedUser)) {
-                LOGGER.warning("Username mismatch: path=" + pathUsername +
-                        ", authenticated=" + authenticatedUser + ", ip=" + remoteAddr);
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                        "Username in path does not match authenticated user");
-                return;
-            }
-
-            LOGGER.info("Tracker request authenticated: user=" + authenticatedUser +
-                    ", ip=" + remoteAddr +
-                    (pathUsername != null ? ", path_user=" + pathUsername : ""));
+        } else {
+            // ============================================================
+            // SYSTEM-WIDE URL: /as2/tracker
+            // REJECTED - Must use user-specific URLs: /as2/tracker/<username>
+            // ============================================================
+            LOGGER.warning("Rejected tracker request to deprecated system-wide URL, ip=" + remoteAddr);
+            response.sendError(HttpServletResponse.SC_GONE,
+                    "System-wide tracker URL is deprecated. Use /as2/tracker/<username> instead.");
+            return;
         }
 
         // 6. Validate message size
@@ -287,7 +417,7 @@ public class TrackerServlet extends HttpServlet {
         info.setInitDate(new Date());
         info.setAuthStatus(authRequired ? TrackerMessageInfo.AUTH_STATUS_SUCCESS
                 : TrackerMessageInfo.AUTH_STATUS_NONE);
-        info.setAuthUser(authenticatedUser);
+        info.setAuthUser(pathUsername);  // Store username from URL path, not from auth credentials
         info.setRawFilename(rawFilename);
         info.setRequestHeaders(serializeHeaders(request));
         info.setPayloadCount(payloadCount);
@@ -329,82 +459,6 @@ public class TrackerServlet extends HttpServlet {
         out.println("Timestamp: " + new Date());
         if (payloadCount > 0) {
             out.println("Payloads extracted: " + payloadCount);
-        }
-    }
-
-    /**
-     * Authenticate request using Basic Authentication
-     *
-     * @param request HTTP request
-     * @param processing Server processing instance
-     * @return Authenticated username or null if authentication failed
-     */
-    private String authenticateRequest(HttpServletRequest request, AS2ServerProcessing processing) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Basic ")) {
-            return null;
-        }
-
-        try {
-            String base64Credentials = authHeader.substring("Basic ".length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials), "UTF-8");
-
-            int separatorIndex = credentials.indexOf(':');
-            if (separatorIndex == -1) {
-                return null;
-            }
-
-            String username = credentials.substring(0, separatorIndex);
-            String password = credentials.substring(separatorIndex + 1);
-
-            // Validate credentials
-            UserManagementAccessDB userMgmt = new UserManagementAccessDB(
-                    processing.getDBDriverManager(), null);
-            WebUIUser user = userMgmt.getUserByUsername(username);
-
-            if (user == null || !user.isEnabled()) {
-                return null;
-            }
-
-            // Verify password using PBKDF2
-            boolean passwordValid = de.mendelson.util.security.PBKDF2.validatePassword(
-                    password,
-                    user.getPasswordHash()
-            );
-
-            if (passwordValid) {
-                return username;
-            }
-
-            return null;
-
-        } catch (Exception e) {
-            LOGGER.warning("Authentication error: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Extract attempted username from Basic Auth header for logging
-     */
-    private String extractAttemptedUsername(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Basic ")) {
-            return null;
-        }
-
-        try {
-            String base64Credentials = authHeader.substring("Basic ".length()).trim();
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials), "UTF-8");
-
-            int separatorIndex = credentials.indexOf(':');
-            if (separatorIndex == -1) {
-                return null;
-            }
-
-            return credentials.substring(0, separatorIndex);
-        } catch (Exception e) {
-            return null;
         }
     }
 
@@ -503,5 +557,135 @@ public class TrackerServlet extends HttpServlet {
         public FileTooLargeException(String message) {
             super(message);
         }
+    }
+
+    /**
+     * Validate Basic Authentication against user credentials.
+     *
+     * @param authHeader Authorization header value (e.g., "Basic base64...")
+     * @param credentials List of user tracker credentials
+     * @return true if authentication passed
+     */
+    private boolean validateBasicAuth(String authHeader, List<UserTrackerAuthCredential> credentials) {
+        try {
+            // Parse "Basic <base64>" header
+            String base64Credentials = authHeader.substring("Basic ".length()).trim();
+            String decodedCredentials = new String(Base64.getDecoder().decode(base64Credentials), "UTF-8");
+
+            // Split on first colon only
+            int separatorIndex = decodedCredentials.indexOf(':');
+            if (separatorIndex == -1) {
+                return false;
+            }
+
+            String username = decodedCredentials.substring(0, separatorIndex);
+            String password = decodedCredentials.substring(separatorIndex + 1);
+
+            // Check against ALL enabled basic credentials (OR logic)
+            for (UserTrackerAuthCredential credential : credentials) {
+                if (credential.isEnabled()
+                        && credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_BASIC
+                        && username.equals(credential.getUsername())
+                        && password.equals(credential.getPassword())) {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            LOGGER.warning("Error validating basic auth: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Validate Certificate Authentication against user credentials.
+     *
+     * @param cert Client certificate
+     * @param credentials List of user tracker credentials
+     * @return true if authentication passed
+     */
+    private boolean validateCertAuth(X509Certificate cert, List<UserTrackerAuthCredential> credentials) {
+        try {
+            // Calculate SHA-1 fingerprint
+            String certFingerprint = calculateFingerprint(cert);
+
+            // Count total cert credentials
+            int totalCertCreds = 0;
+            for (UserTrackerAuthCredential credential : credentials) {
+                if (credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    totalCertCreds++;
+                }
+            }
+
+            // Check against ALL enabled cert credentials (OR logic)
+            int checkedCount = 0;
+            for (UserTrackerAuthCredential credential : credentials) {
+                if (credential.getAuthType() == UserTrackerAuthCredential.AUTH_TYPE_CERTIFICATE) {
+                    checkedCount++;
+
+                    if (credential.isEnabled()
+                            && certFingerprint.equalsIgnoreCase(credential.getCertFingerprint())) {
+                        return true;
+                    } else if (credential.isEnabled()) {
+                    }
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            LOGGER.warning("Error validating cert auth: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Calculate SHA-1 fingerprint of certificate. Returns format: "AB:CD:EF:..."
+     *
+     * @param cert X509 certificate
+     * @return SHA-1 fingerprint with colons
+     */
+    private String calculateFingerprint(X509Certificate cert) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("SHA-1");
+        byte[] der = cert.getEncoded();
+        md.update(der);
+        byte[] digest = md.digest();
+
+        // Convert to hex with colons
+        StringBuilder hexString = new StringBuilder();
+        for (int i = 0; i < digest.length; i++) {
+            String hex = Integer.toHexString(0xFF & digest[i]);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex.toUpperCase());
+            if (i < digest.length - 1) {
+                hexString.append(':');
+            }
+        }
+
+        return hexString.toString();
+    }
+
+    /**
+     * Extract username from Basic Auth header for logging.
+     *
+     * @param authHeader Authorization header
+     * @return Username or null
+     */
+    private String extractUsernameFromBasicAuth(String authHeader) {
+        try {
+            String base64Credentials = authHeader.substring("Basic ".length()).trim();
+            String decodedCredentials = new String(Base64.getDecoder().decode(base64Credentials), "UTF-8");
+
+            int separatorIndex = decodedCredentials.indexOf(':');
+            if (separatorIndex != -1) {
+                return decodedCredentials.substring(0, separatorIndex);
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+        return null;
     }
 }

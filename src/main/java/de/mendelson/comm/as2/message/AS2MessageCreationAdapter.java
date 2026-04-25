@@ -120,15 +120,12 @@ public class AS2MessageCreationAdapter {
 
         @Override
         public String getAliasByFingerprint(String fingerprintSHA1) {
-            System.out.println("[USER-CERT-DEBUG] getAliasByFingerprint called:");
-            System.out.println("[USER-CERT-DEBUG]   Fingerprint: " + fingerprintSHA1);
-            System.out.println("[USER-CERT-DEBUG]   User ID: " + userId);
+           
             String alias = multiUserManager.getAliasByFingerprint(
                 fingerprintSHA1,
                 userId,
                 MultiUserCertificateManager.PURPOSE_ENC_SIGN
             );
-            System.out.println("[USER-CERT-DEBUG]   Returned alias: " + alias);
             return alias;
         }
 
@@ -152,7 +149,6 @@ public class AS2MessageCreationAdapter {
 
         @Override
         public java.security.PrivateKey getPrivateKey(String alias) throws Exception {
-            System.out.println("[USER-CERT-DEBUG] getPrivateKey called with alias: " + alias);
             return multiUserManager.getPrivateKey(
                 alias,
                 userId,
@@ -162,13 +158,9 @@ public class AS2MessageCreationAdapter {
 
         @Override
         public java.security.PrivateKey getPrivateKeyByFingerprintSHA1(String fingerprintSHA1) throws Exception {
-            System.out.println("[USER-CERT-DEBUG] getPrivateKeyByFingerprintSHA1 called:");
-            System.out.println("[USER-CERT-DEBUG]   Fingerprint: " + fingerprintSHA1);
-            System.out.println("[USER-CERT-DEBUG]   User ID: " + userId);
-
+           
             // First get the alias
             String alias = getAliasByFingerprint(fingerprintSHA1);
-            System.out.println("[USER-CERT-DEBUG]   Found alias: " + alias);
 
             if (alias == null) {
                 throw new Exception("The certificate with the SHA-1 fingerprint \"" + fingerprintSHA1 + "\" does not exist.");

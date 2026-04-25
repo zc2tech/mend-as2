@@ -35,7 +35,7 @@ public class SwingUIPermissionManager {
 
     private Set<String> userPermissions = new HashSet<>();
     private final BaseClient baseClient;
-    private final String username;
+    private String username;  // Made non-final to support user switching
     private boolean loaded = false;
 
     /**
@@ -78,6 +78,8 @@ public class SwingUIPermissionManager {
      * @throws Exception If permission refresh fails
      */
     public void refreshPermissions() throws Exception {
+        // Update username from BaseClient (for user switching)
+        this.username = this.baseClient.getUsername();
         this.loaded = false;
         this.userPermissions.clear();
         this.loadPermissions();

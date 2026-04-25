@@ -39,7 +39,9 @@ CREATE TABLE messages (
   resendcounter INTEGER DEFAULT 0 NOT NULL,
   userdefinedid VARCHAR(255),
   secureconnection INTEGER DEFAULT 0 NOT NULL,
-  owner_user_id INTEGER DEFAULT 0 NOT NULL
+  owner_user_id INTEGER DEFAULT 0 NOT NULL,
+  payloadformat VARCHAR(50),
+  payloaddoctype VARCHAR(100)
 );
 
 CREATE INDEX idx_messages_initdate ON messages(initdateutc);

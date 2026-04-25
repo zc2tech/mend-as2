@@ -61,7 +61,7 @@ public class ResourceBundleAS2Gui extends MecResourceBundle {
         {"menu.userpreference.httpauth", "HTTP Authentication"},
         {"menu.tracker", "Tracker"},
         {"menu.tracker.config", "Tracker Config"},
-        {"menu.tracker.message", "Tracker Messages"},
+        {"menu.tracker.message", "My Tracker Messages"},
         {"menu.help", "Help"},
         {"menu.help.about", "About"},
         {"menu.help.supportrequest", "Support request"},

@@ -42,6 +42,8 @@ public class ResourceBundlePreferencesAS2 extends MecResourceBundle {
         {PreferencesAS2.AUTH_PROXY_USER, "HTTP Proxy credentials (user)"},
         {PreferencesAS2.AUTO_LOGDIR_DELETE, "Automatically cleanup log dir"},
         {PreferencesAS2.AUTO_LOGDIR_DELETE_OLDERTHAN, "Automatically cleanup log dir older than"},
+        {PreferencesAS2.AUTO_TRACKER_DELETE, "Automatically cleanup tracker messages"},
+        {PreferencesAS2.AUTO_TRACKER_DELETE_OLDERTHAN, "Cleanup tracker messages older than"},
         {PreferencesAS2.AUTO_MSG_DELETE, "Automatically cleanup old transactions"},
         {PreferencesAS2.AUTO_MSG_DELETE_LOG, "Log entry for cleanup of old transactions"},
         {PreferencesAS2.AUTO_MSG_DELETE_OLDERTHAN, "Cleanup transactions older than"},

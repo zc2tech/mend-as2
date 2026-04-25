@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .bg{fill:#fff;}
+      .border{fill:gray;}
+      .icon{fill:#534741;}
+    </style>
+  </defs>
+  <!-- Background -->
+  <rect class="bg" x="0.5" y="0.5" width="63" height="63"/>
+  <!-- Border -->
+  <path class="border" d="M63.5,64H.5a.5.5,0,0,1-.5-.5V.5A.5.5,0,0,1,.5,0h63a.5.5,0,0,1,.5.5v63A.5.5,0,0,1,63.5,64ZM1,63H63V1H1Z"/>
+  <!-- Tracker Messages Icon: Location pin with document/message lines -->
+  <!-- Location pin -->
+  <path class="icon" d="M24,10 C18,10 13,15 13,21 C13,27 24,40 24,40 C24,40 35,27 35,21 C35,15 30,10 24,10 Z M24,25 C21.8,25 20,23.2 20,21 C20,18.8 21.8,17 24,17 C26.2,17 28,18.8 28,21 C28,23.2 26.2,25 24,25 Z"/>
+  <!-- Document/Messages overlay -->
+  <g transform="translate(32, 28)">
+    <!-- Document background -->
+    <rect class="bg" x="0" y="0" width="20" height="26" rx="1"/>
+    <path class="icon" d="M0,0 L20,0 L20,26 L0,26 Z M1,1 L1,25 L19,25 L19,1 Z"/>
+    <!-- Message lines -->
+    <line class="icon" x1="4" y1="6" x2="16" y2="6" stroke="#534741" stroke-width="1.5"/>
+    <line class="icon" x1="4" y1="11" x2="16" y2="11" stroke="#534741" stroke-width="1.5"/>
+    <line class="icon" x1="4" y1="16" x2="16" y2="16" stroke="#534741" stroke-width="1.5"/>
+    <line class="icon" x1="4" y1="21" x2="13" y2="21" stroke="#534741" stroke-width="1.5"/>
+  </g>
+</svg>

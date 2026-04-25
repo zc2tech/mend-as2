@@ -31,7 +31,6 @@ import { PERMISSIONS } from '../../constants/permissions';
 import api from '../../api/client';
 
 export default function CertificateList() {
-  const [keystoreType, setKeystoreType] = useState('sign');
   const [ownershipFilter, setOwnershipFilter] = useState('mine'); // Changed default from 'all' to 'mine'
   const [showImportTypeSelector, setShowImportTypeSelector] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -49,19 +48,19 @@ export default function CertificateList() {
   // Conditionally fetch certificates based on filter selection
   const shouldFetchAllUsers = isAdmin && ownershipFilter === 'all';
 
-  // Hook for single user certificates
+  // Hook for single user certificates - hardcoded to 'sign' keystore only
   const {
     data: myCertificates,
     isLoading: isLoadingMine,
     error: errorMine
-  } = useCertificates(keystoreType);
+  } = useCertificates('sign');
 
   // Hook for all users' certificates (only runs when admin AND filter is 'all')
   const {
     data: allUsersCertificates,
     isLoading: isLoadingAll,
     error: errorAll
-  } = useAllUsersCertificates(keystoreType);
+  } = useAllUsersCertificates('sign');
 
   // Select the appropriate data source
   const certificates = shouldFetchAllUsers ? allUsersCertificates : myCertificates;
@@ -75,17 +74,13 @@ export default function CertificateList() {
   const deleteCertificate = useDeleteCertificate();
   const toast = useToast();
 
-  // Check permissions based on keystoreType
-  const hasTLSReadPermission = hasPermission(PERMISSIONS.CERT_TLS_READ);
-  const hasTLSWritePermission = hasPermission(PERMISSIONS.CERT_TLS_WRITE);
+  // Check permissions - only Sign/Encrypt keystore
   const hasSignReadPermission = hasPermission(PERMISSIONS.CERT_READ);
   const hasSignWritePermission = hasPermission(PERMISSIONS.CERT_WRITE);
 
-  // Determine read/write permissions based on current keystoreType
-  // 'sign' keystore uses CERT_READ/CERT_WRITE permissions
-  // 'tls' keystore uses CERT_TLS_READ/CERT_TLS_WRITE permissions
-  const canRead = keystoreType === 'tls' ? hasTLSReadPermission : hasSignReadPermission;
-  const canWrite = keystoreType === 'tls' ? hasTLSWritePermission : hasSignWritePermission;
+  // Use sign keystore permissions (no TLS support)
+  const canRead = hasSignReadPermission;
+  const canWrite = hasSignWritePermission;
 
   const handleImportClick = () => {
     setShowImportTypeSelector(true);
@@ -139,7 +134,7 @@ export default function CertificateList() {
       const blob = await exportCertificate.mutateAsync({
         fingerprintSHA1: fingerprint,
         format,
-        keystoreType
+        keystoreType: 'sign'
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -171,7 +166,7 @@ export default function CertificateList() {
 
     try {
       const blob = await exportKeystore.mutateAsync({
-        keystoreType,
+        keystoreType: 'sign',
         format: exportFormat,
         password: exportPassword
       });
@@ -179,7 +174,7 @@ export default function CertificateList() {
       const a = document.createElement('a');
       a.href = url;
       const ext = exportFormat === 'PKCS12' ? 'p12' : 'jks';
-      a.download = `${keystoreType}_keystore.${ext}`;
+      a.download = `sign_keystore.${ext}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -195,7 +190,7 @@ export default function CertificateList() {
   const handleExportAllPublicCertificates = async () => {
     try {
       const response = await api.post('/certificates/export-all-public-pem',
-        { keystoreType },
+        { keystoreType: 'sign' },
         { responseType: 'blob' }
       );
 
@@ -203,7 +198,7 @@ export default function CertificateList() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${keystoreType}_public_certificates.zip`;
+      a.download = `sign_public_certificates.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -238,7 +233,7 @@ export default function CertificateList() {
     try {
       const response = await generateCSR.mutateAsync({
         fingerprintSHA1: fingerprint,
-        keystoreType
+        keystoreType: 'sign'
       });
       // The response contains csrBase64 in PEM format (already text with headers)
       // No need to decode - it's already in the correct format
@@ -260,7 +255,7 @@ export default function CertificateList() {
 
   const handleVerifyCertificates = async () => {
     try {
-      const response = await verifyCRL.mutateAsync({ keystoreType });
+      const response = await verifyCRL.mutateAsync({ keystoreType: 'sign' });
       const revokedCerts = response.revocationInfo?.filter(info => info.isRevoked) || [];
       if (revokedCerts.length === 0) {
         toast.success('All certificates are valid');
@@ -279,7 +274,7 @@ export default function CertificateList() {
     }
 
     try {
-      await deleteCertificate.mutateAsync({ alias, keystoreType });
+      await deleteCertificate.mutateAsync({ alias, keystoreType: 'sign' });
       toast.success(`Certificate "${alias}" deleted successfully`);
     } catch (error) {
       // Check if certificate is in use
@@ -292,7 +287,7 @@ export default function CertificateList() {
 
         if (forceDelete) {
           try {
-            await deleteCertificate.mutateAsync({ alias, keystoreType, force: true });
+            await deleteCertificate.mutateAsync({ alias, keystoreType: 'sign', force: true });
             toast.success(`Certificate "${alias}" deleted successfully`);
           } catch (forceError) {
             toast.error('Failed to delete certificate: ' + (forceError.response?.data?.error || forceError.message));
@@ -311,17 +306,6 @@ export default function CertificateList() {
   if (error) {
     return <div style={{ color: 'red' }}>Error loading certificates: {error.message}</div>;
   }
-
-  const tabStyle = (active) => ({
-    padding: '0.75rem 1.5rem',
-    backgroundColor: active ? '#007bff' : '#e9ecef',
-    color: active ? 'white' : '#495057',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    marginRight: '0.5rem',
-    borderRadius: '4px 4px 0 0'
-  });
 
   const tableStyle = {
     width: '100%',
@@ -361,7 +345,7 @@ export default function CertificateList() {
     <div>
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ margin: 0 }}>
-          My Sign/Crypt/TLS
+          My Sign/Crypt/Auth
         </h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {/* Export Menu - read-only operation */}
@@ -543,24 +527,9 @@ export default function CertificateList() {
         </div>
       </div>
 
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <button
-            style={tabStyle(keystoreType === 'sign')}
-            onClick={() => setKeystoreType('sign')}
-          >
-            Sign/Encrypt Certificates
-          </button>
-          <button
-            style={tabStyle(keystoreType === 'tls')}
-            onClick={() => setKeystoreType('tls')}
-          >
-            TLS Certificates
-          </button>
-        </div>
-
-        {/* Ownership Filter - only show for admin users */}
-        {isAdmin && (
+      {/* Ownership Filter - only show for admin users */}
+      {isAdmin && (
+        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.875rem', color: '#6c757d' }}>Show:</span>
             <select
@@ -578,8 +547,8 @@ export default function CertificateList() {
               <option value="mine">My Certificates</option>
             </select>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <table style={tableStyle}>
         <colgroup>
@@ -753,7 +722,7 @@ export default function CertificateList() {
 
       {showImportTypeSelector && (
         <CertificateImportTypeSelector
-          keystoreType={keystoreType}
+          keystoreType="sign"
           onClose={() => setShowImportTypeSelector(false)}
           onTypeSelected={handleImportTypeSelected}
         />
@@ -761,7 +730,7 @@ export default function CertificateList() {
 
       {showImport && (
         <CertificateImport
-          keystoreType={keystoreType}
+          keystoreType="sign"
           importType={importType}
           onClose={handleImportClose}
         />
@@ -769,7 +738,7 @@ export default function CertificateList() {
 
       {showGenerateKey && (
         <GenerateKeyDialog
-          keystoreType={keystoreType}
+          keystoreType="sign"
           onClose={() => setShowGenerateKey(false)}
           onSuccess={() => {
             // Refresh the certificate list

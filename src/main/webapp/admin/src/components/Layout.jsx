@@ -159,14 +159,14 @@ export default function Layout() {
     textDecoration: 'none'
   };
 
-  const handlePreferences = () => {
-    setDropdownOpen(false);
-    navigate('/preferences');
-  };
-
   const handleChangePassword = () => {
     setDropdownOpen(false);
     navigate('/change-password');
+  };
+
+  const handleMyTrackerConfig = () => {
+    setDropdownOpen(false);
+    navigate('/my-tracker-config');
   };
 
   const handleSwitchUser = () => {
@@ -246,7 +246,7 @@ export default function Layout() {
           <h2 style={{ margin: 0, marginRight: '2rem' }}>AS2 Server</h2>
           <Link to="/" style={linkStyle}>Dashboard</Link>
           {showPartners && <Link to="/partners" style={linkStyle}>My Partners</Link>}
-          {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt/TLS</Link>}
+          {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt/Auth</Link>}
           {showMessages && <Link to="/messages" style={linkStyle}>AS2 Messages</Link>}
           {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
           {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
@@ -274,12 +274,12 @@ export default function Layout() {
             {dropdownOpen && (
               <div style={dropdownMenuStyle}>
                 <button
-                  onClick={handlePreferences}
+                  onClick={handleMyTrackerConfig}
                   style={dropdownItemStyle}
                   onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
                   onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
                 >
-                  Preferences
+                  My Tracker Conf
                 </button>
                 <button
                   onClick={handleChangePassword}

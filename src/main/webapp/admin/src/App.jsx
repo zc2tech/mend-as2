@@ -37,6 +37,7 @@ import TrackerMessageList from './features/tracker/TrackerMessageList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
 import UserPreferences from './features/preferences/UserPreferences';
+import MyTrackerConfig from './features/preferences/MyTrackerConfig';
 import IPWhitelistManagement from './features/ipwhitelist/IPWhitelistManagement';
 
 const queryClient = new QueryClient({
@@ -71,6 +72,7 @@ function App() {
               {/* Change password within the app layout */}
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="preferences" element={<UserPreferences />} />
+              <Route path="my-tracker-config" element={<MyTrackerConfig />} />
               {/* Switch user - only accessible to admins */}
               <Route
                 path="switch-user"

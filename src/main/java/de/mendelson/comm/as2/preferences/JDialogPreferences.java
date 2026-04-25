@@ -34,6 +34,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 
@@ -192,6 +193,18 @@ public class JDialogPreferences extends JDialog {
     private void setupKeyboardShortcuts() {
         // ESC to close, ENTER for OK button, Cmd/Ctrl+W to close
         KeyboardShortcutUtil.setupDialogKeyBindingsWithTooltips(this, this.jButtonOk, null);
+
+        // Add Cmd/Ctrl+S shortcut for OK button (save)
+        KeyStroke saveKeyStroke = KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S,
+                java.awt.Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
+        this.getRootPane().getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(saveKeyStroke, "save");
+        this.getRootPane().getActionMap().put("save", new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                jButtonOk.doClick();
+            }
+        });
     }
 
     private void setMultiresolutionIcons() {

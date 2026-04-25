@@ -30,7 +30,8 @@ export default function ManualSend({ onClose }) {
   const [senderPartnerId, setSenderPartnerId] = useState('');
   const [receiverPartnerId, setReceiverPartnerId] = useState('');
   const [subject, setSubject] = useState('AS2 message');
-  const [contentType, setContentType] = useState('application/EDI-Consent');
+  const [contentType, setContentType] = useState('');
+  const [contentTypeManuallyEdited, setContentTypeManuallyEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [partners, setPartners] = useState([]);
@@ -83,6 +84,20 @@ export default function ManualSend({ onClose }) {
       setSenderPartnerId(id);
     }
   }, [localStations, senderPartnerId]);
+
+  // Update content type when receiver changes (but only if user hasn't manually edited it)
+  useEffect(() => {
+    if (receiverPartnerId && !contentTypeManuallyEdited) {
+      const receiver = remotePartners.find(p => String(p.dbid) === receiverPartnerId);
+      if (receiver && receiver.contentType) {
+        setContentType(receiver.contentType);
+      } else {
+        setContentType('');
+      }
+    } else if (!receiverPartnerId && !contentTypeManuallyEdited) {
+      setContentType('');
+    }
+  }, [receiverPartnerId, remotePartners, contentTypeManuallyEdited]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -442,13 +457,47 @@ export default function ManualSend({ onClose }) {
                 <input
                   type="text"
                   value={contentType}
-                  onChange={(e) => setContentType(e.target.value)}
+                  onChange={(e) => {
+                    setContentType(e.target.value);
+                    setContentTypeManuallyEdited(true);
+                  }}
                   style={inputStyle}
                   disabled={loading}
-                  placeholder="application/EDI-Consent"
+                  placeholder="e.g., application/xml, text/plain, application/EDI-X12"
                 />
                 <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.25rem' }}>
-                  MIME type for the first file. Additional files will auto-detect content type from file extension.
+                  {contentTypeManuallyEdited ? (
+                    <>
+                      <span style={{ color: '#007bff', fontWeight: '600' }}>✏️ Manually edited</span>
+                      {' - '}
+                      <button
+                        onClick={() => {
+                          setContentTypeManuallyEdited(false);
+                          // Trigger the useEffect to reload from receiver
+                          const receiver = remotePartners.find(p => String(p.dbid) === receiverPartnerId);
+                          if (receiver && receiver.contentType) {
+                            setContentType(receiver.contentType);
+                          } else {
+                            setContentType('');
+                          }
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#007bff',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline',
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        Reset to receiver's default
+                      </button>
+                    </>
+                  ) : (
+                    'MIME type for the first file. Auto-filled from receiver partner configuration.'
+                  )}
+                  {' Additional files will auto-detect content type from file extension.'}
                 </div>
               </div>
             </>

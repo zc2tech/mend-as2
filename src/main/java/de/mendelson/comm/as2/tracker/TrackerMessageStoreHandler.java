@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -56,8 +57,8 @@ public class TrackerMessageStoreHandler {
      * @throws IOException If storage fails
      */
     public String storeTrackerMessage(byte[] data, String trackerId) throws IOException {
-        // Create date-based directory structure
-        LocalDateTime now = LocalDateTime.now();
+        // Create date-based directory structure using UTC timezone to match database timestamps
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         String dateFolder = now.format(DATE_FORMAT);
 
         Path storageDir = Paths.get(

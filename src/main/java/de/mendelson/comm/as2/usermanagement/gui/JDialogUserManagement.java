@@ -45,6 +45,7 @@ public class JDialogUserManagement extends JDialog {
 
     private final GUIClient guiClient;
     private final Logger logger = Logger.getLogger("de.mendelson.as2.client");
+    private final String currentUsername;
     private JTable userTable;
     private UserTableModel userTableModel;
     private JButton buttonCreate;
@@ -57,6 +58,8 @@ public class JDialogUserManagement extends JDialog {
     public JDialogUserManagement(JFrame parent, GUIClient guiClient) {
         super(parent, "User Management", true);
         this.guiClient = guiClient;
+        // Get current username from GUIClient's BaseClient
+        this.currentUsername = guiClient.getBaseClient().getUsername();
         this.initComponents();
         this.setupKeyboardShortcuts();
         this.setSize(900, 600);
@@ -262,15 +265,27 @@ public class JDialogUserManagement extends JDialog {
                         });
                     } else {
                         List<WebUIUser> users = userResponse.getUsers();
+
+                        // Filter out 'admin' user if current user is not 'admin'
+                        List<WebUIUser> filteredUsers = new ArrayList<>();
+                        for (WebUIUser user : users) {
+                            // Only show 'admin' user if current user is 'admin'
+                            if ("admin".equalsIgnoreCase(user.getUsername()) &&
+                                !"admin".equalsIgnoreCase(currentUsername)) {
+                                continue; // Skip admin user
+                            }
+                            filteredUsers.add(user);
+                        }
+
                         // Fetch roles for each user
                         Map<Integer, String> rolesMap = new HashMap<>();
-                        for (WebUIUser user : users) {
+                        for (WebUIUser user : filteredUsers) {
                             String roles = getUserRolesAsString(user.getId());
                             rolesMap.put(user.getId(), roles);
                         }
 
                         SwingUtilities.invokeLater(() -> {
-                            userTableModel.setUsers(users);
+                            userTableModel.setUsers(filteredUsers);
                             userTableModel.setUserRoles(rolesMap);
                             buttonRefresh.setEnabled(true);
                         });

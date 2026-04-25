@@ -143,6 +143,10 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   const { user } = useAuth();
   const [generatingUrl, setGeneratingUrl] = useState(false);
 
+  // Password visibility state for HTTP Authentication tab
+  const [showMessagePassword, setShowMessagePassword] = useState(false);
+  const [showAsyncMDNPassword, setShowAsyncMDNPassword] = useState(false);
+
   // Handle ESC key to close dialog
   useEffect(() => {
     const handleEscKey = (event) => {
@@ -155,16 +159,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     return () => document.removeEventListener('keydown', handleEscKey);
   }, [onClose]);
 
-  // Fetch certificates from both keystores for the dropdowns
-  const { data: signCertificates, isLoading: signCertsLoading } = useCertificates('sign');
-  const { data: tlsCertificates, isLoading: tlsCertsLoading } = useCertificates('tls');
-
-  // Combine certificates from both keystores
-  const certificates = [
-    ...(signCertificates || []).map(cert => ({ ...cert, source: 'Sign/Crypt' })),
-    ...(tlsCertificates || []).map(cert => ({ ...cert, source: 'TLS' }))
-  ];
-  const certsLoading = signCertsLoading || tlsCertsLoading;
+  // Fetch certificates from sign keystore only (no user-specific TLS)
+  const { data: certificates, isLoading: certsLoading } = useCertificates('sign');
 
   const {
     register,
@@ -184,12 +180,12 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       url: '',
       mdnURL: '',
       subject: 'AS2 message',
-      contentType: 'application/EDI-Consent',
+      contentType: '',
       email: 'sender@as2server.com',
       syncMDN: true,
       signedMDN: false,
-      encryptionType: 5, // AES-128-CBC
-      signType: 13, // SHA-256
+      encryptionType: 8, // AES-128-CBC
+      signType: 5, // SHA-256
       compressionType: 0, // None
       enableDirPoll: true,
       pollInterval: 30,
@@ -219,6 +215,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
   // State for inbound auth credentials
   const [inboundAuthBasicList, setInboundAuthBasicList] = useState([]);
   const [inboundAuthCertList, setInboundAuthCertList] = useState([]);
+  const [passwordVisibility, setPasswordVisibility] = useState({}); // Track password visibility by index
 
   // State for certificate filtering (remote partners only - show only public certificates by default)
   const [showOnlyPublicCerts, setShowOnlyPublicCerts] = useState(true);
@@ -277,15 +274,15 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       if (response.data.url) {
         // Replace protocol in the generated URL
         let generatedUrl = response.data.url;
-        if (protocol === 'http') {
-          generatedUrl = generatedUrl.replace('https://', 'http://');
-          // Also update port if default HTTPS port (8443) to default HTTP port (8080)
-          generatedUrl = generatedUrl.replace(':8443/', ':8080/');
-        } else if (protocol === 'https') {
-          generatedUrl = generatedUrl.replace('http://', 'https://');
-          // Also update port if default HTTP port (8080) to default HTTPS port (8443)
-          generatedUrl = generatedUrl.replace(':8080/', ':8443/');
-        }
+        // if (protocol === 'http') {
+        //   generatedUrl = generatedUrl.replace('https://', 'http://');
+        //   // Also update port if default HTTPS port (8443) to default HTTP port (8080)
+        //   generatedUrl = generatedUrl.replace(':8443/', ':8080/');
+        // } else if (protocol === 'https') {
+        //   generatedUrl = generatedUrl.replace('http://', 'https://');
+        //   // Also update port if default HTTP port (8080) to default HTTPS port (8443)
+        //   generatedUrl = generatedUrl.replace(':8080/', ':8443/');
+        // }
 
         setValue('url', generatedUrl);
         setValue('mdnURL', generatedUrl);
@@ -555,7 +552,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       <div style={{
         backgroundColor: 'white',
         borderRadius: '8px',
-        maxWidth: '800px',
+        maxWidth: '1000px',
         width: '100%',
         maxHeight: '90vh',
         display: 'flex',
@@ -951,24 +948,28 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Digital Signature Algorithm</label>
                       <select {...register('signType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
-                        <option value="0">None</option>
-                        <option value="11">MD5</option>
-                        <option value="12">SHA-1</option>
-                        <option value="13">SHA-256</option>
-                        <option value="14">SHA-384</option>
-                        <option value="15">SHA-512</option>
-                        <option value="16">SHA-1 (RSASSA-PSS)</option>
-                        <option value="17">SHA-256 (RSASSA-PSS)</option>
-                        <option value="18">SHA-384 (RSASSA-PSS)</option>
-                        <option value="19">SHA-512 (RSASSA-PSS)</option>
-                        <option value="20">SHA3-224</option>
-                        <option value="21">SHA3-256</option>
-                        <option value="22">SHA3-384</option>
-                        <option value="23">SHA3-512</option>
-                        <option value="24">SHA3-224 (RSASSA-PSS)</option>
-                        <option value="25">SHA3-256 (RSASSA-PSS)</option>
-                        <option value="26">SHA3-384 (RSASSA-PSS)</option>
-                        <option value="27">SHA3-512 (RSASSA-PSS)</option>
+                        <option value="1">None</option>
+                        <option value="3">MD5</option>
+                        <option value="2">SHA-1</option>
+                        <option value="4">SHA-224</option>
+                        <option value="5">SHA-256</option>
+                        <option value="6">SHA-384</option>
+                        <option value="7">SHA-512</option>
+                        <option value="8">SHA-1 (RSASSA-PSS)</option>
+                        <option value="9">SHA-224 (RSASSA-PSS)</option>
+                        <option value="10">SHA-256 (RSASSA-PSS)</option>
+                        <option value="11">SHA-384 (RSASSA-PSS)</option>
+                        <option value="12">SHA-512 (RSASSA-PSS)</option>
+                        <option value="13">SHA3-224</option>
+                        <option value="14">SHA3-256</option>
+                        <option value="15">SHA3-384</option>
+                        <option value="16">SHA3-512</option>
+                        <option value="17">SHA3-224 (RSASSA-PSS)</option>
+                        <option value="18">SHA3-256 (RSASSA-PSS)</option>
+                        <option value="19">SHA3-384 (RSASSA-PSS)</option>
+                        <option value="20">SHA3-512 (RSASSA-PSS)</option>
+                        <option value="21">SPHINCS+</option>
+                        <option value="22">Dilithium</option>
                       </select>
                     </div>
 
@@ -976,35 +977,35 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <div style={formGroupStyle}>
                       <label style={labelStyle}>Message Encryption Algorithm</label>
                       <select {...register('encryptionType', { setValueAs: v => Number(v) })} style={inputStyle} disabled={isSubmitting}>
-                        <option value="0">None</option>
-                        <option value="1">3DES</option>
-                        <option value="5">AES-128-CBC</option>
-                        <option value="6">AES-192-CBC</option>
-                        <option value="7">AES-256-CBC</option>
-                        <option value="2">AES-128-CCM</option>
-                        <option value="3">AES-192-CCM</option>
-                        <option value="4">AES-256-CCM</option>
-                        <option value="8">AES-128-GCM</option>
-                        <option value="9">AES-192-GCM</option>
-                        <option value="10">AES-256-GCM</option>
-                        <option value="30">AES-128-CBC (RSAES-OAEP)</option>
-                        <option value="31">AES-192-CBC (RSAES-OAEP)</option>
-                        <option value="32">AES-256-CBC (RSAES-OAEP)</option>
-                        <option value="33">AES-128-GCM (RSAES-OAEP)</option>
-                        <option value="34">AES-192-GCM (RSAES-OAEP)</option>
-                        <option value="35">AES-256-GCM (RSAES-OAEP)</option>
-                        <option value="40">Camellia-128-CBC</option>
-                        <option value="41">Camellia-192-CBC</option>
-                        <option value="42">Camellia-256-CBC</option>
-                        <option value="50">ChaCha20-Poly1305</option>
-                        <option value="60">DES</option>
-                        <option value="70">RC2-40</option>
-                        <option value="71">RC2-64</option>
-                        <option value="72">RC2-128</option>
-                        <option value="73">RC2-196</option>
-                        <option value="80">RC4-40</option>
-                        <option value="81">RC4-56</option>
-                        <option value="82">RC4-128</option>
+                        <option value="1">None</option>
+                        <option value="2">3DES</option>
+                        <option value="15">DES</option>
+                        <option value="3">RC2-40</option>
+                        <option value="4">RC2-64</option>
+                        <option value="5">RC2-128</option>
+                        <option value="6">RC2-196</option>
+                        <option value="11">RC4-40</option>
+                        <option value="12">RC4-56</option>
+                        <option value="13">RC4-128</option>
+                        <option value="8">AES-128-CBC</option>
+                        <option value="9">AES-192-CBC</option>
+                        <option value="10">AES-256-CBC</option>
+                        <option value="22">AES-128-CCM</option>
+                        <option value="23">AES-192-CCM</option>
+                        <option value="24">AES-256-CCM</option>
+                        <option value="19">AES-128-GCM</option>
+                        <option value="20">AES-192-GCM</option>
+                        <option value="21">AES-256-GCM</option>
+                        <option value="16">AES-128-CBC (RSAES-OAEP)</option>
+                        <option value="17">AES-192-CBC (RSAES-OAEP)</option>
+                        <option value="18">AES-256-CBC (RSAES-OAEP)</option>
+                        <option value="29">AES-128-GCM (RSAES-OAEP)</option>
+                        <option value="30">AES-192-GCM (RSAES-OAEP)</option>
+                        <option value="31">AES-256-GCM (RSAES-OAEP)</option>
+                        <option value="26">Camellia-128-CBC</option>
+                        <option value="27">Camellia-192-CBC</option>
+                        <option value="28">Camellia-256-CBC</option>
+                        <option value="25">ChaCha20-Poly1305</option>
                       </select>
                     </div>
 
@@ -1116,13 +1117,37 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
-                          <input
-                            type="password"
-                            {...register('httpAuthMessagePassword')}
-                            placeholder="HTTP password"
-                            style={{ ...inputStyle, flex: 1 }}
-                            disabled={isSubmitting}
-                          />
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                              type={showMessagePassword ? "text" : "password"}
+                              {...register('httpAuthMessagePassword')}
+                              placeholder="HTTP password"
+                              style={{ ...inputStyle, width: '100%', paddingRight: '2.5rem' }}
+                              disabled={isSubmitting}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowMessagePassword(!showMessagePassword)}
+                              style={{
+                                position: 'absolute',
+                                right: '0.5rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#6c757d',
+                                fontSize: '1.1rem'
+                              }}
+                              title={showMessagePassword ? "Hide password" : "Show password"}
+                            >
+                              {showMessagePassword ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1212,13 +1237,37 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                           <label style={{ minWidth: '80px', fontSize: '0.875rem' }}>Password:</label>
-                          <input
-                            type="password"
-                            {...register('httpAuthAsyncMDNPassword')}
-                            placeholder="HTTP password for async MDN"
-                            style={{ ...inputStyle, flex: 1 }}
-                            disabled={isSubmitting}
-                          />
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                              type={showAsyncMDNPassword ? "text" : "password"}
+                              {...register('httpAuthAsyncMDNPassword')}
+                              placeholder="HTTP password for async MDN"
+                              style={{ ...inputStyle, width: '100%', paddingRight: '2.5rem' }}
+                              disabled={isSubmitting}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowAsyncMDNPassword(!showAsyncMDNPassword)}
+                              style={{
+                                position: 'absolute',
+                                right: '0.5rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#6c757d',
+                                fontSize: '1.1rem'
+                              }}
+                              title={showAsyncMDNPassword ? "Hide password" : "Show password"}
+                            >
+                              {showAsyncMDNPassword ? '👁️' : '👁️‍🗨️'}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -1324,17 +1373,50 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                                 />
                               </td>
                               <td style={{ padding: '0.75rem' }}>
-                                <input
-                                  type="password"
-                                  value={cred.password || ''}
-                                  onChange={(e) => {
-                                    const updated = [...inboundAuthBasicList];
-                                    updated[index] = { ...updated[index], password: e.target.value };
-                                    setInboundAuthBasicList(updated);
-                                  }}
-                                  style={{ width: '100%', padding: '0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
-                                  placeholder="password"
-                                />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <input
+                                    type={passwordVisibility[index] ? "text" : "password"}
+                                    value={cred.password || ''}
+                                    onChange={(e) => {
+                                      const updated = [...inboundAuthBasicList];
+                                      updated[index] = { ...updated[index], password: e.target.value };
+                                      setInboundAuthBasicList(updated);
+                                    }}
+                                    style={{ width: '100%', padding: '0.375rem 2.5rem 0.375rem 0.375rem', border: '1px solid #ced4da', borderRadius: '4px' }}
+                                    placeholder="password"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPasswordVisibility(prev => ({ ...prev, [index]: !prev[index] }));
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      right: '0.5rem',
+                                      background: 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      padding: '0.25rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      color: '#6c757d'
+                                    }}
+                                    title={passwordVisibility[index] ? "Hide password" : "Show password"}
+                                  >
+                                    {passwordVisibility[index] ? (
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                      </svg>
+                                    ) : (
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                                      </svg>
+                                    )}
+                                  </button>
+                                </div>
                               </td>
                               <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                 <input
@@ -1432,7 +1514,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#f8f9fa' }}>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '250px' }}>Certificate</th>
+                          <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '500px' }}>Certificate</th>
                           <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem' }}>Fingerprint (SHA-1)</th>
                           <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Enabled</th>
                           <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #dee2e6', fontWeight: 600, fontSize: '0.875rem', width: '100px' }}>Actions</th>
@@ -1465,8 +1547,8 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
                                 >
                                   <option value="">-- Select Certificate --</option>
                                   {certificates?.map((cert) => (
-                                    <option key={`${cert.source}-${cert.fingerprintSHA1}`} value={cert.fingerprintSHA1}>
-                                      {cert.alias} ({cert.source})
+                                    <option key={cert.fingerprintSHA1} value={cert.fingerprintSHA1}>
+                                      {cert.alias}
                                     </option>
                                   ))}
                                 </select>

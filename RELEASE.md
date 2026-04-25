@@ -65,18 +65,18 @@ git status
 mvn clean package -Pfull -DskipTests
 
 # Expected output files:
-# - target/mend-as2-1.1.0-full.jar (~120 MB)
-# - target/mend-as2-1.1.0-full-full.tar.gz (~2.6 MB)
-# - target/mend-as2-1.1.0-full-full.zip (~2.6 MB)
+# - target/mend-as2-1.1.2-full.jar (~120 MB)
+# - target/mend-as2-1.1.2-full-full.tar.gz (~2.6 MB)
+# - target/mend-as2-1.1.2-full-full.zip (~2.6 MB)
 ```
 
 **Verify full distribution:**
 ```bash
 # Extract and check contents
-tar -tzf target/mend-as2-1.1.0-full-full.tar.gz | head -20
+tar -tzf target/mend-as2-1.1.2-full-full.tar.gz | head -20
 
 # Should include:
-# - mend-as2-1.1.0-full.jar
+# - mend-as2-1.1.2-full.jar
 # - start.sh, start-headless.sh (both modes)
 # - config/, sqlscript/, docs/
 # - README.md, INSTALL.md, LICENSE.gpl.txt
@@ -89,18 +89,18 @@ tar -tzf target/mend-as2-1.1.0-full-full.tar.gz | head -20
 mvn clean package -Pheadless -DskipTests
 
 # Expected output files:
-# - target/mend-as2-1.1.0-headless.jar (~100-105 MB)
-# - target/mend-as2-1.1.0-headless-headless.tar.gz (~2.6 MB)
-# - target/mend-as2-1.1.0-headless-headless.zip (~2.6 MB)
+# - target/mend-as2-1.1.2-headless.jar (~100-105 MB)
+# - target/mend-as2-1.1.2-headless-headless.tar.gz (~2.6 MB)
+# - target/mend-as2-1.1.2-headless-headless.zip (~2.6 MB)
 ```
 
 **Verify headless distribution:**
 ```bash
 # Extract and check contents
-tar -tzf target/mend-as2-1.1.0-headless-headless.tar.gz | head -20
+tar -tzf target/mend-as2-1.1.2-headless-headless.tar.gz | head -20
 
 # Should include:
-# - mend-as2-1.1.0-headless.jar
+# - mend-as2-1.1.2-headless.jar
 # - start-headless.sh only (no GUI scripts)
 # - config/, sqlscript/, docs/
 # - README.md, INSTALL.md, LICENSE.gpl.txt
@@ -119,10 +119,10 @@ ls -lh target/*.tar.gz target/*.zip
 
 Expected files:
 ```
-mend-as2-1.1.0-full-full.tar.gz         (~2.6 MB)
-mend-as2-1.1.0-full-full.zip            (~2.6 MB)
-mend-as2-1.1.0-headless-headless.tar.gz (~2.6 MB)
-mend-as2-1.1.0-headless-headless.zip    (~2.6 MB)
+mend-as2-1.1.2-full-full.tar.gz         (~2.6 MB)
+mend-as2-1.1.2-full-full.zip            (~2.6 MB)
+mend-as2-1.1.2-headless-headless.tar.gz (~2.6 MB)
+mend-as2-1.1.2-headless-headless.zip    (~2.6 MB)
 ```
 
 ## Version Updates
@@ -134,7 +134,7 @@ Before building, update version numbers in these files:
 ```xml
 <groupId>com.zc2tech</groupId>
 <artifactId>mend-as2</artifactId>
-<version>1.1.0</version>  <!-- UPDATE THIS -->
+<version>1.1.2</version>  <!-- UPDATE THIS -->
 <name>Mend-AS2 Server</name>
 ```
 
@@ -157,7 +157,7 @@ public static final int REQUIRED_DB_VERSION_RUNTIME = 6;
 Add release entry at the top:
 
 ```markdown
-## [1.1.0] - 2026-04-07
+## [1.1.2] - 2026-04-07
 
 ### Added
 - New feature X
@@ -177,7 +177,7 @@ Add release entry at the top:
 
 ```bash
 git add pom.xml src/main/java/de/mendelson/comm/as2/AS2ServerVersion.java CHANGELOG.md
-git commit -m "Bump version to 1.1.0"
+git commit -m "Bump version to 1.1.2"
 git push origin main
 ```
 
@@ -185,10 +185,10 @@ git push origin main
 
 ```bash
 # Create annotated tag
-git tag -a v1.1.0 -m "Release version 1.1.0"
+git tag -a v1.1.2 -m "Release version 1.1.2"
 
 # Push tag to remote
-git push origin v1.1.0
+git push origin v1.1.2
 ```
 
 ## Testing Release
@@ -199,8 +199,8 @@ Before publishing, test both distributions:
 
 ```bash
 # Extract
-tar -xzf target/mend-as2-1.1.0-full-full.tar.gz
-cd mend-as2-1.1.0-full
+tar -xzf target/mend-as2-1.1.2-full-full.tar.gz
+cd mend-as2-1.1.2-full
 
 # Configure database
 cp config/database-postgresql.properties.example config/database-postgresql.properties
@@ -223,8 +223,8 @@ nano config/database-postgresql.properties
 
 ```bash
 # Extract
-tar -xzf target/mend-as2-1.1.0-headless-headless.tar.gz
-cd mend-as2-1.1.0-headless
+tar -xzf target/mend-as2-1.1.2-headless-headless.tar.gz
+cd mend-as2-1.1.2-headless
 
 # Configure database
 nano config/database-postgresql.properties
@@ -263,14 +263,14 @@ For each distribution:
 
 1. Go to https://github.com/zc2tech/mend-as2/releases
 2. Click **"Draft a new release"**
-3. Choose tag: `v1.1.0`
-4. Release title: `Mend AS2 v1.1.0`
+3. Choose tag: `v1.1.2`
+4. Release title: `Mend AS2 v1.1.2`
 5. Description: Copy from CHANGELOG.md
 6. Upload artifacts:
-   - `mend-as2-1.1.0-full-full.tar.gz`
-   - `mend-as2-1.1.0-full-full.zip`
-   - `mend-as2-1.1.0-headless-headless.tar.gz`
-   - `mend-as2-1.1.0-headless-headless.zip`
+   - `mend-as2-1.1.2-full-full.tar.gz`
+   - `mend-as2-1.1.2-full-full.zip`
+   - `mend-as2-1.1.2-headless-headless.tar.gz`
+   - `mend-as2-1.1.2-headless-headless.zip`
 7. Check **"Set as the latest release"**
 8. Click **"Publish release"**
 
@@ -285,23 +285,23 @@ For each distribution:
 gh auth login
 
 # Create release with artifacts
-gh release create v1.1.0 \
-  target/mend-as2-1.1.0-full-full.tar.gz \
-  target/mend-as2-1.1.0-full-full.zip \
-  target/mend-as2-1.1.0-headless-headless.tar.gz \
-  target/mend-as2-1.1.0-headless-headless.zip \
-  --title "Mend AS2 v1.1.0" \
+gh release create v1.1.2 \
+  target/mend-as2-1.1.2-full-full.tar.gz \
+  target/mend-as2-1.1.2-full-full.zip \
+  target/mend-as2-1.1.2-headless-headless.tar.gz \
+  target/mend-as2-1.1.2-headless-headless.zip \
+  --title "Mend AS2 v1.1.2" \
   --notes-file CHANGELOG.md \
   --latest
 
 # Verify release created
-gh release view v1.1.0
+gh release view v1.1.2
 ```
 
 ### Release Description Template
 
 ```markdown
-# Mend AS2 v1.1.0
+# Mend AS2 v1.1.2
 
 ## 🚀 What's New
 
@@ -317,8 +317,8 @@ Choose the distribution that fits your needs:
 - **Includes**: Desktop client (SwingUI) + Web interface
 
 **Download:**
-- [mend-as2-1.1.0-full-full.tar.gz](URL) (Linux/macOS)
-- [mend-as2-1.1.0-full-full.zip](URL) (Windows)
+- [mend-as2-1.1.2-full-full.tar.gz](URL) (Linux/macOS)
+- [mend-as2-1.1.2-full-full.zip](URL) (Windows)
 
 ### Headless Distribution (WebUI only)
 - **Recommended for**: Servers, containers, cloud deployments
@@ -326,8 +326,8 @@ Choose the distribution that fits your needs:
 - **Includes**: Web interface only, smaller size, better security
 
 **Download:**
-- [mend-as2-1.1.0-headless-headless.tar.gz](URL) (Linux/macOS)
-- [mend-as2-1.1.0-headless-headless.zip](URL) (Windows)
+- [mend-as2-1.1.2-headless-headless.tar.gz](URL) (Linux/macOS)
+- [mend-as2-1.1.2-headless-headless.zip](URL) (Windows)
 
 ## 📋 Requirements
 
@@ -342,8 +342,8 @@ See [INSTALL.md](INSTALL.md) for complete installation instructions.
 **Quick start:**
 ```bash
 # Extract distribution
-tar -xzf mend-as2-1.1.0-headless.tar.gz
-cd mend-as2-1.1.0-headless
+tar -xzf mend-as2-1.1.2-headless.tar.gz
+cd mend-as2-1.1.2-headless
 
 # Configure database
 nano config/database-postgresql.properties
@@ -377,7 +377,7 @@ nano config/database-postgresql.properties
 
 ---
 
-**Full Changelog**: https://github.com/zc2tech/mend-as2/compare/v1.0.0...v1.1.0
+**Full Changelog**: https://github.com/zc2tech/mend-as2/compare/v1.0.0...v1.1.2
 ```
 
 ## Post-Release Tasks
@@ -388,11 +388,11 @@ After publishing the release:
 
 ```bash
 # Download and verify each artifact
-wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.0/mend-as2-1.1.0-full-full.tar.gz
-tar -tzf mend-as2-1.1.0-full-full.tar.gz | head -20
+wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.2/mend-as2-1.1.2-full-full.tar.gz
+tar -tzf mend-as2-1.1.2-full-full.tar.gz | head -20
 
-wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.0/mend-as2-1.1.0-headless-headless.tar.gz
-tar -tzf mend-as2-1.1.0-headless-headless.tar.gz | head -20
+wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.2/mend-as2-1.1.2-headless-headless.tar.gz
+tar -tzf mend-as2-1.1.2-headless-headless.tar.gz | head -20
 ```
 
 ### 2. Update README.md
@@ -417,7 +417,7 @@ Update badges and links:
 # Bump to next development version
 # Update pom.xml to 1.2.0-SNAPSHOT
 git checkout -b prepare-v1.2.0
-nano pom.xml  # Change <version>1.1.0</version> to <version>1.2.0-SNAPSHOT</version>
+nano pom.xml  # Change <version>1.1.2</version> to <version>1.2.0-SNAPSHOT</version>
 git add pom.xml
 git commit -m "Prepare for v1.2.0 development"
 git push origin prepare-v1.2.0
@@ -434,7 +434,7 @@ For critical bug fixes between major releases:
 
 ```bash
 # Branch from release tag
-git checkout v1.1.0
+git checkout v1.1.2
 git checkout -b hotfix-v1.1.1
 
 # Apply fix

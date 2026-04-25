@@ -147,17 +147,10 @@ public class SendOrderReceiver {
                 int possibleNewConnections = this.maxOutboundConnections - Math.max(activeConnections.get(),
                         threadExecutor.getActiveCount());
 
-                logger.info("[SENDORDER-POLL] maxOutboundConnections=" + this.maxOutboundConnections +
-                           ", activeConnections=" + activeConnections.get() +
-                           ", threadExecutorActive=" + threadExecutor.getActiveCount() +
-                           ", possibleNewConnections=" + possibleNewConnections);
-
                 if (possibleNewConnections > 0) {
                     //Get max number of outbound send orders and pass them to the thread executor
                     waitingOrders.addAll(queue.dequeueAvailable(possibleNewConnections));
-                    logger.info("[SENDORDER-POLL] Dequeued " + waitingOrders.size() + " orders");
                 } else {
-                    logger.info("[SENDORDER-POLL] No new connections possible, skipping dequeue");
                 }
             } catch (Throwable e) {
                 SystemEventManagerImplAS2.instance().systemFailure(e);

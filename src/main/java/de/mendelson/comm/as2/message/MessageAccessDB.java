@@ -1008,14 +1008,17 @@ public class MessageAccessDB {
                     int updatedMessageCount = this.updateMessage(info, runtimeConnectionNoAutoCommit);
                     if (updatedMessageCount == 0) {
                         this.initializeMessage(info, runtimeConnectionNoAutoCommit);
+                    } else {
                     }
                     this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
                 } catch (Throwable e) {
+                    e.printStackTrace();
                     SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
                     this.dbDriverManager.rollbackTransaction(transactionStatement);
                 }
             }
         } catch (Throwable e) {
+            e.printStackTrace();
             SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
         }
     }

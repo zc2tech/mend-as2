@@ -341,11 +341,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         return (this.jTable.getSelectedRow());
     }
 
-    protected void refreshData() {
-        System.out.println("=== JPanelCertificates.refreshData() called ===");
-        System.out.println("  showingAllUsers: " + this.showingAllUsers);
-
-        try {
+    protected void refreshData() {        try {
             this.manager.rereadKeystoreCertificates();
         } catch (Exception e) {
             UINotification.instance().addNotification(e);
@@ -356,12 +352,7 @@ public class JPanelCertificates extends JPanel implements ListSelectionListener,
         if (selectedRow >= 0) {
             selectedAlias = (((TableModelCertificates) this.jTable.getModel()).getParameter(selectedRow)).getAlias();
         }
-        List<KeystoreCertificate> managersKeystoreCertificateList = this.manager.getKeyStoreCertificateList();
-
-        System.out.println("  Loaded " + managersKeystoreCertificateList.size() + " certificates from manager");
-        for (KeystoreCertificate cert : managersKeystoreCertificateList) {
-            System.out.println("    - " + cert.getAlias() + " | FP: " + cert.getFingerPrintSHA1());
-        }
+        List<KeystoreCertificate> managersKeystoreCertificateList = this.manager.getKeyStoreCertificateList();        for (KeystoreCertificate cert : managersKeystoreCertificateList) {        }
 
         List<KeystoreCertificate> keystoreCertListWithoutCA = new ArrayList<KeystoreCertificate>();
         //do not show the CA certificates
@@ -1322,15 +1313,9 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
             return;
         }
 
-        boolean showAllUsers = this.switchShowAllUsers.isSelected();
-
-        System.out.println("=== Show All Users Toggle Changed: " + (showAllUsers ? "ON" : "OFF") + " ===");
-
-        if (showAllUsers) {
+        boolean showAllUsers = this.switchShowAllUsers.isSelected();        if (showAllUsers) {
             // Request all users' certificates from server
-            try {
-                System.out.println("Requesting all users' certificates from server...");
-                de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest request =
+            try {                de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest request =
                     new de.mendelson.util.security.cert.clientserver.AllUsersCertificatesRequest(this.keystoreType);
 
                 de.mendelson.util.security.cert.clientserver.AllUsersCertificatesResponse response =
@@ -1339,14 +1324,7 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
 
                 if (response.getException() != null) {
                     throw response.getException();
-                }
-
-                System.out.println("Received " + response.getCertificates().size() +
-                                 " certificates from all users");
-
-                // Clear existing checkers and add new one that checks ALL users' partners (userId=-1)
-                System.out.println("Recreating certificate usage checker for ALL users' partners (userId=-1)");
-                this.inUseCheckerList.clear();
+                }                // Clear existing checkers and add new one that checks ALL users' partners (userId=-1)                this.inUseCheckerList.clear();
                 de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker allUsersChecker =
                     new de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker(this.baseClient, -1);
                 this.inUseCheckerList.add(allUsersChecker);
@@ -1369,12 +1347,7 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
                 this.switchShowAllUsers.setSelected(false);
             }
         } else {
-            // Switch back to single user mode
-            System.out.println("Switching back to single user mode (userId=" + this.currentUserId + ")");
-
-            // Recreate checker for current user only
-            System.out.println("Recreating certificate usage checker for current user's partners");
-            this.inUseCheckerList.clear();
+            // Switch back to single user mode            // Recreate checker for current user only            this.inUseCheckerList.clear();
             de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker userChecker =
                 new de.mendelson.comm.as2.partner.CertificateUsedByPartnerChecker(this.baseClient, this.currentUserId);
             this.inUseCheckerList.add(userChecker);
@@ -1396,10 +1369,7 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
             return;
         }
 
-        String filterText = this.jTextFieldUserFilter.getText().trim().toLowerCase();
-        System.out.println("Owner filter changed: '" + filterText + "'");
-
-        if (filterText.isEmpty()) {
+        String filterText = this.jTextFieldUserFilter.getText().trim().toLowerCase();        if (filterText.isEmpty()) {
             // No filter - show all certificates
             this.setAllUsersCertificates(this.allUsersCertificatesCache, false);
         } else {
@@ -1410,10 +1380,7 @@ private void jMenuItemPopupExportActionPerformed(java.awt.event.ActionEvent evt)
                 if (cert.getUsername().toLowerCase().contains(filterText)) {
                     filtered.add(cert);
                 }
-            }
-            System.out.println("Filtered " + this.allUsersCertificatesCache.size() +
-                             " certificates to " + filtered.size() + " matching owner filter");
-            this.setAllUsersCertificates(filtered, false);
+            }            this.setAllUsersCertificates(filtered, false);
         }
     }
 

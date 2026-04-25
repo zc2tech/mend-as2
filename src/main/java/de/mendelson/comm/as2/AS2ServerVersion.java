@@ -58,7 +58,7 @@ public class AS2ServerVersion implements IProductVersion {
      */
     public static int getBuildNo() {
         // version of source
-        return (1);
+        return (2);
     }
 
     /**

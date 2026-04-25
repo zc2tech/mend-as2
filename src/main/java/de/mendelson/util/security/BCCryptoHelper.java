@@ -280,6 +280,10 @@ public class BCCryptoHelper {
         smime31MicAlgs.put(CMSAlgorithm.SHA256, "sha256");
         smime31MicAlgs.put(CMSAlgorithm.SHA384, "sha384");
         smime31MicAlgs.put(CMSAlgorithm.SHA512, "sha512");
+        smime31MicAlgs.put(NISTObjectIdentifiers.id_sha3_224, "sha3-224");
+        smime31MicAlgs.put(NISTObjectIdentifiers.id_sha3_256, "sha3-256");
+        smime31MicAlgs.put(NISTObjectIdentifiers.id_sha3_384, "sha3-384");
+        smime31MicAlgs.put(NISTObjectIdentifiers.id_sha3_512, "sha3-512");
         smime31MicAlgs.put(CMSAlgorithm.GOST3411, "gostr3411-94");
         smime31MicAlgs.put(CMSAlgorithm.GOST3411_2012_256, "gostr3411-2012-256");
         smime31MicAlgs.put(CMSAlgorithm.GOST3411_2012_512, "gostr3411-2012-512");
@@ -727,7 +731,7 @@ public class BCCryptoHelper {
         PrivateKey privKey = this.getPrivateKey(key);
         //call this generator with a S/MIME 3.1 compatible constructor
         SMIMESignedGenerator signedDataGenerator = new SMIMESignedGenerator("binary", SMIME_3_1_MICALGS);
-        //The SMIMECapabilityVector indicates the supported cryptographic 
+        //The SMIMECapabilityVector indicates the supported cryptographic
         //algorithms of an S/MIME client for secure email communication
         ASN1EncodableVector signedAttributes = new ASN1EncodableVector();
         SMIMECapabilityVector caps = new SMIMECapabilityVector();

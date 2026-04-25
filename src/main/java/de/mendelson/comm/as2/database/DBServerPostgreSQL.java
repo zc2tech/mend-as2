@@ -428,7 +428,6 @@ public class DBServerPostgreSQL implements IDBServer {
             System.out.println(shutdownMessage);
             this.logger.info(MODULE_NAME + " Connection pools closed.");
         } catch (Exception e) {
-            System.out.println("DB connection pool shutdown: " + e.getMessage());
             this.logger.warning(MODULE_NAME + " Error during shutdown: " + e.getMessage());
         }
     }

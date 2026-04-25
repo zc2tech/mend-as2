@@ -73,7 +73,6 @@ public class CertificateResource {
             }
 
     public CertificateResource() {
-        logger.info("[DEBUG CertificateResource] Constructor called - instance created");
     }
 
     /**
@@ -185,12 +184,10 @@ public class CertificateResource {
 
                 // Check if certificate is used by current user's partners
                 // This applies to all keystore types: sign (for encryption/signing), tls (for inbound cert auth)
-                logger.info("[DEBUG] Checking certificate usage for alias: " + cert.getAlias() + ", keystoreType: " + keystoreType + ", fingerprint: " + cert.getFingerPrintSHA1());
                 List<String> partnersUsing = getPartnersUsingCertificate(processing, cert.getFingerPrintSHA1(), currentUserId);
                 certData.put("partnersUsing", partnersUsing);
                 boolean canDelete = partnersUsing.isEmpty();
                 certData.put("canDelete", canDelete);
-                logger.info("[DEBUG] Certificate " + cert.getAlias() + " canDelete=" + canDelete + ", partnersUsing=" + partnersUsing);
 
                 certificateList.add(certData);
             }
@@ -346,7 +343,6 @@ public class CertificateResource {
                                                       String fingerprintSHA1,
                                                       int currentUserId) {
         List<String> partnersUsing = new ArrayList<>();
-        logger.info("[DEBUG] getPartnersUsingCertificate called for fingerprint: " + fingerprintSHA1 + ", currentUserId: " + currentUserId);
         try {
             // Get ONLY partners owned by the current user
             de.mendelson.comm.as2.partner.PartnerAccessDB partnerDB =
@@ -354,27 +350,21 @@ public class CertificateResource {
             List<Partner> partners = partnerDB.getPartnersOwnedByUser(
                 currentUserId,
                 de.mendelson.comm.as2.partner.PartnerAccessDB.DATA_COMPLETENESS_FULL);
-            logger.info("[DEBUG] Total partners owned by current user: " + partners.size());
 
             // Check each partner's certificate configuration
             for (Partner partner : partners) {
-                logger.info("[DEBUG] Checking partner: " + partner.getName() + " (ID=" + partner.getDBId() + ", isLocalStation=" + partner.isLocalStation() + ")");
 
                 // Check sign/encrypt certificates (for remote partners)
                 if (fingerprintSHA1.equals(partner.getCryptFingerprintSHA1())) {
-                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for ENCRYPTION");
                     partnersUsing.add(partner.getName() + " (encryption)");
                 }
                 if (fingerprintSHA1.equals(partner.getSignFingerprintSHA1())) {
-                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for SIGNING");
                     partnersUsing.add(partner.getName() + " (signing)");
                 }
                 if (fingerprintSHA1.equals(partner.getCryptOverwriteLocalstationFingerprintSHA1())) {
-                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for ENCRYPTION-OVERWRITE-LOCAL");
                     partnersUsing.add(partner.getName() + " (encryption - overwrite local)");
                 }
                 if (fingerprintSHA1.equals(partner.getSignOverwriteLocalstationFingerprintSHA1())) {
-                    logger.info("[DEBUG] MATCH: Partner " + partner.getName() + " uses this cert for SIGNING-OVERWRITE-LOCAL");
                     partnersUsing.add(partner.getName() + " (signing - overwrite local)");
                 }
 
@@ -383,21 +373,17 @@ public class CertificateResource {
                     // Check inbound auth credentials list for certificate authentication
                     List<de.mendelson.comm.as2.partner.PartnerInboundAuthCredential> inboundCreds =
                         partner.getInboundAuthCredentialsList();
-                    logger.info("[DEBUG] Local station " + partner.getName() + " has " + inboundCreds.size() + " inbound auth credentials");
 
                     for (de.mendelson.comm.as2.partner.PartnerInboundAuthCredential cred : inboundCreds) {
                         if (cred.getAuthType() == de.mendelson.comm.as2.partner.PartnerInboundAuthCredential.AUTH_TYPE_CERTIFICATE) {
                             String credFingerprint = cred.getCertFingerprint();
-                            logger.info("[DEBUG] Found certificate auth credential with fingerprint: " + credFingerprint);
                             if (fingerprintSHA1.equals(credFingerprint)) {
-                                logger.info("[DEBUG] MATCH: Local station " + partner.getName() + " uses this cert for TLS INBOUND CERT AUTH");
                                 partnersUsing.add(partner.getName() + " (TLS inbound cert auth)");
                             }
                         }
                     }
                 }
             }
-            logger.info("[DEBUG] Partners using this certificate: " + partnersUsing.size() + " - " + partnersUsing);
         } catch (Exception e) {
             logger.warning("Failed to check certificate usage: " + e.getMessage());
             e.printStackTrace();
@@ -723,14 +709,9 @@ public class CertificateResource {
             @Context SecurityContext securityContext,
             KeyGenerationRequestDTO keyGenRequest) {
         try {
-            logger.info("[DEBUG] Starting key generation process...");
-            logger.info("[DEBUG] KeyGenRequest: keystoreType=" + keyGenRequest.getKeystoreType() +
-                       ", alias=" + keyGenRequest.getAlias() +
-                       ", CN=" + keyGenRequest.getCommonName());
 
             AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
             if (processing == null) {
-                logger.severe("[DEBUG] Server processing not available!");
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("Server processing not available"))
                         .build();
@@ -738,7 +719,6 @@ public class CertificateResource {
 
             // Get current user's ID
             int currentUserId = getCurrentUserId(securityContext, processing);
-            logger.info("[DEBUG] Current user ID: " + currentUserId);
 
             // Get the appropriate certificate manager
             CertificateManager manager;
@@ -746,11 +726,9 @@ public class CertificateResource {
 
             if ("ssl".equals(keyGenRequest.getKeystoreType())) {
                 // System-wide SSL/TLS keystore
-                logger.info("[DEBUG] Using system-wide SSL/TLS keystore");
                 manager = processing.getCertificateManagerTLS();
             } else if ("tls".equals(keyGenRequest.getKeystoreType())) {
                 // User-specific TLS keystore
-                logger.info("[DEBUG] Creating user-specific TLS keystore for userId=" + currentUserId);
                 manager = new CertificateManager(logger);
                 keystoreStorage = new de.mendelson.util.security.cert.KeystoreStorageImplDB(
                     de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
@@ -758,12 +736,9 @@ public class CertificateResource {
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_TLS,
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_JKS,
                     currentUserId);
-                logger.info("[DEBUG] Loading keystore certificates from DB...");
                 manager.loadKeystoreCertificates(keystoreStorage);
-                logger.info("[DEBUG] Keystore loaded successfully");
             } else {
                 // User-specific sign/encrypt keystore
-                logger.info("[DEBUG] Creating user-specific sign/encrypt keystore for userId=" + currentUserId);
                 manager = new CertificateManager(logger);
                 keystoreStorage = new de.mendelson.util.security.cert.KeystoreStorageImplDB(
                     de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
@@ -771,13 +746,10 @@ public class CertificateResource {
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
                     de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
                     currentUserId);
-                logger.info("[DEBUG] Loading keystore certificates from DB...");
                 manager.loadKeystoreCertificates(keystoreStorage);
-                logger.info("[DEBUG] Keystore loaded successfully");
             }
 
             if (manager == null) {
-                logger.severe("[DEBUG] Certificate manager is null!");
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new ErrorResponse("Certificate manager not available"))
                         .build();
@@ -846,36 +818,25 @@ public class CertificateResource {
             }
 
             // Generate the key
-            logger.info("[DEBUG] Generating key pair with KeyGenerator...");
             de.mendelson.util.security.keygeneration.KeyGenerator generator =
                     new de.mendelson.util.security.keygeneration.KeyGenerator();
             de.mendelson.util.security.keygeneration.KeyGenerationResult result =
                     generator.generateKeyPair(values);
-            logger.info("[DEBUG] Key pair generated successfully");
 
             // Store in keystore
-            logger.info("[DEBUG] Storing key entry in keystore with alias: " + keyGenRequest.getAlias());
             manager.getKeystore().setKeyEntry(
                     keyGenRequest.getAlias(),
                     result.getKeyPair().getPrivate(),
                     manager.getKeystorePass(),
                     new java.security.cert.Certificate[]{result.getCertificate()}
             );
-            logger.info("[DEBUG] Key entry stored, now saving keystore...");
             manager.saveKeystore();
-            logger.info("[DEBUG] Keystore saved successfully!");
 
             // Get certificate info for logging
             X509Certificate cert = (X509Certificate) result.getCertificate();
             String fingerprint = KeystoreCertificate.fingerprintBytesToStr(
                 java.security.MessageDigest.getInstance("SHA-1").digest(cert.getEncoded())
             );
-            logger.info("[DEBUG] Generated certificate details:");
-            logger.info("[DEBUG]   - Alias: " + keyGenRequest.getAlias());
-            logger.info("[DEBUG]   - Subject DN: " + cert.getSubjectX500Principal().getName());
-            logger.info("[DEBUG]   - Fingerprint SHA-1: " + fingerprint);
-            logger.info("[DEBUG]   - Valid from: " + cert.getNotBefore());
-            logger.info("[DEBUG]   - Valid until: " + cert.getNotAfter());
 
             KeyGenerationResponseDTO response = new KeyGenerationResponseDTO();
             response.setAlias(keyGenRequest.getAlias());
@@ -963,14 +924,18 @@ public class CertificateResource {
 
             // Get current user's ID
             int currentUserId = getCurrentUserId(securityContext, processing);
+            logger.info("[DELETE CERT] User ID: " + currentUserId + ", Username: " + securityContext.getUserPrincipal().getName()
+                + ", Alias: " + alias + ", KeystoreType: " + keystoreType + ", Force: " + force);
 
             // Determine which certificate manager to use
             CertificateManager certManager;
             if ("ssl".equals(keystoreType)) {
                 // System-wide SSL/TLS keystore
+                logger.info("[DELETE CERT] Using system-wide SSL/TLS certificate manager (user_id=-1)");
                 certManager = processing.getCertificateManagerTLS();
             } else if ("tls".equals(keystoreType)) {
                 // User-specific TLS keystore
+                logger.info("[DELETE CERT] Using user-specific TLS certificate manager for user_id=" + currentUserId);
                 certManager = new CertificateManager(logger);
                 de.mendelson.util.security.cert.KeystoreStorageImplDB keystoreStorage =
                     new de.mendelson.util.security.cert.KeystoreStorageImplDB(
@@ -981,41 +946,72 @@ public class CertificateResource {
                         currentUserId);
                 certManager.loadKeystoreCertificates(keystoreStorage);
             } else {
-                // User-specific sign/encrypt keystore
-                certManager = processing.getCertificateManagerSignEncrypt();
+                // User-specific sign/encrypt keystore - FIX: Create user-specific manager
+                logger.info("[DELETE CERT] Creating user-specific sign/encrypt certificate manager for user_id=" + currentUserId);
+                certManager = new CertificateManager(logger);
+                de.mendelson.util.security.cert.KeystoreStorageImplDB keystoreStorage =
+                    new de.mendelson.util.security.cert.KeystoreStorageImplDB(
+                        de.mendelson.util.systemevents.SystemEventManagerImplAS2.instance(),
+                        processing.getDBDriverManager(),
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_USAGE_ENC_SIGN,
+                        de.mendelson.util.security.cert.KeystoreStorageImplDB.KEYSTORE_STORAGE_TYPE_PKCS12,
+                        currentUserId);
+                certManager.loadKeystoreCertificates(keystoreStorage);
             }
 
             // Find the certificate by alias
             KeystoreCertificate certificate = certManager.getKeystoreCertificate(alias);
             if (certificate == null) {
+                logger.warning("[DELETE CERT] Certificate not found: alias='" + alias + "', keystoreType=" + keystoreType
+                    + ", user_id=" + currentUserId);
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(new ErrorResponse("Certificate with alias '" + alias + "' not found"))
                         .build();
             }
+            logger.info("[DELETE CERT] Certificate found: alias='" + alias + "', fingerprint=" + certificate.getFingerPrintSHA1()
+                + ", isKeyPair=" + certificate.getIsKeyPair());
 
             // Check if certificate is in use by partners (only for sign/encrypt keystore)
+            // Only check partners visible to the current user
             if ("sign".equals(keystoreType) && !force) {
+                logger.info("[DELETE CERT] Checking if certificate is in use by current user's partners...");
                 PartnerListRequest partnerRequest = new PartnerListRequest(PartnerListRequest.LIST_ALL);
                 PartnerListResponse partnerResponse = processing.processPartnerListRequest(partnerRequest);
-                List<Partner> partners = partnerResponse.getList();
+                List<Partner> allPartners = partnerResponse.getList();
 
                 List<String> partnersUsing = new ArrayList<>();
                 String certFingerprint = certificate.getFingerPrintSHA1();
+                logger.info("[DELETE CERT] Certificate fingerprint to check: " + certFingerprint);
 
-                for (Partner partner : partners) {
+                // Filter partners to only those created by or visible to the current user
+                for (Partner partner : allPartners) {
+                    // Skip partners not created by current user (user isolation)
+                    if (partner.getCreatedByUserId() != currentUserId) {
+                        continue;
+                    }
+
+                    logger.fine("[DELETE CERT] Checking partner: " + partner.getName()
+                        + " (id=" + partner.getDBId() + ", created_by=" + partner.getCreatedByUserId() + ")");
+
                     if (certFingerprint.equals(partner.getCryptFingerprintSHA1())) {
                         partnersUsing.add(partner.getName() + " (encryption)");
+                        logger.info("[DELETE CERT] Found usage: " + partner.getName() + " (encryption)");
                     }
                     if (certFingerprint.equals(partner.getSignFingerprintSHA1())) {
                         partnersUsing.add(partner.getName() + " (signing)");
+                        logger.info("[DELETE CERT] Found usage: " + partner.getName() + " (signing)");
                     }
                     if (certFingerprint.equals(partner.getCryptOverwriteLocalstationFingerprintSHA1())) {
                         partnersUsing.add(partner.getName() + " (encryption - overwrite local)");
+                        logger.info("[DELETE CERT] Found usage: " + partner.getName() + " (encryption - overwrite local)");
                     }
                     if (certFingerprint.equals(partner.getSignOverwriteLocalstationFingerprintSHA1())) {
                         partnersUsing.add(partner.getName() + " (signing - overwrite local)");
+                        logger.info("[DELETE CERT] Found usage: " + partner.getName() + " (signing - overwrite local)");
                     }
                 }
+
+                logger.info("[DELETE CERT] Certificate usage check complete. Found " + partnersUsing.size() + " usage(s)");
 
                 if (!partnersUsing.isEmpty()) {
                     CertificateInUseResponse inUseResponse = new CertificateInUseResponse();
@@ -1029,9 +1025,14 @@ public class CertificateResource {
             }
 
             // Delete the certificate
+            logger.info("[DELETE CERT] Attempting to delete certificate: alias='" + alias + "', keystoreType=" + keystoreType
+                + ", user_id=" + currentUserId);
             try {
                 certManager.deleteKeystoreEntry(alias);
+                logger.info("[DELETE CERT] Certificate deleted successfully: alias='" + alias + "'");
             } catch (Throwable t) {
+                logger.severe("[DELETE CERT] Failed to delete certificate: alias='" + alias + "', error=" + t.getMessage());
+                t.printStackTrace();
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new ErrorResponse("Failed to delete certificate: " + t.getMessage()))
                         .build();

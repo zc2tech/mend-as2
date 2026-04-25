@@ -68,6 +68,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         this.jTextFieldDeleteLogDirOlderThan.setDocument(new JTextFieldLimitDocument(5));
         this.jTextFieldDeleteMsgOlderThan.setDocument(new JTextFieldLimitDocument(5));
         this.jTextFieldDeleteStatsOlderThan.setDocument(new JTextFieldLimitDocument(5));
+        this.jTextFieldDeleteTrackerOlderThan.setDocument(new JTextFieldLimitDocument(5));
     }
 
     private void initializeHelp() {
@@ -90,6 +91,8 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         }
         this.switchDeleteLogDirOlderThan.setSelected(this.preferences.getBoolean(PreferencesAS2.AUTO_LOGDIR_DELETE));
         this.jTextFieldDeleteLogDirOlderThan.setText(String.valueOf(this.preferences.getInt(PreferencesAS2.AUTO_LOGDIR_DELETE_OLDERTHAN)));
+        this.switchDeleteTrackerOlderThan.setSelected(this.preferences.getBoolean(PreferencesAS2.AUTO_TRACKER_DELETE));
+        this.jTextFieldDeleteTrackerOlderThan.setText(String.valueOf(this.preferences.getInt(PreferencesAS2.AUTO_TRACKER_DELETE_OLDERTHAN)));
         this.preferencesStrAtLoadTime = this.captureSettingsToStr();
     }
 
@@ -114,6 +117,10 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
                 .append(this.switchDeleteLogDirOlderThan.isSelected()).append(";");
         builder.append(PreferencesAS2.AUTO_LOGDIR_DELETE_OLDERTHAN).append("=")
                 .append(this.jTextFieldDeleteLogDirOlderThan.getText()).append(";");
+        builder.append(PreferencesAS2.AUTO_TRACKER_DELETE).append("=")
+                .append(this.switchDeleteTrackerOlderThan.isSelected()).append(";");
+        builder.append(PreferencesAS2.AUTO_TRACKER_DELETE_OLDERTHAN).append("=")
+                .append(this.jTextFieldDeleteTrackerOlderThan.getText()).append(";");
         return (builder.toString());
     }
 
@@ -154,6 +161,14 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
             }
             this.preferences.putInt(PreferencesAS2.AUTO_LOGDIR_DELETE_OLDERTHAN, olderThanLogDir);
             this.preferences.putBoolean(PreferencesAS2.AUTO_LOGDIR_DELETE, this.switchDeleteLogDirOlderThan.isSelected());
+            //tracker delete settings
+            int olderThanTracker = Integer.parseInt(this.jTextFieldDeleteTrackerOlderThan.getText());
+            //do not allow negative values or the 0
+            if (olderThanTracker <= 0) {
+                olderThanTracker = Integer.parseInt(this.preferences.getDefaultValue(PreferencesAS2.AUTO_TRACKER_DELETE_OLDERTHAN));
+            }
+            this.preferences.putInt(PreferencesAS2.AUTO_TRACKER_DELETE_OLDERTHAN, olderThanTracker);
+            this.preferences.putBoolean(PreferencesAS2.AUTO_TRACKER_DELETE, this.switchDeleteTrackerOlderThan.isSelected());
         } catch (Exception ex) {
             UINotification.instance().addNotification(ex);
         }
@@ -172,7 +187,9 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         jPanelSpace = new javax.swing.JPanel();
         jTextFieldDeleteMsgOlderThan = new javax.swing.JTextField();
         jTextFieldDeleteStatsOlderThan = new javax.swing.JTextField();
+        jTextFieldDeleteTrackerOlderThan = new javax.swing.JTextField();
         jLabelDays2 = new javax.swing.JLabel();
+        jLabelDays3 = new javax.swing.JLabel();
         jComboBoxTimeUnit = new javax.swing.JComboBox<>();
         jTextFieldDeleteLogDirOlderThan = new javax.swing.JTextField();
         jLabelDays1 = new javax.swing.JLabel();
@@ -183,9 +200,11 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         switchDeleteMsgOlderThan = new de.mendelson.util.toggleswitch.ToggleSwitch();
         switchDeleteStatsOlderThan = new de.mendelson.util.toggleswitch.ToggleSwitch();
         switchDeleteLogDirOlderThan = new de.mendelson.util.toggleswitch.ToggleSwitch();
+        switchDeleteTrackerOlderThan = new de.mendelson.util.toggleswitch.ToggleSwitch();
         jLabelDeleteMsgOlderThan = new javax.swing.JLabel();
         jLabelDeleteStatsOlderThan = new javax.swing.JLabel();
         jLabelDeleteLogDirOlderThan = new javax.swing.JLabel();
+        jLabelDeleteTrackerOlderThan = new javax.swing.JLabel();
         jPanelSpace76346 = new javax.swing.JPanel();
         jLabelAutoDelete = new javax.swing.JLabel();
 
@@ -226,7 +245,7 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jLabelDays2, gridBagConstraints);
 
-        jComboBoxTimeUnit.setPreferredSize(new java.awt.Dimension(90, 24));
+        jComboBoxTimeUnit.setPreferredSize(new java.awt.Dimension(135, 24));
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 2;
         gridBagConstraints.gridy = 4;
@@ -327,6 +346,40 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
         gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         jPanelMargin.add(jLabelDeleteLogDirOlderThan, gridBagConstraints);
+
+        jTextFieldDeleteTrackerOlderThan.setPreferredSize(new java.awt.Dimension(50, 22));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 0, 5, 0);
+        jPanelMargin.add(jTextFieldDeleteTrackerOlderThan, gridBagConstraints);
+
+        jLabelDays3.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.days" ));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.LINE_START;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMargin.add(jLabelDays3, gridBagConstraints);
+
+        switchDeleteTrackerOlderThan.setDisplayStatusText(true);
+        switchDeleteTrackerOlderThan.setHorizontalTextPosition(SwingConstants.LEFT);
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 7;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMargin.add(switchDeleteTrackerOlderThan, gridBagConstraints);
+
+        jLabelDeleteTrackerOlderThan.setText(PreferencesPanelSystemMaintenance.rb.getResourceString( "label.deletetrackerolderthan"));
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 8;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        jPanelMargin.add(jLabelDeleteTrackerOlderThan, gridBagConstraints);
+
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 6;
         gridBagConstraints.gridy = 4;
@@ -358,9 +411,11 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
     private javax.swing.JLabel jLabelAutoDelete;
     private javax.swing.JLabel jLabelDays1;
     private javax.swing.JLabel jLabelDays2;
+    private javax.swing.JLabel jLabelDays3;
     private javax.swing.JLabel jLabelDeleteLogDirOlderThan;
     private javax.swing.JLabel jLabelDeleteMsgOlderThan;
     private javax.swing.JLabel jLabelDeleteStatsOlderThan;
+    private javax.swing.JLabel jLabelDeleteTrackerOlderThan;
     private javax.swing.JPanel jPanelMargin;
     private javax.swing.JPanel jPanelSpace;
     private javax.swing.JPanel jPanelSpace76346;
@@ -371,9 +426,11 @@ public class PreferencesPanelSystemMaintenance extends PreferencesPanel {
     private javax.swing.JTextField jTextFieldDeleteLogDirOlderThan;
     private javax.swing.JTextField jTextFieldDeleteMsgOlderThan;
     private javax.swing.JTextField jTextFieldDeleteStatsOlderThan;
+    private javax.swing.JTextField jTextFieldDeleteTrackerOlderThan;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchDeleteLogDirOlderThan;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchDeleteMsgOlderThan;
     private de.mendelson.util.toggleswitch.ToggleSwitch switchDeleteStatsOlderThan;
+    private de.mendelson.util.toggleswitch.ToggleSwitch switchDeleteTrackerOlderThan;
     // End of variables declaration//GEN-END:variables
 
     @Override

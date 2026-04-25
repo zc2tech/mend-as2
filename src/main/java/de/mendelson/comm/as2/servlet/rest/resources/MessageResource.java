@@ -125,12 +125,13 @@ public class MessageResource {
                     isAdmin = roles.stream()
                             .anyMatch(role -> "ADMIN".equalsIgnoreCase(role.getName()));
 
-                    // If userFilterId is provided, use it for filtering (admin selected specific user)
+                    // If userFilterId is provided, use it for filtering (admin selected specific
+                    // user)
                     // Otherwise, use currentUserId for non-admin users
                     if (userFilterId != null && userFilterId > 0) {
                         // Admin selected a specific user from dropdown
                         filter.setUserId(userFilterId);
-                        filter.setAdmin(false);  // Force filtering by this user
+                        filter.setAdmin(false); // Force filtering by this user
                     } else if (isAdmin) {
                         // Admin with no user filter - show all messages
                         filter.setUserId(currentUserId);
@@ -207,14 +208,16 @@ public class MessageResource {
 
             request = new MessageOverviewRequest(filter);
 
-            // CRITICAL: Copy user context from filter to request for message ownership filtering
-            // The filter is used for partner visibility, but request.userId is checked for message ownership
+            // CRITICAL: Copy user context from filter to request for message ownership
+            // filtering
+            // The filter is used for partner visibility, but request.userId is checked for
+            // message ownership
             if (currentUserId > 0) {
                 request.setUserId(currentUserId);
                 // ADMIN users can see all messages (similar to USER_MANAGE permission)
                 // This allows admin users to monitor all AS2 message traffic
                 request.setHasUserManagePermission(isAdmin);
-            } 
+            }
         }
 
         MessageOverviewResponse response = processing.processMessageOverviewRequest(request);
@@ -288,9 +291,12 @@ public class MessageResource {
 
     /**
      * Download a specific payload from a message
-     * @param messageId The overview message ID
-     * @param entryMessageId Optional - specific entry's message ID (for selecting MSG vs MDN)
-     * @param payloadIndex Optional - which payload to download (0-based, default 0)
+     * 
+     * @param messageId      The overview message ID
+     * @param entryMessageId Optional - specific entry's message ID (for selecting
+     *                       MSG vs MDN)
+     * @param payloadIndex   Optional - which payload to download (0-based, default
+     *                       0)
      */
     @GET
     @Path("/{messageId}/payload")
@@ -334,7 +340,8 @@ public class MessageResource {
 
         if (index >= payloads.size()) {
             return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Payload index " + index + " not found (only " + payloads.size() + " payload(s) available)"))
+                    .entity(new ErrorResponse("Payload index " + index + " not found (only " + payloads.size()
+                            + " payload(s) available)"))
                     .build();
         }
 
@@ -376,7 +383,6 @@ public class MessageResource {
             filename = "payload_" + index + ".dat";
         }
 
-
         return Response.ok(new ByteArrayInputStream(data))
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .type(contentType != null ? contentType : MediaType.APPLICATION_OCTET_STREAM)
@@ -412,7 +418,6 @@ public class MessageResource {
 
         List<AS2Payload> payloads = response.getList();
 
-
         if (payloads == null || payloads.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity(new ErrorResponse("No payload found for message"))
@@ -432,7 +437,6 @@ public class MessageResource {
                 byte[] data = payload.getData();
                 info.setSize(data != null ? data.length : 0);
 
-
                 // If getData() returns empty but payloadFilename exists, try reading from file
                 if ((data == null || data.length == 0) && payload.getPayloadFilename() != null) {
                     try {
@@ -448,11 +452,13 @@ public class MessageResource {
 
                 // Get preview of data (first 5000 chars for text types)
                 if (data != null && data.length > 0 && payload.getContentType() != null &&
-                    (payload.getContentType().startsWith("text/") ||
-                     payload.getContentType().contains("xml") ||
-                     payload.getContentType().contains("json") ||
-                     payload.getContentType().contains("EDI"))) {
-                    String preview = new String(data, 0, Math.min(data.length, 5000), java.nio.charset.StandardCharsets.UTF_8);
+                        (payload.getContentType().startsWith("text/") ||
+                                payload.getContentType().toLowerCase().contains("xml") ||
+                                payload.getContentType().toLowerCase().contains("json") ||
+                                payload.getContentType().toLowerCase().contains("edi") ||
+                                payload.getContentType().toLowerCase().contains("x12"))) {
+                    String preview = new String(data, 0, Math.min(data.length, 5000),
+                            java.nio.charset.StandardCharsets.UTF_8);
                     info.setPreview(preview);
                     info.setIsText(true);
                 } else {
@@ -474,15 +480,19 @@ public class MessageResource {
 
     /**
      * Get message header (raw HTTP headers)
-     * @param messageId The overview message ID
-     * @param entryMessageId Optional - specific entry's message ID (for MDN selection)
+     *
+     * @param messageId      The overview message ID
+     * @param entryMessageId Optional - specific entry's message ID (for MDN
+     *                       selection)
+     * @param isMDN          Optional - true if selecting MDN entry, false for MSG entry
      */
     @GET
     @Path("/{messageId}/header")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMessageHeader(
             @PathParam("messageId") String messageId,
-            @QueryParam("entryMessageId") String entryMessageId) {
+            @QueryParam("entryMessageId") String entryMessageId,
+            @QueryParam("isMDN") Boolean isMDN) {
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
@@ -512,10 +522,11 @@ public class MessageResource {
             // Find the matching detail entry
             AS2Info targetInfo = null;
             String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+            boolean searchForMDN = (isMDN != null && isMDN);
 
             for (Object obj : details) {
                 AS2Info info = (AS2Info) obj;
-                if (searchMessageId.equals(info.getMessageId())) {
+                if (searchMessageId.equals(info.getMessageId()) && info.isMDN() == searchForMDN) {
                     targetInfo = info;
                     break;
                 }
@@ -523,7 +534,7 @@ public class MessageResource {
 
             if (targetInfo == null) {
                 RawDataResponse headerResponse = new RawDataResponse();
-                headerResponse.setRawData("No matching detail found for message ID: " + messageId);
+                headerResponse.setRawData("No matching detail found for message ID: " + searchMessageId + ", isMDN: " + searchForMDN);
                 headerResponse.setIsBase64(false);
                 return Response.ok(headerResponse).build();
             }
@@ -566,15 +577,19 @@ public class MessageResource {
 
     /**
      * Get raw message data (unencrypted)
-     * @param messageId The overview message ID
-     * @param entryMessageId Optional - specific entry's message ID (for MDN selection)
+     *
+     * @param messageId      The overview message ID
+     * @param entryMessageId Optional - specific entry's message ID (for MDN
+     *                       selection)
+     * @param isMDN          Optional - true if selecting MDN entry, false for MSG entry
      */
     @GET
     @Path("/{messageId}/raw")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getMessageRawData(
             @PathParam("messageId") String messageId,
-            @QueryParam("entryMessageId") String entryMessageId) {
+            @QueryParam("entryMessageId") String entryMessageId,
+            @QueryParam("isMDN") Boolean isMDN) {
 
         AS2ServerProcessing processing = RestApplication.ServerProcessingHolder.getInstance();
         if (processing == null) {
@@ -590,7 +605,8 @@ public class MessageResource {
             MessageDetailResponse detailResponse = processing.processMessageDetailRequest(detailRequest);
 
             if (detailResponse.getException() != null) {
-                System.err.println("ERROR: Exception in detail response: " + detailResponse.getException().getMessage());
+                System.err
+                        .println("ERROR: Exception in detail response: " + detailResponse.getException().getMessage());
                 RawDataResponse rawResponse = new RawDataResponse();
                 rawResponse.setRawData("Error: " + detailResponse.getException().getMessage());
                 rawResponse.setIsBase64(false);
@@ -607,25 +623,27 @@ public class MessageResource {
             }
 
             // Find the matching detail entry
+            // IMPORTANT: When MSG and MDN have the same messageId, we need to check BOTH
+            // the messageId AND whether it's an MDN to find the correct entry
             AS2Info targetInfo = null;
             String searchMessageId = (entryMessageId != null && !entryMessageId.isEmpty()) ? entryMessageId : messageId;
+            boolean searchForMDN = (isMDN != null && isMDN);
 
             for (Object obj : details) {
                 AS2Info info = (AS2Info) obj;
-                if (searchMessageId.equals(info.getMessageId())) {
+                if (searchMessageId.equals(info.getMessageId()) && info.isMDN() == searchForMDN) {
                     targetInfo = info;
                     break;
                 }
             }
 
             if (targetInfo == null) {
-                System.err.println("ERROR: No matching detail found for message ID: " + messageId);
+                System.err.println("ERROR: No matching detail found for message ID: " + searchMessageId + ", isMDN: " + searchForMDN);
                 RawDataResponse rawResponse = new RawDataResponse();
-                rawResponse.setRawData("No matching detail found");
+                rawResponse.setRawData("No matching detail found for messageId: " + searchMessageId);
                 rawResponse.setIsBase64(false);
                 return Response.ok(rawResponse).build();
             }
-
 
             // Get raw filename - different logic for messages vs MDNs
             String rawFilename = null;
@@ -640,7 +658,6 @@ public class MessageResource {
                 // MDN - just use raw filename
                 if (targetInfo.getRawFilename() != null) {
                     rawFilename = targetInfo.getRawFilename();
-                    System.out.println("MDN raw filename: " + rawFilename);
                 }
             }
 
@@ -669,8 +686,8 @@ public class MessageResource {
             int maxPreviewSize = 100 * 1024; // 100KB
             boolean isTruncated = rawData.length > maxPreviewSize;
             byte[] previewData = isTruncated
-                ? java.util.Arrays.copyOf(rawData, maxPreviewSize)
-                : rawData;
+                    ? java.util.Arrays.copyOf(rawData, maxPreviewSize)
+                    : rawData;
 
             // Check if data is binary or text
             boolean isBinary = false;
@@ -695,7 +712,8 @@ public class MessageResource {
                 // Return as text
                 String textData = new String(previewData, java.nio.charset.StandardCharsets.UTF_8);
                 if (isTruncated) {
-                    textData += "\n\n[... Truncated - showing first " + maxPreviewSize + " bytes of " + fileSize + " bytes total. Use 'Save to File' to download complete data ...]";
+                    textData += "\n\n[... Truncated - showing first " + maxPreviewSize + " bytes of " + fileSize
+                            + " bytes total. Use 'Save to File' to download complete data ...]";
                 }
                 rawResponse.setRawData(textData);
                 rawResponse.setIsBase64(false);
@@ -920,7 +938,8 @@ public class MessageResource {
     /**
      * Manual send file(s) to partner
      * Accepts multipart/form-data with:
-     * - files: One or more files to send (first file is main payload, others are attachments)
+     * - files: One or more files to send (first file is main payload, others are
+     * attachments)
      * - senderId: Database ID of sender partner (local station)
      * - receiverId: Database ID of receiver partner
      * - subject: Optional message subject
@@ -951,9 +970,8 @@ public class MessageResource {
         try {
             String username = securityContext.getUserPrincipal().getName();
             UserManagementAccessDB userMgmt = new UserManagementAccessDB(
-                processing.getDBDriverManager(),
-                java.util.logging.Logger.getLogger(MessageResource.class.getName())
-            );
+                    processing.getDBDriverManager(),
+                    java.util.logging.Logger.getLogger(MessageResource.class.getName()));
             WebUIUser user = userMgmt.getUserByUsername(username);
             if (user != null) {
                 currentUserId = user.getId();
@@ -991,14 +1009,16 @@ public class MessageResource {
 
         try {
             // Get partner list to find AS2 IDs from database IDs
-            // IMPORTANT: Admin users see ALL partners (userId=-1), regular users see only their own
+            // IMPORTANT: Admin users see ALL partners (userId=-1), regular users see only
+            // their own
             PartnerListRequest partnerRequest = new PartnerListRequest();
             partnerRequest.setUserId(isAdmin ? -1 : currentUserId);
             PartnerListResponse partnerResponse = processing.processPartnerListRequest(partnerRequest);
 
             if (partnerResponse.getException() != null) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                        .entity(new ErrorResponse("Failed to get partner list: " + partnerResponse.getException().getMessage()))
+                        .entity(new ErrorResponse(
+                                "Failed to get partner list: " + partnerResponse.getException().getMessage()))
                         .build();
             }
 
@@ -1030,7 +1050,8 @@ public class MessageResource {
             }
 
             // Save all uploaded files to persistent temp directory
-            // IMPORTANT: Do NOT delete these files - SendOrderReceiver will read them asynchronously
+            // IMPORTANT: Do NOT delete these files - SendOrderReceiver will read them
+            // asynchronously
             // and clean them up after processing
             java.nio.file.Path tempDir = java.nio.file.Paths.get("temp");
             if (!java.nio.file.Files.exists(tempDir)) {
@@ -1049,10 +1070,11 @@ public class MessageResource {
                 // Get entity as byte array directly
                 byte[] fileBytes = part.getValueAs(byte[].class);
 
-                // Save to persistent temp directory (not Java's temp dir which may be cleaned up)
+                // Save to persistent temp directory (not Java's temp dir which may be cleaned
+                // up)
                 // Use timestamp + random to ensure uniqueness
                 String tempFilename = "webui_upload_" + System.currentTimeMillis() + "_" +
-                                     (int)(Math.random() * 100000) + "_" + originalFilename;
+                        (int) (Math.random() * 100000) + "_" + originalFilename;
                 java.nio.file.Path tempFile = tempDir.resolve(tempFilename);
                 java.nio.file.Files.write(tempFile, fileBytes);
 
@@ -1071,12 +1093,6 @@ public class MessageResource {
             // Send the message using SendOrderSender with userId
             SendOrderSender orderSender = processing.getSendOrderSender();
 
-            System.out.println("[DEBUG MessageResource] Attempting to send message:");
-            System.out.println("  Sender: " + sender.getName() + " (ID: " + sender.getDBId() + ")");
-            System.out.println("  Receiver: " + receiver.getName() + " (ID: " + receiver.getDBId() + ")");
-            System.out.println("  Files: " + sendFiles.length);
-            System.out.println("  User ID: " + currentUserId);
-
             de.mendelson.comm.as2.sendorder.SendResult sendResult = orderSender.sendWithResult(
                     processing.getCertificateManagerSignEncrypt(),
                     sender,
@@ -1090,13 +1106,10 @@ public class MessageResource {
             );
 
             if (sendResult.isFailure()) {
-                System.err.println("[ERROR MessageResource] Send failed: " + sendResult.getErrorMessage());
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new ErrorResponse("Failed to send message: " + sendResult.getErrorMessage()))
                         .build();
             }
-
-            System.out.println("[DEBUG MessageResource] Send result: " + sendResult);
 
             // Broadcast refresh to connected clients (if ClientServer is available)
             if (processing.getClientserver() != null) {
@@ -1105,11 +1118,12 @@ public class MessageResource {
 
             // Generate response message
             String messageId = sendResult.hasMessage()
-                    ? ((AS2MessageInfo)sendResult.getMessage().getAS2Info()).getMessageId()
+                    ? ((AS2MessageInfo) sendResult.getMessage().getAS2Info()).getMessageId()
                     : "order-" + sendResult.getOrderId(); // For IN_MEMORY, use order ID
             String successMsg = fileParts.size() == 1
                     ? "File sent successfully"
-                    : fileParts.size() + " files sent successfully (1 main + " + (fileParts.size() - 1) + " attachment" + (fileParts.size() > 2 ? "s" : "") + ")";
+                    : fileParts.size() + " files sent successfully (1 main + " + (fileParts.size() - 1) + " attachment"
+                            + (fileParts.size() > 2 ? "s" : "") + ")";
 
             return Response.ok(new SendSuccessResponse(successMsg, messageId)).build();
 
@@ -1221,6 +1235,7 @@ public class MessageResource {
 
     /**
      * Delete a message by ID
+     * 
      * @param messageId The message ID to delete
      */
     @DELETE
@@ -1274,12 +1289,10 @@ public class MessageResource {
             deleteRequest.setDeleteList(deleteList);
 
             // Use MessageDeleteController directly
-            MessageDeleteController controller =
-                    new MessageDeleteController(
-                            null, processing.getDBDriverManager());
+            MessageDeleteController controller = new MessageDeleteController(
+                    null, processing.getDBDriverManager());
             StringBuilder deleteLog = new StringBuilder();
             controller.deleteMessagesFromLog(deleteList, true, deleteLog);
-
 
             // Broadcast refresh to connected clients (if ClientServer is available)
             if (processing.getClientserver() != null) {
@@ -1303,7 +1316,8 @@ public class MessageResource {
     public static class DeleteSuccessResponse {
         private String message;
 
-        public DeleteSuccessResponse() {}
+        public DeleteSuccessResponse() {
+        }
 
         public DeleteSuccessResponse(String message) {
             this.message = message;

@@ -33,7 +33,9 @@ export default function MaintenanceSettings() {
     autoStatsDelete: true,
     autoStatsDeleteOlderThan: '180',
     autoLogdirDelete: false,
-    autoLogdirDeleteOlderThan: '180'
+    autoLogdirDeleteOlderThan: '180',
+    autoTrackerDelete: false,
+    autoTrackerDeleteOlderThan: '180'
   });
 
   const timeUnitOptions = [
@@ -52,11 +54,18 @@ export default function MaintenanceSettings() {
 
   const rowStyle = {
     display: 'grid',
-    gridTemplateColumns: 'auto 100px 120px auto 100px',
-    gap: '0.75rem',
+    gridTemplateColumns: 'auto 230px 100px',
+    columnGap: '0.5rem',
     alignItems: 'center',
     marginBottom: '1rem',
     paddingLeft: '1rem'
+  };
+
+  // Combined wrapper for columns 2 and 3 - small gap between input and unit
+  const column23WrapperStyle = {
+    display: 'flex',
+    gap: '0.25rem',
+    alignItems: 'center'
   };
 
   const labelStyle = {
@@ -70,8 +79,8 @@ export default function MaintenanceSettings() {
     border: '1px solid #ced4da',
     borderRadius: '4px',
     fontSize: '0.875rem',
-    width: '100%',
-    textAlign: 'right'
+    width: '80px',
+    textAlign: 'left'
   };
 
   const selectStyle = {
@@ -79,7 +88,7 @@ export default function MaintenanceSettings() {
     border: '1px solid #ced4da',
     borderRadius: '4px',
     fontSize: '0.875rem',
-    width: '100%'
+    width: '120px'
   };
 
   const switchStyle = {
@@ -158,7 +167,9 @@ export default function MaintenanceSettings() {
         'autostatsdelete',
         'autostatsdeleteolderthan',
         'autologdirdelete',
-        'autologdirdeleteolderthan'
+        'autologdirdeleteolderthan',
+        'autotrackerdelete',
+        'autotrackerdeleteolderthan'
       ];
 
       const values = {};
@@ -180,7 +191,9 @@ export default function MaintenanceSettings() {
         autoStatsDelete: values.autostatsdelete === 'TRUE',
         autoStatsDeleteOlderThan: values.autostatsdeleteolderthan || '180',
         autoLogdirDelete: values.autologdirdelete === 'TRUE',
-        autoLogdirDeleteOlderThan: values.autologdirdeleteolderthan || '180'
+        autoLogdirDeleteOlderThan: values.autologdirdeleteolderthan || '180',
+        autoTrackerDelete: values.autotrackerdelete === 'TRUE',
+        autoTrackerDeleteOlderThan: values.autotrackerdeleteolderthan || '180'
       });
     } catch (error) {
       console.error('Error loading maintenance settings:', error);
@@ -200,7 +213,9 @@ export default function MaintenanceSettings() {
         { key: 'autostatsdelete', value: settings.autoStatsDelete ? 'TRUE' : 'FALSE' },
         { key: 'autostatsdeleteolderthan', value: settings.autoStatsDeleteOlderThan },
         { key: 'autologdirdelete', value: settings.autoLogdirDelete ? 'TRUE' : 'FALSE' },
-        { key: 'autologdirdeleteolderthan', value: settings.autoLogdirDeleteOlderThan }
+        { key: 'autologdirdeleteolderthan', value: settings.autoLogdirDeleteOlderThan },
+        { key: 'autotrackerdelete', value: settings.autoTrackerDelete ? 'TRUE' : 'FALSE' },
+        { key: 'autotrackerdeleteolderthan', value: settings.autoTrackerDeleteOlderThan }
       ];
 
       for (const update of updates) {
@@ -235,7 +250,7 @@ export default function MaintenanceSettings() {
   }
 
   return (
-    <div>
+    <div style={{ maxWidth: '80%' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
         <button
           style={saving ? buttonDisabledStyle : buttonStyle}
@@ -252,24 +267,25 @@ export default function MaintenanceSettings() {
         <div style={sectionHeaderStyle}>Auto delete</div>
 
         <div style={rowStyle}>
-          <div style={labelStyle}>Transaction entries older than</div>
-          <input
-            type="number"
-            style={inputStyle}
-            value={settings.autoMsgDeleteOlderThan}
-            onChange={(e) => setSettings({ ...settings, autoMsgDeleteOlderThan: e.target.value })}
-            min="1"
-          />
-          <select
-            style={selectStyle}
-            value={settings.autoMsgDeleteOlderThanMultiplierS}
-            onChange={(e) => setSettings({ ...settings, autoMsgDeleteOlderThanMultiplierS: e.target.value })}
-          >
-            {timeUnitOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <div></div>
+          <div style={labelStyle}>AS2 messages older than</div>
+          <div style={column23WrapperStyle}>
+            <input
+              type="number"
+              style={inputStyle}
+              value={settings.autoMsgDeleteOlderThan}
+              onChange={(e) => setSettings({ ...settings, autoMsgDeleteOlderThan: e.target.value })}
+              min="1"
+            />
+            <select
+              style={selectStyle}
+              value={settings.autoMsgDeleteOlderThanMultiplierS}
+              onChange={(e) => setSettings({ ...settings, autoMsgDeleteOlderThanMultiplierS: e.target.value })}
+            >
+              {timeUnitOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
           <ToggleSwitch
             checked={settings.autoMsgDelete}
             onChange={(val) => setSettings({ ...settings, autoMsgDelete: val })}
@@ -279,15 +295,16 @@ export default function MaintenanceSettings() {
         {!isCommunityEdition && (
           <div style={rowStyle}>
             <div style={labelStyle}>Statistics data older than</div>
-            <input
-              type="number"
-              style={inputStyle}
-              value={settings.autoStatsDeleteOlderThan}
-              onChange={(e) => setSettings({ ...settings, autoStatsDeleteOlderThan: e.target.value })}
-              min="1"
-            />
-            <div style={{ ...labelStyle, textAlign: 'left' }}>days</div>
-            <div></div>
+            <div style={column23WrapperStyle}>
+              <input
+                type="number"
+                style={inputStyle}
+                value={settings.autoStatsDeleteOlderThan}
+                onChange={(e) => setSettings({ ...settings, autoStatsDeleteOlderThan: e.target.value })}
+                min="1"
+              />
+              <div style={labelStyle}>days</div>
+            </div>
             <ToggleSwitch
               checked={settings.autoStatsDelete}
               onChange={(val) => setSettings({ ...settings, autoStatsDelete: val })}
@@ -296,16 +313,35 @@ export default function MaintenanceSettings() {
         )}
 
         <div style={rowStyle}>
-          <div style={labelStyle}>Log data older than</div>
-          <input
-            type="number"
-            style={inputStyle}
-            value={settings.autoLogdirDeleteOlderThan}
-            onChange={(e) => setSettings({ ...settings, autoLogdirDeleteOlderThan: e.target.value })}
-            min="1"
+          <div style={labelStyle}>Tracker messages older than</div>
+          <div style={column23WrapperStyle}>
+            <input
+              type="number"
+              style={inputStyle}
+              value={settings.autoTrackerDeleteOlderThan}
+              onChange={(e) => setSettings({ ...settings, autoTrackerDeleteOlderThan: e.target.value })}
+              min="1"
+            />
+            <div style={labelStyle}>days</div>
+          </div>
+          <ToggleSwitch
+            checked={settings.autoTrackerDelete}
+            onChange={(val) => setSettings({ ...settings, autoTrackerDelete: val })}
           />
-          <div style={{ ...labelStyle, textAlign: 'left' }}>days</div>
-          <div></div>
+        </div>
+
+        <div style={rowStyle}>
+          <div style={labelStyle}>Log data older than</div>
+          <div style={column23WrapperStyle}>
+            <input
+              type="number"
+              style={inputStyle}
+              value={settings.autoLogdirDeleteOlderThan}
+              onChange={(e) => setSettings({ ...settings, autoLogdirDeleteOlderThan: e.target.value })}
+              min="1"
+            />
+            <div style={labelStyle}>days</div>
+          </div>
           <ToggleSwitch
             checked={settings.autoLogdirDelete}
             onChange={(val) => setSettings({ ...settings, autoLogdirDelete: val })}

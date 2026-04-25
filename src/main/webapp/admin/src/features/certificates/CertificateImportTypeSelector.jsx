@@ -82,7 +82,7 @@ export default function CertificateImportTypeSelector({ keystoreType, onClose, o
       }} onClick={(e) => e.stopPropagation()}>
         <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Import Certificate</h2>
         <p style={{ color: '#666', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-          Importing to: {keystoreType === 'sign' ? 'Sign/Encrypt Keystore' : 'TLS Keystore'}
+          Importing to: Sign/Encrypt Keystore
         </p>
 
         <p style={{ fontWeight: '600', marginBottom: '1rem' }}>What would you like to import?</p>

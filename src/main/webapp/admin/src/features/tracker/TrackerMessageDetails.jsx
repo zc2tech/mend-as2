@@ -58,8 +58,8 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
     backgroundColor: 'white',
     borderRadius: '8px',
     padding: '2rem',
-    maxWidth: '900px',
-    maxHeight: '80vh',
+    maxWidth: '1125px',
+    maxHeight: '90vh',
     overflow: 'auto',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
   };

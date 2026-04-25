@@ -1,7 +1,6 @@
 package de.mendelson.comm.as2.preferences;
 
 import de.mendelson.comm.as2.client.IconManager;
-import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.util.JTextFieldLimitDocument;
 import de.mendelson.util.MecResourceBundle;
 import de.mendelson.util.MendelsonMultiResolutionImage;

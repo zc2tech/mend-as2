@@ -28,7 +28,7 @@ Download the latest release from [GitHub Releases](https://github.com/zc2tech/me
 
 ### Release Types
 
-**1. Fat JAR Distribution** (`mend-as2-1.1.0-dist.tar.gz` or `.zip`) - **~67 MB**
+**1. Fat JAR Distribution** (`mend-as2-<version>-dist.tar.gz` or `.zip`) - **~67 MB**
 
 Single executable JAR with all dependencies included:
 - ✅ Simplest to deploy (one JAR file)
@@ -38,7 +38,7 @@ Single executable JAR with all dependencies included:
 - ❌ Harder to update individual libraries
 - ❌ Larger single file
 
-**2. Thin JAR Distribution** (`mend-as2-1.1.0-thin-dist.tar.gz` or `.zip`) - **~2.6 MB + downloads**
+**2. Thin JAR Distribution** (`mend-as2-<version>-thin-dist.tar.gz` or `.zip`) - **~2.6 MB + downloads**
 
 Small distribution that downloads dependencies from Maven Central on first run:
 - ✅ Very small download (2.6 MB vs 67 MB)
@@ -107,12 +107,12 @@ createdb -O as2user as2_db_runtime
 # 3. Extract distribution (choose one):
 
 # Option A: Fat JAR (single executable)
-tar -xzf mend-as2-1.1.0-dist.tar.gz
-cd mend-as2-1.1.0
+tar -xzf mend-as2-dist.tar.gz
+cd mend-as2
 
 # Option B: Thin JAR (downloads dependencies on first run)
-tar -xzf mend-as2-1.1.0-thin-dist.tar.gz
-cd mend-as2-1.1.0-thin
+tar -xzf mend-as2-thin-dist.tar.gz
+cd mend-as2-thin
 
 # 4. Edit database connection
 nano config/database-postgresql.properties
@@ -227,31 +227,31 @@ psql -U as2user -d as2_db_config -h localhost
 **Linux/macOS:**
 ```bash
 # Fat JAR distribution (single executable)
-tar -xzf mend-as2-1.1.0-dist.tar.gz
-cd mend-as2-1.1.0
+tar -xzf mend-as2-dist.tar.gz
+cd mend-as2
 
 # Thin JAR distribution (with lib/ directory)
-tar -xzf mend-as2-1.1.0-thin.tar.gz
-cd mend-as2-1.1.0-thin
+tar -xzf mend-as2-thin-dist.tar.gz
+cd mend-as2-thin
 
 # Or extract zip
-unzip mend-as2-1.1.0-dist.zip        # Fat JAR
-unzip mend-as2-1.1.0-thin.zip        # Thin JAR
+unzip mend-as2-dist.zip        # Fat JAR
+unzip mend-as2-thin-dist.zip   # Thin JAR
 ```
 
 **Windows:**
 ```powershell
 # Extract using Windows Explorer or:
-Expand-Archive mend-as2-1.1.0-dist.zip       # Fat JAR
-Expand-Archive mend-as2-1.1.0-thin.zip       # Thin JAR
-cd mend-as2-1.1.0  # or mend-as2-1.1.0-thin
+Expand-Archive mend-as2-dist.zip       # Fat JAR
+Expand-Archive mend-as2-thin-dist.zip  # Thin JAR
+cd mend-as2  # or mend-as2-thin
 ```
 
 **Fat JAR Distribution Structure:**
 ```
-mend-as2-1.1.0/
-├── mend-as2-1.1.0.jar             # Main application (67 MB fat JAR)
-├── config/                        # Configuration files
+mend-as2/
+├── mend-as2-<version>.jar             # Main application (67 MB fat JAR)
+├── config/                            # Configuration files
 │   ├── as2.properties             # Mode selection & settings
 │   └── database-postgresql.properties
 ├── sqlscript/                     # SQL scripts (auto-created)
@@ -269,8 +269,8 @@ mend-as2-1.1.0/
 
 **Thin JAR Distribution Structure:**
 ```
-mend-as2-1.1.0-thin/
-├── mend-as2-1.1.0-thin.jar        # Main application (3 MB thin JAR)
+mend-as2-thin/
+├── mend-as2-<version>-thin.jar    # Main application (3 MB thin JAR)
 ├── lib/                           # All dependencies (~64 MB)
 │   ├── bcprov-jdk18on-1.80.jar
 │   ├── jetty-server-12.0.15.jar
@@ -342,10 +342,10 @@ start-headless.bat  # Windows
 **Option 2: Command line flag**
 ```bash
 # GUI Mode (default)
-java -jar mend-as2-1.1.0.jar
+java -jar mend-as2.jar
 
 # Headless Mode
-java -jar mend-as2-1.1.0.jar -nogui
+java -jar mend-as2.jar -nogui
 ```
 
 **Option 3: Configuration file**
@@ -435,22 +435,22 @@ This will:
 **Fat JAR:**
 ```bash
 # GUI Mode
-java -jar mend-as2-1.1.0.jar
+java -jar mend-as2.jar
 
 # Headless Mode
-java -jar mend-as2-1.1.0.jar -nogui
+java -jar mend-as2.jar -nogui
 ```
 
 **Thin JAR:**
 ```bash
 # GUI Mode
-java -cp "mend-as2-1.1.0-thin.jar:lib/*" de.mendelson.comm.as2.AS2
+java -cp "mend-as2-thin.jar:lib/*" de.mendelson.comm.as2.AS2
 
 # Headless Mode
-java -cp "mend-as2-1.1.0-thin.jar:lib/*" de.mendelson.comm.as2.AS2 -nogui
+java -cp "mend-as2-thin.jar:lib/*" de.mendelson.comm.as2.AS2 -nogui
 
 # Windows (use semicolon):
-java -cp "mend-as2-1.1.0-thin.jar;lib\*" de.mendelson.comm.as2.AS2
+java -cp "mend-as2-thin.jar;lib\*" de.mendelson.comm.as2.AS2
 ```
 
 ### Customizing JVM Options
@@ -487,7 +487,7 @@ After=network.target postgresql.service
 Type=simple
 User=as2user
 WorkingDirectory=/opt/mend-as2
-ExecStart=/usr/bin/java -Xms1g -Xmx4g -jar /opt/mend-as2/mend-as2-1.1.0-headless.jar
+ExecStart=/usr/bin/java -Xms1g -Xmx4g -jar /opt/mend-as2/mend-as2.jar -nogui
 Restart=on-failure
 RestartSec=10
 
@@ -506,7 +506,7 @@ WantedBy=multi-user.target
 ```bash
 # Copy distribution to /opt
 sudo mkdir -p /opt/mend-as2
-sudo cp -r mend-as2-1.1.0-headless/* /opt/mend-as2/
+sudo cp -r mend-as2/* /opt/mend-as2/
 sudo chown -R as2user:as2user /opt/mend-as2
 
 # Enable service
@@ -538,7 +538,8 @@ Create `~/Library/LaunchAgents/com.zc2tech.mend-as2.plist`:
         <string>-Xms1g</string>
         <string>-Xmx4g</string>
         <string>-jar</string>
-        <string>/Users/yourusername/mend-as2/mend-as2-1.1.0-headless.jar</string>
+        <string>/Users/yourusername/mend-as2/mend-as2.jar</string>
+        <string>-nogui</string>
     </array>
     <key>WorkingDirectory</key>
     <string>/Users/yourusername/mend-as2</string>
@@ -571,7 +572,7 @@ launchctl list | grep mend-as2
 ```cmd
 nssm install MendAS2 "C:\Program Files\Java\jdk-17\bin\java.exe"
 nssm set MendAS2 AppDirectory "C:\mend-as2"
-nssm set MendAS2 AppParameters "-Xms1g -Xmx4g -jar C:\mend-as2\mend-as2-1.1.0-headless.jar"
+nssm set MendAS2 AppParameters "-Xms1g -Xmx4g -jar C:\mend-as2\mend-as2.jar -nogui"
 nssm set MendAS2 DisplayName "Mend AS2 Server"
 nssm set MendAS2 Description "Mend AS2 B2B Communication Server"
 nssm set MendAS2 Start SERVICE_AUTO_START
@@ -609,7 +610,7 @@ services:
     image: eclipse-temurin:17-jre-alpine
     working_dir: /app
     volumes:
-      - ./mend-as2-1.1.0-headless.tar.gz:/tmp/app.tar.gz:ro
+      - ./mend-as2-dist.tar.gz:/tmp/app.tar.gz:ro
       - as2_data:/app/data
       - as2_logs:/app/log
       - as2_messages:/app/messages
@@ -623,14 +624,14 @@ services:
       - as2_network
     command: >
       sh -c "
-      if [ ! -f /app/mend-as2-1.1.0-headless.jar ]; then
+      if [ ! -f /app/mend-as2.jar ]; then
         tar -xzf /tmp/app.tar.gz -C /tmp &&
-        cp -r /tmp/mend-as2-1.1.0-headless/* /app/ &&
+        cp -r /tmp/mend-as2/* /app/ &&
         sed -i 's/localhost:5432/postgres:5432/g' /app/config/database-postgresql.properties &&
         sed -i 's/as2user/as2user/g' /app/config/database-postgresql.properties &&
         sed -i 's/your_secure_password/your_secure_password/g' /app/config/database-postgresql.properties;
       fi &&
-      java $$JAVA_OPTS -jar /app/mend-as2-1.1.0-headless.jar
+      java $$JAVA_OPTS -jar /app/mend-as2.jar -nogui
       "
 
 volumes:

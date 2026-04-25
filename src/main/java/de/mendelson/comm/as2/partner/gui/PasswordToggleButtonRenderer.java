@@ -32,8 +32,6 @@ public class PasswordToggleButtonRenderer extends AbstractCellEditor implements 
     private final JButton renderButton;
     private final JButton editorButton;
     private Boolean currentValue;
-    private JTable table;
-    private int currentRow;
 
     private final ImageIcon iconEyeMasked;
     private final ImageIcon iconEyeUnmasked;
@@ -94,8 +92,6 @@ public class PasswordToggleButtonRenderer extends AbstractCellEditor implements 
     public Component getTableCellEditorComponent(JTable table, Object value,
             boolean isSelected, int row, int column) {
 
-        this.table = table;
-        this.currentRow = row;
         this.currentValue = (Boolean) value;
 
         if (currentValue != null && currentValue) {

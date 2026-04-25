@@ -115,7 +115,9 @@ CREATE TABLE webui_users (
     must_change_password BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_login TIMESTAMP NULL
+    last_login TIMESTAMP NULL,
+    tracker_auth_basic_enabled BOOLEAN DEFAULT FALSE,
+    tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX idx_webui_users_username ON webui_users(username);
 CREATE INDEX idx_webui_users_enabled ON webui_users(enabled);
@@ -264,6 +266,24 @@ CREATE TABLE partner_inbound_auth_credentials(
 );
 
 CREATE INDEX idx_partner_inbound_auth ON partner_inbound_auth_credentials(partner_id);
+
+-- User-specific tracker authentication credentials
+-- Similar to partner_inbound_auth_credentials, but scoped to webui_users
+CREATE TABLE user_tracker_auth_credentials (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    auth_type INTEGER NOT NULL,      -- 1=basic, 2=certificate
+    username VARCHAR(256),            -- For basic auth (null for cert)
+    password VARCHAR(256),            -- For basic auth (null for cert)
+    cert_fingerprint VARCHAR(255),    -- For cert auth (null for basic), SHA-1 format
+    cert_alias VARCHAR(255),          -- Certificate alias/name for display
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_tracker_auth_user ON user_tracker_auth_credentials(user_id);
+CREATE INDEX idx_user_tracker_auth_type ON user_tracker_auth_credentials(auth_type);
 
 CREATE TABLE certificates(
     id SERIAL PRIMARY KEY,

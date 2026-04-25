@@ -11,6 +11,7 @@
 package de.mendelson.comm.as2.server;
 
 import de.mendelson.comm.as2.AS2Exception;
+import de.mendelson.comm.as2.AS2Properties;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.util.httpconfig.server.HTTPServerConfigInfo;
 import de.mendelson.util.clientserver.about.ServerInfoRequest;
@@ -405,7 +406,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         //process signals
         try {
             if (message instanceof PartnerConfigurationChanged) {
-                this.dirPollManager.partnerConfigurationChanged();
+                if (this.dirPollManager != null) {
+                    this.dirPollManager.partnerConfigurationChanged();
+                }
                 EventBus.getInstance().publish(new RefreshTablePartnerData());
                 return (true);
             } else if (message instanceof RefreshKeystoreCertificates) {
@@ -677,7 +680,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
 
             this.partnerAccess.updatePartner(newPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -715,7 +720,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 }
             }
             this.partnerAccess.deletePartner(foundPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -756,7 +763,9 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             }
 
             this.partnerAccess.insertPartner(newPartner);
-            this.dirPollManager.partnerConfigurationChanged();
+            if (this.dirPollManager != null) {
+                this.dirPollManager.partnerConfigurationChanged();
+            }
         } catch (Throwable e) {
             response.setException(e);
         }
@@ -2235,34 +2244,15 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             //reload the partner from the database using direct DB ID lookup
             Partner sender = null;
             int senderDBId = request.getSenderDBId();
-          
+
             if (senderDBId > 0) {
                 sender = this.partnerAccess.getPartner(senderDBId);
-                if (sender != null) {
-                    System.out.println("DEBUG: Found sender - name: " + sender.getName() +
-                                     ", dbId: " + sender.getDBId() +
-                                     ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
-                } else {
-                    System.out.println("DEBUG: ERROR - Sender not found with DB ID: " + senderDBId);
-                }
-            } else {
-                System.out.println("DEBUG: ERROR - Invalid sender DB ID: " + senderDBId);
             }
 
             Partner receiver = null;
             int receiverDBId = request.getReceiverDBId();
-            System.out.println("DEBUG: Looking up receiver by DB ID: " + receiverDBId);
             if (receiverDBId > 0) {
                 receiver = this.partnerAccess.getPartner(receiverDBId);
-                if (receiver != null) {
-                    System.out.println("DEBUG: Found receiver - name: " + receiver.getName() +
-                                     ", dbId: " + receiver.getDBId() +
-                                     ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
-                } else {
-                    System.out.println("DEBUG: ERROR - Receiver not found with DB ID: " + receiverDBId);
-                }
-            } else {
-                System.out.println("DEBUG: ERROR - Invalid receiver DB ID: " + receiverDBId);
             }
             if (sender == null) {
                 throw new Exception("Undefined message sender or message sender does not exist.");
@@ -2270,14 +2260,6 @@ public class AS2ServerProcessing implements ClientServerProcessing {
             if (receiver == null) {
                 throw new Exception("Undefined message receiver or message receiver does not exist.");
             }
-
-            // CRITICAL DEBUG: Verify partner auth mode BEFORE sending
-            System.out.println("=== BEFORE SENDING ===");
-            System.out.println("Sender: " + sender.getName() + ", authMode: " + sender.getAuthenticationCredentialsMessage().getAuthMode());
-            System.out.println("Receiver: " + receiver.getName() + ", authMode: " + receiver.getAuthenticationCredentialsMessage().getAuthMode());
-            System.out.println("Receiver auth user: " + receiver.getAuthenticationCredentialsMessage().getUser());
-            System.out.println("Receiver auth pass: " + receiver.getAuthenticationCredentialsMessage().getPassword());
-            System.out.println("Receiver auth cert FP: " + receiver.getAuthenticationCredentialsMessage().getCertificateFingerprint());
 
             // Load sender's user-specific certificate manager
             // Local station (sender) needs their own certificates to sign/encrypt
@@ -2829,6 +2811,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         int userId = request.getUserId();
         boolean hasUserManagePermission = request.hasUserManagePermission();
 
+
         if (userId > 0 && !hasUserManagePermission) {
             // Regular user - filter to show only their own messages (based on owner_user_id)
             List<AS2MessageInfo> filteredList = new java.util.ArrayList<>();
@@ -2838,6 +2821,7 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                 }
             }
             messageList = filteredList;
+        } else {
         }
         // else: admin (userId=1) or USER_MANAGE permission - see all messages
 
@@ -3084,9 +3068,14 @@ public class AS2ServerProcessing implements ClientServerProcessing {
         } else {
             response.setProperty(ServerInfoRequest.SERVER_START_METHOD_WINDOWS_SERVICE, "FALSE");
         }
-        //check the number of poll threads
-        response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, String.valueOf(this.dirPollManager.getPollThreadCount()));
-        response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, String.format("%.0f", this.dirPollManager.getPollsPerMinute()));
+        //check the number of poll threads (if DirPollManager is enabled)
+        if (this.dirPollManager != null) {
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, String.valueOf(this.dirPollManager.getPollThreadCount()));
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, String.format("%.0f", this.dirPollManager.getPollsPerMinute()));
+        } else {
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREAD_COUNT, "0");
+            response.setProperty(ServerInfoRequest.DIR_POLL_THREADS_PER_MIN, "0");
+        }
         //display the instance id - this makes only sense if there are more than a single instance possible
         //or if ou are using an external database where the instance activity is logged 
         if (AS2Server.PLUGINS.isActivated(ServerPlugins.PLUGIN_HA)
@@ -3776,9 +3765,28 @@ public class AS2ServerProcessing implements ClientServerProcessing {
                     de.mendelson.util.systemevents.notification.NotificationData notificationData
                         = notificationAccess.getNotificationData();
 
-                    // Get server URL from preferences (construct from HTTP port)
-                    String httpPort = this.preferences.get(PreferencesAS2.HTTP_LISTEN_PORT);
-                    String serverUrl = "http://localhost:" + httpPort + "/as2";
+                    // Get hostname - from as2.properties first, fall back to Java detection
+                    String hostname = AS2Properties.getInstance().getServerHostname();
+                    if (hostname == null || hostname.trim().isEmpty()) {
+                        hostname = ServerConfigurationHelper.getHostname();
+                    }
+
+                    // Get actual HTTPS port from running Jetty server
+                    AS2Server server = AS2Server.getStaticServerReference();
+                    Integer httpsPort = null;
+                    if (server != null) {
+                        de.mendelson.util.httpconfig.server.HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+                        if (configInfo != null) {
+                            httpsPort = ServerConfigurationHelper.getHttpsPort(configInfo);
+                        }
+                    }
+
+                    // Fall back to default if we couldn't get the actual port
+                    if (httpsPort == null) {
+                        httpsPort = 8443; // Default fallback
+                    }
+
+                    String serverUrl = "https://" + hostname + ":" + httpsPort + "/as2";
 
                     de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
                         user, password, notificationData, serverUrl);

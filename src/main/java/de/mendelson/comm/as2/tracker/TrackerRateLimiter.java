@@ -34,12 +34,42 @@ public class TrackerRateLimiter {
     private static final ConcurrentHashMap<String, Long> blockedIPs = new ConcurrentHashMap<>();
 
     /**
+     * Check if an IP address is localhost
+     *
+     * @param remoteAddr IP address
+     * @return true if localhost
+     */
+    private static boolean isLocalhost(String remoteAddr) {
+        if (remoteAddr == null) {
+            return false;
+        }
+        // Check for IPv4 localhost
+        if (remoteAddr.equals("127.0.0.1") || remoteAddr.startsWith("127.")) {
+            return true;
+        }
+        // Check for IPv6 localhost
+        if (remoteAddr.equals("::1") || remoteAddr.contains("0:0:0:0:0:0:0:1")) {
+            return true;
+        }
+        // Check for localhost hostname
+        if (remoteAddr.equalsIgnoreCase("localhost")) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Check if an IP address is currently blocked
      *
      * @param remoteAddr IP address
      * @return true if blocked
      */
     public static boolean isBlocked(String remoteAddr) {
+        // Never block localhost
+        if (isLocalhost(remoteAddr)) {
+            return false;
+        }
+
         Long blockedUntil = blockedIPs.get(remoteAddr);
         if (blockedUntil == null) {
             return false;
@@ -65,6 +95,11 @@ public class TrackerRateLimiter {
      */
     public static boolean checkAndBlock(String remoteAddr, TrackerMessageAccessDB dao,
             PreferencesAS2 prefs) {
+        // Never block localhost
+        if (isLocalhost(remoteAddr)) {
+            return false;
+        }
+
         // Check if already blocked
         if (isBlocked(remoteAddr)) {
             return true;

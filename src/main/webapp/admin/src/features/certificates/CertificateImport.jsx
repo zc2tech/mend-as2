@@ -181,7 +181,7 @@ export default function CertificateImport({ keystoreType, importType, onClose })
             ? 'Import a certificate from your trading partner'
             : 'Import your own private key from a keystore file'}
           <br />
-          <strong>Target: {keystoreType === 'sign' ? 'Sign/Encrypt Keystore' : 'TLS Keystore'}</strong>
+          <strong>Target: Sign/Encrypt Keystore</strong>
         </p>
 
         <div

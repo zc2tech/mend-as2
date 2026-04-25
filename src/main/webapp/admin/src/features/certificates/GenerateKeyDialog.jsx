@@ -37,9 +37,9 @@ export default function GenerateKeyDialog({ keystoreType, onClose, onSuccess }) 
     emailAddress: '',
     keyValidInDays: 365,
     signatureAlgorithm: 'SHA256WithRSA',
-    // Expert view fields - set defaults based on keystore type
-    extensionTLS: keystoreType === 'tls',
-    extensionSignEncrypt: keystoreType === 'sign',
+    // Expert view fields - both TLS and Sign/Encrypt extensions enabled
+    extensionTLS: true,
+    extensionSignEncrypt: true,
     generateSKI: false,
     subjectAlternativeNames: ''
   });

@@ -57,7 +57,19 @@ public class UserNotificationMailer {
         Session session = createSession(notificationData);
 
         MimeMessage message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(notificationData.getReplyTo()));
+
+        // Use SMTP username as From address (required by most email providers)
+        // Many SMTP servers (Gmail, 163.com, etc.) require From address to match authenticated user
+        String fromAddress = notificationData.usesSMTPAuthCredentials()
+            ? notificationData.getSMTPUser()
+            : notificationData.getReplyTo();
+        message.setFrom(new InternetAddress(fromAddress));
+
+        // Set Reply-To if different from From address
+        if (notificationData.getReplyTo() != null && !notificationData.getReplyTo().equals(fromAddress)) {
+            message.setReplyTo(new InternetAddress[]{new InternetAddress(notificationData.getReplyTo())});
+        }
+
         message.setRecipient(Message.RecipientType.TO, new InternetAddress(user.getEmail()));
         message.setSubject("Your AS2 Server Account Has Been Created");
 
@@ -120,7 +132,9 @@ public class UserNotificationMailer {
         Session session;
         if (notificationData.usesSMTPAuthCredentials()) {
             final String username = notificationData.getSMTPUser();
-            final String password = String.valueOf(notificationData.getSMTPPass());
+            final String password = notificationData.getSMTPPass() != null
+                ? String.valueOf(notificationData.getSMTPPass())
+                : "";
 
             // Set authentication for both smtp and smtps protocols
             properties.setProperty("mail.smtp.auth", "true");
@@ -143,7 +157,7 @@ public class UserNotificationMailer {
         }
 
         // Enable debug output to help diagnose issues
-        session.setDebug(true);
+        // session.setDebug(true);
 
         return session;
     }

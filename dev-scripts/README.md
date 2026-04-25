@@ -1,316 +1,199 @@
-# Database Backup and Restore Scripts
+# Development Scripts
 
-This directory contains scripts for backing up and restoring the AS2 database.
+This folder contains utility scripts for development and administrative tasks.
 
-## Overview
+## Available Scripts
 
-The backup scripts create a snapshot of:
-- **Full config database** (`as2_db_config`) - All tables including partners, certificates, users, permissions, etc.
-- **Version table only** from runtime database (`as2_db_runtime`) - Just the version table, not message data
+### 🚀 Release Preparation
 
-The restore scripts:
-- **Clear all data** from both config and runtime databases
-- **Restore the full config database** from backup
-- **Restore only the version table** to runtime database
+**Purpose**: Update version numbers across all documentation and source files for new releases.
 
-## Scripts
+**Features**:
+- 🎯 **Automatic version detection** - Reads current version from pom.xml
+- 🔄 **Multi-file updates** - Updates pom.xml, AS2ServerVersion.java, and RELEASE.md
+- 📋 **Validation** - Checks version format (X.Y.Z)
+- 🛡️ **Safe operation** - Shows changes before confirming
+- 📝 **Post-update guidance** - Shows next steps after version update
 
-### Linux/Mac
-- `backup.sh` - Create a backup
-- `restore.sh` - Restore from a backup
+**Files**:
+- `prepare-release.sh` - Linux/Mac version
+- `prepare-release.bat` - Windows version
 
-### Windows
-- `backup.bat` - Create a backup
-- `restore.bat` - Restore from a backup
-
-## Prerequisites
-
-### For MySQL/MariaDB
-- `mysqldump` command (for backup)
-- `mysql` command (for restore)
-- Install: `sudo apt-get install mysql-client` (Linux) or download from [MySQL Downloads](https://dev.mysql.com/downloads/)
-
-### For PostgreSQL
-- `pg_dump` command (for backup)
-- `psql` command (for restore)
-- Install: `sudo apt-get install postgresql-client` (Linux) or download from [PostgreSQL Downloads](https://www.postgresql.org/download/)
-
-## Usage
-
-### Backup
-
-**Linux/Mac:**
+**Quick Start**:
 ```bash
-cd dev-scripts
+# Linux/Mac
+./dev-scripts/prepare-release.sh 1.2.0
 
-# Create backup with auto-generated name (backup_YYYYMMDD_HHMMSS.sql)
-./backup.sh
+# Windows
+dev-scripts\prepare-release.bat 1.2.0
 
-# Create backup with custom name
-./backup.sh my_backup_name
+# Review changes
+git diff
+
+# Commit and tag
+git add .
+git commit -m "Bump version to 1.2.0"
+git tag -a v1.2.0 -m "Release version 1.2.0"
+git push origin main && git push origin v1.2.0
 ```
 
-**Windows:**
-```cmd
-cd dev-scripts
+**How It Works**:
+- Extracts current version from `pom.xml`
+- Updates version in:
+  - `pom.xml` - Maven project version
+  - `src/main/java/de/mendelson/comm/as2/AS2ServerVersion.java` - Java constants
+  - `RELEASE.md` - Version-specific build examples
+- Shows post-update steps (commit, tag, build, release)
 
-REM Create backup with auto-generated name
-backup.bat
+**Important**: This script only updates version numbers in files that NEED version-specific references. Most documentation (README.md, INSTALL.md) has been refactored to be version-agnostic.
 
-REM Create backup with custom name
-backup.bat my_backup_name
-```
+📖 See [RELEASE.md](../RELEASE.md) for full release process.
 
-**Output:**
-- Backup file: `dev-scripts/backups/backup_20260416_120000.sql`
-- Info file: `dev-scripts/backups/backup_20260416_120000.info`
+---
 
-### Restore
+### 🔐 Admin Password Reset
 
-**Linux/Mac:**
+**Purpose**: Reset the admin user's password when locked out of the system.
+
+**Features**:
+- 🎯 **Smart environment detection** - Automatically works in development or production
+- 🔄 **Multi-database support** - MySQL, PostgreSQL, H2
+- 📦 **Complete classpath handling** - Includes all dependencies automatically
+- 🛡️ **Standalone tool** - No heavy dependencies (no AS2Server or BouncyCastle required)
+- 🚀 **Production ready** - Works in deployed installations
+
+**Files**:
+- `reset-admin-password.sh` - Linux/Mac version
+- `reset-admin-password.bat` - Windows version
+- `ADMIN_PASSWORD_RESET.md` - Complete documentation
+
+**Quick Start**:
 ```bash
-cd dev-scripts
+# Stop the server first!
 
-# List available backups
-ls -1 backups/*.sql
+# Linux/Mac
+./dev-scripts/reset-admin-password.sh
 
-# Restore from backup (specify filename)
-./restore.sh backup_20260416_120000.sql
-
-# Or use full path
-./restore.sh backups/backup_20260416_120000.sql
+# Windows
+dev-scripts\reset-admin-password.bat
 ```
 
-**Windows:**
-```cmd
-cd dev-scripts
+**How It Works**:
+- **Development**: Uses Maven to compile and build full classpath with all dependencies
+- **Production**: Uses deployed JAR and lib/*.jar dependencies directly
+- **Auto-detection**: Reads database type from `config/as2.properties`
 
-REM List available backups
-dir backups\*.sql
+**Important**: Server must be stopped before running this tool.
 
-REM Restore from backup
-restore.bat backup_20260416_120000.sql
-```
+📖 See [ADMIN_PASSWORD_RESET.md](./ADMIN_PASSWORD_RESET.md) for full documentation.
 
-**⚠️ WARNING:** Restore will delete ALL existing data! You must type 'YES' to confirm.
+---
 
-## How It Works
+### 💾 Database Backup & Restore
 
-### Configuration Detection
+**Purpose**: Backup and restore AS2 configuration database.
 
-The scripts automatically detect database settings from:
-1. `config/as2.properties` - Database type (mysql or postgresql)
-2. `config/database-mysql.properties` - MySQL connection settings
-3. `config/database-postgresql.properties` - PostgreSQL connection settings
+**Files**:
+- `backup.sh` / `backup.bat` - Create database backups
+- `restore.sh` / `restore.bat` - Restore from backups
+- `BACKUP_RESTORE_IMPLEMENTATION.md` - Documentation
 
-No manual configuration needed!
+---
 
-### Backup Process
+### 🌐 IP Whitelist Import
 
-1. Reads database type from `config/as2.properties`
-2. Reads connection settings from appropriate properties file
-3. Creates `dev-scripts/backups/` directory if needed
-4. Dumps full config database using `mysqldump` or `pg_dump`
-5. Dumps only version table from runtime database
-6. Combines into single SQL file
-7. Creates info file with backup metadata
+**Purpose**: Import IP whitelist configurations.
 
-### Restore Process
+**Files**:
+- `import-whitelist.sh` / `import-whitelist.bat` - Import whitelist data
+- `IMPORT_WHITELIST.md` - Documentation
 
-1. Reads database type and connection settings (same as backup)
-2. Prompts for confirmation (must type 'YES')
-3. Drops and recreates config database (clears all tables)
-4. Drops and recreates runtime database (clears all tables)
-5. Restores from backup SQL file
-6. Config database fully restored
-7. Runtime database has only version table restored
+---
 
-## Backup File Structure
+## Adding New Scripts
 
-Example backup file:
-```sql
--- AS2 Database Backup
--- Created: Wed Apr 16 12:00:00 CST 2026
--- Database Type: MySQL
--- Config Database: as2_db_config
--- Runtime Database: as2_db_runtime (version table only)
+When adding new development scripts to this folder:
 
--- Full config database dump
-DROP DATABASE IF EXISTS as2_db_config;
-CREATE DATABASE as2_db_config;
-USE as2_db_config;
--- ... all tables and data ...
+1. Place the script files here (`*.sh` for Unix, `*.bat` for Windows)
+2. Make Unix scripts executable: `chmod +x script-name.sh`
+3. Scripts should auto-detect project root: `cd "$(dirname "$0")/.."`
+4. Handle both development and production environments when applicable
+5. Add documentation in this README
+6. Consider creating a detailed `.md` file for complex scripts
 
--- Version table from runtime database
-DROP TABLE IF EXISTS version;
-CREATE TABLE version (...);
-INSERT INTO version VALUES (...);
-```
+## Guidelines
 
-## What Gets Backed Up
+### Script Structure
+- ✅ Scripts should work when run from any directory
+- ✅ Auto-detect environment (development vs production)
+- ✅ Build proper classpaths with all dependencies
+- ✅ Include clear error messages
+- ✅ Show progress indicators for long operations
+- ✅ Validate prerequisites before executing
 
-### Config Database (Full Backup)
-✅ Partners and partner configurations
-✅ Certificates and keystores
-✅ Users and permissions
-✅ HTTP headers
-✅ System preferences
-✅ Notification settings
-✅ All other config tables
+### Naming & Documentation
+- ✅ Use meaningful names: `verb-noun.sh` (e.g., `reset-admin-password.sh`)
+- ✅ Add usage instructions at the top of each script
+- ✅ Document prerequisites and side effects
+- ✅ List supported databases/configurations
 
-### Runtime Database (Version Table Only)
-✅ Version table (database version info)
-❌ Messages (not backed up)
-❌ MDN receipts (not backed up)
-❌ Statistics (not backed up)
-❌ Message logs (not backed up)
-
-**Rationale:** Runtime data (messages, MDNs) can be very large and is typically not needed for configuration restore. The version table is backed up to maintain database version consistency.
-
-## Important Notes
-
-### Security
-- **Passwords in backup files:** Config database backup includes encrypted passwords and certificate private keys. Store backup files securely!
-- **File permissions:** Backup files may contain sensitive data. Protect them appropriately.
-
-### Disk Space
-- Config database typically: 1-100 MB (depends on number of partners/certificates)
-- Runtime database (if full): Can be very large (GBs) depending on message history
-- Version table only: < 1 KB
-
-### Before Restore
-Always create a fresh backup before restoring:
+### Environment Detection Pattern
 ```bash
-./backup.sh before_restore_$(date +%Y%m%d_%H%M%S)
-./restore.sh old_backup.sql
+# Detect environment
+if [ -f "pom.xml" ]; then
+    ENV_TYPE="development"
+    # Use Maven: compile + dependency:build-classpath
+else
+    ENV_TYPE="production"
+    # Use JAR files: find main.jar + lib/*.jar
+fi
 ```
 
-### After Restore
-- Restart the AS2 server for changes to take effect
-- Verify partner configurations
-- Check certificate validity
-- Test message sending/receiving
-
-## Backup Strategy Recommendations
-
-### Development
+### Classpath Building (Development)
 ```bash
-# Quick backup before testing
-./backup.sh dev_test
+# Get all Maven dependencies
+MAVEN_CP=$(mvn dependency:build-classpath -DincludeScope=runtime 2>&1 | \
+           grep -v "^\[INFO\]" | grep -v "^\[WARNING\]" | \
+           grep "\.jar" | tail -1)
 
-# Restore if needed
-./restore.sh dev_test.sql
+# Build full classpath
+CLASSPATH="target/classes:$MAVEN_CP"
 ```
 
-### Production
+### Classpath Building (Production)
 ```bash
-# Daily backup (run via cron)
-0 2 * * * /path/to/dev-scripts/backup.sh daily_$(date +%Y%m%d)
+# Find main JAR
+MAIN_JAR=$(ls mend-as2-*.jar | head -1)
 
-# Weekly backup
-0 3 * * 0 /path/to/dev-scripts/backup.sh weekly_$(date +%Y%W)
-
-# Before upgrade
-./backup.sh before_upgrade_v1.2.0
+# Build classpath with all lib JARs
+CLASSPATH="$MAIN_JAR"
+for jar in lib/*.jar; do
+    CLASSPATH="$CLASSPATH:$jar"
+done
 ```
 
-### Retention Policy
-```bash
-# Keep daily backups for 7 days
-find backups/ -name "daily_*.sql" -mtime +7 -delete
-
-# Keep weekly backups for 4 weeks
-find backups/ -name "weekly_*.sql" -mtime +28 -delete
-
-# Keep manual backups indefinitely
-```
+---
 
 ## Troubleshooting
 
-### "command not found" Error
-**Problem:** `mysqldump`, `mysql`, `pg_dump`, or `psql` not in PATH
+### Script fails to build classpath
+**Solution**: Ensure Maven is installed and `mvn --version` works
 
-**Solution:**
+### "Database driver not found" error
+**Solution**: 
+- Development: Run `mvn dependency:build-classpath` to verify dependencies
+- Production: Check that `lib/` folder contains database driver JARs
+
+### "Class not found" errors
+**Solution**: The classpath is incomplete. Check that:
+- Development: `mvn compile` succeeded
+- Production: All JARs from `lib/` are included
+
+### Script works in dev but not production
+**Solution**: Test the JAR finding logic:
 ```bash
-# Linux/Mac - Install client tools
-# MySQL
-sudo apt-get install mysql-client
-
-# PostgreSQL
-sudo apt-get install postgresql-client
-
-# Windows - Add to PATH or use full path
-set PATH=%PATH%;C:\Program Files\MySQL\MySQL Server 8.0\bin
+cd /path/to/installation
+ls mend-as2-*.jar  # Should find the main JAR
+ls lib/*.jar       # Should list all dependencies
 ```
 
-### "Access denied" Error
-**Problem:** Database credentials incorrect
-
-**Solution:**
-1. Check `config/database-*.properties`
-2. Verify username and password
-3. Test connection manually:
-   ```bash
-   # MySQL
-   mysql -h localhost -u as2user -p
-   
-   # PostgreSQL
-   psql -h localhost -U as2user -d as2_db_config
-   ```
-
-### "Database does not exist" Error
-**Problem:** Database not created yet (PostgreSQL only)
-
-**Solution:**
-```bash
-# PostgreSQL - Create databases manually
-createdb -U as2user as2_db_config
-createdb -U as2user as2_db_runtime
-
-# MySQL - Databases created automatically
-```
-
-### Large Backup File
-**Problem:** Backup file is too large
-
-**Solution:**
-```bash
-# Compress backup
-gzip backups/backup_20260416_120000.sql
-
-# Restore compressed backup
-gunzip -c backups/backup_20260416_120000.sql.gz | mysql -u as2user -p
-```
-
-## Advanced Usage
-
-### Remote Database Backup
-```bash
-# Edit config/database-*.properties
-mysql.host=remote-server.example.com
-postgresql.host=remote-server.example.com
-
-# Run backup normally
-./backup.sh remote_backup
-```
-
-### Scheduled Backups (Linux/Mac)
-```bash
-# Add to crontab
-crontab -e
-
-# Daily at 2 AM
-0 2 * * * cd /path/to/mend-as2/dev-scripts && ./backup.sh daily_$(date +\%Y\%m\%d) >> backup.log 2>&1
-```
-
-### Scheduled Backups (Windows)
-```cmd
-REM Create task in Task Scheduler
-schtasks /create /tn "AS2 Daily Backup" /tr "C:\path\to\dev-scripts\backup.bat daily" /sc daily /st 02:00
-```
-
-## See Also
-
-- [DATABASE_INITIALIZATION.md](../DATABASE_INITIALIZATION.md) - How databases are created
-- [MYSQL-CONFIG.md](../config/MYSQL-CONFIG.md) - MySQL configuration guide
-- [POSTGRESQL-CONFIG.md](../config/POSTGRESQL-CONFIG.md) - PostgreSQL configuration guide

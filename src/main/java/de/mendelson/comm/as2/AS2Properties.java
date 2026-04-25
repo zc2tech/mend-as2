@@ -202,6 +202,22 @@ public class AS2Properties {
     }
 
     /**
+     * Get server hostname for email notifications
+     * Returns null/empty if not set (caller should auto-detect)
+     */
+    public String getServerHostname() {
+        return getString("as2.server.hostname", "AS2_SERVER_HOSTNAME", "");
+    }
+
+    /**
+     * Check if DirPollManager should be enabled
+     * Priority: ENV > System Property > File > Default (false)
+     */
+    public boolean isDirPollManagerEnabled() {
+        return getBoolean("as2.dirpoll.enabled", "AS2_DIRPOLL_ENABLED", false);
+    }
+
+    /**
      * Get integer property with priority: ENV > System Property > File > Default
      */
     private int getInt(String propertyKey, String envVar, int defaultValue) {

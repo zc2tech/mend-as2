@@ -1,8 +1,6 @@
 package de.mendelson.comm.as2.partner.gui;
 
 import de.mendelson.comm.as2.client.IconManager;
-import de.mendelson.comm.as2.AS2ServerVersion;
-import de.mendelson.comm.as2.client.AS2Gui;
 import de.mendelson.comm.as2.client.AS2StatusBar;
 import de.mendelson.util.security.signature.ListCellRendererSignature;
 import de.mendelson.comm.as2.message.AS2Message;
@@ -19,7 +17,6 @@ import de.mendelson.comm.as2.partner.gui.event.JDialogConfigureEventShell;
 import de.mendelson.comm.as2.partner.gui.event.ResourceBundlePartnerEvent;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.send.HttpConnectionParameter;
-import de.mendelson.comm.as2.server.ServerPlugins;
 import de.mendelson.util.AS2Tools;
 import de.mendelson.util.ButtonUtil;
 import de.mendelson.util.MecResourceBundle;
@@ -138,7 +135,6 @@ public class JPanelPartner extends JPanel {
     /**
      * Visibility panel reference (for remote partners only)
      */
-    private JPanelPartnerVisibility jPanelVisibility = null;
 
     private final static MendelsonMultiResolutionImage IMAGE_DELETE = MendelsonMultiResolutionImage.fromSVG(
             "/de/mendelson/comm/as2/partner/gui/delete.svg",
@@ -693,30 +689,26 @@ public class JPanelPartner extends JPanel {
                 this.partner.getCompressionType() == AS2Message.COMPRESSION_ZLIB);
         // Set HTTP Auth mode for Message
         int authModeMessage = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
-        System.out.println("GUI: Loading partner '" + this.partner.getName() + "' - HTTP Auth Message mode from DB: " +
-                         getAuthModeName(authModeMessage) + " (" + authModeMessage + ")");
         if (authModeMessage == HTTPAuthentication.AUTH_MODE_BASIC) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCredentialsMessage, true);
         } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_USER_PREFERENCE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMessage, true);
         } else if (authModeMessage == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMessage, true);
-            // Set selected certificate (use TLS certificate manager for HTTP auth)
+            // Set selected certificate (use Sign/Crypt certificate manager for HTTP auth)
             String fingerprint = this.partner.getAuthenticationCredentialsMessage().getCertificateFingerprint();
             if (fingerprint != null && !fingerprint.isEmpty()) {
-                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprint);
+                KeystoreCertificate cert = this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprint);
                 if (cert != null) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, cert);
                 } else {
                     // Fingerprint in DB but certificate not found in keystore - select placeholder
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
-                    System.out.println("WARN [JPanelPartner]: Certificate fingerprint in DB not found in keystore: " + fingerprint);
                 }
             } else {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMessage.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMessage, this.jComboBoxHttpAuthCertMessage.getItemAt(0));
-                   
                 }
             }
         } else {
@@ -730,22 +722,20 @@ public class JPanelPartner extends JPanel {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthUserPreferenceMDN, true);
         } else if (authModeMDN == HTTPAuthentication.AUTH_MODE_CERTIFICATE) {
             this.setUIValueWithoutEvent(this.jRadioButtonHttpAuthCertificateMDN, true);
-            // Set selected certificate (use TLS certificate manager for HTTP auth)
+            // Set selected certificate (use Sign/Crypt certificate manager for HTTP auth)
             String fingerprintMDN = this.partner.getAuthenticationCredentialsAsyncMDN().getCertificateFingerprint();
             if (fingerprintMDN != null && !fingerprintMDN.isEmpty()) {
-                KeystoreCertificate cert = this.certificateManagerSSL.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN);
+                KeystoreCertificate cert = this.certificateManagerEncSign.getKeystoreCertificateByFingerprintSHA1(fingerprintMDN);
                 if (cert != null) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, cert);
                 } else {
                     // Fingerprint in DB but certificate not found in keystore - select placeholder
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
-                    System.out.println("WARN [JPanelPartner]: MDN Certificate fingerprint in DB not found in keystore: " + fingerprintMDN);
                 }
             } else {
                 // Fingerprint is empty - select placeholder (no auto-selection)
                 if (this.jComboBoxHttpAuthCertMDN.getItemCount() > 0) {
                     this.setUIValueWithoutEvent(this.jComboBoxHttpAuthCertMDN, this.jComboBoxHttpAuthCertMDN.getItemAt(0));
-                   
                 }
             }
         } else {
@@ -1520,10 +1510,6 @@ public class JPanelPartner extends JPanel {
         HttpAuthNoneMDN = new javax.swing.JLabel();
         jPanelSpace345 = new javax.swing.JPanel();
         jPanelSpace485 = new javax.swing.JPanel();
-        jPanelSpaceX11 = new javax.swing.JPanel();
-        jPanelSpaceX14 = new javax.swing.JPanel();
-        jPanelSpaceX12 = new javax.swing.JPanel();
-        jPanelSpaceX13 = new javax.swing.JPanel();
         jPanelHTTPHeader = new javax.swing.JPanel();
         jScrollPaneHttpHeader = new javax.swing.JScrollPane();
         jTableHttpHeader = new javax.swing.JTable();
@@ -3768,7 +3754,7 @@ public class JPanelPartner extends JPanel {
     private void jTextFieldContentTypeKeyReleased(java.awt.event.KeyEvent evt) {// GEN-FIRST:event_jTextFieldContentTypeKeyReleased
         if (this.partner != null) {
             if (this.jTextFieldContentType.getText().trim().isEmpty()) {
-                this.partner.setContentType("application/EDI-Consent");
+                this.partner.setContentType("application/x12");
             } else {
                 this.partner.setContentType(this.jTextFieldContentType.getText());
             }
@@ -4102,23 +4088,17 @@ public class JPanelPartner extends JPanel {
 
     private void jRadioButtonHttpAuthCredentialsMessageItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMessageItemStateChanged
         if (this.partner != null) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
 
             if (this.jRadioButtonHttpAuthNoneMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
-                System.out.println("GUI: HTTP Auth Message changed from " + oldAuthModeName + " (" + oldAuthMode + ") to NONE (0) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCredentialsMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
-                System.out.println("GUI: HTTP Auth Message changed from " + oldAuthModeName + " (" + oldAuthMode + ") to BASIC (1) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthUserPreferenceMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
-                System.out.println("GUI: HTTP Auth Message changed from " + oldAuthModeName + " (" + oldAuthMode + ") to USER_PREFERENCE (2) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCertificateMessage.isSelected()) {
                 this.partner.getAuthenticationCredentialsMessage()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_CERTIFICATE);
-                System.out.println("GUI: HTTP Auth Message changed from " + oldAuthModeName + " (" + oldAuthMode + ") to CERTIFICATE (3) for partner: " + this.partner.getName());
             }
             this.informTreeModelNodeChanged();
         }
@@ -4127,39 +4107,27 @@ public class JPanelPartner extends JPanel {
 
     private void jRadioButtonHttpAuthCredentialsMDNItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
         if (this.partner != null) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsAsyncMDN().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
-
+         
             if (this.jRadioButtonHttpAuthNoneMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
-                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to NONE (0) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCredentialsMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN().setAuthMode(HTTPAuthentication.AUTH_MODE_BASIC);
-                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to BASIC (1) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthUserPreferenceMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_USER_PREFERENCE);
-                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to USER_PREFERENCE (2) for partner: " + this.partner.getName());
             } else if (this.jRadioButtonHttpAuthCertificateMDN.isSelected()) {
                 this.partner.getAuthenticationCredentialsAsyncMDN()
                         .setAuthMode(HTTPAuthentication.AUTH_MODE_CERTIFICATE);
-                System.out.println("GUI: HTTP Auth Async MDN changed from " + oldAuthModeName + " (" + oldAuthMode + ") to CERTIFICATE (3) for partner: " + this.partner.getName());
             }
             this.informTreeModelNodeChanged();
         }
         this.updateHttpAuthState();
     }// GEN-LAST:event_jRadioButtonHttpAuthCredentialsMDNItemStateChanged
 
-    private void jRadioButtonHttpAuthNoneMDNItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthNoneMDNItemStateChanged
-        this.updateHttpAuthState();
-    }// GEN-LAST:event_jRadioButtonHttpAuthNoneMDNItemStateChanged
-
     private void jRadioButtonHttpAuthNoneMessageItemStateChanged(java.awt.event.ItemEvent evt) {// GEN-FIRST:event_jRadioButtonHttpAuthNoneMessageItemStateChanged
         if (this.partner != null && this.jRadioButtonHttpAuthNoneMessage.isSelected()) {
-            int oldAuthMode = this.partner.getAuthenticationCredentialsMessage().getAuthMode();
-            String oldAuthModeName = getAuthModeName(oldAuthMode);
+         
             this.partner.getAuthenticationCredentialsMessage().setAuthMode(HTTPAuthentication.AUTH_MODE_NONE);
-            System.out.println("GUI: HTTP Auth Message changed from " + oldAuthModeName + " (" + oldAuthMode + ") to NONE (0) for partner: " + this.partner.getName());
             this.informTreeModelNodeChanged();
         }
         this.updateHttpAuthState();
@@ -4181,20 +4149,24 @@ public class JPanelPartner extends JPanel {
     private void jComboBoxHttpAuthCertMessageActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxHttpAuthCertMessageActionPerformed
         if (this.partner != null && this.jComboBoxHttpAuthCertMessage.getSelectedItem() != null) {
             KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMessage.getSelectedItem();
+            String fingerprint = certificate.getFingerPrintSHA1();
             this.partner.getAuthenticationCredentialsMessage()
-                    .setCertificateFingerprint(certificate.getFingerPrintSHA1());
+                    .setCertificateFingerprint(fingerprint);
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
+        } else {
         }
     }// GEN-LAST:event_jComboBoxHttpAuthCertMessageActionPerformed
 
     private void jComboBoxHttpAuthCertMDNActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_jComboBoxHttpAuthCertMDNActionPerformed
         if (this.partner != null && this.jComboBoxHttpAuthCertMDN.getSelectedItem() != null) {
             KeystoreCertificate certificate = (KeystoreCertificate) this.jComboBoxHttpAuthCertMDN.getSelectedItem();
+            String fingerprint = certificate.getFingerPrintSHA1();
             this.partner.getAuthenticationCredentialsAsyncMDN()
-                    .setCertificateFingerprint(certificate.getFingerPrintSHA1());
+                    .setCertificateFingerprint(fingerprint);
             this.buttonOk.computeErrorState();
             this.informTreeModelNodeChanged();
+        } else {
         }
     }// GEN-LAST:event_jComboBoxHttpAuthCertMDNActionPerformed
 
@@ -4264,10 +4236,10 @@ public class JPanelPartner extends JPanel {
             return;
         }
 
-        // Show certificate selection dialog
+        // Show certificate selection dialog - use Sign/Crypt certificates only
         JDialogSelectCertificate dialog = new JDialogSelectCertificate(
                 SwingUtilities.getWindowAncestor(this),
-                this.certificateManagerSSL,
+                this.certificateManagerEncSign,
                 rb.getResourceString("inboundauth.cert.select.title"),
                 rb.getResourceString("inboundauth.cert.select.message"));
         dialog.setVisible(true);
@@ -4674,10 +4646,6 @@ public class JPanelPartner extends JPanel {
     private javax.swing.JPanel jPanelSpaceSecurity;
     private javax.swing.JPanel jPanelSpaceSpace;
     private javax.swing.JPanel jPanelSpaceX;
-    private javax.swing.JPanel jPanelSpaceX11;
-    private javax.swing.JPanel jPanelSpaceX12;
-    private javax.swing.JPanel jPanelSpaceX13;
-    private javax.swing.JPanel jPanelSpaceX14;
     private javax.swing.JPanel jPanelSpaceX2;
     private javax.swing.JPanel jPanelSpacer12;
     private javax.swing.JPanel jPanelSpacer13;
@@ -4800,24 +4768,6 @@ public class JPanelPartner extends JPanel {
             setButtonState();
         }
 
-    }
-
-    /**
-     * Helper method to convert auth mode integer to readable name for logging
-     */
-    private String getAuthModeName(int authMode) {
-        switch (authMode) {
-            case HTTPAuthentication.AUTH_MODE_NONE:
-                return "NONE";
-            case HTTPAuthentication.AUTH_MODE_BASIC:
-                return "BASIC";
-            case HTTPAuthentication.AUTH_MODE_USER_PREFERENCE:
-                return "USER_PREFERENCE";
-            case HTTPAuthentication.AUTH_MODE_CERTIFICATE:
-                return "CERTIFICATE";
-            default:
-                return "UNKNOWN";
-        }
     }
 
 }

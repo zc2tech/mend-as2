@@ -37,6 +37,7 @@ import de.mendelson.comm.as2.servlet.rest.resources.SystemResource;
 import de.mendelson.comm.as2.servlet.rest.resources.TrackerMessageResource;
 import de.mendelson.comm.as2.servlet.rest.resources.UserHttpAuthPreferenceResource;
 import de.mendelson.comm.as2.servlet.rest.resources.UserManagementResource;
+import de.mendelson.comm.as2.servlet.rest.resources.UserTrackerAuthResource;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -50,8 +51,6 @@ import org.glassfish.hk2.utilities.binding.AbstractBinder;
 public class RestApplication extends ResourceConfig {
 
     public RestApplication() {
-        System.out.println("RestApplication: Initializing Jersey REST application...");
-
         // Register Jackson for JSON
         register(JacksonFeature.class);
         register(JacksonObjectMapperProvider.class);
@@ -67,32 +66,19 @@ public class RestApplication extends ResourceConfig {
         register(ApiExceptionMapper.class);
 
         // Register resource classes
-        System.out.println("RestApplication: Registering AuthenticationResource");
         register(AuthenticationResource.class);
-        System.out.println("RestApplication: Registering SystemResource");
         register(SystemResource.class);
-        System.out.println("RestApplication: Registering PartnerResource");
         register(PartnerResource.class);
-        System.out.println("RestApplication: Registering CertificateResource");
         register(CertificateResource.class);
-        System.out.println("RestApplication: Registering MessageResource");
         register(MessageResource.class);
-        System.out.println("RestApplication: Registering StatisticsResource");
         register(StatisticsResource.class);
-        System.out.println("RestApplication: Registering PreferencesResource");
         register(PreferencesResource.class);
-        System.out.println("RestApplication: Registering NotificationResource");
         register(NotificationResource.class);
-        System.out.println("RestApplication: Registering UserManagementResource");
         register(UserManagementResource.class);
-        System.out.println("RestApplication: Registering UserHttpAuthPreferenceResource");
         register(UserHttpAuthPreferenceResource.class);
-        System.out.println("RestApplication: Registering TrackerMessageResource");
         register(TrackerMessageResource.class);
-        System.out.println("RestApplication: Registering IPWhitelistResource");
         register(IPWhitelistResource.class);
-
-        System.out.println("RestApplication: Jersey REST application initialized");
+        register(UserTrackerAuthResource.class);
 
         // Configure Jackson ObjectMapper
         register(new AbstractBinder() {

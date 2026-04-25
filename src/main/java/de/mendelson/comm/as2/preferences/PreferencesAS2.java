@@ -105,6 +105,8 @@ public class PreferencesAS2 {
     public static final String AUTO_STATS_DELETE_OLDERTHAN = "autostatsdeleteolderthan";
     public static final String AUTO_LOGDIR_DELETE = "autologdirdelete";
     public static final String AUTO_LOGDIR_DELETE_OLDERTHAN = "autologdirdeleteolderthan";
+    public static final String AUTO_TRACKER_DELETE = "autotrackerdelete";
+    public static final String AUTO_TRACKER_DELETE_OLDERTHAN = "autotrackerdeleteolderthan";
     public static final String LOG_POLL_PROCESS = "logpollprocess";
     public static final String PROXY_HOST = "proxyhost";
     public static final String PROXY_PORT = "proxyport";
@@ -131,6 +133,7 @@ public class PreferencesAS2 {
     public static final String EMBEDDED_HTTP_SERVER_STARTED = "embeddedhttpserverstarted";
     public static final String HTTP_LISTEN_PORT = "jetty.http.port";
     public static final String HTTPS_LISTEN_PORT = "jetty.ssl.port";
+    public static final String SERVER_HOSTNAME = "server.hostname"; // Optional hostname for email URLs
     public static final String EMBEDDED_HTTP_SERVER_SETTINGS_ACCESSIBLE = "embeddedhttpserversettingsaccessible";
     public static final String EMBEDDED_HTTP_SERVER_REQUESTLOG = "embeddedhttpserverrequestlog";
     public static final String MAX_INBOUND_CONNECTIONS = "jetty.connectionlimit.maxConnections";
@@ -182,6 +185,8 @@ public class PreferencesAS2 {
                             AUTO_STATS_DELETE_OLDERTHAN,
                             AUTO_LOGDIR_DELETE,
                             AUTO_LOGDIR_DELETE_OLDERTHAN,
+                            AUTO_TRACKER_DELETE,
+                            AUTO_TRACKER_DELETE_OLDERTHAN,
                             LOG_POLL_PROCESS,
                             PROXY_HOST,
                             PROXY_PORT,
@@ -237,6 +242,8 @@ public class PreferencesAS2 {
                     Map.entry(COLOR_BLINDNESS, "FALSE"),
                     Map.entry(AUTO_LOGDIR_DELETE, "FALSE"),
                     Map.entry(AUTO_LOGDIR_DELETE_OLDERTHAN, "180"),
+                    Map.entry(AUTO_TRACKER_DELETE, "FALSE"),
+                    Map.entry(AUTO_TRACKER_DELETE_OLDERTHAN, "180"),
                     Map.entry(AUTO_MSG_DELETE_OLDERTHAN_MULTIPLIER_S, String.valueOf(TimeUnit.DAYS.toSeconds(1))),
                     Map.entry(NOTIFICATION_SMTP_CONNECTION_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(15))),
                     Map.entry(NOTIFICATION_SMTP_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(15))),
@@ -269,6 +276,7 @@ public class PreferencesAS2 {
                     Map.entry(TLS_STRICT_HOST_CHECK, "FALSE"),
                     Map.entry(HTTPS_LISTEN_PORT, "8443"),
                     Map.entry(HTTP_LISTEN_PORT, "8080"),
+                    Map.entry(SERVER_HOSTNAME, ""),
                     Map.entry(EMBEDDED_HTTP_SERVER_REQUESTLOG, "FALSE"),
                     Map.entry(MAX_INBOUND_CONNECTIONS, "1000"),
                     Map.entry(SHOW_OVERWRITE_LOCALSTATION_SECURITY_IN_PARTNER_CONFIG, "FALSE"),

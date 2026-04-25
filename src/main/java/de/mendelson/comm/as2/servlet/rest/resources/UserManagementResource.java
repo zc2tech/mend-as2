@@ -21,7 +21,10 @@
 
 package de.mendelson.comm.as2.servlet.rest.resources;
 
+import de.mendelson.comm.as2.AS2Properties;
+import de.mendelson.comm.as2.server.AS2Server;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
+import de.mendelson.comm.as2.server.ServerConfigurationHelper;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
 import de.mendelson.comm.as2.usermanagement.*;
 import de.mendelson.util.clientserver.user.User;
@@ -259,8 +262,29 @@ public class UserManagementResource {
                         if (notificationData != null
                             && notificationData.getMailServer() != null
                             && !notificationData.getMailServer().trim().isEmpty()) {
-                            // Construct server URL - this should match the actual server deployment
-                            String serverUrl = "http://localhost:8080/as2";
+
+                            // Get hostname - from as2.properties first, fall back to Java detection
+                            String hostname = AS2Properties.getInstance().getServerHostname();
+                            if (hostname == null || hostname.trim().isEmpty()) {
+                                hostname = ServerConfigurationHelper.getHostname();
+                            }
+
+                            // Get actual HTTPS port from running Jetty server
+                            AS2Server server = AS2Server.getStaticServerReference();
+                            Integer httpsPort = null;
+                            if (server != null) {
+                                de.mendelson.util.httpconfig.server.HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+                                if (configInfo != null) {
+                                    httpsPort = ServerConfigurationHelper.getHttpsPort(configInfo);
+                                }
+                            }
+
+                            // Fall back to default if we couldn't get the actual port
+                            if (httpsPort == null) {
+                                httpsPort = 8443; // Default fallback
+                            }
+
+                            String serverUrl = "https://" + hostname + ":" + httpsPort + "/as2";
 
                             // Send the email
                             de.mendelson.comm.as2.usermanagement.UserNotificationMailer.sendUserCreationEmail(
