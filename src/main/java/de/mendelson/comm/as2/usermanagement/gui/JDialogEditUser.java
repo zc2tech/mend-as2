@@ -55,8 +55,7 @@ public class JDialogEditUser extends JDialog {
     private JCheckBox checkEnabled;
     private JCheckBox checkGeneratePassword;
     private JPanel rolePanel;
-    private ButtonGroup roleButtonGroup;
-    private Map<Integer, JRadioButton> roleRadioButtons;
+    private Map<Integer, JCheckBox> roleCheckBoxes;
     private List<Role> availableRoles;
     private JButton buttonSave;
     private JButton buttonCancel;
@@ -258,7 +257,7 @@ public class JDialogEditUser extends JDialog {
             gbc.gridy = row;
             gbc.gridwidth = 1;
             gbc.weightx = 0;
-            JLabel rolesLabel = new JLabel(isAdmin ? "Role: (Cannot modify admin role)" : "Role:");
+            JLabel rolesLabel = new JLabel(isAdmin ? "Assigned Roles: (Cannot modify admin role)" : "Assigned Roles:");
             if (isAdmin) {
                 rolesLabel.setForeground(new Color(108, 117, 125)); // Gray color
             }
@@ -271,8 +270,7 @@ public class JDialogEditUser extends JDialog {
                 rolePanel.setBackground(new Color(248, 249, 250)); // Light gray background
             }
 
-            roleRadioButtons = new HashMap<>();
-            roleButtonGroup = new ButtonGroup();
+            roleCheckBoxes = new HashMap<>();
 
             // Get current user role if editing (should only be one)
             Integer currentRoleId = null;
@@ -283,27 +281,54 @@ public class JDialogEditUser extends JDialog {
                 }
             }
 
-            // Create radio button for each role (ADMIN and USER)
+            // Find ADMIN and USER role IDs for mutual exclusivity logic
+            Integer adminRoleId = null;
+            Integer userRoleId = null;
             for (Role role : availableRoles) {
-                JRadioButton radioButton = new JRadioButton(role.getName());
-                radioButton.setSelected(currentRoleId != null && currentRoleId.equals(role.getId()));
-                radioButton.setEnabled(!isAdmin); // Disable radio buttons for admin user
-                roleRadioButtons.put(role.getId(), radioButton);
-                roleButtonGroup.add(radioButton);
-                rolePanel.add(radioButton);
+                if ("ADMIN".equalsIgnoreCase(role.getName())) {
+                    adminRoleId = role.getId();
+                } else if ("USER".equalsIgnoreCase(role.getName())) {
+                    userRoleId = role.getId();
+                }
+            }
+            final Integer finalAdminRoleId = adminRoleId;
+            final Integer finalUserRoleId = userRoleId;
+
+            // Create checkbox for each role (ADMIN and USER)
+            for (Role role : availableRoles) {
+                JCheckBox checkBox = new JCheckBox(role.getName());
+                checkBox.setSelected(currentRoleId != null && currentRoleId.equals(role.getId()));
+                checkBox.setEnabled(!isAdmin); // Disable checkboxes for admin user
+
+                // Add item listener for mutual exclusivity between ADMIN and USER
+                checkBox.addItemListener(e -> {
+                    if (e.getStateChange() == ItemEvent.SELECTED) {
+                        // When ADMIN is checked, uncheck USER
+                        if (finalAdminRoleId != null && role.getId() == finalAdminRoleId && finalUserRoleId != null) {
+                            JCheckBox userCheckBox = roleCheckBoxes.get(finalUserRoleId);
+                            if (userCheckBox != null && userCheckBox.isSelected()) {
+                                userCheckBox.setSelected(false);
+                            }
+                        }
+                        // When USER is checked, uncheck ADMIN
+                        else if (finalUserRoleId != null && role.getId() == finalUserRoleId && finalAdminRoleId != null) {
+                            JCheckBox adminCheckBox = roleCheckBoxes.get(finalAdminRoleId);
+                            if (adminCheckBox != null && adminCheckBox.isSelected()) {
+                                adminCheckBox.setSelected(false);
+                            }
+                        }
+                    }
+                });
+
+                roleCheckBoxes.put(role.getId(), checkBox);
+                rolePanel.add(checkBox);
             }
 
             // If no role selected yet (creating new user), select USER by default
-            if (editingUser == null && !availableRoles.isEmpty()) {
-                // Find USER role (id=2) and select it
-                for (Role role : availableRoles) {
-                    if ("USER".equalsIgnoreCase(role.getName())) {
-                        JRadioButton userRadio = roleRadioButtons.get(role.getId());
-                        if (userRadio != null) {
-                            userRadio.setSelected(true);
-                        }
-                        break;
-                    }
+            if (editingUser == null && !availableRoles.isEmpty() && finalUserRoleId != null) {
+                JCheckBox userCheckBox = roleCheckBoxes.get(finalUserRoleId);
+                if (userCheckBox != null) {
+                    userCheckBox.setSelected(true);
                 }
             }
 
@@ -562,7 +587,7 @@ public class JDialogEditUser extends JDialog {
     }
 
     private void saveRoleAssignments(int userId) {
-        if (roleRadioButtons == null) {
+        if (roleCheckBoxes == null) {
             return;
         }
 
@@ -574,7 +599,7 @@ public class JDialogEditUser extends JDialog {
 
         // Find which role is selected
         Integer selectedRoleId = null;
-        for (Map.Entry<Integer, JRadioButton> entry : roleRadioButtons.entrySet()) {
+        for (Map.Entry<Integer, JCheckBox> entry : roleCheckBoxes.entrySet()) {
             if (entry.getValue().isSelected()) {
                 selectedRoleId = entry.getKey();
                 break;

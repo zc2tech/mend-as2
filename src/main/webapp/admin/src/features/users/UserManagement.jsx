@@ -23,6 +23,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
 import api from '../../api/client';
+import { useAuth } from '../auth/useAuth';
 
 export default function UserManagement() {
   const [activeTab, setActiveTab] = useState('users');
@@ -31,6 +32,7 @@ export default function UserManagement() {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [changingPasswordUserId, setChangingPasswordUserId] = useState(null);
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   // Fetch users
   const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
@@ -39,9 +41,19 @@ export default function UserManagement() {
       const response = await api.get('/users');
       const usersData = response.data;
 
+      // Filter out 'admin' user if current user is not 'admin'
+      const filteredUsers = usersData.filter(user => {
+        // Only show 'admin' user if current user is 'admin'
+        if (user.username.toLowerCase() === 'admin' &&
+            currentUser?.username?.toLowerCase() !== 'admin') {
+          return false;
+        }
+        return true;
+      });
+
       // Fetch roles for each user
       const usersWithRoles = await Promise.all(
-        usersData.map(async (user) => {
+        filteredUsers.map(async (user) => {
           try {
             const rolesResponse = await api.get(`/users/${user.id}/roles`);
             return { ...user, roles: rolesResponse.data || [] };
@@ -504,6 +516,28 @@ function UserFormModal({ user, onClose, onSuccess }) {
     generatePassword: false
   });
 
+  // Set USER role as default for new users
+  const { data: roles = [] } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const response = await api.get('/users/roles');
+      return response.data;
+    }
+  });
+
+  // Set USER as default role for new users when roles are loaded
+  useEffect(() => {
+    if (!user && roles.length > 0 && formData.roleIds.length === 0) {
+      const userRole = roles.find(r => r.name === 'USER');
+      if (userRole) {
+        setFormData(prev => ({
+          ...prev,
+          roleIds: [userRole.id]
+        }));
+      }
+    }
+  }, [roles, user, formData.roleIds.length]);
+
   // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -514,14 +548,6 @@ function UserFormModal({ user, onClose, onSuccess }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  const { data: roles = [] } = useQuery({
-    queryKey: ['roles'],
-    queryFn: async () => {
-      const response = await api.get('/users/roles');
-      return response.data;
-    }
-  });
 
   const createUserMutation = useMutation({
     mutationFn: async (data) => {
@@ -801,9 +827,24 @@ function UserFormModal({ user, onClose, onSuccess }) {
                     onChange={(e) => {
                       const roleIds = formData.roleIds || [];
                       if (e.target.checked) {
+                        // Find ADMIN and USER role IDs
+                        const adminRole = roles.find(r => r.name === 'ADMIN');
+                        const userRole = roles.find(r => r.name === 'USER');
+
+                        let newRoleIds = [...roleIds, role.id];
+
+                        // If checking ADMIN, remove USER
+                        if (role.name === 'ADMIN' && userRole && newRoleIds.includes(userRole.id)) {
+                          newRoleIds = newRoleIds.filter(id => id !== userRole.id);
+                        }
+                        // If checking USER, remove ADMIN
+                        else if (role.name === 'USER' && adminRole && newRoleIds.includes(adminRole.id)) {
+                          newRoleIds = newRoleIds.filter(id => id !== adminRole.id);
+                        }
+
                         setFormData({
                           ...formData,
-                          roleIds: [...roleIds, role.id]
+                          roleIds: newRoleIds
                         });
                       } else {
                         setFormData({
