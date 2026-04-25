@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Remove user-level TLS certificate. All user certs should from My sign/crypt/auth
+- Added tool for reset admin password
 
 ### Security
 
