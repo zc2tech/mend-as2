@@ -6,6 +6,37 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 ![Java](https://img.shields.io/badge/Java-17+-orange.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg)
 
+## 📸 Screenshots
+
+### Desktop Application (SwingUI)
+<img src="docs/screenshots/swing-ui-message-tracker.png" alt="Swing UI - Message Tracker" width="800"/>
+
+*Message tracker with real-time monitoring and detailed transaction logs*
+
+### Web Interface (WebUI)
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/webui-partners.png" alt="Partner Management"/>
+      <p align="center"><em>Partner Management - Configure trading partners</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/webui-certificates.png" alt="Certificate Management"/>
+      <p align="center"><em>Certificate Management - Sign/Crypt/Auth certificates</em></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/screenshots/webui-as2-messages.png" alt="AS2 Messages"/>
+      <p align="center"><em>AS2 Messages - Message list with advanced filtering</em></p>
+    </td>
+    <td width="50%">
+      <img src="docs/screenshots/webui-tracker-messages.png" alt="Tracker Messages"/>
+      <p align="center"><em>Tracker Messages - Monitor incoming message requests</em></p>
+    </td>
+  </tr>
+</table>
+
 ## 🚀 Features
 
 ### Core AS2 Capabilities
