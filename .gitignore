@@ -16,6 +16,9 @@ temp/
 testpod/
 /private
 
+# Claude Code
+.claude/
+
 # Frontend
 src/main/webapp/admin/node_modules/
 src/main/webapp/admin/dist/
