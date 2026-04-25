@@ -78,6 +78,18 @@
             </includes>
         </fileSet>
 
+        <!-- Jetty configuration -->
+        <fileSet>
+            <directory>jetty12</directory>
+            <outputDirectory>jetty12</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>**/.DS_Store</exclude>
+            </excludes>
+        </fileSet>
+
         <!-- Development scripts (backup, restore, utilities) -->
         <fileSet>
             <directory>dev-scripts</directory>
