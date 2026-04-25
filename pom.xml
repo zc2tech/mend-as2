@@ -6,7 +6,7 @@
 
     <groupId>com.zc2tech</groupId>
     <artifactId>mend-as2</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <name>Mend-AS2 Server</name>
     <packaging>jar</packaging>
     <url>https://github.com/zc2tech/mend-as2</url>

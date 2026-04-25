@@ -38,13 +38,6 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - ESC key support in Create/Edit User dialogs
   - Double-submission prevention during user creation (button disabled while processing)
 
-- **HTTP Authentication (Outbound)**
-  - Flexible HTTP Basic Auth for partner connections
-  - Three modes: None, Always Use, Use User Preference
-  - User-specific credential management (WebUI & SwingUI)
-  - Separate credentials for Message and MDN requests
-  - Runtime credential resolution based on partner configuration
-
 - **Inbound Authentication**
   - System-wide authentication for incoming AS2 messages
   - Two authentication types (can enable both):
@@ -55,13 +48,6 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Password show/hide toggle in SwingUI Inbound Auth Basic table (eye icon)
   - HTTP 401 response for failed authentication
   - Authentication logging for security auditing
-
-- **Partner Visibility Control**
-  - User-based partner access restrictions
-  - "Visible to all" or "Specific users only" modes
-  - Message list filtering based on partner visibility
-  - Admin users bypass all visibility restrictions
-  - Only applies to remote partners (local stations always visible)
 
 - **Enhanced Security**
   - JWT-based authentication for WebUI
@@ -105,9 +91,9 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
   - Multi-user certificate isolation for signing, encryption, and TLS
 
 - **Tracker Messages**
-  - HTTP endpoint for receiving and logging test messages (`/as2/tracker` or `/as2/tracker/{username}`)
+  - HTTP endpoint for receiving and logging test messages (`/as2/tracker/{username}`)
   - **User-Specific Tracker Authentication**:
-    - Each user configures their own tracker auth settings (independent from system-wide config)
+    - Each user configures their own tracker auth settings 
     - Personal tracker URL: `/as2/tracker/{username}` uses user's settings
     - System-wide URL: `/as2/tracker` is REJECTED with HTTP 410 Gone
     - Two authentication types (can enable both):
@@ -138,16 +124,16 @@ A modern, feature-rich AS2 (Applicability Statement 2) server for secure B2B com
 
 Download the latest release from [GitHub Releases](https://github.com/zc2tech/mend-as2/releases):
 
-**Single Distribution** (`mend-as2-1.1.0-dist.tar.gz`) - **81 MB**
+**Single Distribution** (`mend-as2-<version>-dist.tar.gz`) - **~80 MB**
 - Supports both GUI mode (SwingUI) and Headless mode (WebUI only)
 - Choose your mode at startup with command-line flag or config file
 
 **Quick Start:**
 ```bash
 # 1. Download and extract
-wget https://github.com/zc2tech/mend-as2/releases/download/v1.1.0/mend-as2-1.1.0-dist.tar.gz
-tar -xzf mend-as2-1.1.0-dist.tar.gz
-cd mend-as2-1.1.0
+wget https://github.com/zc2tech/mend-as2/releases/latest/download/mend-as2-dist.tar.gz
+tar -xzf mend-as2-dist.tar.gz
+cd mend-as2
 
 # 2. Install PostgreSQL 14+ and create databases
 createdb -O as2user as2_db_config
@@ -164,7 +150,7 @@ nano config/database-postgresql.properties
 # Headless Mode (WebUI only):
 ./start-headless.sh
 # Or:
-java -jar mend-as2-1.1.0.jar -nogui
+java -jar mend-as2.jar -nogui
 
 # 5. Access WebUI
 # http://localhost:8080/as2/webui/
@@ -174,11 +160,11 @@ java -jar mend-as2-1.1.0.jar -nogui
 **Mode Selection:**
 - **GUI Mode**: Desktop client (SwingUI) + Web interface
   - Best for: Workstations, development environments
-  - Start with: `./start.sh` or `java -jar mend-as2-1.1.0.jar`
+  - Start with: `./start.sh` or `java -jar mend-as2.jar`
   
 - **Headless Mode**: Web interface only (no desktop GUI)
   - Best for: Servers, containers, cloud deployments
-  - Start with: `./start-headless.sh` or `java -jar mend-as2-1.1.0.jar -nogui`
+  - Start with: `./start-headless.sh` or `java -jar mend-as2.jar -nogui`
   - Can also set in config: `as2.startup.gui.enabled=false`
 
 **📖 Full Installation Guide:** [INSTALL.md](INSTALL.md)
@@ -204,10 +190,10 @@ cd mend-as2
 mvn clean package
 
 # Run in GUI mode
-java -jar target/mend-as2-1.1.0.jar
+java -jar target/mend-as2-*.jar
 
 # Run in headless mode
-java -jar target/mend-as2-1.1.0.jar -nogui
+java -jar target/mend-as2-*.jar -nogui
 ```
 
 **📖 Developer Guide:** [md-memo/BUILD.md](md-memo/BUILD.md)  
@@ -681,7 +667,7 @@ When accessing the WebUI via HTTPS (e.g., `https://localhost:8443/as2/webui/`), 
 ### SwingUI (Desktop)
 
 ```bash
-java -cp target/mend-as2-1.1.jar de.mendelson.comm.as2.client.AS2Gui
+java -cp target/mend-as2-*.jar de.mendelson.comm.as2.client.AS2Gui
 ```
 
 **Menu Navigation:**
@@ -1032,7 +1018,7 @@ GNU General Public License v2.0 - see [LICENSE](license/LICENSE.gpl.txt)
 - For password reset, use WebUI or database update: `UPDATE webui_users SET password_hash='...' WHERE username='admin'`
 
 **Headless Mode**
-- Use `-nogui` flag: `java -jar mend-as2-1.1.0-full.jar -nogui`
+- Use `-nogui` flag: `java -jar mend-as2.jar -nogui`
 - Or use headless build profile: `mvn clean package -Pheadless`
 - Headless build is ~15-20 MB smaller (excludes SwingUI dependencies)
 - Access via WebUI at http://localhost:8080/as2/webui/
