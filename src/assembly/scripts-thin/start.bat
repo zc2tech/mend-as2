@@ -35,7 +35,7 @@ if not exist "%SCRIPT_DIR%lib\.dependencies_complete" (
         echo   3. Run this script again
         echo.
         echo Alternative: Download the fat JAR distribution instead:
-        echo   mend-as2-1.1.0-dist.zip ^(includes all dependencies^)
+        echo   mend-as2-dist.zip ^(includes all dependencies^)
         echo.
         pause
         exit /b 1
@@ -89,8 +89,18 @@ if not exist "%SCRIPT_DIR%lib\.dependencies_complete" (
     ver >nul
 )
 
+REM Find the thin JAR file
+set THIN_JAR=
+for %%f in (%SCRIPT_DIR%mend-as2-*-thin.jar) do set THIN_JAR=%%f
+
+if not defined THIN_JAR (
+    echo ERROR: mend-as2-*-thin.jar not found in %SCRIPT_DIR%
+    pause
+    exit /b 1
+)
+
 REM Set classpath with thin JAR and all libs
-set CLASSPATH=%SCRIPT_DIR%mend-as2-1.1.0-thin.jar;%SCRIPT_DIR%lib\*
+set CLASSPATH=%THIN_JAR%;%SCRIPT_DIR%lib\*
 
 REM Start the application
 echo Starting Mend AS2 Server...

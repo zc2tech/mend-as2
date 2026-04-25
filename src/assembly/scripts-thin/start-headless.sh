@@ -26,7 +26,7 @@ if [ ! -f "$SCRIPT_DIR/lib/.dependencies_complete" ]; then
         echo "Or download from: https://maven.apache.org/download.cgi"
         echo
         echo "Alternative: Download the fat JAR distribution instead:"
-        echo "  mend-as2-1.1.0-dist.tar.gz (includes all dependencies)"
+        echo "  mend-as2-dist.tar.gz (includes all dependencies)"
         echo
         exit 1
     fi
@@ -78,8 +78,16 @@ EOF
     fi
 fi
 
+# Find the thin JAR file
+THIN_JAR=$(ls "$SCRIPT_DIR"/mend-as2-*-thin.jar 2>/dev/null | head -1)
+
+if [ -z "$THIN_JAR" ]; then
+    echo "ERROR: mend-as2-*-thin.jar not found in $SCRIPT_DIR"
+    exit 1
+fi
+
 # Set classpath with thin JAR and all libs
-CLASSPATH="$SCRIPT_DIR/mend-as2-1.1.0-thin.jar:$SCRIPT_DIR/lib/*"
+CLASSPATH="$THIN_JAR:$SCRIPT_DIR/lib/*"
 
 # Start the application in headless mode
 java -cp "$CLASSPATH" de.mendelson.comm.as2.AS2 -nogui "$@"

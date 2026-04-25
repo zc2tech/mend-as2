@@ -92,6 +92,8 @@ echo   * pom.xml
 echo   * src\main\java\de\mendelson\comm\as2\AS2ServerVersion.java
 echo   * RELEASE.md
 echo.
+echo Note: Start scripts are already version-agnostic (use wildcards)
+echo.
 echo Next steps:
 echo   1. Update CHANGELOG.md with release notes
 echo   2. Review changes: git diff
