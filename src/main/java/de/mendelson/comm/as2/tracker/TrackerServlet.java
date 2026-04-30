@@ -410,7 +410,7 @@ public class TrackerServlet extends HttpServlet {
         TrackerMessageInfo info = new TrackerMessageInfo();
         info.setMessageId(messageId);
         info.setTrackerId(trackerId);
-        info.setRemoteAddr(endpoint);  // Store hostname from Host header instead of IP
+        info.setRemoteAddr(toIPv4Format(remoteAddr));  // Store client IP in IPv4 format where possible
         info.setUserAgent(userAgent);
         info.setContentType(request.getContentType());
         info.setContentSize(data.length);
@@ -487,6 +487,41 @@ public class TrackerServlet extends HttpServlet {
         }
 
         return buffer.toByteArray();
+    }
+
+    /**
+     * Convert IPv6 address to IPv4 format where possible
+     * - IPv6 localhost (::1, 0:0:0:0:0:0:0:1) -> 127.0.0.1
+     * - IPv4-mapped IPv6 (::ffff:192.168.1.1) -> 192.168.1.1
+     * - Pure IPv6 addresses are returned as-is
+     */
+    private String toIPv4Format(String address) {
+        if (address == null || address.isEmpty()) {
+            return address;
+        }
+
+        // Remove square brackets if present (e.g., [0:0:0:0:0:0:0:1] -> 0:0:0:0:0:0:0:1)
+        String cleanAddr = address;
+        if (address.startsWith("[") && address.endsWith("]")) {
+            cleanAddr = address.substring(1, address.length() - 1);
+        }
+
+        // Handle IPv6 localhost
+        if ("0:0:0:0:0:0:0:1".equals(cleanAddr) || "::1".equals(cleanAddr)) {
+            return "127.0.0.1";
+        }
+
+        // Handle IPv4-mapped IPv6 addresses (::ffff:192.168.1.1)
+        if (cleanAddr.startsWith("::ffff:") && cleanAddr.length() > 7) {
+            String ipv4Part = cleanAddr.substring(7);
+            // Validate it's actually an IPv4 address
+            if (ipv4Part.matches("\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")) {
+                return ipv4Part;
+            }
+        }
+
+        // If it's already IPv4 or can't be converted, return as-is (without brackets)
+        return cleanAddr;
     }
 
     /**
