@@ -99,11 +99,10 @@ public class TrackerMessageResource {
                 }
             }
 
-            // If tracker requires auth and user is not admin, filter by current user
-            boolean authRequired = "true".equals(prefs.get(PreferencesAS2.TRACKER_AUTH_REQUIRED));
+            // Non-admin users can only see their own tracker messages
             String effectiveUserFilter = userFilter;
 
-            if (authRequired && !isAdmin) {
+            if (!isAdmin) {
                 // Non-admin users can only see their own messages
                 effectiveUserFilter = currentUser.getUsername();
             }
@@ -201,7 +200,7 @@ public class TrackerMessageResource {
                         .entity("{\"error\":\"Message not found\"}").build();
             }
 
-            // Check permissions - non-admin users can only see their own messages when auth is required
+            // Check permissions - non-admin users can only see their own messages
             boolean isAdmin = false;
             List<Role> userRoles = userMgmt.getUserRoles(currentUser.getId());
             for (Role role : userRoles) {
@@ -211,8 +210,7 @@ public class TrackerMessageResource {
                 }
             }
 
-            boolean authRequired = "true".equals(prefs.get(PreferencesAS2.TRACKER_AUTH_REQUIRED));
-            if (authRequired && !isAdmin) {
+            if (!isAdmin) {
                 // Non-admin users can only see their own messages
                 if (info.getAuthUser() == null || !info.getAuthUser().equals(currentUser.getUsername())) {
                     return Response.status(Response.Status.FORBIDDEN)

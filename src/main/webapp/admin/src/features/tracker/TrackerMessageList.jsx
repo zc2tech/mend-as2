@@ -167,8 +167,8 @@ export default function TrackerMessageList() {
   };
 
   // Determine if User filter/column should be shown
-  // Hide if auth is required AND user is not admin
-  const showUserFilter = !trackerAuthRequired || isAdmin;
+  // Only show to ADMIN users who can see all messages
+  const showUserFilter = isAdmin;
 
   const getTimezoneOffset = () => {
     const offset = -new Date().getTimezoneOffset();
