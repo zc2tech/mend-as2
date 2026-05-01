@@ -155,7 +155,14 @@ public class UserTrackerAuthResource {
 
             configConnection.commit();
 
-            return Response.ok("{\"success\":true}").build();
+            // Return the saved configuration for immediate UI update
+            UserTrackerAuthConfig savedConfig = new UserTrackerAuthConfig();
+            savedConfig.setUserId(userId);
+            savedConfig.setBasicAuthEnabled(config.isBasicAuthEnabled());
+            savedConfig.setCertAuthEnabled(config.isCertAuthEnabled());
+            savedConfig.setCredentialsList(config.getCredentialsList());
+
+            return Response.ok(savedConfig).build();
 
         } catch (Exception e) {
             e.printStackTrace();

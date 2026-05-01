@@ -50,8 +50,8 @@ export default function MyTrackerConfig() {
       ]);
 
       const config = configRes.data;
-      setBasicAuthEnabled(config.basicAuthEnabled || false);
-      setCertAuthEnabled(config.certAuthEnabled || false);
+      setBasicAuthEnabled(config.basicAuthEnabled === true);
+      setCertAuthEnabled(config.certAuthEnabled === true);
 
       // Separate credentials by type
       const credentials = config.credentialsList || [];
@@ -63,7 +63,10 @@ export default function MyTrackerConfig() {
       setCertificates(publicCerts);
 
       return config;
-    }
+    },
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: false // Don't refetch on window focus
   });
 
   // Save mutation
@@ -77,9 +80,17 @@ export default function MyTrackerConfig() {
       const response = await api.post('/user/tracker-auth/config', config);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: async (savedConfig) => {
       toast.success('Tracker authentication settings saved successfully');
-      queryClient.invalidateQueries(['userTrackerAuth']);
+      // Update cache with the backend response
+      queryClient.setQueryData(['userTrackerAuth'], savedConfig);
+      // Also update local state to match
+      setBasicAuthEnabled(savedConfig.basicAuthEnabled === true);
+      setCertAuthEnabled(savedConfig.certAuthEnabled === true);
+
+      const credentials = savedConfig.credentialsList || [];
+      setBasicAuthList(credentials.filter(c => c.authType === 1));
+      setCertAuthList(credentials.filter(c => c.authType === 2));
     },
     onError: (error) => {
       toast.error('Failed to save: ' + (error.response?.data?.error || error.message));
