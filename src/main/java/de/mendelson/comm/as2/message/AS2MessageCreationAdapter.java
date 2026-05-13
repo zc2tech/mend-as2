@@ -53,17 +53,6 @@ public class AS2MessageCreationAdapter {
             String[] payloadContentTypes,
             int userId) throws Exception {
 
-        if (logger != null) {
-            logger.info("=================================================");
-            logger.info("[AS2-MSG-DEBUG] Creating AS2 message:");
-            logger.info("[AS2-MSG-DEBUG]   Sender: " + sender.getName() + " (dbId=" + sender.getDBId() + ")");
-            logger.info("[AS2-MSG-DEBUG]   Receiver: " + receiver.getName() + " (dbId=" + receiver.getDBId() + ")");
-            logger.info("[AS2-MSG-DEBUG]   User ID: " + userId);
-            logger.info("[AS2-MSG-DEBUG]   Sign fingerprint: " + sender.getSignFingerprintSHA1());
-            logger.info("[AS2-MSG-DEBUG]   Crypt fingerprint: " + receiver.getCryptFingerprintSHA1());
-            logger.info("=================================================");
-        }
-
         // Create user-specific certificate manager view
         UserSpecificCertificateManager userCertManager = new UserSpecificCertificateManager(
             multiUserCertManager,
@@ -91,12 +80,6 @@ public class AS2MessageCreationAdapter {
             subject,
             payloadContentTypes
         );
-
-        if (logger != null) {
-            logger.info("[AS2-MSG-DEBUG] ✓ AS2 message created successfully");
-            logger.info("[AS2-MSG-DEBUG]   Message ID: " + message.getAS2Info().getMessageId());
-            logger.info("=================================================");
-        }
 
         return message;
     }
