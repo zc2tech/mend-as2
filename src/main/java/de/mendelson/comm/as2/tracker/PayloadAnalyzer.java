@@ -130,6 +130,26 @@ public class PayloadAnalyzer {
                 details = "Order ID: " + matcher.group(1);
             }
         }
+        // PaymentRemittanceRequest
+        else if (content.contains("<PaymentRemittanceRequest")) {
+            docType = "Payment Remittance (PaymentRemittanceRequest)";
+             // Extract order ID if available
+            Pattern idPattern = Pattern.compile("paymentRemittanceID=\"([^\"]+)\"");
+            Matcher matcher = idPattern.matcher(content);
+            if (matcher.find()) {
+                details = "Remittance ID: " + matcher.group(1);
+            }
+        }
+        // ProductActivityMessage
+        else if (content.contains("<ProductActivityMessage")) {
+             docType = "Product Activity";
+             // Extract  ID if available
+            Pattern idPattern = Pattern.compile("@messageID=\"([^\"]+)\"");
+            Matcher matcher = idPattern.matcher(content);
+            if (matcher.find()) {
+                details = "Message ID: " + matcher.group(1);
+            }
+        }
         // Check for InvoiceDetailRequest (Invoice)
         else if (content.contains("<InvoiceDetailRequest")) {
             docType = "Invoice (InvoiceDetailRequest)";
