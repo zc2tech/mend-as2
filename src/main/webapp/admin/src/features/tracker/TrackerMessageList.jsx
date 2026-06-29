@@ -180,21 +180,6 @@ export default function TrackerMessageList() {
 
   const abbreviateDocType = (docType) => {
     if (!docType) return '-';
-
-    // Extract code from parentheses if present
-    const match = docType.match(/\(([^)]+)\)/);
-    if (match) return match[1];
-
-    // Abbreviate cXML types
-    if (docType === 'Purchase Order') return 'PO';
-    if (docType === 'Invoice') return 'INV';
-    if (docType === 'Advanced Ship Notice') return 'ASN';
-    if (docType === 'Order Confirmation') return 'OC';
-    if (docType === 'Payment Remittance') return 'PR';
-
-    // Truncate if too long
-    if (docType.length > 15) return docType.substring(0, 15);
-
     return docType;
   };
 
@@ -563,7 +548,6 @@ export default function TrackerMessageList() {
             <th style={thStyle}>Size</th>
             <th style={thStyle}>Auth Status</th>
             {showUserFilter && <th style={thStyle}>User</th>}
-            <th style={thStyle}>Payloads</th>
             <th style={thStyle}>Format</th>
             <th style={thStyle}>Doc Type</th>
             <th style={thStyle}>DL</th>
@@ -573,7 +557,7 @@ export default function TrackerMessageList() {
         <tbody>
           {messages.length === 0 ? (
             <tr>
-              <td colSpan={showUserFilter ? "12" : "11"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan={showUserFilter ? "11" : "10"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No tracker messages found
               </td>
             </tr>
@@ -606,7 +590,6 @@ export default function TrackerMessageList() {
                   </span>
                 </td>
                 {showUserFilter && <td style={tdStyle}>{message.authUser || '-'}</td>}
-                <td style={tdStyle}>{message.payloadCount || 0}</td>
                 <td style={tdStyle}>{message.payloadFormat || '-'}</td>
                 <td style={tdStyle}>{abbreviateDocType(message.payloadDocType)}</td>
                 <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>
