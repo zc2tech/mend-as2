@@ -81,7 +81,8 @@ export default function TrackerMessageList() {
     user: '',
     format: '',
     authNone: true,
-    authSuccess: true
+    authSuccess: true,
+    limit: 20
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -101,6 +102,7 @@ export default function TrackerMessageList() {
       }
       if (queryFilters.user) params.append('user', queryFilters.user);
       if (queryFilters.format) params.append('format', queryFilters.format);
+      if (queryFilters.limit) params.append('limit', queryFilters.limit);
       params.append('authNone', queryFilters.authNone);
       params.append('authSuccess', queryFilters.authSuccess);
 
@@ -124,10 +126,10 @@ export default function TrackerMessageList() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Set new timeout - apply search after 1 second of no input
+    // Set new timeout - apply search after 2 seconds of no input
     searchTimeoutRef.current = setTimeout(() => {
       setQueryFilters(newFilters);
-    }, 1000);
+    }, 2000);
   };
 
   // Cleanup timeout on unmount
@@ -291,7 +293,9 @@ export default function TrackerMessageList() {
     return <div style={{ color: 'red' }}>Error loading tracker messages: {error.message}</div>;
   }
 
-  const messages = data || [];
+  const messages = data?.messages || data || [];
+  const totalCount = data?.totalCount || messages.length;
+  const returnedCount = data?.returnedCount || messages.length;
 
   const tableStyle = {
     width: '100%',
@@ -322,7 +326,7 @@ export default function TrackerMessageList() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ margin: 0 }}>Tracker Messages</h1>
         <p style={{ color: '#666', margin: '0.5rem 0 0 0' }}>
-          Showing {messages.length} messages
+          Showing {returnedCount} of {totalCount} messages
         </p>
       </div>
 
@@ -415,8 +419,8 @@ export default function TrackerMessageList() {
           </div>
         </div>
 
-        {/* Row 1: Date range, Tracker ID, User, Format */}
-        <div style={{ display: 'grid', gridTemplateColumns: showUserFilter ? '140px 140px 200px 80px 135px' : '140px 140px 200px 135px', gap: '1rem', marginBottom: '1rem' }}>
+        {/* Row 1: Date range, Tracker ID, User, Format, Limit */}
+        <div style={{ display: 'grid', gridTemplateColumns: showUserFilter ? '140px 140px 200px 80px 135px 80px' : '140px 140px 200px 135px 80px', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Start Date
@@ -512,6 +516,26 @@ export default function TrackerMessageList() {
               <option value="X12">X12</option>
               <option value="EDIFACT">EDIFACT</option>
             </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Limit
+            </label>
+            <input
+              type="number"
+              step="5"
+              min="1"
+              value={filters.limit || 20}
+              onChange={(e) => applyFiltersDebounced({ ...filters, limit: parseInt(e.target.value) })}
+              onKeyPress={handleKeyPress}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
           </div>
         </div>
 

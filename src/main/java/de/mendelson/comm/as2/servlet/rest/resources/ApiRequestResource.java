@@ -58,7 +58,8 @@ public class ApiRequestResource {
             @QueryParam("startDate") String startDateStr,
             @QueryParam("endDate") String endDateStr,
             @QueryParam("method") String methodFilter,
-            @QueryParam("path") String pathFilter) {
+            @QueryParam("path") String pathFilter,
+            @QueryParam("limit") @DefaultValue("100") int limit) {
         try {
             // Get current username from security context
             String username = securityContext.getUserPrincipal().getName();
@@ -123,7 +124,19 @@ public class ApiRequestResource {
             List<ApiRequestInfo> requests = apiRequestDAO.getApiRequests(
                     userId, startDate, endDate, methodFilter, pathFilter);
 
-            return Response.ok(requests).build();
+            // Apply limit
+            int totalCount = requests.size();
+            if (limit > 0 && requests.size() > limit) {
+                requests = requests.subList(0, limit);
+            }
+
+            // Create response with total count
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("messages", requests);
+            response.put("totalCount", totalCount);
+            response.put("returnedCount", requests.size());
+
+            return Response.ok(response).build();
 
         } catch (Exception e) {
             e.printStackTrace();

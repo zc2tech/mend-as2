@@ -62,6 +62,7 @@ public class TrackerMessageResource {
             @QueryParam("trackerId") String trackerId,
             @QueryParam("user") String userFilter,
             @QueryParam("format") String formatFilter,
+            @QueryParam("limit") @DefaultValue("100") int limit,
             @QueryParam("authNone") @DefaultValue("true") boolean authNone,
             @QueryParam("authSuccess") @DefaultValue("true") boolean authSuccess) {
 
@@ -157,7 +158,19 @@ public class TrackerMessageResource {
                 dtos.add(dto);
             }
 
-            return Response.ok(dtos).build();
+            // Apply limit
+            int totalCount = dtos.size();
+            if (limit > 0 && dtos.size() > limit) {
+                dtos = dtos.subList(0, limit);
+            }
+
+            // Create response with total count
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("messages", dtos);
+            response.put("totalCount", totalCount);
+            response.put("returnedCount", dtos.size());
+
+            return Response.ok(response).build();
 
         } catch (Exception e) {
             e.printStackTrace();

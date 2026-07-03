@@ -87,7 +87,8 @@ export default function ApiRequestList() {
     startDate: format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
     method: 'ALL',
-    path: ''
+    path: '',
+    limit: 20
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -106,6 +107,9 @@ export default function ApiRequestList() {
       }
       if (queryFilters.path) {
         params.append('path', queryFilters.path);
+      }
+      if (queryFilters.limit) {
+        params.append('limit', queryFilters.limit);
       }
 
       const response = await api.get('/user/api-requests?' + params.toString());
@@ -128,10 +132,10 @@ export default function ApiRequestList() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Set new timeout - apply search after 1 second of no input
+    // Set new timeout - apply search after 2 seconds of no input
     searchTimeoutRef.current = setTimeout(() => {
       setQueryFilters(newFilters);
-    }, 1000);
+    }, 2000);
   };
 
   // Cleanup timeout on unmount
@@ -313,7 +317,9 @@ export default function ApiRequestList() {
     return <div style={{ color: 'red' }}>Error loading API requests: {error.message}</div>;
   }
 
-  const messages = data || [];
+  const messages = data?.messages || data || [];
+  const totalCount = data?.totalCount || messages.length;
+  const returnedCount = data?.returnedCount || messages.length;
 
   const tableStyle = {
     width: '100%',
@@ -344,7 +350,7 @@ export default function ApiRequestList() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ margin: 0 }}>REST API Requests</h1>
         <p style={{ color: '#666', margin: '0.5rem 0 0 0' }}>
-          Showing {messages.length} requests
+          Showing {returnedCount} of {totalCount} requests
         </p>
       </div>
 
@@ -434,8 +440,8 @@ export default function ApiRequestList() {
           </div>
         </div>
 
-        {/* Row 1: Date range, Method, Path */}
-        <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 120px 200px', gap: '1rem', marginBottom: '1rem' }}>
+        {/* Row 1: Date range, Method, Path, Limit */}
+        <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 120px 200px 80px', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Start Date
@@ -501,6 +507,26 @@ export default function ApiRequestList() {
               placeholder="Search by path"
               value={filters.path}
               onChange={(e) => applyFiltersDebounced({ ...filters, path: e.target.value })}
+              onKeyPress={handleKeyPress}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Limit
+            </label>
+            <input
+              type="number"
+              step="5"
+              min="1"
+              value={filters.limit || 20}
+              onChange={(e) => applyFiltersDebounced({ ...filters, limit: parseInt(e.target.value) })}
               onKeyPress={handleKeyPress}
               style={{
                 width: '100%',

@@ -438,6 +438,7 @@ public class AS2MessageInfo implements AS2Info {
      * Returns the content of this object for debug purpose
      */
     @Override
+    @com.fasterxml.jackson.annotation.JsonIgnore
     public String getDebugDisplay() {
         StringBuilder buffer = new StringBuilder();
         buffer.append("asyncMDNURL=\t\t").append(this.asyncMDNURL);

@@ -113,7 +113,12 @@ public class ApiRequestAccessDB {
 
         try (Connection conn = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
-            StringBuilder sql = new StringBuilder("SELECT * FROM api_request_log ");
+            // Exclude request_body and request_headers from list query for performance
+            StringBuilder sql = new StringBuilder(
+                "SELECT id, request_id, user_id, remote_addr, user_agent, http_method, " +
+                "request_path, content_type, content_size, " +
+                "response_status, auth_status, auth_user, request_time " +
+                "FROM api_request_log ");
             sql.append("WHERE user_id = ? ");
             sql.append("AND request_time >= ? AND request_time <= ? ");
 
@@ -296,8 +301,19 @@ public class ApiRequestAccessDB {
         info.setUserAgent(rs.getString("user_agent"));
         info.setHttpMethod(rs.getString("http_method"));
         info.setRequestPath(rs.getString("request_path"));
-        info.setRequestHeaders(this.dbDriverManager.readTextStoredAsJavaObject(rs, "request_headers"));
-        info.setRequestBody(rs.getBytes("request_body"));
+
+        // These fields may not be present in list queries (excluded for performance)
+        try {
+            info.setRequestHeaders(this.dbDriverManager.readTextStoredAsJavaObject(rs, "request_headers"));
+        } catch (Exception e) {
+            // Column not in SELECT, skip
+        }
+        try {
+            info.setRequestBody(rs.getBytes("request_body"));
+        } catch (Exception e) {
+            // Column not in SELECT, skip
+        }
+
         info.setContentType(rs.getString("content_type"));
         info.setContentSize(rs.getInt("content_size"));
         info.setResponseStatus(rs.getInt("response_status"));
