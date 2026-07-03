@@ -191,6 +191,19 @@ public class IPWhitelistService {
     }
 
     /**
+     * Check if IP is allowed for API endpoint
+     */
+    public boolean isAllowedForApi(String ip) {
+        PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+        if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API))) {
+            return true; // Whitelist disabled, allow all
+        }
+
+        // API only uses global whitelist (same as Tracker)
+        return matchesGlobalWhitelist(ip, IPWhitelistEntry.TARGET_API);
+    }
+
+    /**
      * Check if IP is allowed for WebUI
      */
     public boolean isAllowedForWebUI(String ip, int userId) {

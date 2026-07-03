@@ -25,7 +25,7 @@ import { format } from 'date-fns';
 import api from '../../api/client';
 import { useState, useEffect } from 'react';
 
-export default function TrackerMessageDetails({ trackerId, onClose }) {
+export default function ApiRequestDetails({ requestId, onClose }) {
   const [downloading, setDownloading] = useState(false);
 
   // Handle ESC key to close modal
@@ -106,9 +106,9 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
   };
 
   const { data: message, isLoading, error } = useQuery({
-    queryKey: ['trackerMessage', trackerId],
+    queryKey: ['trackerMessage', requestId],
     queryFn: async () => {
-      const response = await api.get(`/tracker-messages/${trackerId}`);
+      const response = await api.get(`/user/api-requests/${requestId}`);
       return response.data;
     }
   });
@@ -116,13 +116,13 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
   const handleDownloadContent = async () => {
     setDownloading(true);
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download`, {
+      const response = await api.get(`/user/api-requests/${requestId}/body`, {
         responseType: 'blob'
       });
 
       // Extract filename from Content-Disposition header
       const contentDisposition = response.headers['content-disposition'];
-      let filename = 'tracker_message.txt';
+      let filename = 'request_body.bin';
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="(.+)"/);
         if (filenameMatch) {
@@ -140,7 +140,7 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert('Failed to download message content: ' + (error.response?.data?.error || error.message));
+      alert('Failed to download request body: ' + (error.response?.data?.error || error.message));
     } finally {
       setDownloading(false);
     }
@@ -149,7 +149,7 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
   const handleDownloadPayloads = async () => {
     setDownloading(true);
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download-payloads`, {
+      const response = await api.get(`/api-requests/${requestId}/download-payloads`, {
         responseType: 'blob'
       });
 
@@ -182,7 +182,7 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
   const handleDownloadBruno = async () => {
     setDownloading(true);
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download-bruno`, {
+      const response = await api.get(`/api-requests/${requestId}/download-bruno`, {
         responseType: 'blob'
       });
 
@@ -237,31 +237,15 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0 }}>Tracker Message Details</h2>
+          <h2 style={{ margin: 0 }}>API Request Details</h2>
           <div>
             <button
               onClick={handleDownloadContent}
               disabled={downloading}
               style={downloading ? disabledButtonStyle : downloadButtonStyle}
-              title="Download message content"
+              title="Download request body"
             >
-              {downloading ? 'Downloading...' : '⬇ Content'}
-            </button>
-            <button
-              onClick={handleDownloadPayloads}
-              disabled={downloading || !message.payloadCount || message.payloadCount === 0}
-              style={(downloading || !message.payloadCount || message.payloadCount === 0) ? disabledButtonStyle : downloadButtonStyle}
-              title="Download payloads as ZIP"
-            >
-              📦 Payloads
-            </button>
-            <button
-              onClick={handleDownloadBruno}
-              disabled={downloading}
-              style={downloading ? disabledButtonStyle : downloadButtonStyle}
-              title="Download Bruno collection (ZIP with .bru files)"
-            >
-              <span style={{ fontSize: '1rem', verticalAlign: 'middle' }}>🐶</span> Bruno
+              {downloading ? 'Downloading...' : '⬇ Download Body'}
             </button>
           </div>
         </div>
@@ -270,61 +254,53 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
           <h3>Basic Information</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <div>
-              <span style={labelStyle}>Tracker ID:</span>
-              <code>{message.trackerId}</code>
-            </div>
-            <div>
               <span style={labelStyle}>Timestamp:</span>
-              {message.timestamp ? format(new Date(message.timestamp), 'yyyy-MM-dd HH:mm:ss') : '-'}
+              {message.requestTime ? format(new Date(message.requestTime), 'yyyy-MM-dd HH:mm:ss') : '-'}
             </div>
             <div>
-              <span style={labelStyle}>Remote Address:</span>
+              <span style={labelStyle}>HTTP Method:</span>
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                backgroundColor:
+                  message.httpMethod === 'GET' ? '#28a745' :
+                  message.httpMethod === 'POST' ? '#007bff' :
+                  message.httpMethod === 'PUT' ? '#ffc107' :
+                  message.httpMethod === 'DELETE' ? '#dc3545' : '#6c757d',
+                color: 'white',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: '600'
+              }}>
+                {message.httpMethod}
+              </span>
+            </div>
+            <div>
+              <span style={labelStyle}>Request Path:</span>
+              <code>{message.requestPath || '/'}</code>
+            </div>
+            <div>
+              <span style={labelStyle}>Response Status:</span>
+              <span style={{
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                backgroundColor: message.responseStatus >= 200 && message.responseStatus < 300 ? '#28a74520' : '#dc354520',
+                color: message.responseStatus >= 200 && message.responseStatus < 300 ? '#28a745' : '#dc3545',
+                fontWeight: '600',
+                fontSize: '0.75rem'
+              }}>
+                {message.responseStatus}
+              </span>
+            </div>
+            <div>
+              <span style={labelStyle}>Remote IP:</span>
               {message.remoteAddr || '-'}
             </div>
             <div>
               <span style={labelStyle}>Content Size:</span>
-              {message.contentSize || 0} bytes
-            </div>
-            <div>
-              <span style={labelStyle}>Auth Status:</span>
-              {message.authStatus || 'None'}
-            </div>
-            <div>
-              <span style={labelStyle}>Auth User:</span>
-              {message.authUser || '-'}
-            </div>
-            <div>
-              <span style={labelStyle}>Payload Count:</span>
-              {message.payloadCount || 0}
-            </div>
-            <div>
-              <span style={labelStyle}>Raw Filename:</span>
-              {message.rawFilename || '-'}
+              {message.contentSize ? `${(message.contentSize / 1024).toFixed(2)} KB` : '0 KB'}
             </div>
           </div>
         </div>
-
-        {message.payloadFormat && message.payloadFormat !== 'Unknown' && (
-          <div style={sectionStyle}>
-            <h3>Payload Analysis</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div>
-                <span style={labelStyle}>Format:</span>
-                {message.payloadFormat}
-              </div>
-              <div>
-                <span style={labelStyle}>Document Type:</span>
-                {message.payloadDocType || '-'}
-              </div>
-              {message.payloadDetails && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <span style={labelStyle}>Details:</span>
-                  {message.payloadDetails}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         <div style={sectionStyle}>
           <h3>User Agent</h3>

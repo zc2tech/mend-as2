@@ -23,65 +23,71 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LoadingPage } from '../../components/Loading';
 import { format } from 'date-fns';
-import TrackerMessageDetails from './TrackerMessageDetails';
+import ApiRequestDetails from './ApiRequestDetails';
 import { useAuth } from '../auth/useAuth';
 import api from '../../api/client';
 
-export default function TrackerMessageList() {
+export default function ApiRequestList() {
   const { user, hasPermission } = useAuth();
-  const [trackerAuthRequired, setTrackerAuthRequired] = useState(false);
   const [downloading, setDownloading] = useState({});
-  const [trackerEndpointUrls, setTrackerEndpointUrls] = useState([]);
+  const [apiEndpointUrls, setApiEndpointUrls] = useState([]);
   const queryClient = useQueryClient();
 
   // Check if user has admin-like permissions (USER_MANAGE means they can see all users)
   const isAdmin = hasPermission('USER_MANAGE');
 
-  // Get tracker auth setting and build endpoint URLs
+  // Get API config and build endpoint URLs
   useEffect(() => {
-    const getTrackerAuth = async () => {
+    const getApiConfig = async () => {
       try {
-        const trackerConfig = await api.get('/system/tracker/config');
-        setTrackerAuthRequired(trackerConfig.data.authRequired);
+        const apiConfig = await api.get('/system/api/config');
 
-        // Build tracker endpoint URLs using server configuration
-        const host = trackerConfig.data.hostname || window.location.hostname;
+        // Build API endpoint URLs using server configuration
+        const host = window.location.hostname;
         const username = user?.username || 'your-username';
         const urls = [];
 
         // Add HTTPS URL if configured
-        if (trackerConfig.data.httpsPort) {
+        if (apiConfig.data.httpsPort) {
           urls.push({
             protocol: 'https',
-            port: trackerConfig.data.httpsPort,
-            url: `https://${host}:${trackerConfig.data.httpsPort}/as2/tracker/${username}`
+            port: apiConfig.data.httpsPort,
+            url: `https://${host}:${apiConfig.data.httpsPort}/as2/api/${username}`
           });
         }
 
         // Add HTTP URL if configured
-        // if (trackerConfig.data.httpPort) {
+        // if (apiConfig.data.httpPort) {
         //   urls.push({
         //     protocol: 'http',
-        //     port: trackerConfig.data.httpPort,
-        //     url: `http://${host}:${trackerConfig.data.httpPort}/as2/tracker/${username}`
+        //     port: apiConfig.data.httpPort,
+        //     url: `http://${host}:${apiConfig.data.httpPort}/as2/api/${username}`
         //   });
         // }
 
-        setTrackerEndpointUrls(urls);
+        setApiEndpointUrls(urls);
       } catch (error) {
-        // Silently fail - default to false (show user filter)
+        // Fallback: use current window location port
+        console.warn('Failed to load API config, using fallback port from window.location', error);
+        const host = window.location.hostname;
+        const port = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+        const username = user?.username || 'your-username';
+
+        setApiEndpointUrls([{
+          protocol: window.location.protocol.replace(':', ''),
+          port: parseInt(port),
+          url: `${window.location.protocol}//${host}:${port}/as2/api/${username}`
+        }]);
       }
     };
-    getTrackerAuth();
+    getApiConfig();
   }, [user]);
+
   const defaultFilters = {
     startDate: format(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
     endDate: format(new Date(), 'yyyy-MM-dd'),
-    trackerId: '',
-    user: '',
-    format: '',
-    authNone: true,
-    authSuccess: true
+    method: 'ALL',
+    path: ''
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -90,21 +96,19 @@ export default function TrackerMessageList() {
   const searchTimeoutRef = useRef(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['trackerMessages', queryFilters],
+    queryKey: ['apiRequests', queryFilters],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (queryFilters.trackerId) {
-        params.append('trackerId', queryFilters.trackerId);
-      } else {
-        params.append('startDate', queryFilters.startDate);
-        params.append('endDate', queryFilters.endDate);
+      params.append('startDate', queryFilters.startDate);
+      params.append('endDate', queryFilters.endDate);
+      if (queryFilters.method && queryFilters.method !== 'ALL') {
+        params.append('method', queryFilters.method);
       }
-      if (queryFilters.user) params.append('user', queryFilters.user);
-      if (queryFilters.format) params.append('format', queryFilters.format);
-      params.append('authNone', queryFilters.authNone);
-      params.append('authSuccess', queryFilters.authSuccess);
+      if (queryFilters.path) {
+        params.append('path', queryFilters.path);
+      }
 
-      const response = await api.get('/tracker-messages?' + params.toString());
+      const response = await api.get('/user/api-requests?' + params.toString());
       return response.data;
     }
   });
@@ -115,7 +119,7 @@ export default function TrackerMessageList() {
     setQueryFilters(newFilters);
   };
 
-  // Debounced search for text inputs (trackerId, user)
+  // Debounced search for text inputs (requestId, user)
   const applyFiltersDebounced = (newFilters) => {
     setFilters(newFilters);
 
@@ -142,7 +146,7 @@ export default function TrackerMessageList() {
   const handleSearch = () => {
     setQueryFilters({ ...filters });
     // Invalidate the query cache to force a fresh fetch from the database
-    queryClient.invalidateQueries(['tracker-messages']);
+    queryClient.invalidateQueries(['apiRequests']);
   };
 
   const handleResetFilters = () => {
@@ -153,7 +157,7 @@ export default function TrackerMessageList() {
       clearTimeout(searchTimeoutRef.current);
     }
     // Invalidate the query cache to force a fresh fetch from the database
-    queryClient.invalidateQueries(['tracker-messages']);
+    queryClient.invalidateQueries(['apiRequests']);
   };
 
   const handleKeyPress = (e) => {
@@ -190,20 +194,38 @@ export default function TrackerMessageList() {
     return kb.toLocaleString('en-US', { maximumFractionDigits: 1 }) + ' K';
   };
 
-  const handleDownloadContent = async (trackerId) => {
-    setDownloading({ ...downloading, [trackerId]: 'content' });
+  const handleDownloadContent = async (requestId) => {
+    setDownloading({ ...downloading, [requestId]: 'content' });
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download`, {
+      // First get the message details to build filename
+      const message = messages.find(m => m.requestId === requestId);
+
+      const response = await api.get(`/user/api-requests/${requestId}/body`, {
         responseType: 'blob'
       });
 
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = 'tracker_message.msg';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
+      // Build filename from method, path, timestamp
+      let filename = `${requestId}.dat`;
+      if (message) {
+        const timestamp = message.requestTime ? format(new Date(message.requestTime), 'yyyyMMdd_HHmmss') : 'unknown';
+        const timezone = getTimezoneOffset();
+        const method = message.httpMethod || 'unknown';
+        const path = message.requestPath ? message.requestPath.replace(/\//g, '_').replace(/[^a-zA-Z0-9_-]/g, '') : 'unknown';
+
+        // Determine extension based on content type
+        let ext = 'dat';
+        const contentType = message.contentType || '';
+        if (contentType.includes('json')) {
+          ext = 'json';
+        } else if (contentType.includes('xml')) {
+          ext = 'xml';
+        } else if (contentType.includes('text')) {
+          ext = 'txt';
+        } else if (contentType.includes('form')) {
+          ext = 'form';
         }
+
+        filename = `${method}_${path}_${timestamp}_${timezone}.${ext}`;
       }
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -215,16 +237,16 @@ export default function TrackerMessageList() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert('Failed to download message content: ' + (error.response?.data?.error || error.message));
+      alert('Failed to download request body: ' + (error.response?.data?.error || error.message));
     } finally {
-      setDownloading({ ...downloading, [trackerId]: null });
+      setDownloading({ ...downloading, [requestId]: null });
     }
   };
 
-  const handleDownloadPayloads = async (trackerId) => {
-    setDownloading({ ...downloading, [trackerId]: 'payloads' });
+  const handleDownloadPayloads = async (requestId) => {
+    setDownloading({ ...downloading, [requestId]: 'payloads' });
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download-payloads`, {
+      const response = await api.get(`/api-requests/${requestId}/download-payloads`, {
         responseType: 'blob'
       });
 
@@ -248,14 +270,14 @@ export default function TrackerMessageList() {
     } catch (error) {
       alert('Failed to download payloads: ' + (error.response?.data?.error || error.message));
     } finally {
-      setDownloading({ ...downloading, [trackerId]: null });
+      setDownloading({ ...downloading, [requestId]: null });
     }
   };
 
-  const handleDownloadBruno = async (trackerId) => {
-    setDownloading({ ...downloading, [trackerId]: 'bruno' });
+  const handleDownloadBruno = async (requestId) => {
+    setDownloading({ ...downloading, [requestId]: 'bruno' });
     try {
-      const response = await api.get(`/tracker-messages/${trackerId}/download-bruno`, {
+      const response = await api.get(`/api-requests/${requestId}/download-bruno`, {
         responseType: 'blob'
       });
 
@@ -279,16 +301,16 @@ export default function TrackerMessageList() {
     } catch (error) {
       alert('Failed to download Bruno collection: ' + (error.response?.data?.error || error.message));
     } finally {
-      setDownloading({ ...downloading, [trackerId]: null });
+      setDownloading({ ...downloading, [requestId]: null });
     }
   };
 
   if (isLoading) {
-    return <LoadingPage message="Loading tracker messages..." />;
+    return <LoadingPage message="Loading API requests..." />;
   }
 
   if (error) {
-    return <div style={{ color: 'red' }}>Error loading tracker messages: {error.message}</div>;
+    return <div style={{ color: 'red' }}>Error loading API requests: {error.message}</div>;
   }
 
   const messages = data || [];
@@ -320,14 +342,14 @@ export default function TrackerMessageList() {
   return (
     <div>
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ margin: 0 }}>Tracker Messages</h1>
+        <h1 style={{ margin: 0 }}>REST API Requests</h1>
         <p style={{ color: '#666', margin: '0.5rem 0 0 0' }}>
-          Showing {messages.length} messages
+          Showing {messages.length} requests
         </p>
       </div>
 
-      {/* Tracker Endpoint URL Info Box */}
-      {trackerEndpointUrls.length > 0 && (
+      {/* Base URL Info Box */}
+      {apiEndpointUrls.length > 0 && (
         <div style={{
           marginBottom: '1rem',
           padding: '0.75rem 1rem',
@@ -337,13 +359,10 @@ export default function TrackerMessageList() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
             <strong style={{ fontSize: '0.875rem', color: '#0056b3', marginRight: '0.5rem' }}>
-             Endpoint:
+              Base URL:
             </strong>
-            {trackerEndpointUrls.map((urlInfo, index) => (
+            {apiEndpointUrls.map((endpoint, index) => (
               <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.75rem', color: '#6c757d', fontWeight: '600' }}>
-                  {urlInfo.protocol.toUpperCase()} ({urlInfo.port}):
-                </span>
                 <code style={{
                   fontSize: '0.875rem',
                   padding: '0.375rem 0.5rem',
@@ -353,12 +372,12 @@ export default function TrackerMessageList() {
                   display: 'inline-block',
                   maxWidth: 'fit-content'
                 }}>
-                  {urlInfo.url}
+                  {endpoint.url}
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(urlInfo.url);
-                    alert(`${urlInfo.protocol.toUpperCase()} Tracker URL copied to clipboard!`);
+                    navigator.clipboard.writeText(endpoint.url);
+                    alert('Base URL copied to clipboard!');
                   }}
                   style={{
                     padding: '0.375rem 0.75rem',
@@ -415,8 +434,8 @@ export default function TrackerMessageList() {
           </div>
         </div>
 
-        {/* Row 1: Date range, Tracker ID, User, Format */}
-        <div style={{ display: 'grid', gridTemplateColumns: showUserFilter ? '140px 140px 200px 80px 135px' : '140px 140px 200px 135px', gap: '1rem', marginBottom: '1rem' }}>
+        {/* Row 1: Date range, Method, Path */}
+        <div style={{ display: 'grid', gridTemplateColumns: '140px 140px 120px 200px', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Start Date
@@ -425,7 +444,6 @@ export default function TrackerMessageList() {
               type="date"
               value={filters.startDate}
               onChange={(e) => applyFiltersImmediately({ ...filters, startDate: e.target.value })}
-              disabled={!!filters.trackerId}
               style={{
                 width: '100%',
                 padding: '0.5rem',
@@ -443,7 +461,6 @@ export default function TrackerMessageList() {
               type="date"
               value={filters.endDate}
               onChange={(e) => applyFiltersImmediately({ ...filters, endDate: e.target.value })}
-              disabled={!!filters.trackerId}
               style={{
                 width: '100%',
                 padding: '0.5rem',
@@ -455,13 +472,35 @@ export default function TrackerMessageList() {
 
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
-              Tracker ID
+              Method
+            </label>
+            <select
+              value={filters.method}
+              onChange={(e) => applyFiltersImmediately({ ...filters, method: e.target.value })}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            >
+              <option value="ALL">All</option>
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+              <option value="PUT">PUT</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Path
             </label>
             <input
               type="text"
-              placeholder="Search by Tracker ID"
-              value={filters.trackerId}
-              onChange={(e) => applyFiltersDebounced({ ...filters, trackerId: e.target.value })}
+              placeholder="Search by path"
+              value={filters.path}
+              onChange={(e) => applyFiltersDebounced({ ...filters, path: e.target.value })}
               onKeyPress={handleKeyPress}
               style={{
                 width: '100%',
@@ -471,84 +510,19 @@ export default function TrackerMessageList() {
               }}
             />
           </div>
-
-          {showUserFilter && (
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
-                User
-              </label>
-              <input
-                type="text"
-                placeholder="User"
-                value={filters.user}
-                onChange={(e) => applyFiltersDebounced({ ...filters, user: e.target.value })}
-                onKeyPress={handleKeyPress}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px'
-                }}
-              />
-            </div>
-          )}
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
-              Format
-            </label>
-            <select
-              value={filters.format}
-              onChange={(e) => applyFiltersImmediately({ ...filters, format: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
-              }}
-            >
-              <option value="">All</option>
-              <option value="cXML">cXML</option>
-              <option value="X12">X12</option>
-              <option value="EDIFACT">EDIFACT</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Row 2: Auth status toggles */}
-        <div style={{ display: 'flex', gap: '2rem', padding: '0.5rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filters.authNone}
-              onChange={(e) => applyFiltersImmediately({ ...filters, authNone: e.target.checked })}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Show No Auth
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={filters.authSuccess}
-              onChange={(e) => applyFiltersImmediately({ ...filters, authSuccess: e.target.checked })}
-              style={{ marginRight: '0.5rem' }}
-            />
-            Show Auth Success
-          </label>
         </div>
       </div>
 
       <table style={tableStyle}>
         <thead>
           <tr>
-            <th style={thStyle}>Tracker ID</th>
+            <th style={thStyle}>Method</th>
+            <th style={thStyle}>Path</th>
             <th style={thStyle}>Timestamp ({getTimezoneOffset()})</th>
             <th style={thStyle}>Remote IP</th>
             <th style={thStyle}>User Agent</th>
             <th style={thStyle}>Size</th>
-            {showUserFilter && <th style={thStyle}>User</th>}
-            <th style={thStyle}>Format</th>
-            <th style={thStyle}>Doc Type</th>
+            <th style={thStyle}>Status</th>
             <th style={thStyle}>DL</th>
             <th style={thStyle}>Actions</th>
           </tr>
@@ -556,18 +530,34 @@ export default function TrackerMessageList() {
         <tbody>
           {messages.length === 0 ? (
             <tr>
-              <td colSpan={showUserFilter ? "10" : "9"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
-                No tracker messages found
+              <td colSpan="9" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+                No API requests found
               </td>
             </tr>
           ) : (
             messages.map(message => (
-              <tr key={message.trackerId}>
+              <tr key={message.requestId}>
                 <td style={tdStyle}>
-                  <code style={{ fontSize: '0.75rem' }}>{message.trackerId}</code>
+                  <span style={{
+                    padding: '0.25rem 0.5rem',
+                    backgroundColor:
+                      message.httpMethod === 'GET' ? '#28a745' :
+                      message.httpMethod === 'POST' ? '#007bff' :
+                      message.httpMethod === 'PUT' ? '#ffc107' :
+                      message.httpMethod === 'DELETE' ? '#dc3545' : '#6c757d',
+                    color: 'white',
+                    borderRadius: '4px',
+                    fontSize: '0.75rem',
+                    fontWeight: '600'
+                  }}>
+                    {message.httpMethod}
+                  </span>
                 </td>
                 <td style={tdStyle}>
-                  {message.timestamp ? format(new Date(message.timestamp), 'yyyy-MM-dd HH:mm:ss') : '-'}
+                  <code style={{ fontSize: '0.75rem' }}>{message.requestPath || '/'}</code>
+                </td>
+                <td style={tdStyle}>
+                  {message.requestTime ? format(new Date(message.requestTime), 'yyyy-MM-dd HH:mm:ss') : '-'}
                 </td>
                 <td style={tdStyle}>{message.remoteAddr || '-'}</td>
                 <td style={tdStyle} title={message.userAgent}>
@@ -576,76 +566,40 @@ export default function TrackerMessageList() {
                     : '-'}
                 </td>
                 <td style={tdStyle}>{formatSize(message.contentSize)}</td>
-                {showUserFilter && <td style={tdStyle}>{message.authUser || '-'}</td>}
-                <td style={tdStyle}>{message.payloadFormat || '-'}</td>
-                <td style={tdStyle}>{abbreviateDocType(message.payloadDocType)}</td>
-                <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                  <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'center', alignItems: 'center' }}>
-                    <button
-                      onClick={() => handleDownloadContent(message.trackerId)}
-                      disabled={downloading[message.trackerId] === 'content'}
-                      title="Download message content"
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: downloading[message.trackerId] === 'content' ? '#6c757d' : '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: downloading[message.trackerId] === 'content' ? 'not-allowed' : 'pointer',
-                        fontSize: '0.875rem',
-                        width: '32px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      ⬇
-                    </button>
-                    <button
-                      onClick={() => handleDownloadPayloads(message.trackerId)}
-                      disabled={downloading[message.trackerId] === 'payloads' || !message.payloadCount || message.payloadCount === 0}
-                      title="Download payloads as ZIP"
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: (downloading[message.trackerId] === 'payloads' || !message.payloadCount || message.payloadCount === 0) ? '#6c757d' : '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: (downloading[message.trackerId] === 'payloads' || !message.payloadCount || message.payloadCount === 0) ? 'not-allowed' : 'pointer',
-                        fontSize: '0.875rem',
-                        width: '32px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: (!message.payloadCount || message.payloadCount === 0) ? 0.5 : 1
-                      }}
-                    >
-                      📦
-                    </button>
-                    <button
-                      onClick={() => handleDownloadBruno(message.trackerId)}
-                      disabled={downloading[message.trackerId] === 'bruno'}
-                      title="Download Bruno collection"
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        backgroundColor: downloading[message.trackerId] === 'bruno' ? '#6c757d' : '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: downloading[message.trackerId] === 'bruno' ? 'not-allowed' : 'pointer',
-                        fontSize: '0.875rem',
-                        width: '32px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      <span style={{ fontSize: '1rem', verticalAlign: 'middle' }}>🐶</span>
-                    </button>
-                  </div>
+                <td style={tdStyle}>
+                  <span style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '4px',
+                    backgroundColor: message.responseStatus >= 200 && message.responseStatus < 300 ? '#28a74520' : '#dc354520',
+                    color: message.responseStatus >= 200 && message.responseStatus < 300 ? '#28a745' : '#dc3545',
+                    fontWeight: '600',
+                    fontSize: '0.75rem'
+                  }}>
+                    {message.responseStatus}
+                  </span>
+                </td>
+                <td style={{ ...tdStyle, textAlign: 'center' }}>
+                  <button
+                    onClick={() => handleDownloadContent(message.requestId)}
+                    disabled={downloading[message.requestId] === 'content'}
+                    title="Download request body"
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      backgroundColor: downloading[message.requestId] === 'content' ? '#6c757d' : '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: downloading[message.requestId] === 'content' ? 'not-allowed' : 'pointer',
+                      fontSize: '0.875rem',
+                      width: '32px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    ⬇
+                  </button>
                 </td>
                 <td style={tdStyle}>
                   <button
@@ -660,7 +614,7 @@ export default function TrackerMessageList() {
                     }}
                     onClick={() => setSelectedMessage(message)}
                   >
-                    Details
+                    View Details
                   </button>
                 </td>
               </tr>
@@ -670,8 +624,8 @@ export default function TrackerMessageList() {
       </table>
 
       {selectedMessage && (
-        <TrackerMessageDetails
-          trackerId={selectedMessage.trackerId}
+        <ApiRequestDetails
+          requestId={selectedMessage.requestId}
           onClose={() => setSelectedMessage(null)}
         />
       )}

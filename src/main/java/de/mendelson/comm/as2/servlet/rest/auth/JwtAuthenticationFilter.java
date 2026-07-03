@@ -271,6 +271,10 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
             if (path.equals("system/tracker/config") && "GET".equals(method)) {
                 return null; // No special permission required - just authentication
             }
+            // Allow all authenticated users to check API config (needed for UI visibility logic)
+            if (path.equals("system/api/config") && "GET".equals(method)) {
+                return null; // No special permission required - just authentication
+            }
             // Allow all authenticated users to generate local station URLs (needed for partner creation/editing)
             if (path.equals("system/generate-local-station-url") && "GET".equals(method)) {
                 return null; // No special permission required - just authentication

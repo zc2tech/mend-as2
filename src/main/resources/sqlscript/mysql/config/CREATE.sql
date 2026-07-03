@@ -119,7 +119,9 @@ CREATE TABLE webui_users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     tracker_auth_basic_enabled BOOLEAN DEFAULT FALSE,
-    tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE
+    tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE,
+    api_auth_basic_enabled BOOLEAN DEFAULT FALSE,
+    api_auth_cert_enabled BOOLEAN DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_webui_users_username ON webui_users(username);
@@ -281,6 +283,23 @@ CREATE TABLE user_tracker_auth_credentials (
 CREATE INDEX idx_user_tracker_auth_user ON user_tracker_auth_credentials(user_id);
 CREATE INDEX idx_user_tracker_auth_type ON user_tracker_auth_credentials(auth_type);
 
+-- User-specific API authentication credentials
+CREATE TABLE user_api_auth_credentials (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    auth_type INT NOT NULL COMMENT '1=basic, 2=certificate',
+    username VARCHAR(256) COMMENT 'For basic auth (null for cert)',
+    password VARCHAR(256) COMMENT 'For basic auth (null for cert)',
+    cert_fingerprint VARCHAR(255) COMMENT 'For cert auth (null for basic), SHA-1 format',
+    cert_alias VARCHAR(255) COMMENT 'Certificate alias/name for display',
+    enabled TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_user_api_auth_user ON user_api_auth_credentials(user_id);
+CREATE INDEX idx_user_api_auth_type ON user_api_auth_credentials(auth_type);
+
 CREATE TABLE certificates(
     id INT AUTO_INCREMENT PRIMARY KEY,
     partnerid INT,
@@ -338,7 +357,7 @@ VALUES ('smtp.example12345.com', 587, '', 1, 1, 0, 1, 1, '', 1, '', '', 1, 2, 2,
 INSERT INTO version
 VALUES(
     0,
-    0,
+    1,
     '2025-05-23 09:47:07.544000',
     'mend-as2'
 );

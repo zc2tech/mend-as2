@@ -136,6 +136,46 @@ CREATE TABLE tracker_auth_failure (
 CREATE INDEX idx_tracker_auth_failure_addr ON tracker_auth_failure(remote_addr);
 CREATE INDEX idx_tracker_auth_failure_time ON tracker_auth_failure(failure_time);
 
+-- API request log table
+DROP TABLE IF EXISTS api_request_log CASCADE;
+
+CREATE TABLE api_request_log (
+  id SERIAL PRIMARY KEY,
+  request_id VARCHAR(255) UNIQUE NOT NULL,
+  user_id INTEGER NOT NULL,
+  remote_addr VARCHAR(255),
+  user_agent VARCHAR(512),
+  http_method VARCHAR(10) NOT NULL,
+  request_path VARCHAR(512) NOT NULL,
+  request_headers TEXT,
+  request_body BYTEA,
+  content_type VARCHAR(255),
+  content_size INTEGER NOT NULL,
+  response_status INTEGER NOT NULL,
+  auth_status INTEGER DEFAULT 0,
+  auth_user VARCHAR(255),
+  request_time TIMESTAMP NOT NULL
+);
+
+CREATE INDEX idx_api_request_user ON api_request_log(user_id);
+CREATE INDEX idx_api_request_time ON api_request_log(request_time);
+CREATE INDEX idx_api_request_id ON api_request_log(request_id);
+CREATE INDEX idx_api_request_remote_addr ON api_request_log(remote_addr);
+
+-- API authentication failure tracking table
+DROP TABLE IF EXISTS api_auth_failure CASCADE;
+
+CREATE TABLE api_auth_failure (
+  id SERIAL PRIMARY KEY,
+  remote_addr VARCHAR(255) NOT NULL,
+  failure_time TIMESTAMP NOT NULL,
+  user_agent VARCHAR(512),
+  attempted_user VARCHAR(255)
+);
+
+CREATE INDEX idx_api_auth_failure_addr ON api_auth_failure(remote_addr);
+CREATE INDEX idx_api_auth_failure_time ON api_auth_failure(failure_time);
+
 -- Login authentication failure tracking table
 DROP TABLE IF EXISTS login_auth_failure CASCADE;
 

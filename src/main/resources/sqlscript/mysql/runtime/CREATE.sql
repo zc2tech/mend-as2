@@ -131,6 +131,46 @@ CREATE TABLE tracker_auth_failure (
 CREATE INDEX idx_tracker_auth_failure_addr ON tracker_auth_failure(remote_addr);
 CREATE INDEX idx_tracker_auth_failure_time ON tracker_auth_failure(failure_time);
 
+-- API request log table
+DROP TABLE IF EXISTS api_request_log;
+
+CREATE TABLE api_request_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  request_id VARCHAR(255) UNIQUE NOT NULL,
+  user_id INT NOT NULL,
+  remote_addr VARCHAR(255),
+  user_agent VARCHAR(512),
+  http_method VARCHAR(10) NOT NULL,
+  request_path VARCHAR(512) NOT NULL,
+  request_headers TEXT,
+  request_body LONGBLOB,
+  content_type VARCHAR(255),
+  content_size INT NOT NULL,
+  response_status INT NOT NULL,
+  auth_status INT DEFAULT 0,
+  auth_user VARCHAR(255),
+  request_time TIMESTAMP NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_api_request_user ON api_request_log(user_id);
+CREATE INDEX idx_api_request_time ON api_request_log(request_time);
+CREATE INDEX idx_api_request_id ON api_request_log(request_id);
+CREATE INDEX idx_api_request_remote_addr ON api_request_log(remote_addr);
+
+-- API authentication failure tracking table
+DROP TABLE IF EXISTS api_auth_failure;
+
+CREATE TABLE api_auth_failure (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  remote_addr VARCHAR(255) NOT NULL,
+  failure_time TIMESTAMP NOT NULL,
+  user_agent VARCHAR(512),
+  attempted_user VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_api_auth_failure_addr ON api_auth_failure(remote_addr);
+CREATE INDEX idx_api_auth_failure_time ON api_auth_failure(failure_time);
+
 -- Login authentication failure tracking table
 DROP TABLE IF EXISTS login_auth_failure;
 
@@ -267,4 +307,4 @@ CREATE INDEX idx_highavail_uniqueid ON highavail(uniqueid);
 CREATE INDEX idx_highavail_starttime ON highavail(starttime);
 CREATE INDEX idx_highavail_lastupdatetime ON highavail(lastupdatetime);
 
-INSERT INTO version VALUES(NULL,0,'2025-05-23 09:47:07.680000','mend-as2 1.0');
+INSERT INTO version VALUES(NULL,1,'2025-05-23 09:47:07.680000','mend-as2 1.0');

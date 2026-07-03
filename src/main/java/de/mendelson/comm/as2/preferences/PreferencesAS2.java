@@ -149,6 +149,12 @@ public class PreferencesAS2 {
     public static final String TRACKER_RATE_LIMIT_FAILURES = "tracker.ratelimit.failures";
     public static final String TRACKER_RATE_LIMIT_WINDOW_HOURS = "tracker.ratelimit.window.hours";
     public static final String TRACKER_RATE_LIMIT_BLOCK_MINUTES = "tracker.ratelimit.block.minutes";
+    // API configuration keys
+    public static final String API_ENABLED = "api.enabled";
+    public static final String API_MAX_SIZE_MB = "api.maxsize.mb";
+    public static final String API_RATE_LIMIT_FAILURES = "api.ratelimit.failures";
+    public static final String API_RATE_LIMIT_WINDOW_HOURS = "api.ratelimit.window.hours";
+    public static final String API_RATE_LIMIT_BLOCK_MINUTES = "api.ratelimit.block.minutes";
     // IP Whitelist configuration keys
     public static final String IP_WHITELIST_ENABLED_AS2 = "ip.whitelist.enabled.as2";
     public static final String IP_WHITELIST_ENABLED_TRACKER = "ip.whitelist.enabled.tracker";
@@ -288,6 +294,11 @@ public class PreferencesAS2 {
                     Map.entry(TRACKER_RATE_LIMIT_FAILURES, "3"),
                     Map.entry(TRACKER_RATE_LIMIT_WINDOW_HOURS, "1"),
                     Map.entry(TRACKER_RATE_LIMIT_BLOCK_MINUTES, "60"),
+                    Map.entry(API_ENABLED, "true"),
+                    Map.entry(API_MAX_SIZE_MB, "10"),
+                    Map.entry(API_RATE_LIMIT_FAILURES, "5"),
+                    Map.entry(API_RATE_LIMIT_WINDOW_HOURS, "1"),
+                    Map.entry(API_RATE_LIMIT_BLOCK_MINUTES, "30"),
                     Map.entry(IP_WHITELIST_ENABLED_AS2, "false"),
                     Map.entry(IP_WHITELIST_ENABLED_TRACKER, "false"),
                     Map.entry(IP_WHITELIST_ENABLED_WEBUI, "true"),

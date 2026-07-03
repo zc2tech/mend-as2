@@ -1,15 +1,15 @@
 -- ============================================================
--- PostgreSQL Migration Script
--- Add User-Specific Tracker Authentication Tables and Columns
+-- PostgreSQL Migration Script - CONFIG DATABASE
+-- Add User-Specific API Authentication Tables and Columns
 -- ============================================================
 
 -- Step 1: Add columns to webui_users table
 ALTER TABLE webui_users
-ADD COLUMN tracker_auth_basic_enabled BOOLEAN DEFAULT FALSE,
-ADD COLUMN tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE;
+ADD COLUMN api_auth_basic_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN api_auth_cert_enabled BOOLEAN DEFAULT FALSE;
 
--- Step 2: Create user_tracker_auth_credentials table
-CREATE TABLE user_tracker_auth_credentials (
+-- Step 2: Create user_api_auth_credentials table
+CREATE TABLE user_api_auth_credentials (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     auth_type INTEGER NOT NULL,      -- 1=basic, 2=certificate
@@ -22,9 +22,9 @@ CREATE TABLE user_tracker_auth_credentials (
     FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
 );
 
--- Step 3: Create indexes
-CREATE INDEX idx_user_tracker_auth_user ON user_tracker_auth_credentials(user_id);
-CREATE INDEX idx_user_tracker_auth_type ON user_tracker_auth_credentials(auth_type);
+-- Step 3: Create indexes on user_api_auth_credentials
+CREATE INDEX idx_user_api_auth_user ON user_api_auth_credentials(user_id);
+CREATE INDEX idx_user_api_auth_type ON user_api_auth_credentials(auth_type);
 
 -- Step 4: Verify the changes
 SELECT
@@ -32,12 +32,12 @@ SELECT
     COUNT(*) as column_count
 FROM information_schema.columns
 WHERE table_name = 'webui_users'
-AND column_name IN ('tracker_auth_basic_enabled', 'tracker_auth_cert_enabled');
+AND column_name IN ('api_auth_basic_enabled', 'api_auth_cert_enabled');
 
 SELECT
-    'user_tracker_auth_credentials table created' as status,
+    'user_api_auth_credentials table created' as status,
     COUNT(*) as table_exists
 FROM information_schema.tables
-WHERE table_name = 'user_tracker_auth_credentials';
+WHERE table_name = 'user_api_auth_credentials';
 
 -- Done!

@@ -34,10 +34,12 @@ import PartnerList from './features/partners/PartnerList';
 import CertificateList from './features/certificates/CertificateList';
 import MessageList from './features/messages/MessageList';
 import TrackerMessageList from './features/tracker/TrackerMessageList';
+import ApiRequestList from './features/api/ApiRequestList';
 import SystemInfo from './features/system/SystemInfo';
 import UserManagement from './features/users/UserManagement';
 import UserPreferences from './features/preferences/UserPreferences';
 import MyTrackerConfig from './features/preferences/MyTrackerConfig';
+import MyApiConfig from './features/preferences/MyApiConfig';
 import IPWhitelistManagement from './features/ipwhitelist/IPWhitelistManagement';
 
 const queryClient = new QueryClient({
@@ -73,6 +75,7 @@ function App() {
               <Route path="change-password" element={<ChangePassword />} />
               <Route path="preferences" element={<UserPreferences />} />
               <Route path="my-tracker-config" element={<MyTrackerConfig />} />
+              <Route path="my-api-config" element={<MyApiConfig />} />
               {/* Switch user - only accessible to admins */}
               <Route
                 path="switch-user"
@@ -111,6 +114,14 @@ function App() {
                 element={
                   <PermissionRoute requiredPermissions={['MESSAGE_READ', 'MESSAGE_WRITE']}>
                     <TrackerMessageList />
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="api-requests"
+                element={
+                  <PermissionRoute requiredPermissions={['MESSAGE_READ', 'MESSAGE_WRITE']}>
+                    <ApiRequestList />
                   </PermissionRoute>
                 }
               />
