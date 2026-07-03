@@ -538,9 +538,9 @@ public class PayloadAnalyzer {
                 String sACW = getID_EDIFACT("RFF", content, 2);
                 String[] arrACW = sACW.split(":");
                 if (arrACW.length >= 2) {
-                    return "SUS (APERAK) " + sERC + " " + arrACW[1];
+                    return "SUR (APERAK) " + sERC + " " + arrACW[1];
                 } else {
-                    return "SUS (APERAK) " + sERC;
+                    return "SUR (APERAK) " + sERC;
                 }
 
             case "PRICAT":
