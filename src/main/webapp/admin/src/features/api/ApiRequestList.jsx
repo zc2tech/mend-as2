@@ -52,7 +52,7 @@ export default function ApiRequestList() {
           urls.push({
             protocol: 'https',
             port: apiConfig.data.httpsPort,
-            url: `https://${host}:${apiConfig.data.httpsPort}/as2/api/${username}`
+            url: `https://${host}:${apiConfig.data.httpsPort}/as2/userapi/${username}`
           });
         }
 
@@ -61,7 +61,7 @@ export default function ApiRequestList() {
         //   urls.push({
         //     protocol: 'http',
         //     port: apiConfig.data.httpPort,
-        //     url: `http://${host}:${apiConfig.data.httpPort}/as2/api/${username}`
+        //     url: `http://${host}:${apiConfig.data.httpPort}/as2/userapi/${username}`
         //   });
         // }
 
@@ -76,7 +76,7 @@ export default function ApiRequestList() {
         setApiEndpointUrls([{
           protocol: window.location.protocol.replace(':', ''),
           port: parseInt(port),
-          url: `${window.location.protocol}//${host}:${port}/as2/api/${username}`
+          url: `${window.location.protocol}//${host}:${port}/as2/userapi/${username}`
         }]);
       }
     };

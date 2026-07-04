@@ -29,7 +29,7 @@ export default function GlobalWhitelistTab() {
   const [targetTypeFilter, setTargetTypeFilter] = useState('WEBUI');
   const [ipPatternFilter, setIpPatternFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
   const { data: entries, isLoading, error } = useGlobalWhitelist(targetTypeFilter);
   const addMutation = useAddGlobalWhitelist();
   const updateMutation = useUpdateGlobalWhitelist();
@@ -221,7 +221,8 @@ export default function GlobalWhitelistTab() {
                   <option value="AS2">AS2</option>
                   <option value="TRACKER">TRACKER</option>
                   <option value="WEBUI">WEBUI</option>
-                  <option value="API">API</option>
+                  <option value="SYS_API">SYS_API</option>
+                  <option value="USER_API">USER_API</option>
                 </select>
               </div>
               <div>

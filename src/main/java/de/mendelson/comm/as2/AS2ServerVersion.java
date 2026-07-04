@@ -74,7 +74,7 @@ public class AS2ServerVersion implements IProductVersion {
      * defined here, an auto update of the database is performed.
      */
     public static int getRequiredDBVersionConfig() {
-        return (1);
+        return (2);
     }
 
     /**

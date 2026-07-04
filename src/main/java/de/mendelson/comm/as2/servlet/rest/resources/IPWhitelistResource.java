@@ -78,7 +78,8 @@ public class IPWhitelistResource {
             settings.setEnabledAS2(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_AS2));
             settings.setEnabledTracker(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER));
             settings.setEnabledWebUI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
-            settings.setEnabledAPI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_API));
+            settings.setEnabledSysAPI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API));
+            settings.setEnabledUserAPI(prefs.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API));
             settings.setMode(prefs.get(PreferencesAS2.IP_WHITELIST_MODE));
             settings.setLogRetentionDays(prefs.getInt(PreferencesAS2.IP_WHITELIST_LOG_RETENTION_DAYS));
 
@@ -132,14 +133,16 @@ public class IPWhitelistResource {
             prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_AS2, settings.isEnabledAS2());
             prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER, settings.isEnabledTracker());
             prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI, settings.isEnabledWebUI());
-            prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_API, settings.isEnabledAPI());
+            prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API, settings.isEnabledSysAPI());
+            prefs.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API, settings.isEnabledUserAPI());
             prefs.put(PreferencesAS2.IP_WHITELIST_MODE, settings.getMode());
             prefs.putInt(PreferencesAS2.IP_WHITELIST_LOG_RETENTION_DAYS, settings.getLogRetentionDays());
 
             LOGGER.info("IP whitelist settings updated: AS2=" + settings.isEnabledAS2() +
                        ", TRACKER=" + settings.isEnabledTracker() +
                        ", WEBUI=" + settings.isEnabledWebUI() +
-                       ", API=" + settings.isEnabledAPI() +
+                       ", SYS_API=" + settings.isEnabledSysAPI() +
+                       ", USER_API=" + settings.isEnabledUserAPI() +
                        ", MODE=" + settings.getMode());
 
             return Response.ok(settings).build();
@@ -604,7 +607,8 @@ public class IPWhitelistResource {
         private boolean enabledAS2;
         private boolean enabledTracker;
         private boolean enabledWebUI;
-        private boolean enabledAPI;
+        private boolean enabledSysAPI;
+        private boolean enabledUserAPI;
         private String mode;
         private int logRetentionDays;
 
@@ -632,12 +636,20 @@ public class IPWhitelistResource {
             this.enabledWebUI = enabledWebUI;
         }
 
-        public boolean isEnabledAPI() {
-            return enabledAPI;
+        public boolean isEnabledSysAPI() {
+            return enabledSysAPI;
         }
 
-        public void setEnabledAPI(boolean enabledAPI) {
-            this.enabledAPI = enabledAPI;
+        public void setEnabledSysAPI(boolean enabledSysAPI) {
+            this.enabledSysAPI = enabledSysAPI;
+        }
+
+        public boolean isEnabledUserAPI() {
+            return enabledUserAPI;
+        }
+
+        public void setEnabledUserAPI(boolean enabledUserAPI) {
+            this.enabledUserAPI = enabledUserAPI;
         }
 
         public String getMode() {

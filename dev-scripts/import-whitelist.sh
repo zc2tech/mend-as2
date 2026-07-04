@@ -23,7 +23,7 @@ if [ $# -lt 1 ]; then
     echo ""
     echo "Arguments:"
     echo "  json_file    Path to JSON file with CIDR entries"
-    echo "  target_type  AS2|TRACKER|WEBUI|API|ALL (default: ALL)"
+    echo "  target_type  AS2|TRACKER|WEBUI|USER_API|SYS_API_ALL (default: ALL)"
     echo ""
     echo "Example:"
     echo "  $0 ../private/public_ip_cidr.json"

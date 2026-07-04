@@ -145,7 +145,7 @@ export default function NotificationSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/as2/api/v1/notifications', {
+      const response = await fetch('/as2/sysapi/v1/notifications', {
         credentials: 'include',
       });
 
@@ -169,7 +169,7 @@ export default function NotificationSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await fetch('/as2/api/v1/notifications', {
+      const response = await fetch('/as2/sysapi/v1/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

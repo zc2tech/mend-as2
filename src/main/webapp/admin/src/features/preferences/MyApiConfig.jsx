@@ -260,7 +260,7 @@ export default function MyApiConfig() {
   const hostname = window.location.hostname;
   const httpsPort = window.location.protocol === 'https:' ? (window.location.port || '8443') : '8443';
 
-  const httpsTrackerUrl = `https://${hostname}:${httpsPort}/as2/api/${user.username}`;
+  const httpsTrackerUrl = `https://${hostname}:${httpsPort}/as2/userapi/${user.username}`;
 
   // Copy URL to clipboard
   const copyToClipboard = (url, protocol) => {

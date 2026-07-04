@@ -22,7 +22,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/as2/api/v1',
+  baseURL: '/as2/sysapi/v1',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
@@ -45,7 +45,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await axios.post('/as2/api/v1/auth/refresh', {}, {
+        await axios.post('/as2/sysapi/v1/auth/refresh', {}, {
           withCredentials: true
         });
         return api.request(originalRequest);

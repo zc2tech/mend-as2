@@ -159,7 +159,8 @@ public class PreferencesAS2 {
     public static final String IP_WHITELIST_ENABLED_AS2 = "ip.whitelist.enabled.as2";
     public static final String IP_WHITELIST_ENABLED_TRACKER = "ip.whitelist.enabled.tracker";
     public static final String IP_WHITELIST_ENABLED_WEBUI = "ip.whitelist.enabled.webui";
-    public static final String IP_WHITELIST_ENABLED_API = "ip.whitelist.enabled.api";
+    public static final String IP_WHITELIST_ENABLED_SYS_API = "ip.whitelist.enabled.sysapi";
+    public static final String IP_WHITELIST_ENABLED_USER_API = "ip.whitelist.enabled.userapi";
     public static final String IP_WHITELIST_MODE = "ip.whitelist.mode"; // GLOBAL_ONLY, PARTNER_ONLY, USER_ONLY, GLOBAL_AND_SPECIFIC
     public static final String IP_WHITELIST_LOG_RETENTION_DAYS = "ip.whitelist.log.retention.days";
     // Login rate limiting configuration keys
@@ -302,7 +303,8 @@ public class PreferencesAS2 {
                     Map.entry(IP_WHITELIST_ENABLED_AS2, "false"),
                     Map.entry(IP_WHITELIST_ENABLED_TRACKER, "false"),
                     Map.entry(IP_WHITELIST_ENABLED_WEBUI, "true"),
-                    Map.entry(IP_WHITELIST_ENABLED_API, "true"),
+                    Map.entry(IP_WHITELIST_ENABLED_SYS_API, "true"),
+                    Map.entry(IP_WHITELIST_ENABLED_USER_API, "false"),
                     Map.entry(IP_WHITELIST_MODE, "GLOBAL_AND_SPECIFIC"),
                     Map.entry(IP_WHITELIST_LOG_RETENTION_DAYS, "30"),
                     Map.entry(LOGIN_RATE_LIMIT_ENABLED, "true"),

@@ -360,7 +360,7 @@ VALUES ('smtp.example12345.com', 587, '', 1, 1, 0, 1, 1, '', 1, '', '', 1, 2, 2,
 INSERT INTO VERSION
 VALUES(
     0,
-    0,
+    2,
     '2025-05-23 09:47:07.544000',
     'mend-as2'
 );
@@ -462,6 +462,9 @@ WHERE u.username = 'admin' AND r.name = 'ADMIN';
 -- IP Whitelist Tables
 
 -- Global IP whitelist for system-wide access control
+-- target_type values: AS2, TRACKER, WEBUI, SYS_API, USER_API, ALL
+-- SYS_API: REST API for controlling server (/sysapi/v1/*)
+-- USER_API: User customized endpoint for receiving API requests (/userapi/*)
 CREATE TABLE ip_whitelist_global (
   id SERIAL PRIMARY KEY,
   ip_pattern VARCHAR(255) NOT NULL,

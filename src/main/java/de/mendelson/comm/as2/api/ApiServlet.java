@@ -52,7 +52,7 @@ import java.util.logging.Logger;
 
 /**
  * Servlet to receive API requests via HTTP GET/POST/PUT/DELETE
- * URL pattern: /as2/api/{username}/*
+ * URL pattern: /as2/userapi/{username}/*
  *
  * @author Julian Xu
  */
@@ -117,19 +117,19 @@ public class ApiServlet extends HttpServlet {
         // Get client IP address
         String remoteAddr = request.getRemoteAddr();
 
-        // IP Whitelist Check for API endpoint
+        // IP Whitelist Check for User API endpoint
         try {
             PreferencesAS2 prefs = new PreferencesAS2(processing.getDBDriverManager());
 
-            if ("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API))) {
+            if ("true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API))) {
                 de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService whitelistService =
                     de.mendelson.comm.as2.security.ipwhitelist.IPWhitelistService.getInstance(
                         processing.getDBDriverManager());
 
-                if (!whitelistService.isAllowedForApi(remoteAddr)) {
+                if (!whitelistService.isAllowedForUserApi(remoteAddr)) {
                     whitelistService.logBlockedAttempt(
                         remoteAddr,
-                        "API",
+                        "USER_API",
                         null,
                         null,
                         request.getHeader("User-Agent"),
@@ -137,12 +137,12 @@ public class ApiServlet extends HttpServlet {
                     );
 
                     response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                            "Access denied: IP address not whitelisted for API endpoint");
+                            "Access denied: IP address not whitelisted for User API endpoint");
                     return;
                 }
             }
         } catch (Exception e) {
-            LOGGER.warning("IP whitelist check failed for API endpoint: " + e.getMessage());
+            LOGGER.warning("IP whitelist check failed for User API endpoint: " + e.getMessage());
         }
 
         PreferencesAS2 prefs;
@@ -162,7 +162,7 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
-        // 2. Extract username from path: /as2/api/{username}/*
+        // 2. Extract username from path: /as2/userapi/{username}/*
         String pathInfo = request.getPathInfo();
         String pathUsername = null;
         String customPath = "/";
@@ -427,7 +427,7 @@ public class ApiServlet extends HttpServlet {
         out.println("    <BODY>");
         out.println("<H2>" + AS2ServerVersion.getProductName() + " - REST API Endpoint</H2>");
         out.println("<P>User-specific REST API endpoints.</P>");
-        out.println("<P>URL pattern: <code>/as2/api/{username}/your-custom-path</code></P>");
+        out.println("<P>URL pattern: <code>/as2/userapi/{username}/your-custom-path</code></P>");
         out.println("<P>Supported methods: GET, POST, PUT, DELETE</P>");
         out.println("<P>Configure authentication in the WebUI under \"My REST API Config\"</P>");
         out.println("    </BODY>");
