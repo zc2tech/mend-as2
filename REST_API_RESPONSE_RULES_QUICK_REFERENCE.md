@@ -57,7 +57,7 @@ Response Body:
 }
 ```
 
-See `REGEX_CAPTURE_GROUPS_GUIDE.md` for detailed examples.
+See [REGEX_CAPTURE_GROUPS_GUIDE.md](md-memo/REGEX_CAPTURE_GROUPS_GUIDE.md) for detailed examples.
 
 ## Common Examples
 

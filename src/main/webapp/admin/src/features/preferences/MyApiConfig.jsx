@@ -1016,7 +1016,7 @@ function MyApiResponseConfig() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
             <p style={{ margin: 0, fontWeight: '600', fontSize: '0.875rem' }}>Match Types:</p>
             <a
-              href="https://github.com/zc2tech/mend-as2/blob/main/REGEX_CAPTURE_GROUPS_GUIDE.md"
+              href="https://github.com/zc2tech/mend-as2/blob/main/md-memo/REGEX_CAPTURE_GROUPS_GUIDE.md"
               target="_blank"
               rel="noopener noreferrer"
               style={{

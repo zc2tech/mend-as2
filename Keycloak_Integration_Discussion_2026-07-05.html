@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Keycloak Integration with AS2 Application</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2980b9;
+            margin-top: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+        ul, ol {
+            margin-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        strong {
+            color: #2c3e50;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 30px 0;
+        }
+        .pros-cons {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .question {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+        }
+        .answer {
+            margin: 15px 0;
+        }
+        .summary {
+            background-color: #fff9e6;
+            padding: 20px;
+            border-radius: 5px;
+            border-left: 4px solid #f39c12;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Keycloak Integration with AS2 Application</h1>
+    <p><strong>Date:</strong> 2026-07-05</p>
+    
+    <hr>
+    
+    <h2>Question 1: Using Application's User Database with Keycloak OAuth</h2>
+    
+    <div class="question">
+        <strong>Question:</strong> I want to utilize Keycloak to build OAuth server, but the underlying user data should use data in our application, is it possible?
+    </div>
+    
+    <div class="answer">
+        <p><strong>Answer:</strong> Yes, it's absolutely possible! Keycloak supports <strong>User Federation</strong> and <strong>User Storage SPI</strong> which allows you to integrate your existing application's user database with Keycloak's OAuth/OIDC server.</p>
+    </div>
+    
+    <h3>Approach 1: User Storage SPI (Recommended for Full Control)</h3>
+    
+    <p>You implement a custom User Storage Provider that connects to your AS2 application's database:</p>
+    
+    <ul>
+        <li>Keycloak queries your <code>webui_users</code> table for authentication</li>
+        <li>You control password validation logic</li>
+        <li>User attributes (roles, permissions) come from your database</li>
+        <li>No data duplication - single source of truth</li>
+    </ul>
+    
+    <div class="pros-cons">
+        <p><strong>Pros:</strong></p>
+        <ul>
+            <li>Complete control over authentication logic</li>
+            <li>Single user database (your MySQL)</li>
+            <li>Real-time sync - changes in your app immediately reflected in Keycloak</li>
+        </ul>
+        
+        <p><strong>Cons:</strong></p>
+        <ul>
+            <li>Requires Java development (implementing Keycloak SPI interfaces)</li>
+            <li>Need to deploy custom provider to Keycloak</li>
+        </ul>
+    </div>
+    
+    <h3>Approach 2: Database Federation (Built-in)</h3>
+    
+    <p>Keycloak has a built-in LDAP/Database federation feature:</p>
+    
+    <ul>
+        <li>Point Keycloak directly to your MySQL database</li>
+        <li>Map your user table columns to Keycloak user attributes</li>
+        <li>Can be configured through Keycloak admin UI (no coding)</li>
+    </ul>
+    
+    <div class="pros-cons">
+        <p><strong>Pros:</strong></p>
+        <ul>
+            <li>No custom code needed</li>
+            <li>Easy to set up via UI</li>
+        </ul>
+        
+        <p><strong>Cons:</strong></p>
+        <ul>
+            <li>Less flexible than custom SPI</li>
+            <li>Password hashing must be compatible</li>
+        </ul>
+    </div>
+    
+    <h3>Approach 3: Hybrid Approach</h3>
+    
+    <ul>
+        <li>Keep authentication in your app</li>
+        <li>Use Keycloak only for OAuth token generation</li>
+        <li>Your app validates credentials, then requests token from Keycloak</li>
+    </ul>
+    
+    <p><strong>Recommendation:</strong> Given your setup (MySQL database with <code>webui_users</code> table), <strong>User Storage SPI</strong> is recommended if you want full OAuth/OIDC capabilities, or <strong>approach 3</strong> if you want minimal changes to your existing authentication system.</p>
+    
+    <hr>
+    
+    <h2>Question 2: Keycloak Firewall Functionality</h2>
+    
+    <div class="question">
+        <strong>Question:</strong> Does Keycloak have firewall functionality?
+    </div>
+    
+    <div class="answer">
+        <p><strong>Answer:</strong> No, Keycloak does <strong>not</strong> have built-in firewall functionality. It's an identity and access management (IAM) solution focused on authentication and authorization, not network security.</p>
+    </div>
+    
+    <h3>What Keycloak HAS:</h3>
+    
+    <ol>
+        <li><strong>IP-based restrictions</strong> (limited):
+            <ul>
+                <li>Can configure allowed/denied IP ranges at the realm level</li>
+                <li>Useful for restricting admin console access</li>
+            </ul>
+        </li>
+        
+        <li><strong>Client Access Control</strong>:
+            <ul>
+                <li>Valid redirect URIs (whitelist of allowed callback URLs)</li>
+                <li>Web origins for CORS</li>
+                <li>Client authentication methods</li>
+            </ul>
+        </li>
+        
+        <li><strong>Brute Force Detection</strong>:
+            <ul>
+                <li>Temporary account lockout after failed login attempts</li>
+                <li>Configurable thresholds and lockout duration</li>
+            </ul>
+        </li>
+        
+        <li><strong>Session Management</strong>:
+            <ul>
+                <li>Timeout policies</li>
+                <li>Concurrent session limits</li>
+                <li>Session revocation</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h3>What Keycloak DOESN'T Have:</h3>
+    
+    <ul>
+        <li><strong>Network-level firewall</strong> (block/allow IPs, ports)</li>
+        <li><strong>Rate limiting</strong> per IP (has account-level brute force detection only)</li>
+        <li><strong>DDoS protection</strong></li>
+        <li><strong>WAF (Web Application Firewall)</strong> capabilities</li>
+    </ul>
+    
+    <h3>Common Solutions for Firewall Functionality:</h3>
+    
+    <p>If you need firewall functionality for Keycloak, you typically use:</p>
+    
+    <ol>
+        <li><strong>Reverse Proxy</strong> (nginx, Apache, HAProxy):
+            <ul>
+                <li>IP whitelisting/blacklisting</li>
+                <li>Rate limiting</li>
+                <li>SSL/TLS termination</li>
+            </ul>
+        </li>
+        
+        <li><strong>Cloud WAF</strong> (if cloud-hosted):
+            <ul>
+                <li>Cloudflare</li>
+                <li>AWS WAF</li>
+                <li>Azure Application Gateway</li>
+            </ul>
+        </li>
+        
+        <li><strong>OS-level firewall</strong>:
+            <ul>
+                <li>iptables (Linux)</li>
+                <li>firewalld</li>
+                <li>UFW</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <hr>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        <ul>
+            <li>Keycloak can integrate with your existing AS2 application's user database through User Storage SPI or Database Federation</li>
+            <li>Keycloak focuses on authentication/authorization, not network security</li>
+            <li>For firewall capabilities, use a reverse proxy or OS-level firewall in front of Keycloak</li>
+            <li>Consider your requirements (full OAuth vs minimal changes) when choosing the integration approach</li>
+        </ul>
+    </div>
+</body>
+</html>
