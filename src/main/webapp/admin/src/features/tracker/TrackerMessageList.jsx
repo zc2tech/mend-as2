@@ -89,8 +89,10 @@ export default function TrackerMessageList() {
   const [queryFilters, setQueryFilters] = useState(defaultFilters);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const searchTimeoutRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchStartTimeRef = useRef(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['trackerMessages', queryFilters],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -110,6 +112,29 @@ export default function TrackerMessageList() {
       return response.data;
     }
   });
+
+  // Track search state with minimum display duration
+  useEffect(() => {
+    if (isFetching) {
+      setIsSearching(true);
+      searchStartTimeRef.current = Date.now();
+    } else if (searchStartTimeRef.current) {
+      const elapsed = Date.now() - searchStartTimeRef.current;
+      const minDuration = 800; // Minimum 800ms display time
+
+      if (elapsed < minDuration) {
+        // Delay hiding the loading state
+        const remainingTime = minDuration - elapsed;
+        setTimeout(() => {
+          setIsSearching(false);
+          searchStartTimeRef.current = null;
+        }, remainingTime);
+      } else {
+        setIsSearching(false);
+        searchStartTimeRef.current = null;
+      }
+    }
+  }, [isFetching]);
 
   // Apply search immediately for non-text filters
   const applyFiltersImmediately = (newFilters) => {
@@ -391,16 +416,18 @@ export default function TrackerMessageList() {
             <button
               style={{
                 padding: '0.375rem 0.75rem',
-                backgroundColor: '#007bff',
+                backgroundColor: isSearching ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem'
+                cursor: isSearching ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                opacity: isSearching ? 0.7 : 1
               }}
               onClick={handleSearch}
+              disabled={isSearching}
             >
-              Search
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
             <button
               style={{

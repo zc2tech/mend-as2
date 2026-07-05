@@ -75,6 +75,12 @@ public class ApiRequestInfo implements Serializable {
     @JsonProperty("responseStatus")
     private int responseStatus;
 
+    @JsonProperty("responseBody")
+    private byte[] responseBody;
+
+    @JsonProperty("responseContentType")
+    private String responseContentType;
+
     @JsonProperty("authStatus")
     private int authStatus = AUTH_STATUS_NONE;
 
@@ -220,6 +226,59 @@ public class ApiRequestInfo implements Serializable {
 
     public void setResponseStatus(int responseStatus) {
         this.responseStatus = responseStatus;
+    }
+
+    public byte[] getResponseBody() {
+        return responseBody;
+    }
+
+    public void setResponseBody(byte[] responseBody) {
+        this.responseBody = responseBody;
+    }
+
+    public String getResponseContentType() {
+        return responseContentType;
+    }
+
+    public void setResponseContentType(String responseContentType) {
+        this.responseContentType = responseContentType;
+    }
+
+    /**
+     * Get a preview of the response body content (first 2000 bytes) for text-based content
+     * Returns null for binary content
+     */
+    @JsonProperty("responsePreview")
+    public String getResponsePreview() {
+        if (responseBody == null || responseBody.length == 0) {
+            return null;
+        }
+
+        // Check if content type indicates text-based content
+        if (responseContentType != null) {
+            String lowerContentType = responseContentType.toLowerCase();
+            boolean isText = lowerContentType.contains("text") ||
+                           lowerContentType.contains("json") ||
+                           lowerContentType.contains("xml") ||
+                           lowerContentType.contains("javascript") ||
+                           lowerContentType.contains("form");
+
+            if (!isText) {
+                return null; // Binary content, no preview
+            }
+        }
+
+        // Generate preview (first 2000 bytes)
+        try {
+            int previewLength = Math.min(2000, responseBody.length);
+            String preview = new String(responseBody, 0, previewLength, "UTF-8");
+            if (responseBody.length > 2000) {
+                preview += "\n\n... (truncated, total size: " + responseBody.length + " bytes)";
+            }
+            return preview;
+        } catch (Exception e) {
+            return null; // If conversion fails, it's likely binary
+        }
     }
 
     public int getAuthStatus() {

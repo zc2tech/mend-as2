@@ -23,6 +23,9 @@ package de.mendelson.comm.as2.api;
 import de.mendelson.comm.as2.AS2ServerVersion;
 import de.mendelson.comm.as2.api.auth.UserApiAuthCredential;
 import de.mendelson.comm.as2.api.auth.UserApiAuthDB;
+import de.mendelson.comm.as2.api.response.ApiResponseRuleEngine;
+import de.mendelson.comm.as2.api.response.UserApiResponseRule;
+import de.mendelson.comm.as2.api.response.UserApiResponseRuleDB;
 import de.mendelson.comm.as2.preferences.PreferencesAS2;
 import de.mendelson.comm.as2.server.AS2ServerProcessing;
 import de.mendelson.comm.as2.servlet.rest.RestApplication;
@@ -389,24 +392,78 @@ public class ApiServlet extends HttpServlet {
             return;
         }
 
-        // 10. Return success response (JSON)
+        // 10. Check for custom response rules
+        ApiResponseRuleEngine.MatchResult matchResult = null;
+        int actualResponseStatus = HttpServletResponse.SC_OK; // default
+        try {
+            Connection configConnection = processing.getDBDriverManager()
+                    .getConnectionWithoutErrorHandling(de.mendelson.util.database.IDBDriverManager.DB_CONFIG);
+            UserApiResponseRuleDB ruleDB = new UserApiResponseRuleDB();
+
+            List<UserApiResponseRule> rules = ruleDB.loadEnabledRules(userId, configConnection);
+            configConnection.close();
+
+            matchResult = ApiResponseRuleEngine.findMatchingRule(rules, httpMethod, customPath);
+            if (matchResult != null) {
+                actualResponseStatus = matchResult.getRule().getStatusCode();
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Failed to load response rules: " + e.getMessage());
+        }
+
+        // Update stored request with actual response status and body
+        info.setResponseStatus(actualResponseStatus);
+        String responseBodyStr = null;
+        String responseContentType = null;
+
+        if (matchResult != null) {
+            UserApiResponseRule matchedRule = matchResult.getRule();
+            responseContentType = matchedRule.getContentType();
+            responseBodyStr = ApiResponseRuleEngine.substituteVariables(
+                    matchedRule.getResponseBody(),
+                    customPath,
+                    httpMethod,
+                    requestId,
+                    matchResult.getCaptureGroups()
+            );
+        } else {
+            // Default response
+            responseContentType = "application/json";
+            StringBuilder defaultResponse = new StringBuilder();
+            defaultResponse.append("{\n");
+            defaultResponse.append("  \"requestId\": \"").append(requestId).append("\",\n");
+            defaultResponse.append("  \"timestamp\": \"").append(new Date()).append("\",\n");
+            defaultResponse.append("  \"status\": \"success\",\n");
+            defaultResponse.append("  \"method\": \"").append(httpMethod).append("\",\n");
+            defaultResponse.append("  \"path\": \"").append(escapeJson(customPath)).append("\"\n");
+            defaultResponse.append("}");
+            responseBodyStr = defaultResponse.toString();
+        }
+
+        info.setResponseContentType(responseContentType);
+        info.setResponseBody(responseBodyStr.getBytes("UTF-8"));
+
+        try {
+            dao.updateResponseData(info.getRequestId(), actualResponseStatus,
+                                   responseBodyStr.getBytes("UTF-8"), responseContentType);
+        } catch (Exception e) {
+            LOGGER.warning("Failed to update response data: " + e.getMessage());
+        }
+
+        // 11. Return response (custom or default)
         LOGGER.info("API request received: requestId=" + requestId +
                 ", method=" + httpMethod +
                 ", path=" + customPath +
                 ", size=" + data.length +
                 ", ip=" + remoteAddr +
-                (authenticatedUser != null ? ", user=" + authenticatedUser : ""));
+                (authenticatedUser != null ? ", user=" + authenticatedUser : "") +
+                (matchResult != null ? ", rule=" + matchResult.getRule().getId() : ""));
 
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json");
+        // Return the prepared response
+        response.setStatus(actualResponseStatus);
+        response.setContentType(responseContentType);
         PrintWriter out = response.getWriter();
-        out.println("{");
-        out.println("  \"requestId\": \"" + requestId + "\",");
-        out.println("  \"timestamp\": \"" + new Date() + "\",");
-        out.println("  \"status\": \"success\",");
-        out.println("  \"method\": \"" + httpMethod + "\",");
-        out.println("  \"path\": \"" + escapeJson(customPath) + "\"");
-        out.println("}");
+        out.print(responseBodyStr);
     }
 
     /**

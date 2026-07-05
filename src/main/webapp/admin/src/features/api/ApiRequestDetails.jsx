@@ -362,7 +362,7 @@ export default function ApiRequestDetails({ requestId, onClose }) {
 
         {message.contentPreview && (
           <div style={sectionStyle}>
-            <h3>Content Preview (first 2000 bytes)</h3>
+            <h3>Request Content Preview (first 2000 bytes)</h3>
             <pre style={{
               backgroundColor: '#f8f9fa',
               padding: '0.75rem',
@@ -372,6 +372,22 @@ export default function ApiRequestDetails({ requestId, onClose }) {
               whiteSpace: 'pre-wrap'
             }}>
               {message.contentPreview}
+            </pre>
+          </div>
+        )}
+
+        {message.responsePreview && (
+          <div style={sectionStyle}>
+            <h3>Response Content</h3>
+            <pre style={{
+              backgroundColor: '#f8f9fa',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              overflow: 'auto',
+              fontSize: '0.875rem',
+              whiteSpace: 'pre-wrap'
+            }}>
+              {message.responsePreview}
             </pre>
           </div>
         )}

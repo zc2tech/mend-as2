@@ -84,6 +84,44 @@ public class ApiRequestAccessDB {
     }
 
     /**
+     * Update response status for a request
+     */
+    public void updateResponseStatus(String requestId, int responseStatus) {
+        try (Connection conn = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE api_request_log SET response_status = ? WHERE request_id = ?")) {
+                stmt.setInt(1, responseStatus);
+                stmt.setString(2, requestId);
+                stmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
+     * Update response data for a request (status, body, content type)
+     */
+    public void updateResponseData(String requestId, int responseStatus,
+                                   byte[] responseBody, String responseContentType) {
+        try (Connection conn = this.dbDriverManager
+                .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
+            try (PreparedStatement stmt = conn.prepareStatement(
+                    "UPDATE api_request_log SET response_status = ?, response_body = ?, " +
+                    "response_content_type = ? WHERE request_id = ?")) {
+                stmt.setInt(1, responseStatus);
+                stmt.setBytes(2, responseBody);
+                stmt.setString(3, responseContentType);
+                stmt.setString(4, requestId);
+                stmt.executeUpdate();
+            }
+        } catch (Exception e) {
+            SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ANY);
+        }
+    }
+
+    /**
      * Get API request by request ID
      */
     public ApiRequestInfo getApiRequestById(String requestId) {
@@ -317,6 +355,19 @@ public class ApiRequestAccessDB {
         info.setContentType(rs.getString("content_type"));
         info.setContentSize(rs.getInt("content_size"));
         info.setResponseStatus(rs.getInt("response_status"));
+
+        // Response fields (may not be present in all queries)
+        try {
+            info.setResponseBody(rs.getBytes("response_body"));
+        } catch (Exception e) {
+            // Column not in SELECT, skip
+        }
+        try {
+            info.setResponseContentType(rs.getString("response_content_type"));
+        } catch (Exception e) {
+            // Column not in SELECT, skip
+        }
+
         info.setAuthStatus(rs.getInt("auth_status"));
         info.setAuthUser(rs.getString("auth_user"));
         info.setRequestTime(rs.getTimestamp("request_time", calendarUTC));

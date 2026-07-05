@@ -300,6 +300,27 @@ CREATE TABLE user_api_auth_credentials (
 CREATE INDEX idx_user_api_auth_user ON user_api_auth_credentials(user_id);
 CREATE INDEX idx_user_api_auth_type ON user_api_auth_credentials(auth_type);
 
+-- User-specific API response rules for dynamic REST API responses
+-- Allows users to configure custom HTTP responses based on method and path patterns
+CREATE TABLE user_api_response_rules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    priority INT NOT NULL DEFAULT 0 COMMENT 'Lower number = higher priority, evaluated in order',
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    http_method VARCHAR(10) NOT NULL COMMENT 'GET, POST, PUT, DELETE, or * for any',
+    path_pattern VARCHAR(500) NOT NULL COMMENT 'Path pattern to match',
+    path_match_type VARCHAR(20) NOT NULL DEFAULT 'exact' COMMENT 'exact, prefix, wildcard, or regex',
+    status_code INT NOT NULL DEFAULT 200 COMMENT 'HTTP status code to return',
+    content_type VARCHAR(100) NOT NULL DEFAULT 'application/json' COMMENT 'Response content type',
+    response_body TEXT COMMENT 'Response body with variable support: ${path}, ${method}, ${requestId}, ${1}, ${groupName}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_user_api_response_user_priority ON user_api_response_rules(user_id, priority);
+CREATE INDEX idx_user_api_response_user_enabled ON user_api_response_rules(user_id, enabled);
+
 CREATE TABLE certificates(
     id INT AUTO_INCREMENT PRIMARY KEY,
     partnerid INT,
@@ -357,7 +378,7 @@ VALUES ('smtp.example12345.com', 587, '', 1, 1, 0, 1, 1, '', 1, '', '', 1, 2, 2,
 INSERT INTO version
 VALUES(
     0,
-    2,
+    3,
     '2025-05-23 09:47:07.544000',
     'mend-as2'
 );

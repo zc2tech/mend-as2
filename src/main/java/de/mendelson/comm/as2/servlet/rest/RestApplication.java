@@ -39,6 +39,7 @@ import de.mendelson.comm.as2.servlet.rest.resources.UserHttpAuthPreferenceResour
 import de.mendelson.comm.as2.servlet.rest.resources.UserManagementResource;
 import de.mendelson.comm.as2.servlet.rest.resources.UserTrackerAuthResource;
 import de.mendelson.comm.as2.servlet.rest.resources.UserApiAuthResource;
+import de.mendelson.comm.as2.servlet.rest.resources.UserApiResponseResource;
 import de.mendelson.comm.as2.servlet.rest.resources.ApiRequestResource;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -82,6 +83,7 @@ public class RestApplication extends ResourceConfig {
         register(IPWhitelistResource.class);
         register(UserTrackerAuthResource.class);
         register(UserApiAuthResource.class);
+        register(UserApiResponseResource.class);
         register(ApiRequestResource.class);
 
         // Configure Jackson ObjectMapper

@@ -152,6 +152,8 @@ CREATE TABLE api_request_log (
   content_type VARCHAR(255),
   content_size INTEGER NOT NULL,
   response_status INTEGER NOT NULL,
+  response_body BYTEA,
+  response_content_type VARCHAR(255),
   auth_status INTEGER DEFAULT 0,
   auth_user VARCHAR(255),
   request_time TIMESTAMP NOT NULL
@@ -312,5 +314,5 @@ CREATE INDEX idx_highavail_uniqueid ON highavail(uniqueid);
 CREATE INDEX idx_highavail_starttime ON highavail(starttime);
 CREATE INDEX idx_highavail_lastupdatetime ON highavail(lastupdatetime);
 
-INSERT INTO version VALUES(DEFAULT,1,'2025-05-23 09:47:07.680000','mend-as2 1.0');
+INSERT INTO version VALUES(DEFAULT,2,'2025-05-23 09:47:07.680000','mend-as2 1.0');
 
