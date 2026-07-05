@@ -117,7 +117,9 @@ CREATE TABLE webui_users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     tracker_auth_basic_enabled BOOLEAN DEFAULT FALSE,
-    tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE
+    tracker_auth_cert_enabled BOOLEAN DEFAULT FALSE,
+    api_auth_basic_enabled BOOLEAN DEFAULT FALSE,
+    api_auth_cert_enabled BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX idx_webui_users_username ON webui_users(username);
 CREATE INDEX idx_webui_users_enabled ON webui_users(enabled);
@@ -285,6 +287,58 @@ CREATE TABLE user_tracker_auth_credentials (
 CREATE INDEX idx_user_tracker_auth_user ON user_tracker_auth_credentials(user_id);
 CREATE INDEX idx_user_tracker_auth_type ON user_tracker_auth_credentials(auth_type);
 
+-- User-specific API authentication credentials
+CREATE TABLE user_api_auth_credentials (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    auth_type INTEGER NOT NULL,      -- 1=basic, 2=certificate
+    username VARCHAR(256),            -- For basic auth (null for cert)
+    password VARCHAR(256),            -- For basic auth (null for cert)
+    cert_fingerprint VARCHAR(255),    -- For cert auth (null for basic), SHA-1 format
+    cert_alias VARCHAR(255),          -- Certificate alias/name for display
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_api_auth_user ON user_api_auth_credentials(user_id);
+CREATE INDEX idx_user_api_auth_type ON user_api_auth_credentials(auth_type);
+
+-- User-specific API response rules for dynamic REST API responses
+-- Allows users to configure custom HTTP responses based on method and path patterns
+CREATE TABLE user_api_response_rules (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 0,  -- Lower number = higher priority, evaluated in order
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    http_method VARCHAR(10) NOT NULL,     -- GET, POST, PUT, DELETE, or * for any
+    path_pattern VARCHAR(500) NOT NULL,   -- Path pattern to match
+    path_match_type VARCHAR(20) NOT NULL DEFAULT 'exact',  -- exact, prefix, wildcard, or regex
+    status_code INTEGER NOT NULL DEFAULT 200,              -- HTTP status code to return
+    content_type VARCHAR(100) NOT NULL DEFAULT 'application/json',  -- Response content type
+    response_body TEXT,                   -- Response body with variable support: ${path}, ${method}, ${requestId}, ${1}, ${groupName}
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES webui_users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_api_response_user_priority ON user_api_response_rules(user_id, priority);
+CREATE INDEX idx_user_api_response_user_enabled ON user_api_response_rules(user_id, enabled);
+
+-- Trigger for updated_at timestamp (PostgreSQL doesn't have ON UPDATE CURRENT_TIMESTAMP)
+CREATE OR REPLACE FUNCTION update_user_api_response_rules_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_api_response_rules_updated_at
+    BEFORE UPDATE ON user_api_response_rules
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_api_response_rules_updated_at();
+
 CREATE TABLE certificates(
     id SERIAL PRIMARY KEY,
     partnerid INTEGER,
@@ -341,9 +395,9 @@ VALUES ('smtp.example12345.com', 587, '', 1, 1, 0, 1, 1, '', 1, '', '', 1, 2, 2,
 INSERT INTO VERSION
 VALUES(
     0,
-    0,
-    '2025-05-23 09:47:07.544000',
-    'mend-as2'
+    3,
+    '2026-07-05 12:00:00',
+    'mend-as2 - Added user_api_response_rules table'
 );
 
 -- ============================================================================
@@ -443,6 +497,9 @@ WHERE u.username = 'admin' AND r.name = 'ADMIN';
 -- IP Whitelist Tables
 
 -- Global IP whitelist for system-wide access control
+-- target_type values: AS2, TRACKER, WEBUI, SYS_API, USER_API, ALL
+-- SYS_API: REST API for controlling server (/sysapi/v1/*)
+-- USER_API: User customized endpoint for receiving API requests (/userapi/*)
 CREATE TABLE ip_whitelist_global (
   id SERIAL PRIMARY KEY,
   ip_pattern VARCHAR(255) NOT NULL,

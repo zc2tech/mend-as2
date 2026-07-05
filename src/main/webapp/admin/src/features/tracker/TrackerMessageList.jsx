@@ -81,15 +81,18 @@ export default function TrackerMessageList() {
     user: '',
     format: '',
     authNone: true,
-    authSuccess: true
+    authSuccess: true,
+    limit: 20
   };
 
   const [filters, setFilters] = useState(defaultFilters);
   const [queryFilters, setQueryFilters] = useState(defaultFilters);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const searchTimeoutRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchStartTimeRef = useRef(null);
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ['trackerMessages', queryFilters],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -101,6 +104,7 @@ export default function TrackerMessageList() {
       }
       if (queryFilters.user) params.append('user', queryFilters.user);
       if (queryFilters.format) params.append('format', queryFilters.format);
+      if (queryFilters.limit) params.append('limit', queryFilters.limit);
       params.append('authNone', queryFilters.authNone);
       params.append('authSuccess', queryFilters.authSuccess);
 
@@ -108,6 +112,29 @@ export default function TrackerMessageList() {
       return response.data;
     }
   });
+
+  // Track search state with minimum display duration
+  useEffect(() => {
+    if (isFetching) {
+      setIsSearching(true);
+      searchStartTimeRef.current = Date.now();
+    } else if (searchStartTimeRef.current) {
+      const elapsed = Date.now() - searchStartTimeRef.current;
+      const minDuration = 800; // Minimum 800ms display time
+
+      if (elapsed < minDuration) {
+        // Delay hiding the loading state
+        const remainingTime = minDuration - elapsed;
+        setTimeout(() => {
+          setIsSearching(false);
+          searchStartTimeRef.current = null;
+        }, remainingTime);
+      } else {
+        setIsSearching(false);
+        searchStartTimeRef.current = null;
+      }
+    }
+  }, [isFetching]);
 
   // Apply search immediately for non-text filters
   const applyFiltersImmediately = (newFilters) => {
@@ -124,10 +151,10 @@ export default function TrackerMessageList() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Set new timeout - apply search after 1 second of no input
+    // Set new timeout - apply search after 2 seconds of no input
     searchTimeoutRef.current = setTimeout(() => {
       setQueryFilters(newFilters);
-    }, 1000);
+    }, 2000);
   };
 
   // Cleanup timeout on unmount
@@ -180,21 +207,6 @@ export default function TrackerMessageList() {
 
   const abbreviateDocType = (docType) => {
     if (!docType) return '-';
-
-    // Extract code from parentheses if present
-    const match = docType.match(/\(([^)]+)\)/);
-    if (match) return match[1];
-
-    // Abbreviate cXML types
-    if (docType === 'Purchase Order') return 'PO';
-    if (docType === 'Invoice') return 'INV';
-    if (docType === 'Advanced Ship Notice') return 'ASN';
-    if (docType === 'Order Confirmation') return 'OC';
-    if (docType === 'Payment Remittance') return 'PR';
-
-    // Truncate if too long
-    if (docType.length > 15) return docType.substring(0, 15);
-
     return docType;
   };
 
@@ -306,7 +318,9 @@ export default function TrackerMessageList() {
     return <div style={{ color: 'red' }}>Error loading tracker messages: {error.message}</div>;
   }
 
-  const messages = data || [];
+  const messages = data?.messages || data || [];
+  const totalCount = data?.totalCount || messages.length;
+  const returnedCount = data?.returnedCount || messages.length;
 
   const tableStyle = {
     width: '100%',
@@ -337,7 +351,7 @@ export default function TrackerMessageList() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ margin: 0 }}>Tracker Messages</h1>
         <p style={{ color: '#666', margin: '0.5rem 0 0 0' }}>
-          Showing {messages.length} messages
+          Showing {returnedCount} of {totalCount} messages
         </p>
       </div>
 
@@ -402,16 +416,18 @@ export default function TrackerMessageList() {
             <button
               style={{
                 padding: '0.375rem 0.75rem',
-                backgroundColor: '#007bff',
+                backgroundColor: isSearching ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem'
+                cursor: isSearching ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                opacity: isSearching ? 0.7 : 1
               }}
               onClick={handleSearch}
+              disabled={isSearching}
             >
-              Search
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
             <button
               style={{
@@ -430,8 +446,8 @@ export default function TrackerMessageList() {
           </div>
         </div>
 
-        {/* Row 1: Date range, Tracker ID, User, Format */}
-        <div style={{ display: 'grid', gridTemplateColumns: showUserFilter ? '140px 140px 200px 80px 135px' : '140px 140px 200px 135px', gap: '1rem', marginBottom: '1rem' }}>
+        {/* Row 1: Date range, Tracker ID, User, Format, Limit */}
+        <div style={{ display: 'grid', gridTemplateColumns: showUserFilter ? '140px 140px 200px 80px 135px 80px' : '140px 140px 200px 135px 80px', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Start Date
@@ -528,6 +544,26 @@ export default function TrackerMessageList() {
               <option value="EDIFACT">EDIFACT</option>
             </select>
           </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Limit
+            </label>
+            <input
+              type="number"
+              step="5"
+              min="1"
+              value={filters.limit || 20}
+              onChange={(e) => applyFiltersDebounced({ ...filters, limit: parseInt(e.target.value) })}
+              onKeyPress={handleKeyPress}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
         </div>
 
         {/* Row 2: Auth status toggles */}
@@ -561,9 +597,7 @@ export default function TrackerMessageList() {
             <th style={thStyle}>Remote IP</th>
             <th style={thStyle}>User Agent</th>
             <th style={thStyle}>Size</th>
-            <th style={thStyle}>Auth Status</th>
             {showUserFilter && <th style={thStyle}>User</th>}
-            <th style={thStyle}>Payloads</th>
             <th style={thStyle}>Format</th>
             <th style={thStyle}>Doc Type</th>
             <th style={thStyle}>DL</th>
@@ -573,7 +607,7 @@ export default function TrackerMessageList() {
         <tbody>
           {messages.length === 0 ? (
             <tr>
-              <td colSpan={showUserFilter ? "12" : "11"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan={showUserFilter ? "10" : "9"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No tracker messages found
               </td>
             </tr>
@@ -593,20 +627,7 @@ export default function TrackerMessageList() {
                     : '-'}
                 </td>
                 <td style={tdStyle}>{formatSize(message.contentSize)}</td>
-                <td style={tdStyle}>
-                  <span style={{
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '4px',
-                    backgroundColor: message.authStatus === 'Success' ? '#28a74520' : '#6c757d20',
-                    color: message.authStatus === 'Success' ? '#28a745' : '#6c757d',
-                    fontWeight: '600',
-                    fontSize: '0.75rem'
-                  }}>
-                    {message.authStatus || 'None'}
-                  </span>
-                </td>
                 {showUserFilter && <td style={tdStyle}>{message.authUser || '-'}</td>}
-                <td style={tdStyle}>{message.payloadCount || 0}</td>
                 <td style={tdStyle}>{message.payloadFormat || '-'}</td>
                 <td style={tdStyle}>{abbreviateDocType(message.payloadDocType)}</td>
                 <td style={{ ...tdStyle, textAlign: 'center', whiteSpace: 'nowrap' }}>

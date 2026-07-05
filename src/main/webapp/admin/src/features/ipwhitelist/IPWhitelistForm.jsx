@@ -212,7 +212,8 @@ export default function IPWhitelistForm({ initialData, mode, onSubmit, onCancel 
               <option value="AS2">AS2 - AS2 message endpoint</option>
               <option value="TRACKER">TRACKER - Tracker message endpoint</option>
               <option value="WEBUI">WEBUI - WebUI access</option>
-              <option value="API">API - REST API access</option>
+              <option value="SYS_API">SYS_API - System REST API (/sysapi/v1/*)</option>
+              <option value="USER_API">USER_API - User API endpoint (/userapi/*)</option>
               <option value="ALL">ALL - All endpoints</option>
             </select>
           </div>

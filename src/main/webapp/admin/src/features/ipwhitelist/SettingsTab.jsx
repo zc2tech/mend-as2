@@ -32,7 +32,8 @@ export default function SettingsTab() {
   const [enabledAS2, setEnabledAS2] = useState(false);
   const [enabledTracker, setEnabledTracker] = useState(false);
   const [enabledWebUI, setEnabledWebUI] = useState(true);
-  const [enabledAPI, setEnabledAPI] = useState(true);
+  const [enabledSysAPI, setEnabledSysAPI] = useState(true);
+  const [enabledUserAPI, setEnabledUserAPI] = useState(true);
   const [mode, setMode] = useState('GLOBAL_AND_SPECIFIC');
   const [logRetentionDays, setLogRetentionDays] = useState(30);
   const [hasChanges, setHasChanges] = useState(false);
@@ -43,7 +44,8 @@ export default function SettingsTab() {
       setEnabledAS2(settings.enabledAS2 || false);
       setEnabledTracker(settings.enabledTracker || false);
       setEnabledWebUI(settings.enabledWebUI || false);
-      setEnabledAPI(settings.enabledAPI || false);
+      setEnabledSysAPI(settings.enabledSysAPI || false);
+      setEnabledUserAPI(settings.enabledUserAPI || false);
       setMode(settings.mode || 'GLOBAL_AND_SPECIFIC');
       setLogRetentionDays(settings.logRetentionDays || 30);
       setHasChanges(false);
@@ -57,12 +59,13 @@ export default function SettingsTab() {
         enabledAS2 !== (settings.enabledAS2 || false) ||
         enabledTracker !== (settings.enabledTracker || false) ||
         enabledWebUI !== (settings.enabledWebUI || false) ||
-        enabledAPI !== (settings.enabledAPI || false) ||
+        enabledSysAPI !== (settings.enabledSysAPI || false) ||
+        enabledUserAPI !== (settings.enabledUserAPI || false) ||
         mode !== (settings.mode || 'GLOBAL_AND_SPECIFIC') ||
         logRetentionDays !== (settings.logRetentionDays || 30);
       setHasChanges(changed);
     }
-  }, [settings, enabledAS2, enabledTracker, enabledWebUI, enabledAPI, mode, logRetentionDays]);
+  }, [settings, enabledAS2, enabledTracker, enabledWebUI, enabledSysAPI, enabledUserAPI, mode, logRetentionDays]);
 
   const handleSave = async () => {
     try {
@@ -70,7 +73,8 @@ export default function SettingsTab() {
         enabledAS2,
         enabledTracker,
         enabledWebUI,
-        enabledAPI,
+        enabledSysAPI,
+        enabledUserAPI,
         mode,
         logRetentionDays
       });
@@ -254,17 +258,35 @@ export default function SettingsTab() {
         <div style={checkboxContainerStyle}>
           <input
             type="checkbox"
-            id="enabledAPI"
-            checked={enabledAPI}
-            onChange={(e) => setEnabledAPI(e.target.checked)}
+            id="enabledSysAPI"
+            checked={enabledSysAPI}
+            onChange={(e) => setEnabledSysAPI(e.target.checked)}
             style={checkboxStyle}
           />
           <div>
-            <label htmlFor="enabledAPI" style={labelStyle}>
-              <strong>REST API Access</strong>
+            <label htmlFor="enabledSysAPI" style={labelStyle}>
+              <strong>System API Access (/sysapi/v1/*)</strong>
             </label>
             <div style={helpTextStyle}>
-              Control which IPs can make REST API calls
+              Control which IPs can access the REST API for controlling server
+            </div>
+          </div>
+        </div>
+
+        <div style={checkboxContainerStyle}>
+          <input
+            type="checkbox"
+            id="enabledUserAPI"
+            checked={enabledUserAPI}
+            onChange={(e) => setEnabledUserAPI(e.target.checked)}
+            style={checkboxStyle}
+          />
+          <div>
+            <label htmlFor="enabledUserAPI" style={labelStyle}>
+              <strong>User API Access (/userapi/*)</strong>
+            </label>
+            <div style={helpTextStyle}>
+              Control which IPs can access user customized endpoint for receiving API requests
             </div>
           </div>
         </div>

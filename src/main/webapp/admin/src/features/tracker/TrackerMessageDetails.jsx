@@ -386,7 +386,7 @@ export default function TrackerMessageDetails({ trackerId, onClose }) {
 
         {message.contentPreview && (
           <div style={sectionStyle}>
-            <h3>Content Preview (first 1000 bytes)</h3>
+            <h3>Content Preview (first 2000 bytes)</h3>
             <pre style={{
               backgroundColor: '#f8f9fa',
               padding: '0.75rem',

@@ -3,7 +3,7 @@ REM Import IP CIDR whitelist from JSON file to Global Whitelist
 REM This script is a wrapper around the Java import utility
 REM Usage: import-whitelist.bat <json_file> [target_type]
 REM   json_file: Path to JSON file with CIDR entries
-REM   target_type: AS2|TRACKER|WEBUI|API|ALL (default: ALL)
+REM   target_type: AS2|TRACKER|WEBUI|USER_API|SYS_API_ALL (default: ALL)
 
 setlocal enabledelayedexpansion
 
@@ -16,7 +16,7 @@ if "%~1"=="" (
     echo.
     echo Arguments:
     echo   json_file    Path to JSON file with CIDR entries
-    echo   target_type  AS2^|TRACKER^|WEBUI^|API^|ALL ^(default: ALL^)
+    echo   target_type  AS2^|TRACKER^|WEBUI^|USER_API^|SYS_API^|ALL ^(default: ALL^)
     echo.
     echo Example:
     echo   %~nx0 ..\private\public_ip_cidr.json

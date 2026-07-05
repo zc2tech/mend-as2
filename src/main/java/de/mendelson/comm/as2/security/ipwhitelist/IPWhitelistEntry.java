@@ -37,7 +37,8 @@ public class IPWhitelistEntry implements Serializable {
     public static final String TARGET_AS2 = "AS2";
     public static final String TARGET_TRACKER = "TRACKER";
     public static final String TARGET_WEBUI = "WEBUI";
-    public static final String TARGET_API = "API";
+    public static final String TARGET_USER_API = "USER_API"; // relates to 'REST API Requests'
+    public static final String TARGET_SYS_API = "SYS_API"; // System level REST API invoke to control entire server
     public static final String TARGET_ALL = "ALL";
 
     private int id;

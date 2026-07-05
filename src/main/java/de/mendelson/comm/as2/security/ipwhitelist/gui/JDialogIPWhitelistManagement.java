@@ -42,7 +42,8 @@ public class JDialogIPWhitelistManagement extends JDialog {
     private JCheckBox checkAS2;
     private JCheckBox checkTracker;
     private JCheckBox checkWebUI;
-    private JCheckBox checkAPI;
+    private JCheckBox checkSysAPI;
+    private JCheckBox checkUserAPI;
     private ButtonGroup modeGroup;
     private JRadioButton radioGlobalOnly;
     private JRadioButton radioPartnerOnly;
@@ -178,8 +179,12 @@ public class JDialogIPWhitelistManagement extends JDialog {
         panel.add(checkWebUI, gbc);
 
         gbc.gridx = 0; gbc.gridy = row++;
-        checkAPI = new JCheckBox(rb != null ? rb.getResourceString(ResourceBundleIPWhitelist.SETTINGS_ENABLE_API) : "Enable for API Access");
-        panel.add(checkAPI, gbc);
+        checkSysAPI = new JCheckBox(rb != null ? rb.getResourceString(ResourceBundleIPWhitelist.SETTINGS_ENABLE_SYS_API) : "Enable for System API (/sysapi/v1/*)");
+        panel.add(checkSysAPI, gbc);
+
+        gbc.gridx = 0; gbc.gridy = row++;
+        checkUserAPI = new JCheckBox(rb != null ? rb.getResourceString(ResourceBundleIPWhitelist.SETTINGS_ENABLE_USER_API) : "Enable for User API (/userapi/*)");
+        panel.add(checkUserAPI, gbc);
 
         gbc.insets = new Insets(15, 5, 5, 5);
         gbc.gridx = 0; gbc.gridy = row++; gbc.gridwidth = 2;
@@ -232,7 +237,8 @@ public class JDialogIPWhitelistManagement extends JDialog {
                 boolean enabledAS2 = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_AS2);
                 boolean enabledTracker = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER);
                 boolean enabledWebUI = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI);
-                boolean enabledAPI = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_API);
+                boolean enabledSysAPI = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API);
+                boolean enabledUserAPI = preferences.getBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API);
                 String mode = preferences.get(PreferencesAS2.IP_WHITELIST_MODE);
                 int retentionDays = preferences.getInt(PreferencesAS2.IP_WHITELIST_LOG_RETENTION_DAYS);
 
@@ -240,7 +246,8 @@ public class JDialogIPWhitelistManagement extends JDialog {
                     checkAS2.setSelected(enabledAS2);
                     checkTracker.setSelected(enabledTracker);
                     checkWebUI.setSelected(enabledWebUI);
-                    checkAPI.setSelected(enabledAPI);
+                    checkSysAPI.setSelected(enabledSysAPI);
+                    checkUserAPI.setSelected(enabledUserAPI);
                     spinnerRetentionDays.setValue(retentionDays);
 
                     if ("GLOBAL_ONLY".equals(mode)) {
@@ -267,7 +274,8 @@ public class JDialogIPWhitelistManagement extends JDialog {
                 preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_AS2, checkAS2.isSelected());
                 preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER, checkTracker.isSelected());
                 preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI, checkWebUI.isSelected());
-                preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_API, checkAPI.isSelected());
+                preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API, checkSysAPI.isSelected());
+                preferences.putBoolean(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API, checkUserAPI.isSelected());
                 preferences.putInt(PreferencesAS2.IP_WHITELIST_LOG_RETENTION_DAYS, (Integer) spinnerRetentionDays.getValue());
 
                 String mode = radioGlobalOnly.isSelected() ? "GLOBAL_ONLY" :

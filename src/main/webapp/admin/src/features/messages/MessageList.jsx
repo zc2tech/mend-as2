@@ -41,7 +41,7 @@ export default function MessageList() {
   }, [user?.roleIds, user?.roles]);
 
   const defaultFilters = {
-    limit: 100,
+    limit: 20,
     direction: 0, // 0=all, 1=in, 2=out
     showFinished: true,
     showPending: true,
@@ -57,7 +57,7 @@ export default function MessageList() {
 
   const [filters, setFilters] = useState(defaultFilters);
   const [queryFilters, setQueryFilters] = useState(defaultFilters);
-  const { data, isLoading, error } = useMessages(queryFilters);
+  const { data, isLoading, isFetching, error } = useMessages(queryFilters);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [showManualSend, setShowManualSend] = useState(false);
   const [partners, setPartners] = useState([]);
@@ -66,6 +66,8 @@ export default function MessageList() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const searchTimeoutRef = useRef(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchStartTimeRef = useRef(null);
   const location = useLocation();
 
   // Handle keyboard shortcut navigation (Cmd+M / Ctrl+M)
@@ -76,6 +78,29 @@ export default function MessageList() {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
+  // Track search state with minimum display duration
+  useEffect(() => {
+    if (isFetching) {
+      setIsSearching(true);
+      searchStartTimeRef.current = Date.now();
+    } else if (searchStartTimeRef.current) {
+      const elapsed = Date.now() - searchStartTimeRef.current;
+      const minDuration = 800; // Minimum 800ms display time
+
+      if (elapsed < minDuration) {
+        // Delay hiding the loading state
+        const remainingTime = minDuration - elapsed;
+        setTimeout(() => {
+          setIsSearching(false);
+          searchStartTimeRef.current = null;
+        }, remainingTime);
+      } else {
+        setIsSearching(false);
+        searchStartTimeRef.current = null;
+      }
+    }
+  }, [isFetching]);
 
   // Apply search immediately for non-text filters
   const applyFiltersImmediately = (newFilters) => {
@@ -92,10 +117,10 @@ export default function MessageList() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Set new timeout - apply search after 1 second of no input
+    // Set new timeout - apply search after 2 seconds of no input
     searchTimeoutRef.current = setTimeout(() => {
       setQueryFilters(newFilters);
-    }, 1000);
+    }, 2000);
   };
 
   // Cleanup timeout on unmount
@@ -294,16 +319,18 @@ export default function MessageList() {
             <button
               style={{
                 padding: '0.375rem 0.75rem',
-                backgroundColor: '#007bff',
+                backgroundColor: isSearching ? '#6c757d' : '#007bff',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.875rem'
+                cursor: isSearching ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                opacity: isSearching ? 0.7 : 1
               }}
               onClick={handleSearch}
+              disabled={isSearching}
             >
-              Search
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
             <button
               style={{
@@ -323,25 +350,7 @@ export default function MessageList() {
         </div>
 
         {/* Row 1: Basic filters */}
-        <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '0.5fr 0.75fr 0.5fr 1fr 1fr 1fr' : '0.5fr 0.75fr 0.5fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
-              Limit
-            </label>
-            <input
-              type="number"
-              value={filters.limit || 100}
-              onChange={(e) => applyFiltersImmediately({ ...filters, limit: parseInt(e.target.value) })}
-              onKeyPress={handleKeyPress}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
-              }}
-            />
-          </div>
-
+        <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '0.75fr 0.5fr 1fr 1fr 1fr 0.5fr' : '0.75fr 0.5fr 1fr 1fr 0.5fr', gap: '1rem', marginBottom: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
               Direction
@@ -451,6 +460,26 @@ export default function MessageList() {
               </select>
             </div>
           )}
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: '600' }}>
+              Limit
+            </label>
+            <input
+              type="number"
+              step="5"
+              min="1"
+              value={filters.limit || 20}
+              onChange={(e) => applyFiltersDebounced({ ...filters, limit: parseInt(e.target.value) })}
+              onKeyPress={handleKeyPress}
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+          </div>
         </div>
 
         {/* Row 2: Date range, Message ID, and Status checkboxes */}

@@ -231,16 +231,7 @@ public class SendOrderReceiver {
 
                 } else {
                     // IN_MEMORY strategy: build message on-demand OR use cached message for retries
-                    logger.info("═════════════════════════════════════════════════");
-                    logger.info("[SENDORDER-DEBUG] Processing IN_MEMORY send order:");
-                    logger.info("[SENDORDER-DEBUG]   Order ID: " + item.getOrderId());
-                    logger.info("[SENDORDER-DEBUG]   Sender DB ID: " + item.getSenderDBId());
-                    logger.info("[SENDORDER-DEBUG]   Receiver DB ID: " + item.getReceiverDBId());
-                    logger.info("[SENDORDER-DEBUG]   User ID: " + item.getUserId());
-                    logger.info("[SENDORDER-DEBUG]   Retry count: " + item.getRetryCount());
-                    logger.info("[SENDORDER-DEBUG]   Files: " + (item.getFiles() != null ? item.getFiles().length : 0));
-                    logger.info("═════════════════════════════════════════════════");
-
+                   
                     // Load partners
                     sender = partnerAccess.getPartner(item.getSenderDBId());
                     receiver = partnerAccess.getPartner(item.getReceiverDBId());
@@ -250,12 +241,6 @@ public class SendOrderReceiver {
                                           "(senderDBId=" + item.getSenderDBId() +
                                           ", receiverDBId=" + item.getReceiverDBId() + ")");
                     }
-
-                    logger.info("[SENDORDER-DEBUG] Partners loaded:");
-                    logger.info("[SENDORDER-DEBUG]   Sender: " + sender.getName() + " (AS2 ID: " + sender.getAS2Identification() + ")");
-                    logger.info("[SENDORDER-DEBUG]   Receiver: " + receiver.getName() + " (AS2 ID: " + receiver.getAS2Identification() + ")");
-                    logger.info("[SENDORDER-DEBUG]   Sender sign cert fingerprint: " + sender.getSignFingerprintSHA1());
-                    logger.info("[SENDORDER-DEBUG]   Receiver crypt cert fingerprint: " + receiver.getCryptFingerprintSHA1());
 
                     // Check if this is a retry with cached message
                     if (item.getRetryCount() > 0 && item.getCachedMessage() != null) {

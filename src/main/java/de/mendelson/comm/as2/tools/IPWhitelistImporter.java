@@ -53,11 +53,11 @@ import java.util.List;
  * java -cp mend-as2.jar de.mendelson.comm.as2.tools.IPWhitelistImporter
  * public_ip_cidr.json AS2
  *
- * Target types: AS2, TRACKER, WEBUI, API, ALL (default: ALL)
+ * Target types: AS2, TRACKER, WEBUI, SYS_API, USER_API, ALL (default: ALL)
  */
 public class IPWhitelistImporter {
 
-    private static final String[] VALID_TARGET_TYPES = { "AS2", "TRACKER", "WEBUI", "API", "ALL" };
+    private static final String[] VALID_TARGET_TYPES = { "AS2", "TRACKER", "WEBUI", "SYS_API", "USER_API", "ALL" };
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -70,7 +70,7 @@ public class IPWhitelistImporter {
 
         // Validate target type
         if (!Arrays.asList(VALID_TARGET_TYPES).contains(targetType)) {
-            System.err.println("ERROR: Invalid target_type. Must be AS2, TRACKER, WEBUI, API, or ALL");
+            System.err.println("ERROR: Invalid target_type. Must be AS2, TRACKER, WEBUI, SYS_API, USER_API, or ALL");
             System.exit(1);
         }
 
@@ -156,7 +156,7 @@ public class IPWhitelistImporter {
             // Determine target types to import
             List<String> targetTypes = new ArrayList<>();
             if ("ALL".equals(targetType)) {
-                targetTypes.addAll(Arrays.asList("AS2", "TRACKER", "WEBUI", "API"));
+                targetTypes.addAll(Arrays.asList("AS2", "TRACKER", "WEBUI", "SYS_API", "USER_API"));
             } else {
                 targetTypes.add(targetType);
             }
@@ -325,7 +325,7 @@ public class IPWhitelistImporter {
         System.out.println();
         System.out.println("Arguments:");
         System.out.println("  json_file    Path to JSON file with CIDR entries");
-        System.out.println("  target_type  AS2|TRACKER|WEBUI|API|ALL (default: ALL)");
+        System.out.println("  target_type  AS2|TRACKER|WEBUI|SYS_API|USER_API|ALL (default: ALL)");
         System.out.println();
         System.out.println("Examples:");
         System.out

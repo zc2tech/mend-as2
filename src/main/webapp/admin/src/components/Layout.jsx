@@ -169,6 +169,26 @@ export default function Layout() {
     navigate('/my-tracker-config');
   };
 
+  const handleMyApiConfig = () => {
+    setDropdownOpen(false);
+    navigate('/my-api-config');
+  };
+
+  const handleSystem = () => {
+    setDropdownOpen(false);
+    navigate('/system');
+  };
+
+  const handleUsers = () => {
+    setDropdownOpen(false);
+    navigate('/users');
+  };
+
+  const handleIPWhitelist = () => {
+    setDropdownOpen(false);
+    navigate('/ipwhitelist');
+  };
+
   const handleSwitchUser = () => {
     setDropdownOpen(false);
     navigate('/switch-user');
@@ -249,9 +269,7 @@ export default function Layout() {
           {showCertificates && <Link to="/certificates" style={linkStyle}>My Sign/Crypt/Auth</Link>}
           {showMessages && <Link to="/messages" style={linkStyle}>AS2 Messages</Link>}
           {showMessages && <Link to="/tracker-messages" style={linkStyle}>Tracker Messages</Link>}
-          {showSystem && <Link to="/system" style={linkStyle}>System</Link>}
-          {showUsers && <Link to="/users" style={linkStyle}>Users</Link>}
-          {showIPWhitelist && <Link to="/ipwhitelist" style={linkStyle}>IP Whitelist</Link>}
+          {showMessages && <Link to="/api-requests" style={linkStyle}>REST API Requests</Link>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={dropdownContainerStyle} ref={dropdownRef}>
@@ -281,6 +299,44 @@ export default function Layout() {
                 >
                   My Tracker Conf
                 </button>
+                <button
+                  onClick={handleMyApiConfig}
+                  style={dropdownItemStyle}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                >
+                  My REST API Conf
+                </button>
+                {showSystem && (
+                  <button
+                    onClick={handleSystem}
+                    style={dropdownItemStyle}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    System
+                  </button>
+                )}
+                {showUsers && (
+                  <button
+                    onClick={handleUsers}
+                    style={dropdownItemStyle}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    Users
+                  </button>
+                )}
+                {showIPWhitelist && (
+                  <button
+                    onClick={handleIPWhitelist}
+                    style={dropdownItemStyle}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    IP Whitelist
+                  </button>
+                )}
                 <button
                   onClick={handleChangePassword}
                   style={dropdownItemStyle}

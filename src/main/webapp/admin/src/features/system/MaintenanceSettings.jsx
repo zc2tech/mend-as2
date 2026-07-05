@@ -174,7 +174,7 @@ export default function MaintenanceSettings() {
 
       const values = {};
       for (const key of keys) {
-        const response = await fetch(`/as2/api/v1/preferences/${key}`, {
+        const response = await fetch(`/as2/sysapi/v1/preferences/${key}`, {
           credentials: 'include',
         });
         if (response.ok) {
@@ -219,7 +219,7 @@ export default function MaintenanceSettings() {
       ];
 
       for (const update of updates) {
-        await fetch(`/as2/api/v1/preferences/${update.key}`, {
+        await fetch(`/as2/sysapi/v1/preferences/${update.key}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

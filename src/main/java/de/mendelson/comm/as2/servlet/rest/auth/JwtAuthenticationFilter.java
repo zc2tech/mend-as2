@@ -121,16 +121,16 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
                     return;
                 }
 
-                // Check API whitelist (for REST API access)
-                boolean apiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API));
-                if (apiEnabled && !whitelistService.isAllowedForAPI(clientIP, userId)) {
-                    whitelistService.logBlockedAttempt(clientIP, "API", username, null,
+                // Check System API whitelist (for REST API access - sysapi)
+                boolean sysApiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API));
+                if (sysApiEnabled && !whitelistService.isAllowedForSysApi(clientIP, userId)) {
+                    whitelistService.logBlockedAttempt(clientIP, "SYS_API", username, null,
                                                       getUserAgent(requestContext), path);
-                    LOGGER.log(Level.WARNING, "IP {0} blocked by API whitelist for user {1} accessing {2}",
+                    LOGGER.log(Level.WARNING, "IP {0} blocked by System API whitelist for user {1} accessing {2}",
                               new Object[]{clientIP, username, path});
                     requestContext.abortWith(
                             Response.status(Response.Status.FORBIDDEN)
-                                    .entity("{\"error\":\"Access denied: Your IP address is not whitelisted for API access\"}")
+                                    .entity("{\"error\":\"Access denied: Your IP address is not whitelisted for System API access\"}")
                                     .build()
                     );
                     return;
@@ -269,6 +269,10 @@ public class JwtAuthenticationFilter implements ContainerRequestFilter {
             }
             // Allow all authenticated users to check tracker config (needed for UI visibility logic)
             if (path.equals("system/tracker/config") && "GET".equals(method)) {
+                return null; // No special permission required - just authentication
+            }
+            // Allow all authenticated users to check API config (needed for UI visibility logic)
+            if (path.equals("system/api/config") && "GET".equals(method)) {
                 return null; // No special permission required - just authentication
             }
             // Allow all authenticated users to generate local station URLs (needed for partner creation/editing)

@@ -85,6 +85,14 @@ export default function ManualSend({ onClose }) {
     }
   }, [localStations, senderPartnerId]);
 
+  // Auto-select if only one remote partner
+  useEffect(() => {
+    if (remotePartners.length === 1 && !receiverPartnerId && remotePartners[0]?.dbid) {
+      const id = String(remotePartners[0].dbid);
+      setReceiverPartnerId(id);
+    }
+  }, [remotePartners, receiverPartnerId]);
+
   // Update content type when receiver changes (but only if user hasn't manually edited it)
   useEffect(() => {
     if (receiverPartnerId && !contentTypeManuallyEdited) {
@@ -416,27 +424,54 @@ export default function ManualSend({ onClose }) {
               )}
 
               {/* Receiver Selection */}
-              <div style={formGroupStyle}>
-                <label style={labelStyle}>Receiver (Remote Partner) *</label>
-                <select
-                  value={receiverPartnerId}
-                  onChange={(e) => setReceiverPartnerId(e.target.value)}
-                  style={inputStyle}
-                  disabled={loading}
-                >
-                  <option value="">-- Select Remote Partner --</option>
-                  {remotePartners.map(partner => (
-                    <option key={partner.dbid} value={String(partner.dbid)}>
-                      {partner.name} ({partner.as2Identification})
-                    </option>
-                  ))}
-                </select>
-                {remotePartners.length === 0 && (
+              {remotePartners.length > 1 && (
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Receiver (Remote Partner) *</label>
+                  <select
+                    value={receiverPartnerId}
+                    onChange={(e) => setReceiverPartnerId(e.target.value)}
+                    style={inputStyle}
+                    disabled={loading}
+                  >
+                    <option value="">-- Select Remote Partner --</option>
+                    {remotePartners.map(partner => (
+                      <option key={partner.dbid} value={String(partner.dbid)}>
+                        {partner.name} ({partner.as2Identification})
+                      </option>
+                    ))}
+                  </select>
+                  {remotePartners.length === 0 && (
+                    <div style={{ fontSize: '0.875rem', color: '#dc3545', marginTop: '0.25rem' }}>
+                      No remote partners configured!
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {remotePartners.length === 1 && (
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Receiver (Remote Partner)</label>
+                  <div style={{
+                    ...inputStyle,
+                    backgroundColor: '#e9ecef',
+                    color: '#495057'
+                  }}>
+                    {remotePartners[0].name} ({remotePartners[0].as2Identification})
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.25rem' }}>
+                    Only one remote partner configured
+                  </div>
+                </div>
+              )}
+
+              {remotePartners.length === 0 && (
+                <div style={formGroupStyle}>
+                  <label style={labelStyle}>Receiver (Remote Partner) *</label>
                   <div style={{ fontSize: '0.875rem', color: '#dc3545', marginTop: '0.25rem' }}>
                     No remote partners configured!
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Subject */}
               <div style={formGroupStyle}>

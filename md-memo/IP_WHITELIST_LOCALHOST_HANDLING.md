@@ -2,12 +2,12 @@
 
 ## Implementation Summary
 
-To ensure that localhost access always works when the product is first deployed, even with WebUI/API whitelist enabled by default, we've implemented **automatic localhost bypass**.
+To ensure that localhost access always works when the product is first deployed, even with WebUI/SYS_API/USER_API whitelist enabled by default, we've implemented **automatic localhost bypass**.
 
 ## How It Works
 
 ### Auto-Allow Localhost
-The IP whitelist service now **automatically allows** localhost connections for WebUI and API access, regardless of whitelist configuration. This means:
+The IP whitelist service now **automatically allows** localhost connections for WebUI, SYS_API, and USER_API access, regardless of whitelist configuration. This means:
 
 - ✅ Localhost always works for initial deployment
 - ✅ No need to add whitelist entries for localhost
@@ -53,7 +53,8 @@ private boolean isLocalhost(String ip) {
 
 **Updated methods:**
 - `isAllowedForWebUI()` - Now checks `isLocalhost(ip)` before other checks
-- `isAllowedForAPI()` - Now checks `isLocalhost(ip)` before other checks
+- `isAllowedForSysApi()` - Now checks `isLocalhost(ip)` before other checks
+- `isAllowedForUserApi()` - Now checks `isLocalhost(ip)` before other checks
 
 ### Behavior
 
@@ -80,7 +81,7 @@ When a request comes from localhost:
 
 **First Deployment:**
 1. Deploy mend-as2 to server
-2. Run database initialization (creates tables with WebUI/API whitelist enabled)
+2. Run database initialization (creates tables with WebUI/SYS_API whitelist enabled, USER_API disabled)
 3. Access WebUI from localhost (works immediately via auto-bypass)
 4. Add whitelist entries for remote administrator IPs
 5. Remote admins can now access from their whitelisted IPs
@@ -95,7 +96,7 @@ When a request comes from localhost:
 To test the localhost bypass:
 
 1. Start the AS2 server
-2. Verify WebUI/API whitelist is enabled (Settings tab)
+2. Verify WebUI/SYS_API/USER_API whitelist is enabled (Settings tab)
 3. Verify there are NO whitelist entries (all tabs empty)
 4. Access WebUI from localhost browser: `http://localhost:8080/admin/`
 5. ✅ Should work without adding any entries
@@ -107,7 +108,18 @@ To test the localhost bypass:
 1. `/src/main/java/de/mendelson/comm/as2/security/ipwhitelist/IPWhitelistService.java`
    - Added `isLocalhost()` method
    - Updated `isAllowedForWebUI()` to check localhost
-   - Updated `isAllowedForAPI()` to check localhost
+   - Updated `isAllowedForSysApi()` to check localhost
+   - Updated `isAllowedForUserApi()` to check localhost
+
+## API Split (2026-07-04)
+
+The original single API endpoint has been split into two distinct endpoints:
+
+- **SYS_API** (`TARGET_SYS_API`): System REST API for controlling the AS2 server (`/sysapi/v1/*`)
+- **USER_API** (`TARGET_USER_API`): User customized endpoint for receiving external API requests (`/userapi/*`)
+
+This allows separate access control for administrative system APIs vs user-facing API endpoints.
 
 ## Date
-2026-04-19
+2026-04-19 (Initial implementation)
+2026-07-04 (API split update)

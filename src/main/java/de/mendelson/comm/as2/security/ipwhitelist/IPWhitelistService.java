@@ -56,8 +56,24 @@ public class IPWhitelistService {
     private volatile long lastCacheRefresh = 0;
     private static final long CACHE_REFRESH_INTERVAL_MS = TimeUnit.SECONDS.toMillis(60);
 
+    // Cached preferences settings (refreshed with whitelist data)
+    private volatile WhitelistSettings cachedSettings = new WhitelistSettings();
+
     // Scheduled executor for cache refresh
     private final ScheduledExecutorService cacheRefreshExecutor;
+
+    /**
+     * Inner class to hold cached whitelist settings
+     * Reduces PreferencesAS2 object creation overhead
+     */
+    private static class WhitelistSettings {
+        boolean as2Enabled;
+        boolean trackerEnabled;
+        boolean webuiEnabled;
+        boolean sysApiEnabled;
+        boolean userApiEnabled;
+        String mode;
+    }
 
     /**
      * Private constructor for singleton
@@ -100,10 +116,21 @@ public class IPWhitelistService {
 
     /**
      * Refresh cache from database
+     * Also refreshes preferences settings to avoid repeated PreferencesAS2 instantiation
      */
     public synchronized void refreshCache() {
         try {
             long startTime = System.currentTimeMillis();
+
+            // Refresh preferences settings cache
+            PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
+            WhitelistSettings newSettings = new WhitelistSettings();
+            newSettings.as2Enabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_AS2));
+            newSettings.trackerEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER));
+            newSettings.webuiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI));
+            newSettings.sysApiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_SYS_API));
+            newSettings.userApiEnabled = "true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_USER_API));
+            newSettings.mode = prefs.get(PreferencesAS2.IP_WHITELIST_MODE);
 
             // Refresh global cache (by target type)
             Map<String, List<IPWhitelistEntry>> newGlobalCache = new ConcurrentHashMap<>();
@@ -113,14 +140,17 @@ public class IPWhitelistService {
                     accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_TRACKER));
             newGlobalCache.put(IPWhitelistEntry.TARGET_WEBUI,
                     accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_WEBUI));
-            newGlobalCache.put(IPWhitelistEntry.TARGET_API,
-                    accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_API));
+            newGlobalCache.put(IPWhitelistEntry.TARGET_SYS_API,
+                    accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_SYS_API));
+            newGlobalCache.put(IPWhitelistEntry.TARGET_USER_API,
+                    accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_USER_API));
             newGlobalCache.put(IPWhitelistEntry.TARGET_ALL,
                     accessDB.getGlobalWhitelist(IPWhitelistEntry.TARGET_ALL));
 
             // Note: Partner and user caches are loaded on-demand to avoid memory overhead
 
-            // Atomically update cache
+            // Atomically update caches
+            this.cachedSettings = newSettings;
             this.globalCache = newGlobalCache;
             this.lastCacheRefresh = System.currentTimeMillis();
 
@@ -140,13 +170,12 @@ public class IPWhitelistService {
      * @return true if allowed, false if blocked
      */
     public boolean isAllowedForAS2(String ip, String partnerAS2Id) {
-        // Check if whitelist is enabled
-        PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
-        if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_AS2))) {
+        // Check if whitelist is enabled (use cached settings)
+        if (!cachedSettings.as2Enabled) {
             return true; // Whitelist disabled, allow all
         }
 
-        String mode = prefs.get(PreferencesAS2.IP_WHITELIST_MODE);
+        String mode = cachedSettings.mode;
 
         // Check global whitelist
         if (isAllowedByMode(mode, "GLOBAL")) {
@@ -181,8 +210,8 @@ public class IPWhitelistService {
      * Check if IP is allowed for Tracker endpoint
      */
     public boolean isAllowedForTracker(String ip) {
-        PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
-        if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_TRACKER))) {
+        // Check if whitelist is enabled (use cached settings)
+        if (!cachedSettings.trackerEnabled) {
             return true; // Whitelist disabled, allow all
         }
 
@@ -191,11 +220,29 @@ public class IPWhitelistService {
     }
 
     /**
+     * Check if IP is allowed for User API endpoint (userapi)
+     */
+    public boolean isAllowedForUserApi(String ip) {
+        // Check if whitelist is enabled (use cached settings)
+        if (!cachedSettings.userApiEnabled) {
+            return true; // Whitelist disabled, allow all
+        }
+
+        // Always allow localhost (important for testing and development)
+        if (isLocalhost(ip)) {
+            return true;
+        }
+
+        // User API only uses global whitelist (same as Tracker)
+        return matchesGlobalWhitelist(ip, IPWhitelistEntry.TARGET_USER_API);
+    }
+
+    /**
      * Check if IP is allowed for WebUI
      */
     public boolean isAllowedForWebUI(String ip, int userId) {
-        PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
-        if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_WEBUI))) {
+        // Check if whitelist is enabled (use cached settings)
+        if (!cachedSettings.webuiEnabled) {
             return true; // Whitelist disabled, allow all
         }
 
@@ -204,7 +251,7 @@ public class IPWhitelistService {
             return true;
         }
 
-        String mode = prefs.get(PreferencesAS2.IP_WHITELIST_MODE);
+        String mode = cachedSettings.mode;
 
         // Check global whitelist
         if (isAllowedByMode(mode, "GLOBAL")) {
@@ -223,11 +270,11 @@ public class IPWhitelistService {
     }
 
     /**
-     * Check if IP is allowed for API
+     * Check if IP is allowed for System API (sysapi - REST API for controlling server)
      */
-    public boolean isAllowedForAPI(String ip, int userId) {
-        PreferencesAS2 prefs = new PreferencesAS2(dbDriverManager);
-        if (!"true".equals(prefs.get(PreferencesAS2.IP_WHITELIST_ENABLED_API))) {
+    public boolean isAllowedForSysApi(String ip, int userId) {
+        // Check if whitelist is enabled (use cached settings)
+        if (!cachedSettings.sysApiEnabled) {
             return true; // Whitelist disabled, allow all
         }
 
@@ -236,11 +283,11 @@ public class IPWhitelistService {
             return true;
         }
 
-        String mode = prefs.get(PreferencesAS2.IP_WHITELIST_MODE);
+        String mode = cachedSettings.mode;
 
         // Check global whitelist
         if (isAllowedByMode(mode, "GLOBAL")) {
-            if (matchesGlobalWhitelist(ip, IPWhitelistEntry.TARGET_API)) {
+            if (matchesGlobalWhitelist(ip, IPWhitelistEntry.TARGET_SYS_API)) {
                 return true;
             }
         }

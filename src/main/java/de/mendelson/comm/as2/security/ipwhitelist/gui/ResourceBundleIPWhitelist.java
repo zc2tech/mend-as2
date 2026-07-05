@@ -45,7 +45,8 @@ public class ResourceBundleIPWhitelist extends MecResourceBundle {
     public static final String SETTINGS_ENABLE_AS2 = "settings.enable_as2";
     public static final String SETTINGS_ENABLE_TRACKER = "settings.enable_tracker";
     public static final String SETTINGS_ENABLE_WEBUI = "settings.enable_webui";
-    public static final String SETTINGS_ENABLE_API = "settings.enable_api";
+    public static final String SETTINGS_ENABLE_SYS_API = "settings.enable_sysapi";
+    public static final String SETTINGS_ENABLE_USER_API = "settings.enable_userapi";
     public static final String SETTINGS_MODE = "settings.mode";
     public static final String SETTINGS_MODE_GLOBAL_ONLY = "settings.mode.global_only";
     public static final String SETTINGS_MODE_PARTNER_ONLY = "settings.mode.partner_only";
@@ -96,7 +97,8 @@ public class ResourceBundleIPWhitelist extends MecResourceBundle {
         {SETTINGS_ENABLE_AS2, "Enable for AS2 Endpoint"},
         {SETTINGS_ENABLE_TRACKER, "Enable for Tracker Endpoint"},
         {SETTINGS_ENABLE_WEBUI, "Enable for WebUI Access"},
-        {SETTINGS_ENABLE_API, "Enable for API Access"},
+        {SETTINGS_ENABLE_SYS_API, "Enable for System API (/sysapi/v1/*)"},
+        {SETTINGS_ENABLE_USER_API, "Enable for User API (/userapi/*)"},
         {SETTINGS_MODE, "Whitelist Mode:"},
         {SETTINGS_MODE_GLOBAL_ONLY, "Global Only"},
         {SETTINGS_MODE_PARTNER_ONLY, "Partner/User Specific Only"},

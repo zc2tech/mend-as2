@@ -569,6 +569,37 @@ public class SystemResource {
         }
     }
 
+    @GET
+    @Path("/api/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getApiConfig() {
+        try {
+            PreferencesAS2 preferences = new PreferencesAS2();
+
+            ApiConfig config = new ApiConfig();
+            config.setEnabled("true".equals(preferences.get(PreferencesAS2.API_ENABLED)));
+            config.setMaxSizeMB(preferences.getInt(PreferencesAS2.API_MAX_SIZE_MB));
+            config.setRateLimitFailures(preferences.getInt(PreferencesAS2.API_RATE_LIMIT_FAILURES));
+            config.setRateLimitWindowHours(preferences.getInt(PreferencesAS2.API_RATE_LIMIT_WINDOW_HOURS));
+            config.setRateLimitBlockMinutes(preferences.getInt(PreferencesAS2.API_RATE_LIMIT_BLOCK_MINUTES));
+
+            // Get actual listening ports from HTTP server config (handles test mode automatically)
+            AS2Server server = AS2Server.getStaticServerReference();
+            if (server != null) {
+                HTTPServerConfigInfo configInfo = server.getHTTPServerConfigInfo();
+                if (configInfo != null) {
+                    config.setHttpsPort(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpsPort(configInfo));
+                    config.setHttpPort(de.mendelson.comm.as2.server.ServerConfigurationHelper.getHttpPort(configInfo));
+                }
+            }
+
+            return Response.ok(config).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\":\"" + e.getMessage() + "\"}").build();
+        }
+    }
+
     public static class SystemInfo {
         private String productName;
         private String version;
@@ -766,6 +797,31 @@ public class SystemResource {
         public void setHttpPort(Integer httpPort) { this.httpPort = httpPort; }
         public String getHostname() { return hostname; }
         public void setHostname(String hostname) { this.hostname = hostname; }
+    }
+
+    public static class ApiConfig {
+        private boolean enabled;
+        private int maxSizeMB;
+        private int rateLimitFailures;
+        private int rateLimitWindowHours;
+        private int rateLimitBlockMinutes;
+        private Integer httpsPort;
+        private Integer httpPort;
+
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public int getMaxSizeMB() { return maxSizeMB; }
+        public void setMaxSizeMB(int maxSizeMB) { this.maxSizeMB = maxSizeMB; }
+        public int getRateLimitFailures() { return rateLimitFailures; }
+        public void setRateLimitFailures(int rateLimitFailures) { this.rateLimitFailures = rateLimitFailures; }
+        public int getRateLimitWindowHours() { return rateLimitWindowHours; }
+        public void setRateLimitWindowHours(int rateLimitWindowHours) { this.rateLimitWindowHours = rateLimitWindowHours; }
+        public int getRateLimitBlockMinutes() { return rateLimitBlockMinutes; }
+        public void setRateLimitBlockMinutes(int rateLimitBlockMinutes) { this.rateLimitBlockMinutes = rateLimitBlockMinutes; }
+        public Integer getHttpsPort() { return httpsPort; }
+        public void setHttpsPort(Integer httpsPort) { this.httpsPort = httpsPort; }
+        public Integer getHttpPort() { return httpPort; }
+        public void setHttpPort(Integer httpPort) { this.httpPort = httpPort; }
     }
 
     /**

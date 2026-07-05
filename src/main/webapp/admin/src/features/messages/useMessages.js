@@ -106,7 +106,7 @@ export function useMessageEvents() {
   useEffect(() => {
     // Note: SSE endpoint not yet implemented in backend
     // This is a placeholder for future implementation
-    const eventSource = new EventSource('/as2/api/v1/messages/events', {
+    const eventSource = new EventSource('/as2/sysapi/v1/messages/events', {
       withCredentials: true
     });
 

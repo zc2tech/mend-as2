@@ -170,7 +170,12 @@ public class TrackerMessageAccessDB {
 
         try (Connection conn = this.dbDriverManager
                 .getConnectionWithoutErrorHandling(IDBDriverManager.DB_RUNTIME)) {
-            StringBuilder sql = new StringBuilder("SELECT * FROM tracker_message ");
+            // Exclude raw_content and request_headers from list query for performance
+            StringBuilder sql = new StringBuilder(
+                "SELECT id, messageid, tracker_id, initdateutc, remote_addr, user_agent, content_type, " +
+                "content_size, auth_status, auth_user, rawfilename, payload_count, " +
+                "payload_format, payload_doctype, payload_details " +
+                "FROM tracker_message ");
             sql.append("WHERE initdateutc >= ? AND initdateutc <= ? ");
             sql.append("AND (").append(statusCondition).append(") ");
 
@@ -350,7 +355,7 @@ public class TrackerMessageAccessDB {
 
             try (PreparedStatement stmt = conn.prepareStatement(
                     "SELECT COUNT(*) FROM tracker_auth_failure "
-                    + "WHERE remote_addr = ? AND failure_time > ?")) {
+                    + "WHERE remote_addr = ? AND failure_time >= ?")) {
                 stmt.setString(1, remoteAddr);
                 stmt.setTimestamp(2, cutoff, calendarUTC);
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -414,7 +419,14 @@ public class TrackerMessageAccessDB {
         info.setAuthStatus(rs.getInt("auth_status"));
         info.setAuthUser(rs.getString("auth_user"));
         info.setRawFilename(rs.getString("rawfilename"));
-        info.setRequestHeaders(this.dbDriverManager.readTextStoredAsJavaObject(rs, "request_headers"));
+
+        // These fields may not be present in list queries (excluded for performance)
+        try {
+            info.setRequestHeaders(this.dbDriverManager.readTextStoredAsJavaObject(rs, "request_headers"));
+        } catch (Exception e) {
+            // Column not in SELECT, skip
+        }
+
         info.setPayloadCount(rs.getInt("payload_count"));
         info.setPayloadFormat(rs.getString("payload_format"));
         info.setPayloadDocType(rs.getString("payload_doctype"));

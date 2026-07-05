@@ -86,8 +86,8 @@ public class PayloadAnalyzer {
         try {
             // Only analyze first 4KB for performance
             int bytesToAnalyze = Math.min(content.length, 4096);
-            byte[] contentToAnalyze = (bytesToAnalyze == content.length) ? content :
-                                      java.util.Arrays.copyOf(content, bytesToAnalyze);
+            byte[] contentToAnalyze = (bytesToAnalyze == content.length) ? content
+                    : java.util.Arrays.copyOf(content, bytesToAnalyze);
             String contentStr = new String(contentToAnalyze, StandardCharsets.UTF_8);
 
             // Try cXML first (XML-based)
@@ -121,37 +121,153 @@ public class PayloadAnalyzer {
 
         // Check for OrderRequest (Purchase Order)
         if (content.contains("<OrderRequest")) {
-            docType = "Purchase Order (OrderRequest)";
+            docType = "Purchase Order";
 
             // Extract order ID if available
             Pattern orderIdPattern = Pattern.compile("orderID=\"([^\"]+)\"");
             Matcher matcher = orderIdPattern.matcher(content);
             if (matcher.find()) {
+                docType += " " + matcher.group(1);
                 details = "Order ID: " + matcher.group(1);
+            }
+        }
+        // PaymentRemittanceRequest
+        else if (content.contains("<PaymentRemittanceRequest")) {
+            docType = "Payment Remittance";
+            // Extract order ID if available
+            Pattern pID = Pattern.compile("paymentRemittanceID=\"([^\"]+)\"");
+            Matcher matcher = pID.matcher(content);
+            if (matcher.find()) {
+                docType += " " + matcher.group(1);
+                details = "Remittance ID: " + matcher.group(1);
+            }
+        }
+        // TransportRequest
+        else if (content.contains("<TransportRequest")) {
+            docType = "Transport Request";
+            // Extract order ID if available
+            Pattern pID = Pattern.compile("requestID=\"([^\"]+)\"");
+            Matcher matcher = pID.matcher(content);
+            if (matcher.find()) {
+                docType += " " + matcher.group(1);
+                details = "Remittance ID: " + matcher.group(1);
+            }
+        }
+        // ProductActivityMessage
+        else if (content.contains("<ProductActivityMessage")) {
+            docType = "ProductActivity";
+            Pattern pID = Pattern.compile("messageID=\"([^\"]+)\"");
+            // Extract order ID if available
+            Pattern pType = Pattern.compile("processType=\"([^\"]+)\"");
+            Matcher matcher = pType.matcher(content);
+            if (matcher.find()) {
+                String sType = matcher.group(1);
+
+                if (sType.equals("Consignment")) {
+                    docType = "Consignment";
+                } else if (sType.equals("Forecast")) {
+                    docType = "Forecast";
+                } else if (sType.equals("ManufacturingVisibility")) {
+                    docType = "Forecast";
+                }
+
+            } else {
+                docType = "ProductActivityMessage";
+            }
+            Matcher mID = pID.matcher(content);
+            if (mID.find()) {
+                docType += " " + mID.group(1);
+                details = "Message ID: " + mID.group(1);
+            }
+
+        }
+        // ProductReplenishmentMessage
+        else if (content.contains("<ProductReplenishmentMessage")) {
+            docType = "ProductReplenishment";
+            Pattern pID = Pattern.compile("messageID=\"([^\"]+)\"");
+            // Extract order ID if available
+            Pattern pType = Pattern.compile("processType=\"([^\"]+)\"");
+            Matcher matcher = pType.matcher(content);
+            if (matcher.find()) {
+                String sType = matcher.group(1);
+                if (sType.equals("ManufacturingVisibility")) {
+                    docType = "ProductReplenishment";
+                }
+
+            } else {
+                docType = "ProductReplenishmentMessage";
+            }
+            Matcher mID = pID.matcher(content);
+            if (mID.find()) {
+                docType += " " + mID.group(1);
+                details = "Message ID: " + mID.group(1);
+            }
+
+        }
+        // ReceiptRequest
+        else if (content.contains("<ReceiptRequest")) {
+            docType = "Goods Receipt";
+            // Extract ID if available
+            Pattern pID = Pattern.compile("receiptID=\"([^\"]+)\"");
+            Matcher mPID = pID.matcher(content);
+            if (mPID.find()) {
+                docType += " " + mPID.group(1);
+                details = "Receipt ID: " + mPID.group(1);
             }
         }
         // Check for InvoiceDetailRequest (Invoice)
         else if (content.contains("<InvoiceDetailRequest")) {
-            docType = "Invoice (InvoiceDetailRequest)";
+            docType = "Invoice";
 
             // Extract invoice number if available
             Pattern invoicePattern = Pattern.compile("invoiceID=\"([^\"]+)\"");
             Matcher matcher = invoicePattern.matcher(content);
             if (matcher.find()) {
+                docType += " " + matcher.group(1);
                 details = "Invoice ID: " + matcher.group(1);
             }
         }
         // Check for ConfirmationRequest (Order Confirmation)
         else if (content.contains("<ConfirmationRequest")) {
-            docType = "Order Confirmation (ConfirmationRequest)";
+            docType = "Order Confirmation";
+            Pattern pID = Pattern.compile("confirmID=\"([^\"]+)\"");
+            Matcher matcher = pID.matcher(content);
+            if (matcher.find()) {
+                docType += " " + matcher.group(1);
+                details = "confirmID: " + matcher.group(1);
+            }
         }
         // Check for ShipNoticeRequest (ASN/Despatch Advice)
         else if (content.contains("<ShipNoticeRequest")) {
-            docType = "Ship Notice/ASN (ShipNoticeRequest)";
+            docType = "Ship Notice";
+            Pattern pID = Pattern.compile("shipmentID=\"([^\"]+)\"");
+            Matcher matcher = pID.matcher(content);
+            if (matcher.find()) {
+                docType += " " + matcher.group(1);
+                details = "Shipment ID: " + matcher.group(1);
+            }
         }
         // Check for StatusUpdateRequest
         else if (content.contains("<StatusUpdateRequest")) {
-            docType = "Status Update (StatusUpdateRequest)";
+            docType = "StatusUpdateRequest";
+            Pattern pID = Pattern.compile("documentID *= *\"([^\"]+)\"");
+            Matcher mPID = pID.matcher(content);
+            Pattern pID2 = Pattern.compile("invoiceID *= *\"([^\"]+)\"");
+            Matcher mPID2 = pID2.matcher(content);
+            Pattern pCode = Pattern.compile("code *= *\"(\\d+)\"");
+            Matcher mCode = pCode.matcher(content);
+
+            if (mCode.find()) {
+                docType += "(" + mCode.group(1) + ")";
+            }
+            if (mPID.find()) {
+                docType += " " + mPID.group(1);
+                details = "Document ID: " + mPID.group(1);
+            } else if (mPID2.find()) {
+                docType += " " + mPID2.group(1);
+                details = "Invoice ID: " + mPID2.group(1);
+            }
+
         }
         // Generic cXML
         else {
@@ -178,7 +294,7 @@ public class PayloadAnalyzer {
 
         if (stMatcher.find()) {
             String transactionCode = stMatcher.group(1);
-            docType = getX12TransactionType(transactionCode);
+            docType = getX12TransactionType(transactionCode, content);
             details = "Transaction Set: " + transactionCode;
 
             // Try to extract control number
@@ -197,26 +313,175 @@ public class PayloadAnalyzer {
     }
 
     /**
+     * Return Regular Expression for extracting ID , assuming it's in position 2 or
+     * 3
+     * 
+     * @param segHeader
+     * @param elementSep
+     * @return
+     */
+    private static Pattern getPattern_X12(String segHeader, char elementSep, int iPos) {
+        String sSep = String.valueOf((elementSep));
+        if (iPos == 1) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(String.valueOf(elementSep)) + "~\r\n]+)");
+        }
+
+        else if (iPos == 2) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) +
+                    "\\d{1,8}" + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(String.valueOf(elementSep)) + "~\r\n]+)");
+        } else if (iPos == 3) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) +
+                    "\\d{1,8}" + Pattern.quote(sSep) + "\\w{1,8}" + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(sSep) + "~\r\n]+)");
+        } else {
+            return null;
+        }
+
+    }
+
+    /**
+     * Return Regular Expression for extracting ID , assuming it's in position 2 or
+     * 3
+     * 
+     * @param segHeader
+     * @param elementSep
+     * @return
+     */
+    private static Pattern getPattern_EDIFACT(String segHeader, int iPos) {
+        String sSep = "+";
+        if (iPos == 1) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(sSep) + "'\r\n]+)");
+        }
+
+        else if (iPos == 2) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) +
+                    "[^\\+]*" + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(sSep) + "'\r\n]+)");
+        } else if (iPos == 3) {
+            return Pattern.compile(segHeader + Pattern.quote(sSep) +
+                    "[^\\+]+" + Pattern.quote(sSep) + "[^\\+]+" + Pattern.quote(sSep) + "([^" +
+                    Pattern.quote(sSep) + "'\r\n]+)");
+        } else {
+            return null;
+        }
+
+    }
+
+    /**
+     * Return value of ID, assumming it's in position 2 or 3
+     * 
+     * @param segHeader
+     * @param content
+     * @return
+     */
+    private static String getID_X12(String segHeader, String content, int iPos) {
+        char elementSep = content.length() > 3 ? content.charAt(3) : '*';
+        Pattern pSegID = getPattern_X12(segHeader, elementSep, iPos);
+        if (pSegID == null) {
+            return "";
+        }
+        Matcher mSegID = pSegID.matcher(content);
+        if (mSegID.find()) {
+            return mSegID.group(1);
+        } else {
+            return "";
+        }
+
+    }
+
+    /**
+     * Return value of ID, assumming it's in position 2 or 3
+     * 
+     * @param segHeader
+     * @param content
+     * @return
+     */
+    private static String getID_EDIFACT(String segHeader, String content, int iPos) {
+        Pattern pSegID = getPattern_EDIFACT(segHeader, iPos);
+        if (pSegID == null) {
+            return "";
+        }
+        Matcher mSegID = pSegID.matcher(content);
+        if (mSegID.find()) {
+            return mSegID.group(1);
+        } else {
+            return "";
+        }
+
+    }
+
+    /**
+     * Return PO ID of 850/860
+     * 
+     * @param segHeader
+     * @param content
+     * @return
+     */
+    private static String getOC_ID_X12(String content) {
+
+        char elementSep = content.length() > 3 ? content.charAt(3) : '*';
+        Pattern pSegLine = Pattern.compile("(BAK[^~]+)");
+        Matcher mSegLine = pSegLine.matcher(content);
+        if (mSegLine.find()) {
+            String sLine = mSegLine.group(1);
+            String[] arrLine = sLine.split(Pattern.quote(String.valueOf(elementSep)));
+            if (arrLine.length >= 9) {
+                return arrLine[8];
+            } else {
+                return "";
+            }
+        } else {
+            return "";
+        }
+    }
+
+    /**
      * Map X12 transaction codes to document types
      */
-    private static String getX12TransactionType(String code) {
+    private static String getX12TransactionType(String code, String content) {
+        char elementSep = content.length() > 3 ? content.charAt(3) : '*';
         switch (code) {
-            case "810": return "Invoice (810)";
-            case "850": return "Purchase Order (850)";
-            case "855": return "Purchase Order Acknowledgment (855)";
-            case "856": return "Ship Notice/ASN (856)";
-            case "857": return "Shipment and Billing Notice (857)";
-            case "860": return "Purchase Order Change (860)";
-            case "861": return "Receiving Advice (861)";
-            case "997": return "Functional Acknowledgment (997)";
-            case "940": return "Warehouse Shipping Order (940)";
-            case "943": return "Warehouse Stock Transfer Shipment Advice (943)";
-            case "944": return "Warehouse Stock Transfer Receipt Advice (944)";
-            case "945": return "Warehouse Shipping Advice (945)";
-            case "214": return "Transportation Carrier Shipment Status (214)";
-            case "204": return "Motor Carrier Load Tender (204)";
-            case "990": return "Response to Load Tender (990)";
-            default: return code; // Just return the code without "X12 Transaction" prefix
+            case "810":
+                return "Invoice (810) " + getID_X12("BIG", content, 2);
+            case "846":
+                return "Consign Movement (846) " + getID_X12("BIA", content, 3);
+            case "850":
+                return "Purchase Order (850) "
+                        + getID_X12("REF" + Pattern.quote(String.valueOf(elementSep)) + "PO", content, 1);
+            case "855":
+                return "Order Confirmation (855) " + getOC_ID_X12(content);
+            case "856":
+                return "Ship Notice/ASN (856)" + " " + getID_X12("BSN", content, 2);
+            case "820":
+                return "Ship Notice/ASN (856)" + " " + getID_X12("TRN", content, 2);
+            case "857":
+                return "Shipment and Billing Notice (857)";
+            case "860":
+                return "Purchase Order Change (860) "
+                        + getID_X12("REF" + Pattern.quote(String.valueOf(elementSep)) + "PO", content, 1);
+            case "861":
+                return "Receiving Advice (861) " + getID_X12("BRA", content, 1);
+            case "997":
+                return "Functional Acknowledgment (997)";
+            case "940":
+                return "Warehouse Shipping Order (940)";
+            case "943":
+                return "Warehouse Stock Transfer Shipment Advice (943)";
+            case "944":
+                return "Warehouse Stock Transfer Receipt Advice (944)";
+            case "945":
+                return "Warehouse Shipping Advice (945)";
+            case "214":
+                return "Transportation Carrier Shipment Status (214)";
+            case "204":
+                return "Motor Carrier Load Tender (204)";
+            case "990":
+                return "Response to Load Tender (990)";
+            default:
+                return code; // Just return the code without "X12 Transaction" prefix
         }
     }
 
@@ -236,7 +501,7 @@ public class PayloadAnalyzer {
             String messageRef = unhMatcher.group(1);
             String messageType = unhMatcher.group(2);
 
-            docType = getEDIFACTMessageType(messageType);
+            docType = getEDIFACTMessageType(messageType, content);
             details = "Message Type: " + messageType + ", Ref: " + messageRef;
         } else {
             docType = "EDIFACT Document (UNH segment not found)";
@@ -248,27 +513,56 @@ public class PayloadAnalyzer {
     /**
      * Map EDIFACT message types to document types
      */
-    private static String getEDIFACTMessageType(String messageType) {
+    private static String getEDIFACTMessageType(String messageType, String content) {
         // Message type code is usually the first 6 characters
         String code = messageType.length() >= 6 ? messageType.substring(0, 6) : messageType;
 
         switch (code) {
-            case "ORDERS": return "Purchase Order (ORDERS)";
-            case "ORDRSP": return "Purchase Order Response (ORDRSP)";
-            case "INVOIC": return "Invoice (INVOIC)";
-            case "DESADV": return "Despatch Advice/ASN (DESADV)";
-            case "RECADV": return "Receiving Advice (RECADV)";
-            case "CONTRL": return "Syntax and Service Report (CONTRL)";
-            case "APERAK": return "Application Error and Acknowledgment (APERAK)";
-            case "PRICAT": return "Price/Sales Catalogue (PRICAT)";
-            case "INVRPT": return "Inventory Report (INVRPT)";
-            case "SLSRPT": return "Sales Report (SLSRPT)";
-            case "DELFOR": return "Delivery Schedule (DELFOR)";
-            case "DELJIT": return "Delivery Just In Time (DELJIT)";
-            case "REMADV": return "Remittance Advice (REMADV)";
-            case "IFTMAN": return "Arrival Notice (IFTMAN)";
-            case "IFTSTA": return "International Multimodal Status Report (IFTSTA)";
-            default: return "EDIFACT Message " + code;
+            case "ORDERS":
+                return "Purchase Order (ORDERS) " + getID_EDIFACT("BGM", content, 2);
+            case "ORDCHG":
+                return "PO Change (ORDCHG) " + getID_EDIFACT("BGM", content, 2);
+            case "ORDRSP":
+                return "Order Confirm (ORDRSP) " + getID_EDIFACT("BGM", content, 2);
+            case "INVOIC":
+                return "Invoice (INVOIC) " + getID_EDIFACT("BGM", content, 2);
+            case "DESADV":
+                return "ASN (DESADV) " + getID_EDIFACT("BGM", content, 2);
+            case "RECADV":
+                return "Goods Receipt (RECADV) " + getID_EDIFACT("BGM", content, 2);
+            case "CONTRL":
+                return "Syntax and Service Report (CONTRL)" + getID_EDIFACT("UNH", content, 1);
+            case "APERAK":
+                String sERC= getID_EDIFACT("ERC", content, 2);
+
+                String sACW = getID_EDIFACT("RFF", content, 2);
+                String[] arrACW = sACW.split(":");
+                if (arrACW.length >= 2) {
+                    return "SUR (APERAK) " + sERC + " " + arrACW[1];
+                } else {
+                    return "SUR (APERAK) " + sERC;
+                }
+
+            case "PRICAT":
+                return "Price/Sales Catalogue (PRICAT)";
+            case "INVRPT":
+                return "INVRPT " + getID_EDIFACT("BGM", content, 2);
+            case "SLSRPT":
+                return "Sales Report (SLSRPT)";
+            case "DELFOR":
+                return "DELFOR " + getID_EDIFACT("BGM", content, 2);
+            case "DELJIT":
+                return "Delivery Just In Time (DELJIT)";
+            case "REMADV":
+                return "Remittance Advice (REMADV) " + getID_EDIFACT("BGM", content, 2);
+            case "IFTMIN":
+                return "Transport (IFTMIN) " + getID_EDIFACT("BGM", content, 2);
+            case "IFTMAN":
+                return "Arrival Notice (IFTMAN)";
+            case "IFTSTA":
+                return "Status Report (IFTSTA) " + getID_EDIFACT("BGM", content, 2);
+            default:
+                return "EDIFACT Message " + code;
         }
     }
 }
