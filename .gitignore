@@ -15,6 +15,7 @@ temp/
 *.lock
 testpod/
 /private
+/remote-log
 
 # Claude Code
 .claude/

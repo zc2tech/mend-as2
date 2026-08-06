@@ -868,6 +868,13 @@ public class AS2Server extends AbstractAS2Server implements AS2ServerMBean, Serv
     }
 
     /**
+     * Get multi-user certificate manager for REST API access
+     */
+    public de.mendelson.util.security.cert.MultiUserCertificateManager getMultiUserCertificateManager() {
+        return this.multiUserCertificateManager;
+    }
+
+    /**
      * MBean interface
      */
     @Override

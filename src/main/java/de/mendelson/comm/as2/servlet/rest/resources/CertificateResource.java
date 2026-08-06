@@ -1030,6 +1030,15 @@ public class CertificateResource {
             try {
                 certManager.deleteKeystoreEntry(alias);
                 logger.info("[DELETE CERT] Certificate deleted successfully: alias='" + alias + "'");
+
+                // Clear certificate manager cache for this user
+                de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertManager = processing.getMultiUserCertificateManager();
+                if (multiUserCertManager != null) {
+                    multiUserCertManager.clearUserCache(currentUserId);
+                    logger.info("[DELETE CERT] Cleared certificate cache for user " + currentUserId);
+                } else {
+                    logger.warning("[DELETE CERT] Could not clear cache: MultiUserCertificateManager not available");
+                }
             } catch (Throwable t) {
                 logger.severe("[DELETE CERT] Failed to delete certificate: alias='" + alias + "', error=" + t.getMessage());
                 t.printStackTrace();
@@ -1101,6 +1110,15 @@ public class CertificateResource {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new ErrorResponse(response.getException().getMessage()))
                         .build();
+            }
+
+            // Clear certificate manager cache for this user after successful import
+            de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertManager = processing.getMultiUserCertificateManager();
+            if (multiUserCertManager != null) {
+                multiUserCertManager.clearUserCache(userId);
+                logger.info("[IMPORT CERT] Cleared certificate cache for user " + userId);
+            } else {
+                logger.warning("[IMPORT CERT] Could not clear cache: MultiUserCertificateManager not available");
             }
 
             return Response.ok(new SuccessResponse("Certificates imported successfully")).build();
@@ -1181,13 +1199,27 @@ public class CertificateResource {
 
             String fileName = fileDetail.getFileName();
 
+            Response response;
             if ("certificate".equalsIgnoreCase(importType)) {
                 // Import standalone certificate (from trading partner)
-                return importStandaloneCertificate(fileInputStream, fileName, alias, certManager);
+                response = importStandaloneCertificate(fileInputStream, fileName, alias, certManager);
             } else {
                 // Import keystore with private key
-                return importKeystoreFile(fileInputStream, fileName, password, alias, certManager);
+                response = importKeystoreFile(fileInputStream, fileName, password, alias, certManager);
             }
+
+            // Clear certificate manager cache for this user after successful import
+            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+                de.mendelson.util.security.cert.MultiUserCertificateManager multiUserCertManager = processing.getMultiUserCertificateManager();
+                if (multiUserCertManager != null) {
+                    multiUserCertManager.clearUserCache(currentUserId);
+                    logger.info("[IMPORT FILE] Cleared certificate cache for user " + currentUserId);
+                } else {
+                    logger.warning("[IMPORT FILE] Could not clear cache: MultiUserCertificateManager not available");
+                }
+            }
+
+            return response;
 
         } catch (Exception e) {
             e.printStackTrace();
