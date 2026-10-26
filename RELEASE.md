@@ -147,9 +147,12 @@ public static final int VERSION_MAJOR = 1;
 public static final int VERSION_MINOR = 1;
 public static final int VERSION_BUILD = 0;  // UPDATE THESE
 
+// !!!! Just confirm AS2ServerVersion.java to see what's the required DB version
+
 // Also update database versions if schema changed:
-public static final int REQUIRED_DB_VERSION_CONFIG = 6;
-public static final int REQUIRED_DB_VERSION_RUNTIME = 6;
+// public static final int REQUIRED_DB_VERSION_CONFIG = 6;
+// public static final int REQUIRED_DB_VERSION_RUNTIME = 6;
+
 ```
 
 ### 3. Update CHANGELOG.md
