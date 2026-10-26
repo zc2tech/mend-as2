@@ -356,7 +356,7 @@ CREATE TABLE partnersystem(
 );
 CREATE TABLE serversettings(
     id SERIAL PRIMARY KEY,
-    vkey VARCHAR(256) NOT NULL,
+    vkey VARCHAR(256) NOT NULL UNIQUE,
     vvalue VARCHAR(256) NOT NULL
 );
 

@@ -359,13 +359,13 @@ public class DBServerPostgreSQL implements IDBServer {
                 this.logger.info(MODULE_NAME + " " + rb.getResourceString("update.progress.version.start",
                         new Object[]{String.valueOf(i + 1), dbName}));
                 if (!this.startDBUpdate(i, DB_TYPE)) {
-                    this.logger.severe(MODULE_NAME + " " + rb.getResourceString("update.error.postgresql",
+                    this.logger.severe(MODULE_NAME + " " + rb.getResourceString("update.error.postgres",
                             new Object[]{String.valueOf(i), String.valueOf(i + 1)}));
                     SystemEvent event = new SystemEvent(SystemEvent.SEVERITY_ERROR,
                             SystemEvent.ORIGIN_SYSTEM,
                             SystemEvent.TYPE_DATABASE_UPDATE);
                     event.setSubject(rb.getResourceString("database." + DB_TYPE));
-                    event.setBody(rb.getResourceString("update.error.postgresql",
+                    event.setBody(rb.getResourceString("update.error.postgres",
                             new Object[]{String.valueOf(i), String.valueOf(i + 1)}));
                     SystemEventManagerImplAS2.instance().newEvent(event);
                     System.exit(-1);
@@ -488,12 +488,14 @@ public class DBServerPostgreSQL implements IDBServer {
                         this.dbDriverManager.commitTransaction(transactionStatement, transactionName);
                         return (true);
                     } catch (Throwable e) {
+                        this.logger.severe(MODULE_NAME + " DB update " + startVersion + " to " + (startVersion + 1) + " failed: " + e.getMessage());
                         SystemEventManagerImplAS2.instance().systemFailure(e, SystemEvent.TYPE_DATABASE_ROLLBACK);
                         this.dbDriverManager.rollbackTransaction(transactionStatement);
                     }
                 }
             }
         } catch (Throwable e) {
+            this.logger.severe(MODULE_NAME + " DB update " + startVersion + " to " + (startVersion + 1) + " exception: " + e.getMessage());
             SystemEventManagerImplAS2.instance().systemFailure(e);
         }
         return (false);
