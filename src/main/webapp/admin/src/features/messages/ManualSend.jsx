@@ -139,6 +139,11 @@ export default function ManualSend({ onClose }) {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const isValidContentType = (ct) => {
+    // Must be non-empty and match type/subtype with optional parameters
+    return /^[a-zA-Z0-9!#$&\-^_]+\/[a-zA-Z0-9!#$&\-^_.+]+(\s*;.*)?$/.test(ct.trim());
+  };
+
   const handleSend = async () => {
     if (files.length === 0) {
       toast.warning('Please select at least one file to send');
@@ -147,6 +152,16 @@ export default function ManualSend({ onClose }) {
 
     if (!senderPartnerId || !receiverPartnerId) {
       toast.warning('Please select both sender and receiver');
+      return;
+    }
+
+    if (!contentType || !contentType.trim()) {
+      toast.warning('Content Type is required. Please specify a MIME type (e.g. application/xml, text/plain)');
+      return;
+    }
+
+    if (!isValidContentType(contentType)) {
+      toast.warning('Content Type format is invalid. Expected format: type/subtype (e.g. application/xml, text/plain; charset=UTF-8)');
       return;
     }
 
@@ -488,7 +503,7 @@ export default function ManualSend({ onClose }) {
 
               {/* Content Type */}
               <div style={formGroupStyle}>
-                <label style={labelStyle}>Content Type (First File Only)</label>
+                <label style={labelStyle}>Content Type (First File Only) *</label>
                 <input
                   type="text"
                   value={contentType}
@@ -496,10 +511,18 @@ export default function ManualSend({ onClose }) {
                     setContentType(e.target.value);
                     setContentTypeManuallyEdited(true);
                   }}
-                  style={inputStyle}
+                  style={{
+                    ...inputStyle,
+                    borderColor: contentType && !isValidContentType(contentType) ? '#dc3545' : (contentType && isValidContentType(contentType) ? '#28a745' : '#ced4da')
+                  }}
                   disabled={loading}
                   placeholder="e.g., application/xml, text/plain, application/EDI-X12"
                 />
+                {contentType && !isValidContentType(contentType) && (
+                  <div style={{ fontSize: '0.8rem', color: '#dc3545', marginTop: '0.25rem' }}>
+                    Invalid format. Expected: type/subtype (e.g. application/xml)
+                  </div>
+                )}
                 <div style={{ fontSize: '0.875rem', color: '#6c757d', marginTop: '0.25rem' }}>
                   {contentTypeManuallyEdited ? (
                     <>
@@ -564,15 +587,15 @@ export default function ManualSend({ onClose }) {
           </button>
           <button
             onClick={handleSend}
-            disabled={loading || files.length === 0 || !senderPartnerId || !receiverPartnerId || partnersLoading}
+            disabled={loading || files.length === 0 || !senderPartnerId || !receiverPartnerId || partnersLoading || !contentType || !isValidContentType(contentType)}
             style={{
               padding: '0.5rem 1.5rem',
-              backgroundColor: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId) ? '#6c757d' : '#28a745',
+              backgroundColor: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId || !contentType || !isValidContentType(contentType)) ? '#6c757d' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId) ? 'not-allowed' : 'pointer',
-              opacity: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId) ? 0.6 : 1
+              cursor: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId || !contentType || !isValidContentType(contentType)) ? 'not-allowed' : 'pointer',
+              opacity: (loading || files.length === 0 || !senderPartnerId || !receiverPartnerId || !contentType || !isValidContentType(contentType)) ? 0.6 : 1
             }}
             title={`Debug: files=${files.length}, sender=${senderPartnerId}, receiver=${receiverPartnerId}, loading=${loading}, partnersLoading=${partnersLoading}`}
           >
