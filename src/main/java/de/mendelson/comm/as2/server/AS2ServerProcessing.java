@@ -4058,6 +4058,17 @@ public class AS2ServerProcessing implements ClientServerProcessing {
     }
 
     /**
+     * Get the multi-user certificate manager
+     */
+    public de.mendelson.util.security.cert.MultiUserCertificateManager getMultiUserCertificateManager() {
+        AS2Server server = AS2Server.getStaticServerReference();
+        if (server != null) {
+            return server.getMultiUserCertificateManager();
+        }
+        return null;
+    }
+
+    /**
      * Get the database driver manager
      */
     public IDBDriverManager getDBDriverManager() {

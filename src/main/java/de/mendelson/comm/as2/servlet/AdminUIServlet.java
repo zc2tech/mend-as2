@@ -128,6 +128,17 @@ public class AdminUIServlet extends HttpServlet {
         resp.setContentType(contentType);
         resp.setStatus(HttpServletResponse.SC_OK);
 
+        // Add cache headers for static assets
+        // Cache for 1 year for versioned assets (e.g., assets with hash in filename)
+        // Cache for 1 hour for HTML files to allow updates
+        if (contentType.equals("text/html")) {
+            // Short cache for HTML to allow quick updates
+            resp.setHeader("Cache-Control", "public, max-age=3600");
+        } else {
+            // Long cache for static assets (JS, CSS, images, fonts)
+            resp.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+
         try (OutputStream os = resp.getOutputStream()) {
             byte[] buffer = new byte[8192];
             int bytesRead;

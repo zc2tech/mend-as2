@@ -172,6 +172,7 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
     getValues
   } = useForm({
     resolver: zodResolver(partnerSchema),
+    shouldUnregister: false,
     defaultValues: initialPartnerData || {
       name: '',
       as2Identification: '',
@@ -314,15 +315,32 @@ export default function PartnerFormTabs({ partner, onClose, onSuccess }) {
       httpAuthAsyncMDNUser,
       httpAuthAsyncMDNPassword,
       useHttpAuthAsyncMDN,
+      // Extract cert fingerprints from data so ...otherData doesn't overwrite the getValues() reads below
+      signFingerprintSHA1: _signFP,
+      cryptFingerprintSHA1: _cryptFP,
+      signOverwriteLocalstationFingerprintSHA1: _signOvFP,
+      cryptOverwriteLocalstationFingerprintSHA1: _cryptOvFP,
       ...otherData
     } = data;
 
     // Get certificate fingerprints directly from getValues() since they're conditionally rendered
+    // (fields inside activeTab === 'security' unmount when the tab is not active, causing RHF to
+    // unregister them and lose the user's selection — getValues() reads the last known value)
     const httpAuthMessageCertFingerprint = getValues('httpAuthMessageCertFingerprint');
     const httpAuthAsyncMDNCertFingerprint = getValues('httpAuthAsyncMDNCertFingerprint');
+    const signFingerprintSHA1 = getValues('signFingerprintSHA1');
+    const cryptFingerprintSHA1 = getValues('cryptFingerprintSHA1');
+    const signOverwriteLocalstationFingerprintSHA1 = getValues('signOverwriteLocalstationFingerprintSHA1');
+    const cryptOverwriteLocalstationFingerprintSHA1 = getValues('cryptOverwriteLocalstationFingerprintSHA1');
 
     const backendData = {
       ...otherData,
+      // Override cert fingerprints with getValues() results to avoid losing selections
+      // when the Security tab was not active at submit time
+      signFingerprintSHA1,
+      cryptFingerprintSHA1,
+      signOverwriteLocalstationFingerprintSHA1,
+      cryptOverwriteLocalstationFingerprintSHA1,
       authenticationCredentialsMessage: {
         authMode: authModeMessage,
         user: httpAuthMessageUser || '',

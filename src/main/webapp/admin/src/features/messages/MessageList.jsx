@@ -40,6 +40,11 @@ export default function MessageList() {
     return user?.roleIds?.includes(1) || user?.roles?.some(r => r.name === 'ADMIN');
   }, [user?.roleIds, user?.roles]);
 
+  // Check if should show User column: only for 'admin' super user or ADMIN role users
+  const showUserColumn = useMemo(() => {
+    return user?.username === 'admin' || isAdmin;
+  }, [user?.username, isAdmin]);
+
   const defaultFilters = {
     limit: 20,
     direction: 0, // 0=all, 1=in, 2=out
@@ -624,7 +629,7 @@ export default function MessageList() {
             <th style={thStyle}>Sender</th>
             <th style={thStyle}>Receiver</th>
             <th style={thStyle}>Init Date ({getTimezoneOffset()})</th>
-            <th style={thStyle}>User</th>
+            {showUserColumn && <th style={thStyle}>User</th>}
             <th style={thStyle}>Format</th>
             <th style={thStyle}>Doc Type</th>
             <th style={thStyle}>Status</th>
@@ -634,7 +639,7 @@ export default function MessageList() {
         <tbody>
           {filteredMessages.length === 0 ? (
             <tr>
-              <td colSpan="10" style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
+              <td colSpan={showUserColumn ? "10" : "9"} style={{ ...tdStyle, textAlign: 'center', padding: '2rem' }}>
                 No messages found
               </td>
             </tr>
@@ -656,47 +661,49 @@ export default function MessageList() {
                 <td style={tdStyle}>
                   {message.initDate ? format(new Date(message.initDate), 'yyyy-MM-dd HH:mm:ss') : '-'}
                 </td>
-                <td style={tdStyle}>
-                  {message.ownerUserId === 0 ? (
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      backgroundColor: '#6c757d',
-                      color: 'white',
-                      fontWeight: '500'
-                    }}>
-                      System
-                    </span>
-                  ) : message.ownerUsername ? (
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      fontWeight: '500'
-                    }}>
-                      {message.ownerUsername}
-                    </span>
-                  ) : message.ownerUserId > 0 ? (
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      backgroundColor: '#28a745',
-                      color: 'white',
-                      fontWeight: '500'
-                    }}>
-                      User {message.ownerUserId}
-                    </span>
-                  ) : (
-                    <span style={{ color: '#6c757d', fontSize: '0.75rem' }}>-</span>
-                  )}
-                </td>
+                {showUserColumn && (
+                  <td style={tdStyle}>
+                    {message.ownerUserId === 0 ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#6c757d',
+                        color: 'white',
+                        fontWeight: '500'
+                      }}>
+                        System
+                      </span>
+                    ) : message.ownerUsername ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        fontWeight: '500'
+                      }}>
+                        {message.ownerUsername}
+                      </span>
+                    ) : message.ownerUserId > 0 ? (
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        fontWeight: '500'
+                      }}>
+                        User {message.ownerUserId}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#6c757d', fontSize: '0.75rem' }}>-</span>
+                    )}
+                  </td>
+                )}
                 <td style={tdStyle}>{message.payloadFormat || '-'}</td>
                 <td style={tdStyle}>{message.payloadDocType || '-'}</td>
                 <td style={tdStyle}>

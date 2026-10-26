@@ -1,6 +1,18 @@
 -- PostgreSQL Migration script from version 1 to version 2
 -- Adds IP whitelist tables and splits TARGET_API into TARGET_SYS_API and TARGET_USER_API
 
+-- Ensure serversettings.vkey has a unique constraint so ON CONFLICT (vkey) works
+-- The original CREATE.sql only added a regular index, not a unique constraint
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'serversettings_vkey_unique' AND conrelid = 'serversettings'::regclass
+    ) THEN
+        ALTER TABLE serversettings ADD CONSTRAINT serversettings_vkey_unique UNIQUE (vkey);
+    END IF;
+END$$;
+
 -- Create IP whitelist tables if they don't exist
 -- This handles upgrades from versions that didn't have IP whitelist feature
 

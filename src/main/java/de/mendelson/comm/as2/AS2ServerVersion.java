@@ -43,7 +43,7 @@ public class AS2ServerVersion implements IProductVersion {
      * Returns this products version number
      */
     public static String getVersion() {
-        return ("1.0");
+        return ("1.1");
     }
 
     /**
@@ -58,7 +58,7 @@ public class AS2ServerVersion implements IProductVersion {
      */
     public static int getBuildNo() {
         // version of source
-        return (2);
+        return (4);
     }
 
     /**
@@ -113,28 +113,28 @@ public class AS2ServerVersion implements IProductVersion {
      * Gets the company name
      */
     public static String getCompany() {
-        return ("mendelson-e-commerce GmbH");
+        return ("mend-as2");
     }
 
     /**
      * Gets the company address
      */
     public static String getStreet() {
-        return ("Kurfürstendamm 30");
+        return ("mend-as2 github");
     }
 
     /**
      * Gets the company zip
      */
     public static String getZip() {
-        return ("D-10719 Berlin");
+        return ("123-4567");
     }
 
     /**
      * Gets the company info email
      */
     public static String getInfoEmail() {
-        return ("service@mendelson.de");
+        return ("julian.xu@aliyun.com");
     }
 
     /**
